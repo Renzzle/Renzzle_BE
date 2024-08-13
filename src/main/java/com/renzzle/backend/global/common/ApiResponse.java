@@ -6,8 +6,6 @@ import com.renzzle.backend.global.exception.ErrorResponse;
 import lombok.Getter;
 import lombok.Setter;
 
-@Getter
-@Setter
 @JsonInclude(value = JsonInclude.Include.NON_NULL)
 public record ApiResponse<T>(@JsonProperty("isSuccess") Boolean isSuccess,
                              @JsonProperty(value = "response") T response,
