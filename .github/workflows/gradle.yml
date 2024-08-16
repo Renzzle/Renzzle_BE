@@ -22,6 +22,7 @@ jobs:
     - name: Cache Gradle packages
       uses: actions/cache@v2
       with:
+
         path: |
           ~/.gradle/caches
           ~/.gradle/wrapper
@@ -32,7 +33,7 @@ jobs:
     - name: Set up Gradle
       uses: gradle/gradle-build-action@v2
       with:
-        arguments: ''
+        distribution: 'bin'
         
     - name: Build and Test with Gradle
       run: ./gradlew build --no-daemon
