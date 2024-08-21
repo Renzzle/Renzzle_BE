@@ -1,0 +1,81 @@
+name: Java CI with Gradle
+
+on:
+  push:
+    branches: [ "main", "feature/github-action" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Build with Gradle
+        run: ./gradlew build
+
+      - name: Test build success
+        run: echo "Build completed successfully!"
+
+      - name: Build Docker image
+        if: success()
+        run: docker build -t app .
+
+      - name: Login to Docker Hub
+        if: success()
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Push Docker image
+        if: success()
+        run: |
+          docker tag app renzzle/github-action:latest
+          docker push renzzle/github-action:latest
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: success()
+
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ec2-user
+          key: ${{ secrets.PRIVATE_KEY }}
+          script: |
+            set -e
+            docker pull renzzle/github-action:latest
+            CONTAINERS=$(docker ps -q)
+            if [ -n "$CONTAINERS" ]; then
+              docker stop $CONTAINERS
+              docker rm $CONTAINERS
+            fi
+            docker run -d -p 8080:8080 renzzle/github-action:latest
+            docker image prune -a -f
