@@ -1,6 +1,7 @@
 package com.renzzle.backend.global.exception;
 
 import com.renzzle.backend.global.util.ApiUtils;
+import jakarta.validation.ValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -13,6 +14,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RuntimeException.class)
     private ResponseEntity<?> handleException(RuntimeException e) {
         return handleException(e, ErrorCode.INTERNAL_SERVER_ERROR, ErrorCode.INTERNAL_SERVER_ERROR.getMessage());
+    }
+
+    @ExceptionHandler(ValidationException.class)
+    private ResponseEntity<?> handleValidationException(ValidationException e) {
+        return handleException(e, ErrorCode.VALIDATION_ERROR, e.getMessage());
     }
 
     @ExceptionHandler(CustomException.class)
