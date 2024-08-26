@@ -1,6 +1,7 @@
 package com.renzzle.backend.domain.test.api;
 
 import com.renzzle.backend.domain.test.api.request.SaveEntityRequest;
+import com.renzzle.backend.domain.test.api.response.FindEntityResponse;
 import com.renzzle.backend.domain.test.api.response.HelloResponse;
 import com.renzzle.backend.domain.test.api.response.SaveEntityResponse;
 import com.renzzle.backend.domain.test.domain.TestEntity;
@@ -45,6 +46,20 @@ public class TestController {
         TestEntity result = testService.saveEntity(entity);
 
         SaveEntityResponse response = SaveEntityResponse
+                .builder()
+                .id(result.getId())
+                .name(result.getName())
+                .build();
+
+        return ApiUtils.success(response);
+    }
+
+    @Operation(summary = "Server DB test", description = "Test finding entity on DB through JPA")
+    @GetMapping("/find/jpa/{Id}")
+    public ApiResponse<FindEntityResponse> findTestEntity(@PathVariable("Id") Long id) {
+        TestEntity result = testService.findEntityById(id);
+
+        FindEntityResponse response = FindEntityResponse
                 .builder()
                 .id(result.getId())
                 .name(result.getName())
