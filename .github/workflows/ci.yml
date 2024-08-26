@@ -77,5 +77,5 @@ jobs:
               docker stop $CONTAINERS
               docker rm $CONTAINERS
             fi
-            docker run --env-file /home/ec2-user/.env -d -p 8080:8080 renzzle/github-action:latest
+            docker run --env-file /home/ec2-user/.env -d -p 9001:9001 renzzle/github-action:latest
             docker image prune -a -f
