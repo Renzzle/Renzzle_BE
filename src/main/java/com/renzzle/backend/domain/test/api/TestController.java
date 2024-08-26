@@ -4,6 +4,7 @@ import com.renzzle.backend.domain.test.api.request.SaveEntityRequest;
 import com.renzzle.backend.domain.test.api.response.FindEntityResponse;
 import com.renzzle.backend.domain.test.api.response.HelloResponse;
 import com.renzzle.backend.domain.test.api.response.SaveEntityResponse;
+import com.renzzle.backend.domain.test.domain.JdbcEntity;
 import com.renzzle.backend.domain.test.domain.TestEntity;
 import com.renzzle.backend.domain.test.service.TestService;
 import com.renzzle.backend.global.common.ApiResponse;
@@ -58,6 +59,38 @@ public class TestController {
     @GetMapping("/find/jpa/{Id}")
     public ApiResponse<FindEntityResponse> findTestEntity(@PathVariable("Id") Long id) {
         TestEntity result = testService.findEntityById(id);
+
+        FindEntityResponse response = FindEntityResponse
+                .builder()
+                .id(result.getId())
+                .name(result.getName())
+                .build();
+
+        return ApiUtils.success(response);
+    }
+
+    @Operation(summary = "Server DB test", description = "Test saving entity on DB through JDBC")
+    @PostMapping("/save/jdbc")
+    public ApiResponse<SaveEntityResponse> saveJdbcEntity(@Valid @RequestBody SaveEntityRequest request, BindingResult bindingResult) {
+        if(bindingResult.hasErrors()) {
+            throw new ValidationException(getErrorMessages(bindingResult));
+        }
+
+        long id = testService.saveJdbcEntity(request.name());
+
+        SaveEntityResponse response = SaveEntityResponse
+                .builder()
+                .id(id)
+                .name(request.name())
+                .build();
+
+        return ApiUtils.success(response);
+    }
+
+    @Operation(summary = "Server DB test", description = "Test finding entity on DB through JDBC")
+    @GetMapping("/find/jdbc/{Id}")
+    public ApiResponse<FindEntityResponse> findJdbcEntity(@PathVariable("Id") Long id) {
+        JdbcEntity result = testService.findJdbcEntityById(id);
 
         FindEntityResponse response = FindEntityResponse
                 .builder()
