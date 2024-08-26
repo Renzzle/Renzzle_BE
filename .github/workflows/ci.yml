@@ -73,11 +73,13 @@ jobs:
             set -e
             cd /home/ec2-user/
             
-            CONTAINERS=$(docker-compose ps -q)
-            if [ -n "$CONTAINERS" ]; then
-              docker-compose down
+            ALL_CONTAINERS=$(docker ps -q)
+            if [ -n "$ALL_CONTAINERS" ]; then
+              docker stop $ALL_CONTAINERS
+              docker rm $ALL_CONTAINERS
             fi
             
+            docker-compose down
             docker-compose pull
             docker-compose up -d
             docker image prune -a -f
