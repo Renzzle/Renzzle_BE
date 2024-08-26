@@ -71,11 +71,24 @@ jobs:
           key: ${{ secrets.PRIVATE_KEY }}
           script: |
             set -e
-            docker pull renzzle/github-action:latest
-            CONTAINERS=$(docker ps -q)
+            cd /home/ec2-user/
+            
+            CONTAINERS=$(docker-compose ps -q)
             if [ -n "$CONTAINERS" ]; then
-              docker stop $CONTAINERS
-              docker rm $CONTAINERS
+              docker-compose down
             fi
-            docker run --env-file /home/ec2-user/.env -d -p 9001:9001 renzzle/github-action:latest
+            
+            docker-compose pull
+            docker-compose up -d
             docker image prune -a -f
+
+#          script: |
+#            set -e
+#            docker pull renzzle/github-action:latest
+#            CONTAINERS=$(docker ps -q)
+#            if [ -n "$CONTAINERS" ]; then
+#              docker stop $CONTAINERS
+#              docker rm $CONTAINERS
+#            fi
+#            docker run --env-file /home/ec2-user/.env -d -p 9001:9001 renzzle/github-action:latest
+#            docker image prune -a -f
