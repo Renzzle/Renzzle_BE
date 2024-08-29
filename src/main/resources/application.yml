@@ -18,6 +18,10 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
         default_batch_fetch_size: 100
         format_sql: true
+  data:
+    redis:
+      port: 6379
+      host: redis
 
 springdoc:
   packages-to-scan: com.renzzle.backend
