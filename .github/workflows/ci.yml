@@ -37,6 +37,9 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build
 
+      - name: Verify build output
+        run: ls -la build/libs
+
       - name: Test build success
         run: echo "Build completed successfully!"
 
