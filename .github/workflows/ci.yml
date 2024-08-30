@@ -40,6 +40,9 @@ jobs:
       - name: Verify build output
         run: ls -la build/libs
 
+      - name: Print current directory
+        run: pwd
+
       - name: Test build success
         run: echo "Build completed successfully!"
 
