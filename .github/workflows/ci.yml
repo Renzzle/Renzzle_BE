@@ -78,7 +78,10 @@ jobs:
           fi
 
       - name: Build Docker image
-        run: docker build -t app .
+        run: |
+          echo "Checking if .jar file exists in Docker build context..."
+          ls -la build/libs
+          docker build -t app .
 
       - name: Tag and Push Docker image
         run: |
