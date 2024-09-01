@@ -34,6 +34,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
+      - name: Install Redis CLI
+        run: sudo apt-get update && sudo apt-get install -y redis-tools
+
       - name: Redis Health Check
         run: redis-cli -h 127.0.0.1 -p 6379 -a $REDIS_PASSWORD ping
 
