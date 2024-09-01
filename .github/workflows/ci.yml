@@ -40,15 +40,3 @@ jobs:
       - name: Test build success
         run: echo "Build completed successfully!"
 
-      - name: Generate Test Report
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: Test Results
-          path: build/test-results/test/TEST-*.xml
-
-      - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
-        with:
-          junit_files: '**/build/test-results/test/TEST-*.xml'
