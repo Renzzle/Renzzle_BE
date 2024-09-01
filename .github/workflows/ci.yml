@@ -34,6 +34,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
+      - name: Redis Health Check
+        run: redis-cli -h 127.0.0.1 -p 6379 -a $REDIS_PASSWORD ping
+
       - name: Build with Gradle
         run: ./gradlew build
 
