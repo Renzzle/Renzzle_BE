@@ -1,6 +1,5 @@
 package com.renzzle.backend.domain.test.service;
 
-import com.renzzle.backend.domain.test.api.request.SaveEntityRequest;
 import com.renzzle.backend.domain.test.api.response.HelloResponse;
 import com.renzzle.backend.domain.test.dao.JdbcEntityDao;
 import com.renzzle.backend.domain.test.dao.TestRepository;
