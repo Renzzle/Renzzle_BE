@@ -42,6 +42,7 @@ public class DBTest {
     }
 
     @Test
+    @Transactional
     public void jdbcCRDTest() {
         final String testName = "test";
         // create
@@ -56,6 +57,27 @@ public class DBTest {
         jdbcEntityDao.deleteById(resultId);
         Assertions.assertThrows(EmptyResultDataAccessException.class, () -> {
             jdbcEntityDao.findById(resultId);
+        });
+    }
+
+    @Test
+    @Transactional
+    public void jdbcClearTest() {
+        final String testName1 = "test1";
+        final String testName2 = "test2";
+        // create jdbc, jpa test data
+        long resultId1 = jdbcEntityDao.save(testName1);
+        long resultId2 = jdbcEntityDao.save(testName2);
+
+        // delete all
+        jdbcEntityDao.deleteAll();
+
+        // assert
+        Assertions.assertThrows(EmptyResultDataAccessException.class, () -> {
+            jdbcEntityDao.findById(resultId1);
+        });
+        Assertions.assertThrows(EmptyResultDataAccessException.class, () -> {
+            jdbcEntityDao.findById(resultId2);
         });
     }
 
