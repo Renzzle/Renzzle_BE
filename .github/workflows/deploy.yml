@@ -2,16 +2,15 @@ name: Deploy to EC2 on Comment
 
 on:
   push:
-    branches: [ "main", "feature/github-action" ]
-#  issue_comment:
-#    types: [created]
+  issue_comment:
+    types: [created]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    #    if: >
-    #      github.event.issue.pull_request &&
-    #      contains(github.event.comment.body, 'renzzle deploy')
+    if: >
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, 'renzzle deploy')
 
     steps:
       - name: Checkout code
@@ -39,15 +38,15 @@ jobs:
             #      - name: Install Redis CLI
             #        run: sudo apt-get update && sudo apt-get install -y redis-tools
 
-      - name: Install Redis CLI on EC2
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ec2-user
-          key: ${{ secrets.PRIVATE_KEY }}
-          script: |
-            sudo yum update -y
-            sudo yum install -y redis
+#      - name: Install Redis CLI on EC2
+#        uses: appleboy/ssh-action@master
+#        with:
+#          host: ${{ secrets.HOST }}
+#          username: ec2-user
+#          key: ${{ secrets.PRIVATE_KEY }}
+#          script: |
+#            sudo yum update -y
+#            sudo yum install -y redis
 
       - name: Build with Gradle
         run: ./gradlew build
@@ -92,10 +91,10 @@ jobs:
             docker-compose down
             docker-compose pull
             docker-compose up -d
-            
-            # Redis Health Check on EC2
-            echo "Checking Redis status on EC2..."
-            redis-cli -h localhost -p 6379 -a $REDIS_PASSWORD ping || exit 1
+
+#            # Redis Health Check on EC2
+#            echo "Checking Redis status on EC2..."
+#            redis-cli -h localhost -p 6379 -a $REDIS_PASSWORD ping || exit 1
 
       - name: Remove unused Docker images
         uses: appleboy/ssh-action@master
