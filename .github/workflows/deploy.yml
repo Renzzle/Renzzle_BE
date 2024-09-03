@@ -39,8 +39,15 @@ jobs:
             #      - name: Install Redis CLI
             #        run: sudo apt-get update && sudo apt-get install -y redis-tools
 
-      #      - name: Redis Health Check
-      #        run: redis-cli -h 127.0.0.1 -p 6379 -a $REDIS_PASSWORD ping
+      - name: Install Redis CLI on EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ec2-user
+          key: ${{ secrets.PRIVATE_KEY }}
+          script: |
+            sudo yum update -y
+            sudo yum install -y redis
 
       - name: Build with Gradle
         run: ./gradlew build
