@@ -42,4 +42,9 @@ public class TestService {
         return jdbcEntityDao.findById(id);
     }
 
+    public void deleteAllTestData() {
+        testRepository.deleteAll();
+        jdbcEntityDao.deleteAll();
+    }
+
 }

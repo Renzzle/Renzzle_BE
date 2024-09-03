@@ -101,4 +101,11 @@ public class TestController {
         return ApiUtils.success(response);
     }
 
+    @Operation(summary = "Server DB test", description = "Delete all test data")
+    @DeleteMapping("/clear")
+    public ApiResponse<Boolean> deleteAllTestData() {
+        testService.deleteAllTestData();
+        return ApiUtils.success(true);
+    }
+
 }
