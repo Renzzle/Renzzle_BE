@@ -1,6 +1,5 @@
 package com.renzzle.backend.domain.test.service;
 
-import com.renzzle.backend.domain.test.api.request.SaveEntityRequest;
 import com.renzzle.backend.domain.test.api.response.HelloResponse;
 import com.renzzle.backend.domain.test.dao.JdbcEntityDao;
 import com.renzzle.backend.domain.test.dao.TestRepository;
@@ -41,6 +40,11 @@ public class TestService {
 
     public JdbcEntity findJdbcEntityById(Long id) {
         return jdbcEntityDao.findById(id);
+    }
+
+    public void deleteAllTestData() {
+        testRepository.deleteAll();
+        jdbcEntityDao.deleteAll();
     }
 
 }

@@ -7,6 +7,8 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
+
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -27,13 +29,25 @@ public class JdbcEntityDao {
         return Objects.requireNonNull(keyHolder.getKey()).longValue();
     }
 
-    public JdbcEntity findById(Long jdbcEntityId) {
-        String sql = "SELECT * from jdbc_entity where id=:jdbc_entity_id";
-        Map<String, Object> param = Map.of("jdbc_entity_id", jdbcEntityId);
+    public JdbcEntity findById(Long id) {
+        String sql = "SELECT * FROM jdbc_entity WHERE id=:jdbc_entity_id";
+        Map<String, Object> param = Map.of("jdbc_entity_id", id);
         return jdbcTemplate.queryForObject(sql, param, (rs, rowNum) -> new JdbcEntity(
                 Long.parseLong(rs.getString("id")),
                 rs.getString("name")
         ));
+    }
+
+    public void deleteById(Long id) {
+        String sql = "DELETE FROM jdbc_entity WHERE id=:jdbc_entity_id";
+        Map<String, Object> param = Map.of("jdbc_entity_id", id);
+        jdbcTemplate.update(sql, param);
+    }
+
+    public void deleteAll() {
+        String sql = "DELETE FROM jdbc_entity";
+        Map<String, Object> param = new HashMap<>();
+        jdbcTemplate.update(sql, param);
     }
 
 }
