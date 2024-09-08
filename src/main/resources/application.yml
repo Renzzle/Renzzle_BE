@@ -11,8 +11,26 @@ spring:
     database-platform: org.hibernate.dialect.MySQLDialect
     open-in-view: true
     show-sql: true
+    hibernate:
+      hbm2ddl.auto: update
+      dialect: org.hibernate.dialect.MySQLDialect
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
-        default_batch_fetch_size: 100
+        show_sql: true
         format_sql: true
+        use_sql_comments: true
+  data:
+    redis:
+      port: 6379
+      host: redis
+      password: ${REDIS_PASSWORD}
+
+springdoc:
+  packages-to-scan: com.renzzle.backend
+  default-consumes-media-type: application/json;charset=UTF-8
+  default-produces-media-type: application/json;charset=UTF-8
+  swagger-ui:
+    path: /
+    disable-swagger-default-url: true
+    display-request-duration: true
+    operations-sorter: alpha
