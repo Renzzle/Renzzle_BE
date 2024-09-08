@@ -9,8 +9,8 @@ services:
       - DB_ADDRESS=${DB_ADDRESS}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
-    depends_on:
-      - redis
+#    depends_on:
+#      - redis
     networks:
       - app-network
 
