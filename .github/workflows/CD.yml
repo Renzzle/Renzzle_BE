@@ -81,6 +81,24 @@ jobs:
           debug: true
           overwrite: true
 
+      - name: Install Redis on EC2 if not present
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ec2-user
+          key: ${{ secrets.PRIVATE_KEY }}
+          script: |
+            # Check if Redis is installed
+            if ! command -v redis-server &> /dev/null; then
+              echo "Redis is not installed. Installing Redis..."
+              sudo yum update -y
+              sudo yum install -y redis
+              sudo systemctl start redis
+              sudo systemctl enable redis
+            else
+              echo "Redis is already installed. Skipping installation."
+            fi
+
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
         with:

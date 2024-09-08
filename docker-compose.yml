@@ -14,15 +14,15 @@ services:
     networks:
       - app-network
 
-  redis:
-    image: redis:latest
-    ports:
-      - "6379:6379"
-    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
-    environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-    networks:
-      - app-network
+#  redis:
+#    image: redis:latest
+#    ports:
+#      - "6379:6379"
+#    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+#    environment:
+#      - REDIS_PASSWORD=${REDIS_PASSWORD}
+#    networks:
+#      - app-network
 
 networks:
   app-network:
