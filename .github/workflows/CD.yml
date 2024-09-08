@@ -91,12 +91,36 @@ jobs:
             # Check if Redis is installed
             if ! command -v redis-server &> /dev/null; then
               echo "Redis is not installed. Installing Redis..."
-              sudo yum update -y
-              sudo yum install -y redis
-              sudo systemctl start redis
-              sudo systemctl enable redis
+            
+              # Install dependencies
+              sudo dnf install -y gcc make
+            
+              # Download and install Redis from source
+              REDIS_VERSION=7.0.12
+              curl -O http://download.redis.io/releases/redis-$REDIS_VERSION.tar.gz
+              tar xzf redis-$REDIS_VERSION.tar.gz
+              cd redis-$REDIS_VERSION
+              make
+              sudo make install
+            
+              # Start Redis server
+              redis-server --daemonize yes
+            
+              # Clean up
+              cd ..
+              rm -rf redis-$REDIS_VERSION redis-$REDIS_VERSION.tar.gz
+            
+              echo "Redis installation complete and server started."
             else
-              echo "Redis is already installed. Skipping installation."
+              echo "Redis is already installed. Checking if it is running..."
+            
+              # Check if Redis is running
+              if pgrep redis-server > /dev/null; then
+                echo "Redis is running."
+              else
+                echo "Redis is not running. Starting Redis..."
+                redis-server --daemonize yes
+              fi
             fi
 
       - name: Deploy to EC2
