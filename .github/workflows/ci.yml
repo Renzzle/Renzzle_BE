@@ -2,7 +2,7 @@
 
   on:
     push:
-      branches: [ "main", "feature/github-action", "feat/test" ]
+      branches: [ "main", "feat/github-action", "feat/test" ]
 
   permissions:
     contents: read

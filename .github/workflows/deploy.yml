@@ -2,7 +2,7 @@ name: Deploy to EC2 on Comment
 
 on:
   push:
-    branches: [ "main", "feature/github-action", "feat/test" ]
+    branches: [ "main", "feat/github-action", "feat/test" ]
 #  issue_comment:
 #    types: [created]
 
