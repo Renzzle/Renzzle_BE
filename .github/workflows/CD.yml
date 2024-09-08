@@ -1,17 +1,17 @@
 name: Deploy to EC2 on Comment
 
 on:
-  push:
-    branches: [ "main", "feat/github-action", "feat/test" ]
-#  issue_comment:
-#    types: [created]
+#  push:
+#    branches: [ "main", "feat/github-action", "feat/test" ]
+  issue_comment:
+    types: [created]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-#    if: >
-#      github.event.issue.pull_request &&
-#      contains(github.event.comment.body, 'renzzle deploy')
+    if: >
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, 'renzzle deploy')
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
