@@ -1,7 +1,7 @@
   name: Java CI with Gradle
 
   on:
-    pull request:
+    pull_request:
       branches: [ "main"]
 #    push:
 #      branches: [ "main", "feat/github-action", "feat/test" ]
@@ -35,14 +35,6 @@
             key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
             restore-keys: |
               ${{ runner.os }}-gradle-
-#
-#        - name: Set environment variables
-#          run: echo "Setting up environment variables"
-#          env:
-#            DB_ADDRESS: ${{ secrets.DB_ADDRESS }}
-#            DB_USER: ${{ secrets.DB_USER }}
-#            DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-#            REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
 
         - name: Build and Test with Gradle
           env: # 환경 변수를 Gradle 빌드 및 테스트에 전달
