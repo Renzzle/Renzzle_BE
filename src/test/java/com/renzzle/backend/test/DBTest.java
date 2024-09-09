@@ -47,7 +47,7 @@ public class DBTest {
         final String testName = "test";
         // create
         long resultId = jdbcEntityDao.save(testName);
-    
+
         // read
         JdbcEntity readResult = jdbcEntityDao.findById(resultId);
         Assertions.assertEquals(readResult.getId(), resultId);

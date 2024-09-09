@@ -1,8 +1,10 @@
   name: Java CI with Gradle
 
   on:
-    push:
-      branches: [ "main", "feat/github-action", "feat/test" ]
+    pull request:
+      branches: [ "main"]
+#    push:
+#      branches: [ "main", "feat/github-action", "feat/test" ]
 
   permissions:
     contents: read
