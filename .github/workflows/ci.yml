@@ -1,42 +1,48 @@
-name: Java CI with Gradle
+  name: Java CI with Gradle
 
-on:
-  push:
-    branches: [ "main", "feature/github-action", "feat/test" ]
+  on:
+    pull_request:
+      branches: [ "main"]
+#    push:
+#      branches: [ "main", "feat/github-action", "feat/test" ]
 
-permissions:
-  contents: read
+  permissions:
+    contents: read
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+  jobs:
+    build:
+      runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v3
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          java-version: '17'
-          distribution: 'temurin'
+        - name: Set up JDK 17
+          uses: actions/setup-java@v3
+          with:
+            java-version: '17'
+            distribution: 'temurin'
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x ./gradlew
+        - name: Grant execute permission for gradlew
+          run: chmod +x ./gradlew
 
-      - name: Cache Gradle packages
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+        - name: Cache Gradle packages
+          uses: actions/cache@v3
+          with:
+            path: |
+              ~/.gradle/caches
+              ~/.gradle/wrapper
+            key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+            restore-keys: |
+              ${{ runner.os }}-gradle-
 
-      - name: Build with Gradle
-        run: ./gradlew build
+        - name: Build and Test with Gradle
+          env: # 환경 변수를 Gradle 빌드 및 테스트에 전달
+            DB_ADDRESS: ${{ secrets.DB_ADDRESS }}
+            DB_USER: ${{ secrets.DB_USER }}
+            DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+            REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          run: ./gradlew clean build
 
-      - name: Test build success
-        run: echo "Build completed successfully!"
-
+        - name: Test build success
+          run: echo "Build completed successfully!"
