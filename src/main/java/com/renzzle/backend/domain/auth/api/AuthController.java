@@ -5,6 +5,7 @@ import com.renzzle.backend.domain.auth.api.response.AuthEmailResponse;
 import com.renzzle.backend.domain.auth.service.EmailService;
 import com.renzzle.backend.global.common.ApiResponse;
 import com.renzzle.backend.global.util.ApiUtils;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.ValidationException;
@@ -24,6 +25,7 @@ public class AuthController {
 
     private final EmailService emailService;
 
+    @Operation(summary = "Confirm email", description = "Send confirm code to user email")
     @PostMapping("/email")
     public ApiResponse<AuthEmailResponse> sendCode(@Valid @RequestBody AuthEmailRequest request, BindingResult bindingResult) {
         if(bindingResult.hasErrors()) {
