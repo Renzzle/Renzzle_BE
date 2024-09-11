@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  app:
+    image: renzzle/github-action:latest
+    ports:
+      - "9001:9001"
+    environment:
+      - DB_ADDRESS=${DB_ADDRESS}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+#    depends_on:
+#      - redis
+    networks:
+      - app-network
+
+#  redis:
+#    image: redis:latest
+#    ports:
+#      - "6379:6379"
+#    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+#    environment:
+#      - REDIS_PASSWORD=${REDIS_PASSWORD}
+#    networks:
+#      - app-network
+
+networks:
+  app-network:
+    driver: bridge
