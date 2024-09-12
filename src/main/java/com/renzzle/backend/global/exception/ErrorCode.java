@@ -17,7 +17,8 @@ public enum ErrorCode {
     EMPTY_RESULT_ERROR(HttpStatus.NOT_FOUND, "S404", "요청의 결과가 존재하지 않습니다"),
 
     // Auth
-    EXCEED_EMAIL_AUTH_REQUEST(HttpStatus.TOO_MANY_REQUESTS, "A429", "이메일 인증 횟수를 초과했습니다");
+    EXCEED_EMAIL_AUTH_REQUEST(HttpStatus.TOO_MANY_REQUESTS, "A429", "이메일 인증 횟수를 초과했습니다"),
+    NOT_VALID_CODE(HttpStatus.BAD_REQUEST, "A400", "올바르지 않은 인증코드입니다");
 
     private final HttpStatus status;
     private final String code;

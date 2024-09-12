@@ -62,7 +62,7 @@ public class EmailService {
     }
 
     public int getRequestCount(String address) {
-        int count = 1;
+        int count = 0;
         Optional<AuthEmailEntity> emailEntity = emailRepository.findById(address);
         if(emailEntity.isPresent()) {
             count = emailEntity.get().count();
@@ -79,6 +79,12 @@ public class EmailService {
                 .issuedAt(Instant.now().toString())
                 .build();
         emailRepository.save(result);
+    }
+
+    public boolean confirmCode(String address, String code) {
+        Optional<AuthEmailEntity> emailEntity = emailRepository.findById(address);
+        return emailEntity.map(authEmailEntity ->
+                authEmailEntity.code().equals(code)).orElse(false);
     }
 
 }

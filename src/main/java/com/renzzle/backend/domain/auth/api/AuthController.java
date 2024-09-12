@@ -1,7 +1,9 @@
 package com.renzzle.backend.domain.auth.api;
 
 import com.renzzle.backend.domain.auth.api.request.AuthEmailRequest;
+import com.renzzle.backend.domain.auth.api.request.ConfirmCodeRequest;
 import com.renzzle.backend.domain.auth.api.response.AuthEmailResponse;
+import com.renzzle.backend.domain.auth.api.response.ConfirmCodeResponse;
 import com.renzzle.backend.domain.auth.service.EmailService;
 import com.renzzle.backend.global.common.ApiResponse;
 import com.renzzle.backend.global.exception.CustomException;
@@ -45,7 +47,21 @@ public class AuthController {
         return ApiUtils.success(AuthEmailResponse
                 .builder()
                 .code(code)
+                .requestCount(count + 1)
                 .build());
+    }
+
+    @Operation(summary = "Confirm code", description = "Authenticate code")
+    @PostMapping("/confirmCode")
+    public ApiResponse<ConfirmCodeResponse> confirmCode(@Valid @RequestBody ConfirmCodeRequest request, BindingResult bindingResult) {
+        if(bindingResult.hasErrors()) {
+            throw new ValidationException(getErrorMessages(bindingResult));
+        }
+
+        boolean isCorrect = emailService.confirmCode(request.email(), request.code());
+        if(!isCorrect) throw new CustomException(ErrorCode.NOT_VALID_CODE);
+
+        return ApiUtils.success(null);
     }
 
 }

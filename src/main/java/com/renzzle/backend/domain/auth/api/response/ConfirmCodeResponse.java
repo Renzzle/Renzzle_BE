@@ -3,7 +3,6 @@ package com.renzzle.backend.domain.auth.api.response;
 import lombok.Builder;
 
 @Builder
-public record AuthEmailResponse(
-        String code,
-        int requestCount
+public record ConfirmCodeResponse(
+        String authVerityToken
 ) { }
