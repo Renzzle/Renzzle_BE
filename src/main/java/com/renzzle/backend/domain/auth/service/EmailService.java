@@ -10,7 +10,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
-
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Random;
@@ -83,6 +83,17 @@ public class EmailService {
 
     public boolean confirmCode(String address, String code) {
         Optional<AuthEmailEntity> emailEntity = emailRepository.findById(address);
+
+        if(emailEntity.isPresent()) {
+            Instant now = Instant.now();
+            Instant issuedAt = Instant.parse(emailEntity.get().issuedAt());
+
+            Duration duration = Duration.between(issuedAt, now);
+            if (duration.toMinutes() > 5) {
+                return false;
+            }
+        }
+
         return emailEntity.map(authEmailEntity ->
                 authEmailEntity.code().equals(code)).orElse(false);
     }
