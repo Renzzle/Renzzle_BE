@@ -18,7 +18,7 @@ public enum ErrorCode {
 
     // Auth
     EXCEED_EMAIL_AUTH_REQUEST(HttpStatus.TOO_MANY_REQUESTS, "A429", "이메일 인증 횟수를 초과했습니다."),
-    NOT_VALID_CODE(HttpStatus.BAD_REQUEST, "A400", "올바르지 않은 인증코드입니다."),
+    NOT_VALID_CODE(HttpStatus.BAD_REQUEST, "A400", "유효하지 않은 인증코드입니다."),
 
     // Jwt
     EXPIRED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "J4010", "만료된 토큰입니다."),
