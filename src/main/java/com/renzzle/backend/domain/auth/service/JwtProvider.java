@@ -26,7 +26,7 @@ public class JwtProvider {
         return Jwts.builder()
                 .setIssuedAt(now)
                 .setExpiration(validity)
-                .setClaims(claims)
+                .addClaims(claims)
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }
