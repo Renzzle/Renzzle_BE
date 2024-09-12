@@ -4,6 +4,8 @@ import com.renzzle.backend.domain.auth.api.request.AuthEmailRequest;
 import com.renzzle.backend.domain.auth.api.response.AuthEmailResponse;
 import com.renzzle.backend.domain.auth.service.EmailService;
 import com.renzzle.backend.global.common.ApiResponse;
+import com.renzzle.backend.global.exception.CustomException;
+import com.renzzle.backend.global.exception.ErrorCode;
 import com.renzzle.backend.global.util.ApiUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,7 +34,13 @@ public class AuthController {
             throw new ValidationException(getErrorMessages(bindingResult));
         }
 
+        int count = emailService.getRequestCount(request.email());
+        if(count >= 5) {
+            throw new CustomException(ErrorCode.EXCEED_EMAIL_AUTH_REQUEST);
+        }
+
         String code = emailService.sendAuthEmail(request.email());
+        emailService.saveConfirmCode(request.email(), code, count);
 
         return ApiUtils.success(AuthEmailResponse
                 .builder()
