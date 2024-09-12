@@ -7,6 +7,7 @@ spring:
     username: ${DB_USER}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
     open-in-view: true
@@ -19,11 +20,12 @@ spring:
         show_sql: true
         format_sql: true
         use_sql_comments: true
-  data:
-    redis:
-      port: 6379
-      host: redis
-      password: ${REDIS_PASSWORD}
+
+  redis:
+    host: localhost
+    port: 6379
+    password: ${REDIS_PASSWORD}
+
   mail:
     host: smtp.gmail.com
     port: 587
