@@ -4,6 +4,7 @@ import com.renzzle.backend.domain.auth.api.request.AuthEmailRequest;
 import com.renzzle.backend.domain.auth.api.request.ConfirmCodeRequest;
 import com.renzzle.backend.domain.auth.api.response.AuthEmailResponse;
 import com.renzzle.backend.domain.auth.api.response.ConfirmCodeResponse;
+import com.renzzle.backend.domain.auth.service.AccountService;
 import com.renzzle.backend.domain.auth.service.EmailService;
 import com.renzzle.backend.global.common.ApiResponse;
 import com.renzzle.backend.global.exception.CustomException;
@@ -28,6 +29,7 @@ import static com.renzzle.backend.global.util.BindingResultUtils.getErrorMessage
 public class AuthController {
 
     private final EmailService emailService;
+    private final AccountService accountService;
 
     @Operation(summary = "Confirm email", description = "Send confirm code to user email")
     @PostMapping("/email")
@@ -61,7 +63,14 @@ public class AuthController {
         boolean isCorrect = emailService.confirmCode(request.email(), request.code());
         if(!isCorrect) throw new CustomException(ErrorCode.NOT_VALID_CODE);
 
-        return ApiUtils.success(null);
+        String authVerityToken = accountService.createAuthVerityToken(request.email());
+
+        ConfirmCodeResponse response = ConfirmCodeResponse
+                .builder()
+                .authVerityToken(authVerityToken)
+                .build();
+
+        return ApiUtils.success(response);
     }
 
 }
