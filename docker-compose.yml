@@ -9,20 +9,12 @@ services:
       - DB_ADDRESS=${DB_ADDRESS}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
-#    depends_on:
-#      - redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - GMAIL_ADDRESS=${GMAIL_ADDRESS}
+      - GMAIL_PASSWORD=${GMAIL_PASSWORD}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
     networks:
       - app-network
-
-#  redis:
-#    image: redis:latest
-#    ports:
-#      - "6379:6379"
-#    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
-#    environment:
-#      - REDIS_PASSWORD=${REDIS_PASSWORD}
-#    networks:
-#      - app-network
 
 networks:
   app-network:
