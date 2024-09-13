@@ -16,10 +16,10 @@ import java.util.Optional;
 public class DBTest {
 
     @Autowired
-    TestRepository testRepository;
+    private TestRepository testRepository;
 
     @Autowired
-    JdbcEntityDao jdbcEntityDao;
+    private JdbcEntityDao jdbcEntityDao;
 
     @Test
     @Transactional
