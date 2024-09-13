@@ -35,8 +35,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Set environment variables
-        run: echo "Setting up environment variables"
+      - name: Build with Gradle
         env:
           DB_ADDRESS: ${{ secrets.DB_ADDRESS }}
           DB_USER: ${{ secrets.DB_USER }}
@@ -45,8 +44,6 @@ jobs:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-
-      - name: Build with Gradle
         run: ./gradlew clean build
 
       - name: Set up Docker environment
