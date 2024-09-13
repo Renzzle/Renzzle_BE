@@ -5,14 +5,16 @@ services:
     image: renzzle/github-action:latest
     ports:
       - "9001:9001"
-    environment:
-      - DB_ADDRESS=${DB_ADDRESS}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - GMAIL_ADDRESS=${GMAIL_ADDRESS}
-      - GMAIL_PASSWORD=${GMAIL_PASSWORD}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+    env_file:
+      - .env
+#    environment:
+#      - DB_ADDRESS=${DB_ADDRESS}
+#      - DB_USER=${DB_USER}
+#      - DB_PASSWORD=${DB_PASSWORD}
+#      - REDIS_PASSWORD=${REDIS_PASSWORD}
+#      - GMAIL_ADDRESS=${GMAIL_ADDRESS}
+#      - GMAIL_PASSWORD=${GMAIL_PASSWORD}
+#      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
     networks:
       - app-network
 
