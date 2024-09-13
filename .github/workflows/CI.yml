@@ -42,6 +42,9 @@
             DB_USER: ${{ secrets.DB_USER }}
             DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
             REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+            GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+            GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
+            JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
           run: ./gradlew clean build
 
         - name: Test build success
