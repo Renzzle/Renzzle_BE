@@ -191,10 +191,6 @@ jobs:
             # check container status
             echo "Running containers:"
             docker ps
-
-            # check docker logs
-            echo "Application logs:"
-            docker logs $(docker ps -q --filter "name=app") --tail 100
         env:
           DB_ADDRESS: ${{ secrets.DB_ADDRESS }}
           DB_USER: ${{ secrets.DB_USER }}
@@ -203,6 +199,12 @@ jobs:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+
+      - name: Print environment variables
+        run: |
+          echo "GMAIL_ADDRESS=${{ secrets.GMAIL_ADDRESS }}"
+          echo "GMAIL_PASSWORD=${{ secrets.GMAIL_PASSWORD }}"
+          echo "JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}"
 
       - name: Remove unused Docker images
         uses: appleboy/ssh-action@master
