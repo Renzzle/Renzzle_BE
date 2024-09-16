@@ -45,7 +45,9 @@
             GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
             GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
             JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-          run: ./gradlew clean build --scan
+          run: |
+            echo "org.gradle.scan.termsOfService.accept=yes" >> ~/.gradle/gradle.properties
+            ./gradlew clean build --scan --no-daemon
 
         - name: Test build success
           run: echo "Build completed successfully!"

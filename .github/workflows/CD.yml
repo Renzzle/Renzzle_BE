@@ -55,7 +55,8 @@ jobs:
           GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
         run: |
-          ./gradlew clean build --scan
+          echo "org.gradle.scan.termsOfService.accept=yes" >> ~/.gradle/gradle.properties
+          ./gradlew clean build --scan --no-daemon
 
       - name: Set up Docker environment
         run: |
