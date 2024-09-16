@@ -55,7 +55,7 @@ jobs:
           GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
         run: |
-          ./gradlew build --info
+          ./gradlew clean build 
 
       - name: Set up Docker environment
         run: |

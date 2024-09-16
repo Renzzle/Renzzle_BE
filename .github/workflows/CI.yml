@@ -46,7 +46,7 @@
             GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
             JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
           run: |
-            ./gradlew build --info
+            ./gradlew clean build --info
 
         - name: Test build success
           run: echo "Build completed successfully!"
