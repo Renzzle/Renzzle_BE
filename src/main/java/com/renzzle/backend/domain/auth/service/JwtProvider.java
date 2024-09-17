@@ -15,6 +15,10 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class JwtProvider {
 
+    public static final int ACCESS_TOKEN_VALID_MINUTE = 60;
+    public static final int REFRESH_TOKEN_VALID_MINUTE = 60 * 24 * 14;
+    public static final int AUTH_VERITY_TOKEN_VALID_MINUTE = 5;
+
     private final String CLAIM_USER_ID_KEY = "userId";
     private final String CLAIM_EMAIL_KEY = "email";
     private final SecretKey secretKey;
@@ -51,15 +55,15 @@ public class JwtProvider {
     }
 
     public String createAccessToken(long userId) {
-        return createToken(Map.of(CLAIM_USER_ID_KEY, userId), 60);
+        return createToken(Map.of(CLAIM_USER_ID_KEY, userId), ACCESS_TOKEN_VALID_MINUTE);
     }
 
     public String createRefreshToken(long userId) {
-        return createToken(Map.of(CLAIM_USER_ID_KEY, userId), 60 * 24 * 14);
+        return createToken(Map.of(CLAIM_USER_ID_KEY, userId), REFRESH_TOKEN_VALID_MINUTE);
     }
 
     public String createAuthVerityToken(String email) {
-        return createToken(Map.of(CLAIM_EMAIL_KEY, email), 5);
+        return createToken(Map.of(CLAIM_EMAIL_KEY, email), AUTH_VERITY_TOKEN_VALID_MINUTE);
     }
 
     public long getUserId(String token) {
