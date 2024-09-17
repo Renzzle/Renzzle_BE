@@ -45,7 +45,7 @@ jobs:
 #          restore-keys: |
 #            ${{ runner.os }}-gradle-
 
-      - name: set env
+      - name: Build and Test with Gradle
         env:
           DB_ADDRESS: ${{ secrets.DB_ADDRESS }}
           DB_USER: ${{ secrets.DB_USER }}
@@ -55,9 +55,6 @@ jobs:
           GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
         run: ./gradlew clean build
-
-      - name: Build and Test with Gradle
-        run: ./gradlew build
 
       - name: Set up Docker environment
         run: |
