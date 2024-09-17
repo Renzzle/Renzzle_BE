@@ -1,10 +1,8 @@
-package com.renzzle.backend.global.common;
+package com.renzzle.backend.global.common.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.renzzle.backend.global.exception.ErrorResponse;
-import lombok.Getter;
-import lombok.Setter;
 
 @JsonInclude(value = JsonInclude.Include.NON_NULL)
 public record ApiResponse<T>(@JsonProperty("isSuccess") Boolean isSuccess,

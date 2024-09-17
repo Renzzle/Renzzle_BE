@@ -6,7 +6,7 @@ import com.renzzle.backend.domain.auth.api.response.AuthEmailResponse;
 import com.renzzle.backend.domain.auth.api.response.ConfirmCodeResponse;
 import com.renzzle.backend.domain.auth.service.AccountService;
 import com.renzzle.backend.domain.auth.service.EmailService;
-import com.renzzle.backend.global.common.ApiResponse;
+import com.renzzle.backend.global.common.response.ApiResponse;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import com.renzzle.backend.global.util.ApiUtils;

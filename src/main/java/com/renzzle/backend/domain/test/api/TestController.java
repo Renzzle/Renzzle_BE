@@ -7,7 +7,7 @@ import com.renzzle.backend.domain.test.api.response.SaveEntityResponse;
 import com.renzzle.backend.domain.test.domain.JdbcEntity;
 import com.renzzle.backend.domain.test.domain.TestEntity;
 import com.renzzle.backend.domain.test.service.TestService;
-import com.renzzle.backend.global.common.ApiResponse;
+import com.renzzle.backend.global.common.response.ApiResponse;
 import com.renzzle.backend.global.util.ApiUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
