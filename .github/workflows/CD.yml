@@ -45,7 +45,7 @@ jobs:
 #          restore-keys: |
 #            ${{ runner.os }}-gradle-
 
-      - name: Build with Gradle
+      - name: set env
         env:
           DB_ADDRESS: ${{ secrets.DB_ADDRESS }}
           DB_USER: ${{ secrets.DB_USER }}
@@ -54,9 +54,10 @@ jobs:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-        run: |
-          echo "org.gradle.scan.termsOfService.accept=yes" >> ~/.gradle/gradle.properties
-          ./gradlew clean build --scan --no-daemon
+        run: ./gradlew clean build
+
+      - name: Build and Test with Gradle
+        run: ./gradlew build
 
       - name: Set up Docker environment
         run: |

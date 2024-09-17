@@ -36,8 +36,8 @@
             restore-keys: |
               ${{ runner.os }}-gradle-
 
-        - name: Build and Test with Gradle
-          env: # 환경 변수를 Gradle 빌드 및 테스트에 전달
+        - name: set env
+          env:
             DB_ADDRESS: ${{ secrets.DB_ADDRESS }}
             DB_USER: ${{ secrets.DB_USER }}
             DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
@@ -45,9 +45,10 @@
             GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
             GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
             JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-          run: |
-            echo "org.gradle.scan.termsOfService.accept=yes" >> ~/.gradle/gradle.properties
-            ./gradlew clean build --scan --no-daemon
+          run: ./gradlew clean build
+
+        - name: Build and Test with Gradle
+          run: ./gradlew build
 
         - name: Test build success
           run: echo "Build completed successfully!"
