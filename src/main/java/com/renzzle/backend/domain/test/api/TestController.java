@@ -21,7 +21,7 @@ import static com.renzzle.backend.global.util.BindingResultUtils.getErrorMessage
 @RestController
 @RequestMapping("/api/test")
 @RequiredArgsConstructor
-@Tag(name = "Test API", description = "server testing api")
+@Tag(name = "Test API", description = "Server testing API")
 public class TestController {
 
     private final TestService testService;

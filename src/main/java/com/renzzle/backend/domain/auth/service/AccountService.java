@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
-
 import static com.renzzle.backend.domain.auth.service.JwtProvider.ACCESS_TOKEN_VALID_MINUTE;
 import static com.renzzle.backend.domain.auth.service.JwtProvider.REFRESH_TOKEN_VALID_MINUTE;
 
@@ -83,7 +82,7 @@ public class AccountService {
                 .build();
     }
 
-    public boolean verifyLoginInfo(String email, String password) {
+    public Long verifyLoginInfo(String email, String password) {
         Optional<UserEntity> user = userRepository.findByEmail(email);
 
         if(user.isEmpty())
@@ -92,7 +91,7 @@ public class AccountService {
         if(!passwordEncoder.matches(password, user.get().getPassword()))
             throw new CustomException(ErrorCode.INVALID_PASSWORD);
 
-        return true;
+        return user.get().getId();
     }
 
 }

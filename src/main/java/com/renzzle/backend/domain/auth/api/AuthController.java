@@ -2,6 +2,7 @@ package com.renzzle.backend.domain.auth.api;
 
 import com.renzzle.backend.domain.auth.api.request.AuthEmailRequest;
 import com.renzzle.backend.domain.auth.api.request.ConfirmCodeRequest;
+import com.renzzle.backend.domain.auth.api.request.LoginRequest;
 import com.renzzle.backend.domain.auth.api.request.SignupRequest;
 import com.renzzle.backend.domain.auth.api.response.AuthEmailResponse;
 import com.renzzle.backend.domain.auth.api.response.ConfirmCodeResponse;
@@ -26,7 +27,7 @@ import static com.renzzle.backend.global.util.BindingResultUtils.getErrorMessage
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@Tag(name = "Auth API", description = "Auth & account api")
+@Tag(name = "Auth API", description = "Auth & Account API")
 public class AuthController {
 
     private final EmailService emailService;
@@ -58,7 +59,7 @@ public class AuthController {
                 .build());
     }
 
-    @Operation(summary = "Confirm code", description = "Authenticate code & return token for sign up")
+    @Operation(summary = "Confirm code", description = "Authenticate code & Return token for sign up")
     @PostMapping("/confirmCode")
     public ApiResponse<ConfirmCodeResponse> confirmCode(@Valid @RequestBody ConfirmCodeRequest request, BindingResult bindingResult) {
         if(bindingResult.hasErrors()) {
@@ -84,7 +85,7 @@ public class AuthController {
         return ApiUtils.success(accountService.isDuplicateNickname(nickname));
     }
 
-    @Operation(summary = "Create new account", description = "Issue authentication tokens for server access")
+    @Operation(summary = "Create new account", description = "Create new account & Issue authentication tokens for server access")
     @PostMapping("/signup")
     public ApiResponse<LoginResponse> signup(@Valid @RequestBody SignupRequest request, BindingResult bindingResult) {
         if(bindingResult.hasErrors()) {
@@ -96,6 +97,18 @@ public class AuthController {
         }
 
         Long userId = accountService.createNewUser(request.email(), request.password(), request.nickname());
+
+        return ApiUtils.success(accountService.createAuthTokens(userId));
+    }
+
+    @Operation(summary = "Login to service", description = "Issue authentication tokens for server access")
+    @PostMapping("/login")
+    public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request, BindingResult bindingResult) {
+        if(bindingResult.hasErrors()) {
+            throw new ValidationException(getErrorMessages(bindingResult));
+        }
+
+        long userId = accountService.verifyLoginInfo(request.email(), request.password());
 
         return ApiUtils.success(accountService.createAuthTokens(userId));
     }
