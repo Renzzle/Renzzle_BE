@@ -3,11 +3,16 @@ package com.renzzle.backend.domain.auth.service;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import io.jsonwebtoken.*;
+import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SecurityException;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Map;
 
@@ -21,7 +26,15 @@ public class JwtProvider {
 
     private final String CLAIM_USER_ID_KEY = "userId";
     private final String CLAIM_EMAIL_KEY = "email";
-    private final SecretKey secretKey;
+
+    @Value("${JWT_SECRET_KEY}")
+    private String JWT_SECRET_KEY;
+    private SecretKey secretKey;
+
+    @PostConstruct
+    public void init() {
+        this.secretKey = Keys.hmacShaKeyFor(JWT_SECRET_KEY.getBytes(StandardCharsets.UTF_8));
+    }
 
     private String createToken(Map<String, Object> claims, int validMin) {
         Date now = new Date();

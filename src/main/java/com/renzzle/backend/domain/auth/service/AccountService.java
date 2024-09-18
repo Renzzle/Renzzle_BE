@@ -8,6 +8,7 @@ import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +25,7 @@ public class AccountService {
     private final UserRepository userRepository;
     private final RefreshTokenRedisRepository refreshTokenRepository;
     private final JwtProvider jwtProvider;
-    private final PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public String createAuthVerityToken(String email) {
         return jwtProvider.createAuthVerityToken(email);
@@ -82,6 +83,7 @@ public class AccountService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
     public Long verifyLoginInfo(String email, String password) {
         Optional<UserEntity> user = userRepository.findByEmail(email);
 
