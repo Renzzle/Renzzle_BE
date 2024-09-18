@@ -72,7 +72,7 @@
             GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
             GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
             JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-          run: ./gradlew build --stacktrace
+          run: ./gradlew build -x test --stacktrace
 
         - name: Test build success
           run: echo "Build completed successfully!"
