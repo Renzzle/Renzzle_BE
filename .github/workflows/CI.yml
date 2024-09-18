@@ -23,6 +23,18 @@
             java-version: '17'
             distribution: 'temurin'
 
+        # Setup Redis
+        - name: Setup Redis
+          uses: shogo82148/actions-setup-redis@v1.30.1
+          with:
+            redis-version: 6.2.0
+            redis-port: 6379
+            auto-start: true
+            redis-password: 12345678
+        # Redis Health Check
+        - name: Redis Health Check
+          run: redis-cli -h 127.0.0.1 -p 6379 -a 12345678 ping
+
         - name: Grant execute permission for gradlew
           run: chmod +x ./gradlew
 
