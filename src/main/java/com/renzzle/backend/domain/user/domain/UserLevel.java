@@ -11,15 +11,15 @@ import lombok.NoArgsConstructor;
 import java.util.Arrays;
 
 @Entity
-@Table(name = "level")
+@Table(name = "user_level")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Level {
+public class UserLevel {
 
     @Id
     @Column(length = 31)
     private String name;
 
-    private Level(String name) {
+    private UserLevel(String name) {
         this.name = name;
     }
 
@@ -27,8 +27,8 @@ public class Level {
         BEGINNER, INTERMEDIATE, ADVANCED
     }
 
-    public static Level getDefaultLevel() {
-        return new Level(LevelName.BEGINNER.name());
+    public static UserLevel getDefaultLevel() {
+        return new UserLevel(LevelName.BEGINNER.name());
     }
 
     public void setLevel(String levelName) {

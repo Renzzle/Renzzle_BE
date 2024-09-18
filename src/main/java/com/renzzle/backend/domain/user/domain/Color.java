@@ -24,7 +24,7 @@ public class Color {
     }
 
     public enum ColorName {
-        RED, RANGE, GREEN, BLUE, INDIGO, PURPLE,
+        RED, ORANGE, GREEN, BLUE, INDIGO, PURPLE,
         DARK_RED, DARK_ORANGE, DARK_GREEN,
         DARK_BLUE, DARK_INDIGO, DARK_PURPLE
     }

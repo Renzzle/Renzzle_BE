@@ -46,7 +46,7 @@ public class UserEntity {
 
     @ManyToOne
     @JoinColumn(name = "level", nullable = false)
-    private Level level;
+    private UserLevel level;
 
     @PrePersist
     public void prePersist() {
@@ -57,7 +57,7 @@ public class UserEntity {
             this.color = Color.getRandomColor();
         }
         if (level == null) {
-            this.level = Level.getDefaultLevel();
+            this.level = UserLevel.getDefaultLevel();
         }
     }
 

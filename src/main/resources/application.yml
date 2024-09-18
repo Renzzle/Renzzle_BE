@@ -7,13 +7,14 @@ spring:
     username: ${DB_USER}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    initialization-mode: always
 
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
     open-in-view: true
     show-sql: true
     hibernate:
-      hbm2ddl.auto: update
+      ddl-auto: update
       dialect: org.hibernate.dialect.MySQLDialect
     properties:
       hibernate:
