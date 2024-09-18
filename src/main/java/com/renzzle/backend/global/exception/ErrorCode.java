@@ -20,6 +20,8 @@ public enum ErrorCode {
     EXCEED_EMAIL_AUTH_REQUEST(HttpStatus.TOO_MANY_REQUESTS, "A429", "이메일 인증 횟수를 초과했습니다."),
     NOT_VALID_CODE(HttpStatus.BAD_REQUEST, "A4000", "유효하지 않은 인증코드입니다."),
     INVALID_AUTH_VERITY_TOKEN(HttpStatus.BAD_REQUEST, "A4001", "유효하지 않은 회원가입 인증 토큰입니다."),
+    INVALID_EMAIL(HttpStatus.BAD_REQUEST, "A4002", "유효하지 않은 이메일입니다."),
+    INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "A4003", "유효하지 않은 비밀번호입니다."),
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "A409", "이미 존재하는 이메일입니다."),
 
     // Jwt

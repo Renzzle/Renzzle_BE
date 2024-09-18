@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
+
 import static com.renzzle.backend.domain.auth.service.JwtProvider.ACCESS_TOKEN_VALID_MINUTE;
 import static com.renzzle.backend.domain.auth.service.JwtProvider.REFRESH_TOKEN_VALID_MINUTE;
 
@@ -79,6 +81,18 @@ public class AccountService {
                 .accessTokenExpiredAt(accessTokenExpiredAt)
                 .refreshTokenExpiredAt(refreshTokenExpiredAt)
                 .build();
+    }
+
+    public boolean verifyLoginInfo(String email, String password) {
+        Optional<UserEntity> user = userRepository.findByEmail(email);
+
+        if(user.isEmpty())
+            throw new CustomException(ErrorCode.INVALID_EMAIL);
+
+        if(!passwordEncoder.matches(password, user.get().getPassword()))
+            throw new CustomException(ErrorCode.INVALID_PASSWORD);
+
+        return true;
     }
 
 }
