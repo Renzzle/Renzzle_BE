@@ -13,7 +13,7 @@ spring:
     open-in-view: true
     show-sql: true
     hibernate:
-      hbm2ddl.auto: update
+      ddl-auto: update
       dialect: org.hibernate.dialect.MySQLDialect
     properties:
       hibernate:
