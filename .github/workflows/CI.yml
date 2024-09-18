@@ -7,7 +7,7 @@
       branches: [ "main", "fix/CD"]
 
   permissions:
-    contents: read
+    write-all
 
   jobs:
     build:
