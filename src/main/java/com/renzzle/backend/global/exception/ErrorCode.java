@@ -25,7 +25,7 @@ public enum ErrorCode {
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "A409", "이미 존재하는 이메일입니다."),
 
     // Jwt
-    EXPIRED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "J4010", "만료된 토큰입니다."),
+    EXPIRED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "J401", "만료된 토큰입니다."),
     MALFORMED_JWT_TOKEN(HttpStatus.BAD_REQUEST, "J4001", "손상되었거나 잘못된 형식의 토큰입니다."),
     UNSUPPORTED_JWT_TOKEN(HttpStatus.BAD_REQUEST, "J4002", "지원하지 않는 형식의 토큰입니다."),
     ILLEGAL_TOKEN(HttpStatus.BAD_REQUEST, "J4003", "토큰이 없거나 잘못된 형식의 토큰입니다."),
