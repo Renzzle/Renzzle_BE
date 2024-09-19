@@ -52,6 +52,10 @@ public class AccountService {
         if(isDuplicatedEmail(email))
             throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
 
+        // validate nickname
+        if(isDuplicateNickname(nickname))
+            throw new CustomException(ErrorCode.DUPLICATE_NICKNAME);
+
         String encodedPassword = passwordEncoder.encode(password);
 
         UserEntity user = UserEntity.builder()

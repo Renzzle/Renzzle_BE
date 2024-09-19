@@ -22,7 +22,8 @@ public enum ErrorCode {
     INVALID_AUTH_VERITY_TOKEN(HttpStatus.BAD_REQUEST, "A4001", "유효하지 않은 회원가입 인증 토큰입니다."),
     INVALID_EMAIL(HttpStatus.BAD_REQUEST, "A4002", "유효하지 않은 이메일입니다."),
     INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "A4003", "유효하지 않은 비밀번호입니다."),
-    DUPLICATE_EMAIL(HttpStatus.CONFLICT, "A409", "이미 존재하는 이메일입니다."),
+    DUPLICATE_EMAIL(HttpStatus.CONFLICT, "A4090", "이미 존재하는 이메일입니다."),
+    DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "A4091", "이미 존재하는 닉네임입니다."),
 
     // Jwt
     EXPIRED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "J401", "만료된 토큰입니다."),
