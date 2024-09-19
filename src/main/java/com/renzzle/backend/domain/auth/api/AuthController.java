@@ -67,7 +67,7 @@ public class AuthController {
         }
 
         boolean isCorrect = emailService.confirmCode(request.email(), request.code());
-        if(!isCorrect) throw new CustomException(ErrorCode.NOT_VALID_CODE);
+        if(!isCorrect) throw new CustomException(ErrorCode.INVALID_EMAIL_AUTH_CODE);
 
         String authVerityToken = accountService.createAuthVerityToken(request.email());
 
