@@ -76,10 +76,10 @@
             echo "DB_ADDRESS: $DB_ADDRESS"
             echo "DB_USER: $DB_USER"
             echo "DB_PASSWORD: $DB_PASSWORD"
-            echo "REDIS_PASSWORD: REDIS_PASSWORD"
-            echo "GMAIL_ADDRESS: GMAIL_ADDRESS"
-            echo "GMAIL_PASSWORD: GMAIL_PASSWORD"
-            echo "JWT_SECRET_KEY: JWT_SECRET_KEY"
+            echo "REDIS_PASSWORD: $REDIS_PASSWORD"
+            echo "GMAIL_ADDRESS: $GMAIL_ADDRESS"
+            echo "GMAIL_PASSWORD: $GMAIL_PASSWORD"
+            echo "JWT_SECRET_KEY: $JWT_SECRET_KEY"
             ./gradlew test --stacktrace
 
         - name: Build and Test with Gradle
