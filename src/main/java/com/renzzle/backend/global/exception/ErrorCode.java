@@ -26,10 +26,10 @@ public enum ErrorCode {
 
     // Jwt
     EXPIRED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "J401", "만료된 토큰입니다."),
-    MALFORMED_JWT_TOKEN(HttpStatus.BAD_REQUEST, "J4001", "손상되었거나 잘못된 형식의 토큰입니다."),
-    UNSUPPORTED_JWT_TOKEN(HttpStatus.BAD_REQUEST, "J4002", "지원하지 않는 형식의 토큰입니다."),
-    ILLEGAL_TOKEN(HttpStatus.BAD_REQUEST, "J4003", "토큰이 없거나 잘못된 형식의 토큰입니다."),
-    CANNOT_PARSE_TOKEN(HttpStatus.BAD_REQUEST, "J4004", "토큰 파싱에 실패하였습니다.");
+    MALFORMED_JWT_TOKEN(HttpStatus.BAD_REQUEST, "J4000", "손상되었거나 잘못된 형식의 토큰입니다."),
+    UNSUPPORTED_JWT_TOKEN(HttpStatus.BAD_REQUEST, "J4001", "지원하지 않는 형식의 토큰입니다."),
+    ILLEGAL_TOKEN(HttpStatus.BAD_REQUEST, "J4002", "토큰이 없거나 잘못된 형식의 토큰입니다."),
+    CANNOT_PARSE_TOKEN(HttpStatus.BAD_REQUEST, "J4003", "토큰 파싱에 실패하였습니다.");
 
     private final HttpStatus status;
     private final String code;
