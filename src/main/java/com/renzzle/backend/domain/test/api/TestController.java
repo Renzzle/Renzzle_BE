@@ -56,8 +56,8 @@ public class TestController {
     }
 
     @Operation(summary = "Server DB test", description = "Test finding entity on DB through JPA")
-    @GetMapping("/find/jpa/{Id}")
-    public ApiResponse<FindEntityResponse> findTestEntity(@PathVariable("Id") Long id) {
+    @GetMapping("/find/jpa/{id}")
+    public ApiResponse<FindEntityResponse> findTestEntity(@PathVariable("id") Long id) {
         TestEntity result = testService.findEntityById(id);
 
         FindEntityResponse response = FindEntityResponse
@@ -88,8 +88,8 @@ public class TestController {
     }
 
     @Operation(summary = "Server DB test", description = "Test finding entity on DB through JDBC")
-    @GetMapping("/find/jdbc/{Id}")
-    public ApiResponse<FindEntityResponse> findJdbcEntity(@PathVariable("Id") Long id) {
+    @GetMapping("/find/jdbc/{id}")
+    public ApiResponse<FindEntityResponse> findJdbcEntity(@PathVariable("id") Long id) {
         JdbcEntity result = testService.findJdbcEntityById(id);
 
         FindEntityResponse response = FindEntityResponse
