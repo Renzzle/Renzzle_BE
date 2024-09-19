@@ -4,10 +4,10 @@
     pull_request:
       branches: [ "main"]
 #    push:
-#      branches: [ "main", "feat/github-action", "feat/test" ]
+#      branches: [ "main", "fix/CD"]
 
   permissions:
-    contents: read
+    write-all
 
   jobs:
     build:
@@ -23,6 +23,18 @@
             java-version: '17'
             distribution: 'temurin'
 
+        # Setup Redis
+        - name: Setup Redis
+          uses: shogo82148/actions-setup-redis@v1.30.1
+          with:
+            redis-version: 6.2.0
+            redis-port: 6379
+            auto-start: true
+            redis-password: 12345678
+        # Redis Health Check
+        - name: Redis Health Check
+          run: redis-cli -h 127.0.0.1 -p 6379 -a 12345678 ping
+
         - name: Grant execute permission for gradlew
           run: chmod +x ./gradlew
 
@@ -36,8 +48,8 @@
             restore-keys: |
               ${{ runner.os }}-gradle-
 
-        - name: Build and Test with Gradle
-          env: # 환경 변수를 Gradle 빌드 및 테스트에 전달
+        - name: Run Tests with Gradle
+          env:
             DB_ADDRESS: ${{ secrets.DB_ADDRESS }}
             DB_USER: ${{ secrets.DB_USER }}
             DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
@@ -45,7 +57,19 @@
             GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
             GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
             JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-          run: ./gradlew clean build
+          run: |
+            ./gradlew test --stacktrace
+
+        - name: Build and Test with Gradle
+          env:
+            DB_ADDRESS: ${{ secrets.DB_ADDRESS }}
+            DB_USER: ${{ secrets.DB_USER }}
+            DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+            REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+            GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+            GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
+            JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          run: ./gradlew build -x test --stacktrace
 
         - name: Test build success
           run: echo "Build completed successfully!"
