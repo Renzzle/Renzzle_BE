@@ -25,15 +25,15 @@ public class UserEntity {
     @Column(nullable = false)
     private String password;
 
-    @Column(nullable = false, length = 15)
+    @Column(nullable = false, unique = true, length = 15)
     private String nickname;
 
     @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+    @Column(name = "created_at", updatable = false, nullable = false)
     private Instant createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at")
+    @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
     @ManyToOne
