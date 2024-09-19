@@ -7,7 +7,7 @@ import com.renzzle.backend.domain.test.api.response.SaveEntityResponse;
 import com.renzzle.backend.domain.test.domain.JdbcEntity;
 import com.renzzle.backend.domain.test.domain.TestEntity;
 import com.renzzle.backend.domain.test.service.TestService;
-import com.renzzle.backend.global.common.ApiResponse;
+import com.renzzle.backend.global.common.response.ApiResponse;
 import com.renzzle.backend.global.util.ApiUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,7 +21,7 @@ import static com.renzzle.backend.global.util.BindingResultUtils.getErrorMessage
 @RestController
 @RequestMapping("/api/test")
 @RequiredArgsConstructor
-@Tag(name = "Test API", description = "server testing api")
+@Tag(name = "Test API", description = "Server testing API")
 public class TestController {
 
     private final TestService testService;
@@ -56,8 +56,8 @@ public class TestController {
     }
 
     @Operation(summary = "Server DB test", description = "Test finding entity on DB through JPA")
-    @GetMapping("/find/jpa/{Id}")
-    public ApiResponse<FindEntityResponse> findTestEntity(@PathVariable("Id") Long id) {
+    @GetMapping("/find/jpa/{id}")
+    public ApiResponse<FindEntityResponse> findTestEntity(@PathVariable("id") Long id) {
         TestEntity result = testService.findEntityById(id);
 
         FindEntityResponse response = FindEntityResponse
@@ -88,8 +88,8 @@ public class TestController {
     }
 
     @Operation(summary = "Server DB test", description = "Test finding entity on DB through JDBC")
-    @GetMapping("/find/jdbc/{Id}")
-    public ApiResponse<FindEntityResponse> findJdbcEntity(@PathVariable("Id") Long id) {
+    @GetMapping("/find/jdbc/{id}")
+    public ApiResponse<FindEntityResponse> findJdbcEntity(@PathVariable("id") Long id) {
         JdbcEntity result = testService.findJdbcEntityById(id);
 
         FindEntityResponse response = FindEntityResponse

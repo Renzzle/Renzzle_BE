@@ -20,20 +20,6 @@ import java.nio.charset.StandardCharsets;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Value("${JWT_SECRET_KEY}")
-    private String JWT_SECRET_KEY;
-
-    // for jwt provider
-    @Bean
-    public SecretKey secretKey() {
-        return Keys.hmacShaKeyFor(JWT_SECRET_KEY.getBytes(StandardCharsets.UTF_8));
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.csrf(AbstractHttpConfigurer::disable)

@@ -1,6 +1,6 @@
 package com.renzzle.backend.global.util;
 
-import com.renzzle.backend.global.common.ApiResponse;
+import com.renzzle.backend.global.common.response.ApiResponse;
 import com.renzzle.backend.global.exception.ErrorResponse;
 import org.springframework.http.ResponseEntity;
 

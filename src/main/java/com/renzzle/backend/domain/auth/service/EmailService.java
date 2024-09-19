@@ -19,6 +19,9 @@ import java.util.Random;
 @RequiredArgsConstructor
 public class EmailService {
 
+    public static final int EMAIL_CODE_VALID_MINUTE = 5;
+    public static final int EMAIL_VERIFICATION_LIMIT = 5;
+
     private final JavaMailSender javaMailSender;
     private final SpringTemplateEngine templateEngine;
     private final EmailRedisRepository emailRepository;
@@ -89,7 +92,7 @@ public class EmailService {
             Instant issuedAt = Instant.parse(emailEntity.get().issuedAt());
 
             Duration duration = Duration.between(issuedAt, now);
-            if (duration.toMinutes() > 5) {
+            if (duration.toMinutes() > EMAIL_CODE_VALID_MINUTE) {
                 return false;
             }
         }
