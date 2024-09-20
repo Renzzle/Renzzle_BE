@@ -2,6 +2,7 @@ package com.renzzle.backend.domain.auth.service;
 
 import com.renzzle.backend.domain.auth.api.response.LoginResponse;
 import com.renzzle.backend.domain.auth.dao.RefreshTokenRedisRepository;
+import com.renzzle.backend.domain.auth.domain.GrantType;
 import com.renzzle.backend.domain.auth.domain.RefreshTokenEntity;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
@@ -67,7 +68,7 @@ public class AccountService {
     }
 
     public LoginResponse createAuthTokens(Long id) {
-        String grantType = "Bearer";
+        String grantType = GrantType.BEARER.getType();
         String accessToken = jwtProvider.createAccessToken(id);
         String refreshToken = jwtProvider.createRefreshToken(id);
         Instant accessTokenExpiredAt = Instant.now().plus(Duration.ofMinutes(ACCESS_TOKEN_VALID_MINUTE));
