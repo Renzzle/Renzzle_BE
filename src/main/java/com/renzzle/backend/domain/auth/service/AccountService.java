@@ -101,4 +101,16 @@ public class AccountService {
         return user.get().getId();
     }
 
+    public Long deleteRefreshToken(Long id) {
+        refreshTokenRepository.deleteById(id);
+        return id;
+    }
+
+    public boolean verifyRefreshToken(String token) {
+        Long userId = jwtProvider.getUserId(token);
+        Optional<RefreshTokenEntity> tokenEntity = refreshTokenRepository.findById(userId);
+
+        return tokenEntity.isPresent();
+    }
+
 }

@@ -30,13 +30,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         List<RequestMatcher> permitAllRequestMatchers = Arrays.asList(
-                AntPathRequestMatcher.antMatcher("/"),
-                AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/test/**"),
-                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/api/test/**"),
-                AntPathRequestMatcher.antMatcher(HttpMethod.DELETE, "/api/test/**"),
+                AntPathRequestMatcher.antMatcher("/api/test/**"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/email"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/confirmCode"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/api/auth/duplicate/**"),
+                AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/login"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/signup"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/swagger-ui/**"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/v3/api-docs/**")
