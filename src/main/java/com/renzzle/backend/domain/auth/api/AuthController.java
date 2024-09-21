@@ -1,9 +1,6 @@
 package com.renzzle.backend.domain.auth.api;
 
-import com.renzzle.backend.domain.auth.api.request.AuthEmailRequest;
-import com.renzzle.backend.domain.auth.api.request.ConfirmCodeRequest;
-import com.renzzle.backend.domain.auth.api.request.LoginRequest;
-import com.renzzle.backend.domain.auth.api.request.SignupRequest;
+import com.renzzle.backend.domain.auth.api.request.*;
 import com.renzzle.backend.domain.auth.api.response.AuthEmailResponse;
 import com.renzzle.backend.domain.auth.api.response.ConfirmCodeResponse;
 import com.renzzle.backend.domain.auth.api.response.LoginResponse;
@@ -12,12 +9,14 @@ import com.renzzle.backend.domain.auth.service.EmailService;
 import com.renzzle.backend.global.common.response.ApiResponse;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
+import com.renzzle.backend.global.security.UserDetailsImpl;
 import com.renzzle.backend.global.util.ApiUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import static com.renzzle.backend.domain.auth.service.EmailService.EMAIL_VERIFICATION_LIMIT;
@@ -110,6 +109,22 @@ public class AuthController {
         long userId = accountService.verifyLoginInfo(request.email(), request.password());
 
         return ApiUtils.success(accountService.createAuthTokens(userId));
+    }
+
+    @Operation(summary = "Logout to service", description = "Delete the refresh token to prevent reissuing the authentication tokens")
+    @PostMapping("/logout")
+    public ApiResponse<Long> logout(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+        Long id = accountService.deleteRefreshToken(userDetails.getUser().getId());
+        return ApiUtils.success(id);
+    }
+
+    @Operation(summary = "Reissue authentication tokens", description = "Issue authentication tokens for server access")
+    @PostMapping("/reissueToken")
+    public ApiResponse<LoginResponse> reissueToken(@AuthenticationPrincipal UserDetailsImpl userDetails, @RequestBody ReissueTokenRequest request) {
+        if(!accountService.verifyRefreshToken(request.refreshToken()))
+            throw new CustomException(ErrorCode.EXPIRED_JWT_TOKEN);
+
+        return ApiUtils.success(accountService.createAuthTokens(userDetails.getUser().getId()));
     }
 
 }
