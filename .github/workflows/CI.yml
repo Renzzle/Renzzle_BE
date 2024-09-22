@@ -1,10 +1,10 @@
   name: Java CI with Gradle
 
   on:
-#    pull_request:
-#      branches: [ "main"]
-    push:
-      branches: [ "main", "fix/CD"]
+    pull_request:
+      branches: [ "main"]
+#    push:
+#      branches: [ "main", "fix/CD"]
 
   permissions:
     write-all
@@ -47,16 +47,6 @@
             key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
             restore-keys: |
               ${{ runner.os }}-gradle-
-              
-              
-
-        - name: Check Environment Variables
-          run: |
-            echo "DB_ADDRESS: ${{ secrets.DB_ADDRESS }}"
-            echo "DB_USER: ${{ secrets.DB_USER }}"
-            echo "REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}"
-            echo "GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}"
-            echo "JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}"
 
         - name: Run Tests with Gradle
           env:

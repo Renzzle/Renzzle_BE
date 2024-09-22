@@ -22,12 +22,6 @@ public class DBTest {
     @Autowired
     private JdbcEntityDao jdbcEntityDao;
 
-    @BeforeEach
-    void setUp() {
-        System.out.println("DB_ADDRESS: " + System.getenv("DB_ADDRESS"));
-        System.out.println("DB_USER: " + System.getenv("DB_USER"));
-    }
-
     @Test
     @Transactional
     public void jpaCRDTest() {
