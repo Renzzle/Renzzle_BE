@@ -6,6 +6,7 @@ import com.renzzle.backend.domain.test.domain.JdbcEntity;
 import com.renzzle.backend.domain.test.domain.TestEntity;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,6 +21,12 @@ public class DBTest {
 
     @Autowired
     private JdbcEntityDao jdbcEntityDao;
+
+    @BeforeEach
+    void setUp() {
+        System.out.println("DB_ADDRESS: " + System.getenv("DB_ADDRESS"));
+        System.out.println("DB_USER: " + System.getenv("DB_USER"));
+    }
 
     @Test
     @Transactional

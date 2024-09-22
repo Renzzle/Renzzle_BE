@@ -47,6 +47,16 @@
             key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
             restore-keys: |
               ${{ runner.os }}-gradle-
+              
+              
+
+        - name: Check Environment Variables
+          run: |
+            echo "DB_ADDRESS: $DB_ADDRESS"
+            echo "DB_USER: $DB_USER"
+            echo "REDIS_PASSWORD: $REDIS_PASSWORD"
+            echo "GMAIL_ADDRESS: $GMAIL_ADDRESS"
+            echo "JWT_SECRET_KEY: $JWT_SECRET_KEY"
 
         - name: Run Tests with Gradle
           env:
