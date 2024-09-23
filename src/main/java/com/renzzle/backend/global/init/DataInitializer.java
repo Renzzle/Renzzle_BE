@@ -25,6 +25,12 @@ public class DataInitializer implements CommandLineRunner {
 
             String colorSql = "INSERT INTO color (name) VALUES ('RED'), ('ORANGE'), ('GREEN'), ('BLUE'), ('INDIGO'), ('PURPLE'), ('DARK_RED'), ('DARK_ORANGE'), ('DARK_GREEN'), ('DARK_BLUE'), ('DARK_INDIGO'), ('DARK_PURPLE')";
             jdbcTemplate.execute(colorSql);
+
+            String difficultySql = "INSERT INTO difficulty (name) VALUES ('HIGH'), ('MIDDLE'), ('LOW')";
+            jdbcTemplate.execute(difficultySql);
+
+            String winColorSql = "INSERT INTO win_color (name) VALUES ('BLACK'), ('WHITE')";
+            jdbcTemplate.execute(winColorSql);
         } catch(DuplicateKeyException e) {
             log.warn("Data already exists");
         }
