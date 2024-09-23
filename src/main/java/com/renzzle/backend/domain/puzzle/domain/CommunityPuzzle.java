@@ -53,4 +53,11 @@ public class CommunityPuzzle {
     @JoinColumn(name = "win_color", nullable = false)
     private WinColor winColor;
 
+    @PrePersist
+    public void prePersist() {
+        if(status == null) {
+            this.status = Status.getDefaultStatus();
+        }
+    }
+
 }

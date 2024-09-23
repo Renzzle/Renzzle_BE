@@ -50,13 +50,13 @@ public class UserEntity {
 
     @PrePersist
     public void prePersist() {
-        if (status == null) {
+        if(status == null) {
             this.status = Status.getDefaultStatus();
         }
-        if (color == null) {
+        if(color == null) {
             this.color = Color.getRandomColor();
         }
-        if (level == null) {
+        if(level == null) {
             this.level = UserLevel.getDefaultLevel();
         }
     }
