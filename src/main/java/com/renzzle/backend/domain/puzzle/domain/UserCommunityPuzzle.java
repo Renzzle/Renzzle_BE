@@ -2,6 +2,7 @@ package com.renzzle.backend.domain.puzzle.domain;
 
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import jakarta.persistence.*;
+import jakarta.validation.groups.Default;
 import lombok.*;
 import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.CascadeType;
@@ -33,12 +34,15 @@ public class UserCommunityPuzzle {
     private Instant lastTriedAt;
 
     @Column(name = "solved_count", nullable = false)
+    @Builder.Default
     private int solvedCount = 0;
 
     @Column(name = "failed_count", nullable = false)
+    @Builder.Default
     private int failedCount = 0;
 
-    @Column(name = "like", nullable = false)
+    @Column(name = "is_liked", nullable = false)
+    @Builder.Default
     private boolean like = false;
 
 }

@@ -17,20 +17,13 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         try {
-            String statusSql = "INSERT INTO status (name) VALUES ('CREATED'), ('DELETED')";
-            jdbcTemplate.execute(statusSql);
-
-            String userLevelSql = "INSERT INTO user_level (name) VALUES ('BEGINNER'), ('INTERMEDIATE'), ('ADVANCED')";
-            jdbcTemplate.execute(userLevelSql);
-
-            String colorSql = "INSERT INTO color (name) VALUES ('RED'), ('ORANGE'), ('GREEN'), ('BLUE'), ('INDIGO'), ('PURPLE'), ('DARK_RED'), ('DARK_ORANGE'), ('DARK_GREEN'), ('DARK_BLUE'), ('DARK_INDIGO'), ('DARK_PURPLE')";
-            jdbcTemplate.execute(colorSql);
-
-            String difficultySql = "INSERT INTO difficulty (name) VALUES ('HIGH'), ('MIDDLE'), ('LOW')";
-            jdbcTemplate.execute(difficultySql);
-
-            String winColorSql = "INSERT INTO win_color (name) VALUES ('BLACK'), ('WHITE')";
-            jdbcTemplate.execute(winColorSql);
+            jdbcTemplate.batchUpdate(
+                    "INSERT INTO status (name) VALUES ('CREATED'), ('DELETED')",
+                    "INSERT INTO user_level (name) VALUES ('BEGINNER'), ('INTERMEDIATE'), ('ADVANCED')",
+                    "INSERT INTO color (name) VALUES ('RED'), ('ORANGE'), ('GREEN'), ('BLUE'), ('INDIGO'), ('PURPLE'), ('DARK_RED'), ('DARK_ORANGE'), ('DARK_GREEN'), ('DARK_BLUE'), ('DARK_INDIGO'), ('DARK_PURPLE')",
+                    "INSERT INTO difficulty (name) VALUES ('HIGH'), ('MIDDLE'), ('LOW')",
+                    "INSERT INTO win_color (name) VALUES ('BLACK'), ('WHITE')"
+            );
         } catch(DuplicateKeyException e) {
             log.warn("Data already exists");
         }
