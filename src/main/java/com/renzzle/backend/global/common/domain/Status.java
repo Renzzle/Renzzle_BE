@@ -12,6 +12,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Status {
 
+    public static final String DELETED_NICKNAME_SUFFIX = "@deleted";
+    public static final String STATUS_RESTRICTION = "status != 'DELETED'";
+
     @Id
     @Column(length = 31)
     private String name;

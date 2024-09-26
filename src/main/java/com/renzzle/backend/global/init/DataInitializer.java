@@ -1,5 +1,10 @@
 package com.renzzle.backend.global.init;
 
+import com.renzzle.backend.domain.puzzle.domain.Difficulty;
+import com.renzzle.backend.domain.puzzle.domain.WinColor;
+import com.renzzle.backend.domain.user.domain.Color;
+import com.renzzle.backend.domain.user.domain.UserLevel;
+import com.renzzle.backend.global.common.domain.Status;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -18,15 +23,30 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) {
         try {
             jdbcTemplate.batchUpdate(
-                    "INSERT INTO status (name) VALUES ('CREATED'), ('DELETED')",
-                    "INSERT INTO user_level (name) VALUES ('BEGINNER'), ('INTERMEDIATE'), ('ADVANCED')",
-                    "INSERT INTO color (name) VALUES ('RED'), ('ORANGE'), ('GREEN'), ('BLUE'), ('INDIGO'), ('PURPLE'), ('DARK_RED'), ('DARK_ORANGE'), ('DARK_GREEN'), ('DARK_BLUE'), ('DARK_INDIGO'), ('DARK_PURPLE')",
-                    "INSERT INTO difficulty (name) VALUES ('HIGH'), ('MIDDLE'), ('LOW')",
-                    "INSERT INTO win_color (name) VALUES ('BLACK'), ('WHITE')"
+                    getInsertEnumSql("status", Status.StatusName.class),
+                    getInsertEnumSql("user_level", UserLevel.LevelName.class),
+                    getInsertEnumSql("color", Color.ColorName.class),
+                    getInsertEnumSql("difficulty", Difficulty.DifficultyName.class),
+                    getInsertEnumSql("win_color", WinColor.WinColorName.class)
             );
         } catch(DuplicateKeyException e) {
             log.warn("Data already exists");
         }
+    }
+
+    private <E extends Enum<E>> String getInsertEnumSql(String tableName, Class<E> enumClass) {
+        StringBuilder sqlBuilder = new StringBuilder("INSERT INTO ");
+        sqlBuilder.append(tableName).append(" (name) VALUES ");
+
+        E[] enumConstants = enumClass.getEnumConstants();
+        for (int i = 0; i < enumConstants.length; i++) {
+            sqlBuilder.append("('").append(enumConstants[i].name()).append("')");
+            if (i < enumConstants.length - 1) {
+                sqlBuilder.append(", ");
+            }
+        }
+
+        return sqlBuilder.toString();
     }
 
 }

@@ -4,28 +4,39 @@ import com.renzzle.backend.global.common.domain.Status;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
+
 import java.time.Instant;
+
+import static com.renzzle.backend.global.common.domain.Status.DELETED_NICKNAME_SUFFIX;
+import static com.renzzle.backend.global.common.domain.Status.STATUS_RESTRICTION;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder(toBuilder = true)
-@Table(name = "user")
+@Table(
+        name = "user",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"email", "status"}),
+        }
+)
+@SQLRestriction(value = STATUS_RESTRICTION)
 public class UserEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String email;
 
     @Column(nullable = false)
     private String password;
 
-    @Column(nullable = false, unique = true, length = 15)
+    @Column(nullable = false, unique = true, length = 31)
     private String nickname;
 
     @CreationTimestamp
@@ -49,7 +60,7 @@ public class UserEntity {
     private UserLevel level;
 
     @PrePersist
-    public void prePersist() {
+    public void onPrePersist() {
         if(status == null) {
             this.status = Status.getDefaultStatus();
         }
@@ -59,6 +70,12 @@ public class UserEntity {
         if(level == null) {
             this.level = UserLevel.getDefaultLevel();
         }
+    }
+
+    @PreRemove
+    public void onPreRemove() {
+        this.status.setStatus(Status.StatusName.DELETED);
+        this.nickname += DELETED_NICKNAME_SUFFIX;
     }
 
 }
