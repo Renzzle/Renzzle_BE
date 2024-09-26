@@ -6,7 +6,7 @@ import com.renzzle.backend.global.validation.ValidEnum;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-public record AddPuzzleRequest(
+public record AddCommunityPuzzleRequest(
         @NotBlank(message = "제목 정보가 없습니다")
         @Size(min = 1, max = 30, message = "제목은 1~30 자리의 문자열이어야 합니다")
         String title,

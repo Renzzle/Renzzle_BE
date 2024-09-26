@@ -27,12 +27,18 @@ public class WinColor {
         BLACK, WHITE
     }
 
+    public static WinColor getWinColor(String winColorName) {
+        WinColor winColor = new WinColor();
+        winColor.setWinColor(winColorName);
+        return winColor;
+    }
+
     public void setWinColor(String winColorName) {
         WinColor.WinColorName[] winColorNames = WinColor.WinColorName.values();
         boolean isValid = Arrays.stream(winColorNames)
                 .anyMatch(winColor -> winColor.name().equals(winColorName));
         if(!isValid)
-            throw new CustomException(ErrorCode.VALIDATION_ERROR);
+            throw new IllegalArgumentException("Invalid win color name: " + winColorName);
 
         this.name = winColorName;
     }

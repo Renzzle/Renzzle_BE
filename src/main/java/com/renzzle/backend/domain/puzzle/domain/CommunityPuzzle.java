@@ -26,6 +26,9 @@ public class CommunityPuzzle {
     @Column(nullable = false, length = 1023)
     private String boardStatus;
 
+    @Column(nullable = false, unique = true, length = 1023)
+    private String boardKey;
+
     @Column(nullable = false)
     private int depth;
 

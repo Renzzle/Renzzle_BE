@@ -27,12 +27,18 @@ public class Difficulty {
         HIGH, MIDDLE, LOW
     }
 
+    public static Difficulty getDifficulty(String difficultyName) {
+        Difficulty difficulty = new Difficulty();
+        difficulty.setDifficulty(difficultyName);
+        return difficulty;
+    }
+
     public void setDifficulty(String difficultyName) {
         Difficulty.DifficultyName[] difficultyNames = Difficulty.DifficultyName.values();
         boolean isValid = Arrays.stream(difficultyNames)
                 .anyMatch(difficulty -> difficulty.name().equals(difficultyName));
         if(!isValid)
-            throw new CustomException(ErrorCode.VALIDATION_ERROR);
+            throw new IllegalArgumentException("Invalid difficulty name: " + difficultyName);
 
         this.name = difficultyName;
     }

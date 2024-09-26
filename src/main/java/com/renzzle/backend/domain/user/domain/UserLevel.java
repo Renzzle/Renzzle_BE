@@ -31,12 +31,18 @@ public class UserLevel {
         return new UserLevel(LevelName.BEGINNER.name());
     }
 
+    public static UserLevel getLevel(String levelName) {
+        UserLevel userLevel = new UserLevel();
+        userLevel.setLevel(levelName);
+        return userLevel;
+    }
+
     public void setLevel(String levelName) {
         LevelName[] levelNames = LevelName.values();
         boolean isValid = Arrays.stream(levelNames)
                 .anyMatch(level -> level.name().equals(levelName));
         if(!isValid)
-            throw new CustomException(ErrorCode.VALIDATION_ERROR);
+            throw new IllegalArgumentException("Invalid level name: " + levelName);
 
         this.name = levelName;
     }
