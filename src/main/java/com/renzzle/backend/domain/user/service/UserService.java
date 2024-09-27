@@ -1,9 +1,10 @@
 package com.renzzle.backend.domain.user.service;
 
-import com.renzzle.backend.domain.user.api.response.LikeResponse;
 import com.renzzle.backend.domain.user.api.response.SubscriptionResponse;
 import com.renzzle.backend.domain.user.api.response.UserResponse;
+import com.renzzle.backend.domain.user.dao.SubscriptionRepository;
 import com.renzzle.backend.domain.user.dao.UserRepository;
+import com.renzzle.backend.domain.user.domain.SubscriptionEntity;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.domain.user.domain.UserLevel;
 import com.renzzle.backend.global.common.domain.Status;
@@ -25,7 +26,7 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
-//    private final LikeRepository likeRepository;
+    private final SubscriptionRepository subscriptionRepository;
 
     public UserResponse getUser(Long userId) {
 
@@ -47,8 +48,7 @@ public class UserService {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
 
-        user.getStatus().setStatus(Status.StatusName.DELETED);
-
+        userRepository.deleteById(userId);
         return userId;
     }
 
@@ -85,10 +85,32 @@ public class UserService {
     // SubscriptionEntity를 SubscriptionResponse로 변환
     private SubscriptionResponse createSubscriptionResponse(SubscriptionEntity subscriptionEntity) {
         return SubscriptionResponse.builder()
-                .userId(subscriptionEntity.getSubscribedUser().getId())  // 구독된 유저 ID
-                .nickname(subscriptionEntity.getSubscribedUser().getNickname())  // 구독된 유저 닉네임
-                .profile(subscriptionEntity.getSubscribedUser().getColor().getName())  // 구독된 유저 프로필 색상
+                .userId(subscriptionEntity.getSubscriber().getId())
+                .nickname(subscriptionEntity.getSubscriber().getNickname())
+                .profile(subscriptionEntity.getSubscriber().getColor())
                 .build();
+    }
+
+    @Transactional
+    public Boolean changeSubscription(Long subscriberId, Long subscribedToId) {
+        UserEntity subscribedTo = userRepository.findById(subscribedToId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
+
+        Optional<SubscriptionEntity> existingSubscription = subscriptionRepository
+                .findBySubscriberAndSubscribedTo(subscriberId, subscribedToId);
+
+        if (existingSubscription.isPresent()) {
+            subscriptionRepository.delete(existingSubscription.get());
+            return false;
+        } else {
+            SubscriptionEntity newSubscription = SubscriptionEntity.builder()
+                    .subscriber(userRepository.findById(subscriberId)
+                            .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER)))
+                    .subscribedTo(subscribedTo)
+                    .build();
+            subscriptionRepository.save(newSubscription);
+            return true;
+        }
     }
 
 

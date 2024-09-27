@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.user.api.response;
 
+import com.renzzle.backend.domain.user.domain.Color;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -9,7 +10,7 @@ public class SubscriptionResponse {
 
     private Long userId;
     private String nickname;
-    private String profile;
+    private Color profile;
 
 
 }

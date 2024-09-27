@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.user.api;
 
+import com.renzzle.backend.domain.user.api.request.SubscriptionRequest;
 import com.renzzle.backend.domain.user.api.request.UpdateLevelRequest;
 import com.renzzle.backend.domain.user.api.response.SubscriptionResponse;
 import com.renzzle.backend.domain.user.api.response.UserResponse;
@@ -51,7 +52,7 @@ public class UserController {
     }
 
     @Operation(summary = "Retrieve user subscription list", description = "Retrieve the subscribed users by the user")
-    @GetMapping
+    @GetMapping("/subscribe?id=&size=")
     public ApiResponse<List<SubscriptionResponse>> getUserSubscriptions(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @RequestParam(value = "id", required = false) Long id,
@@ -60,5 +61,17 @@ public class UserController {
         Long userId = userDetails.getUser().getId();
         List<SubscriptionResponse> subscriptionResponses = userService.getUserSubscriptions(userId, id, size);
         return ApiUtils.success(subscriptionResponses);  // List<SubscriptionResponse>로 응답
+    }
+
+    @Operation(summary = "Subscribe or unsubscribe to a user", description = "change the subscription status of a user")
+    @PostMapping("/subscribe")
+    public ApiResponse<Boolean> changeSubscriptionStatus(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @RequestBody SubscriptionRequest request) {
+
+        Long CurrentUserId = userDetails.getUser().getId();
+        Boolean isSubscribed = userService.changeSubscription(CurrentUserId, request.getUserId());
+
+        return ApiUtils.success(isSubscribed);
     }
 }

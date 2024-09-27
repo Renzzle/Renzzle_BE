@@ -2,6 +2,7 @@ package com.renzzle.backend.domain.user.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 
@@ -17,22 +18,18 @@ public class SubscriptionEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 구독한 사용자 (구독자가 되는 사용자)
+    // 구독 시간
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    // 구독한 사용자 (subscriber_id)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private UserEntity user;
+    @JoinColumn(name = "subscriber_id", nullable = false)
+    private UserEntity subscriber; // 구독자
 
-    // 구독된 사용자 (구독 당한 사람)
+    // 구독된 사용자 (subscribed_to_id)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subscribed_user_id", nullable = false)
-    private UserEntity subscribedUser;
-
-    // 구독 일시
-    @Column(name = "subscribed_at", nullable = false, updatable = false)
-    private Instant subscribedAt;
-
-    @PrePersist
-    protected void onSubscribe() {
-        this.subscribedAt = Instant.now();
-    }
+    @JoinColumn(name = "subscribed_to_id", nullable = false)
+    private UserEntity subscribedTo; // 피구독자
 }
