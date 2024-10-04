@@ -6,11 +6,15 @@ import com.renzzle.backend.domain.puzzle.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.dao.UserCommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.domain.Difficulty;
+import com.renzzle.backend.domain.puzzle.domain.UserCommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.domain.WinColor;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.util.BoardUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -19,12 +23,14 @@ public class CommunityService {
     private final CommunityPuzzleRepository communityPuzzleRepository;
     private final UserCommunityPuzzleRepository userCommunityPuzzleRepository;
 
+    @Transactional
     public AddPuzzleResponse addCommunityPuzzle(AddCommunityPuzzleRequest request, UserEntity user) {
         String boardKey = BoardUtils.makeBoardKey(request.boardStatus());
 
         CommunityPuzzle puzzle = CommunityPuzzle.builder()
                 .title(request.title())
                 .boardStatus(request.boardStatus())
+                .boardKey(boardKey)
                 .depth(request.depth())
                 .user(user)
                 .difficulty(Difficulty.getDifficulty(request.difficulty()))
@@ -37,6 +43,36 @@ public class CommunityService {
                 .id(result.getId())
                 .title(result.getTitle())
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public CommunityPuzzle findCommunityPuzzleById(Long puzzleId) {
+        Optional<CommunityPuzzle> puzzle = communityPuzzleRepository.findById(puzzleId);
+        return puzzle.orElse(null);
+    }
+
+    @Transactional
+    public int solveCommunityPuzzle(CommunityPuzzle puzzle, UserEntity user) {
+        Optional<UserCommunityPuzzle> findResult = userCommunityPuzzleRepository.findUserPuzzleInfo(user.getId(), puzzle.getId());
+        UserCommunityPuzzle userPuzzleInfo = findResult.orElseGet(() -> userCommunityPuzzleRepository.save(
+                UserCommunityPuzzle.builder()
+                .user(user)
+                .puzzle(puzzle)
+                .build()));
+
+        return userPuzzleInfo.addSolve();
+    }
+
+    @Transactional
+    public int failCommunityPuzzle(CommunityPuzzle puzzle, UserEntity user) {
+        Optional<UserCommunityPuzzle> findResult = userCommunityPuzzleRepository.findUserPuzzleInfo(user.getId(), puzzle.getId());
+        UserCommunityPuzzle userPuzzleInfo = findResult.orElseGet(() -> userCommunityPuzzleRepository.save(
+                UserCommunityPuzzle.builder()
+                        .user(user)
+                        .puzzle(puzzle)
+                        .build()));
+
+        return userPuzzleInfo.addFail();
     }
 
 }

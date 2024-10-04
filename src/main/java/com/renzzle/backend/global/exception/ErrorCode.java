@@ -31,7 +31,11 @@ public enum ErrorCode {
     MALFORMED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "J4011", "손상되었거나 잘못된 형식의 토큰입니다."),
     UNSUPPORTED_JWT_TOKEN(HttpStatus.UNAUTHORIZED, "J4012", "지원하지 않는 형식의 토큰입니다."),
     ILLEGAL_TOKEN(HttpStatus.UNAUTHORIZED, "J4013", "토큰이 없거나 잘못된 형식의 토큰입니다."),
-    CANNOT_PARSE_TOKEN(HttpStatus.UNAUTHORIZED, "J4014", "토큰 파싱에 실패하였습니다.");
+    CANNOT_PARSE_TOKEN(HttpStatus.UNAUTHORIZED, "J4014", "토큰 파싱에 실패하였습니다."),
+
+    // Community Puzzle
+    CANNOT_FIND_COMMUNITY_PUZZLE(HttpStatus.NOT_FOUND, "P404", "해당하는 커뮤니티 퍼즐을 찾을 수 없습니다.")
+    ;
 
     private final HttpStatus status;
     private final String code;

@@ -2,7 +2,6 @@ package com.renzzle.backend.domain.puzzle.domain;
 
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import jakarta.persistence.*;
-import jakarta.validation.groups.Default;
 import lombok.*;
 import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.CascadeType;
@@ -44,5 +43,22 @@ public class UserCommunityPuzzle {
     @Column(name = "is_liked", nullable = false)
     @Builder.Default
     private boolean like = false;
+
+    public int addSolve() {
+        this.solvedCount++;
+        lastTriedAt = Instant.now();
+        return this.solvedCount;
+    }
+
+    public int addFail() {
+        this.failedCount++;
+        lastTriedAt = Instant.now();
+        return this.failedCount;
+    }
+
+    public boolean toggleLike() {
+        this.like = !this.like;
+        return this.like;
+    }
 
 }
