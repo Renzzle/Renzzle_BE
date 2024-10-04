@@ -11,6 +11,7 @@ import com.renzzle.backend.global.common.domain.Status;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import com.renzzle.backend.global.security.UserDetailsImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.Authentication;
 import lombok.RequiredArgsConstructor;
@@ -37,8 +38,8 @@ public class UserService {
                 .id(user.getId())
                 .email(user.getEmail())
                 .nickname(user.getNickname())
-                .level(user.getLevel())
-                .profile(user.getColor())
+                .level(user.getLevel().getName())
+                .profile(user.getColor().getName())
                 .build();
     }
 
@@ -53,28 +54,30 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse updateUserLevel(Long userId, UserLevel.LevelName levelName) {
+    public UserResponse updateUserLevel(Long userId, String levelName) {
 
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_LOAD_USER_INFO));
 
+        UserLevel currentLevel = user.getLevel();
+
         // 사용자 레벨 업데이트
-        user.getLevel().setLevel(levelName);
+        currentLevel.setLevel(levelName);
 
         // 업데이트된 사용자 정보 반환
         return UserResponse.builder()
                 .id(user.getId())
                 .email(user.getEmail())
                 .nickname(user.getNickname())
-                .level(user.getLevel())
-                .profile(user.getColor())
+                .level(user.getLevel().getName())
+                .profile(user.getColor().getName())
                 .build();
     }
 
     @Transactional(readOnly = true)
-    public List<SubscriptionResponse> getUserSubscriptions(Long userId, Long id, int size) {
+    public List<SubscriptionResponse> getUserSubscriptions(Long userId, Long id, Pageable pageable) {
         // 구독한 유저 목록을 ID와 페이지 사이즈 기준으로 조회
-        List<SubscriptionEntity> subscriptions = subscriptionRepository.findUserSubscriptions(userId, id, size);
+        List<SubscriptionEntity> subscriptions = subscriptionRepository.findUserSubscriptions(userId, id, pageable);
 
         // SubscriptionEntity를 SubscriptionResponse로 변환하여 반환
         return subscriptions.stream()

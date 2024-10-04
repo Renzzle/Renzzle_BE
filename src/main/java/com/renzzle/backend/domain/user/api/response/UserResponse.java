@@ -11,6 +11,6 @@ public class UserResponse {
     private Long id;
     private String email;
     private String nickname;
-    private UserLevel level;
-    private Color profile;
+    private String level;
+    private String profile;
 }

@@ -11,6 +11,8 @@ import com.renzzle.backend.global.util.ApiUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,6 +42,18 @@ public class UserController {
         return ApiUtils.success(deletedUserId);  // 삭제된 userId 반환
     }
 
+    @Operation(summary = "Retrieve user subscription list", description = "Retrieve the subscribed users by the user")
+    @GetMapping("/subscribe?id=&size=")
+    public ApiResponse<List<SubscriptionResponse>> getUserSubscriptions(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @RequestParam(value = "id", required = false) Long id,
+            @PageableDefault(size = 10) Pageable pageable) {
+
+        Long userId = userDetails.getUser().getId();
+        List<SubscriptionResponse> subscriptionResponses = userService.getUserSubscriptions(userId, id, pageable);
+        return ApiUtils.success(subscriptionResponses);  // List<SubscriptionResponse>로 응답
+    }
+
     @Operation(summary = "Update user level", description = "Update the level of the currently logged-in user")
     @PatchMapping("/level")
     public ApiResponse<UserResponse> updateLevel(
@@ -49,18 +63,6 @@ public class UserController {
         Long userId = userDetails.getUser().getId();
         UserResponse userResponse = userService.updateUserLevel(userId, request.getLevel());
         return ApiUtils.success(userResponse);
-    }
-
-    @Operation(summary = "Retrieve user subscription list", description = "Retrieve the subscribed users by the user")
-    @GetMapping("/subscribe?id=&size=")
-    public ApiResponse<List<SubscriptionResponse>> getUserSubscriptions(
-            @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @RequestParam(value = "id", required = false) Long id,
-            @RequestParam(value = "size", defaultValue = "10") int size) {
-
-        Long userId = userDetails.getUser().getId();
-        List<SubscriptionResponse> subscriptionResponses = userService.getUserSubscriptions(userId, id, size);
-        return ApiUtils.success(subscriptionResponses);  // List<SubscriptionResponse>로 응답
     }
 
     @Operation(summary = "Subscribe or unsubscribe to a user", description = "change the subscription status of a user")

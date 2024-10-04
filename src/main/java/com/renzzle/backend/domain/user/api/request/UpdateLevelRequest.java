@@ -8,5 +8,5 @@ import lombok.Getter;
 public class UpdateLevelRequest {
 
     @NotNull(message = "레벨은 반드시 지정되어야 합니다.")
-    private UserLevel.LevelName level;
+    private String level;
 }
