@@ -68,6 +68,27 @@ public class BoardUtils {
         return result.toString();
     }
 
+    public static boolean validBoardString(String str) {
+        for(int i = 0; i < str.length();) {
+            char charPart = str.charAt(i);
+            if(!isCharInAtoO(charPart))
+                return false;
+
+            if(!isNonZeroDigit(str.charAt(i + 1)))
+                return false;
+            int digitsNum = calculateDigitsNum(str, i + 1);
+
+            String numberPart = str.substring(i + 1, i + 1 + digitsNum);
+            int tmp = Integer.parseInt(numberPart);
+            if(tmp < 1 || tmp > 15)
+                return false;
+
+            i += (digitsNum + 1);
+        }
+
+        return true;
+    }
+
     private static int compareList(List<Integer> l1, List<Integer> l2) {
         for(int i = 0; i < l1.size(); i++) {
             if(l1.get(i) > l2.get(i)) return 1;

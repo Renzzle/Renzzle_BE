@@ -8,6 +8,7 @@ import com.renzzle.backend.domain.puzzle.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.domain.Difficulty;
 import com.renzzle.backend.domain.puzzle.domain.WinColor;
 import com.renzzle.backend.domain.user.domain.UserEntity;
+import com.renzzle.backend.global.util.BoardUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +20,8 @@ public class CommunityService {
     private final UserCommunityPuzzleRepository userCommunityPuzzleRepository;
 
     public AddPuzzleResponse addCommunityPuzzle(AddCommunityPuzzleRequest request, UserEntity user) {
+        String boardKey = BoardUtils.makeBoardKey(request.boardStatus());
+
         CommunityPuzzle puzzle = CommunityPuzzle.builder()
                 .title(request.title())
                 .boardStatus(request.boardStatus())

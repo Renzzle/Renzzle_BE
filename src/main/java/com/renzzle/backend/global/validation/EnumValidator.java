@@ -14,13 +14,13 @@ public class EnumValidator implements ConstraintValidator<ValidEnum, String> {
 
     @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
-        if (value == null) return false;
+        if(value == null) return false;
 
         Object[] enumValues = this.annotation.enumClass().getEnumConstants();
-        if (enumValues == null) return false;
+        if(enumValues == null) return false;
 
-        for (Object enumValue : enumValues) {
-            if (enumValue.toString().equalsIgnoreCase(value)) {
+        for(Object enumValue : enumValues) {
+            if(enumValue.toString().equalsIgnoreCase(value)) {
                 return true;
             }
         }
