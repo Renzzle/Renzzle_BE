@@ -5,31 +5,39 @@ import com.renzzle.backend.global.common.domain.Status;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 import java.time.Instant;
+import static com.renzzle.backend.global.common.domain.Status.STATUS_IS_NOT_DELETED;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder(toBuilder = true)
-@Table(name = "community_puzzle")
+@Table(
+        name = "community_puzzle",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"board_key", "status", "deleted_at"})
+        }
+)
+@SQLRestriction(value = STATUS_IS_NOT_DELETED)
 public class CommunityPuzzle {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 31)
+    @Column(name = "title", nullable = false, length = 31)
     private String title;
 
-    @Column(nullable = false, length = 1023)
+    @Column(name = "board_status",nullable = false, length = 1023)
     private String boardStatus;
 
-    @Column(nullable = false, unique = true, length = 1023)
+    @Column(name = "board_key", nullable = false, length = 1023)
     private String boardKey;
 
-    @Column(nullable = false)
+    @Column(name = "depth", nullable = false)
     private int depth;
 
     @CreationTimestamp
@@ -39,6 +47,9 @@ public class CommunityPuzzle {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
 
     @ManyToOne
     @JoinColumn(name = "status", nullable = false)
@@ -61,6 +72,12 @@ public class CommunityPuzzle {
         if(status == null) {
             this.status = Status.getDefaultStatus();
         }
+    }
+
+    @PreRemove
+    public void onPreRemove() {
+        this.status.setStatus(Status.StatusName.DELETED);
+        this.deletedAt = Instant.now();
     }
 
 }

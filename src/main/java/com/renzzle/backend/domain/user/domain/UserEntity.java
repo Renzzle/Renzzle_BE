@@ -6,11 +6,8 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
-
 import java.time.Instant;
-
-import static com.renzzle.backend.global.common.domain.Status.DELETED_NICKNAME_SUFFIX;
-import static com.renzzle.backend.global.common.domain.Status.STATUS_RESTRICTION;
+import static com.renzzle.backend.global.common.domain.Status.STATUS_IS_NOT_DELETED;
 
 @Entity
 @Getter
@@ -20,23 +17,24 @@ import static com.renzzle.backend.global.common.domain.Status.STATUS_RESTRICTION
 @Table(
         name = "user",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"email", "status"}),
+                @UniqueConstraint(columnNames = {"email", "status", "deleted_at"}),
+                @UniqueConstraint(columnNames = {"nickname", "status", "deleted_at"}),
         }
 )
-@SQLRestriction(value = STATUS_RESTRICTION)
+@SQLRestriction(value = STATUS_IS_NOT_DELETED)
 public class UserEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "email", nullable = false)
     private String email;
 
-    @Column(nullable = false)
+    @Column(name = "password", nullable = false)
     private String password;
 
-    @Column(nullable = false, unique = true, length = 31)
+    @Column(name = "nickname", nullable = false, unique = true, length = 31)
     private String nickname;
 
     @CreationTimestamp
@@ -46,6 +44,9 @@ public class UserEntity {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
 
     @ManyToOne
     @JoinColumn(name = "status", nullable = false)
@@ -75,7 +76,7 @@ public class UserEntity {
     @PreRemove
     public void onPreRemove() {
         this.status.setStatus(Status.StatusName.DELETED);
-        this.nickname += DELETED_NICKNAME_SUFFIX;
+        this.deletedAt = Instant.now();
     }
 
 }
