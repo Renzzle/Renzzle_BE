@@ -43,8 +43,4 @@ public class Difficulty {
         this.name = difficultyName;
     }
 
-    public void setDifficulty(Difficulty.DifficultyName difficultyName) {
-        this.name = difficultyName.name();
-    }
-
 }

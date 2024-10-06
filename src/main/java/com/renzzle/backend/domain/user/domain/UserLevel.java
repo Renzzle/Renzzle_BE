@@ -47,8 +47,4 @@ public class UserLevel {
         this.name = levelName;
     }
 
-    public void setLevel(LevelName levelName) {
-        this.name = levelName.name();
-    }
-
 }

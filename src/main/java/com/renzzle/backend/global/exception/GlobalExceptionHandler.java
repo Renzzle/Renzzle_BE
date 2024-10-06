@@ -4,9 +4,11 @@ import com.renzzle.backend.global.util.ApiUtils;
 import jakarta.validation.ValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @Slf4j
 @RestControllerAdvice
@@ -19,6 +21,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ValidationException.class)
     private ResponseEntity<?> handleValidationException(ValidationException e) {
+        return handleException(e, ErrorCode.VALIDATION_ERROR, e.getMessage());
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<?> handleTypeMismatchException(MethodArgumentTypeMismatchException e) {
         return handleException(e, ErrorCode.VALIDATION_ERROR, e.getMessage());
     }
 

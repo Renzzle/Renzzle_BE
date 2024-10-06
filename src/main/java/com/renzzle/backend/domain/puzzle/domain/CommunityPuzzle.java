@@ -40,6 +40,18 @@ public class CommunityPuzzle {
     @Column(name = "depth", nullable = false)
     private int depth;
 
+    @Column(name = "like_count", nullable = false)
+    @Builder.Default
+    private int likeCount = 0;
+
+    @Column(name = "solved_count", nullable = false)
+    @Builder.Default
+    private int solvedCount = 0;
+
+    @Column(name = "failed_count", nullable = false)
+    @Builder.Default
+    private int failedCount = 0;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)
     private Instant createdAt;
@@ -78,6 +90,22 @@ public class CommunityPuzzle {
     public void onPreRemove() {
         this.status.setStatus(Status.StatusName.DELETED);
         this.deletedAt = Instant.now();
+    }
+
+    public int addSolve() {
+        this.solvedCount++;
+        return this.solvedCount;
+    }
+
+    public int addFail() {
+        this.failedCount++;
+        return this.failedCount;
+    }
+
+    public int changeLike(boolean isIncrease) {
+        if(isIncrease) this.likeCount++;
+        else this.likeCount--;
+        return this.likeCount;
     }
 
 }

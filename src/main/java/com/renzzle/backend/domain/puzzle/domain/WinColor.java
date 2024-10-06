@@ -43,8 +43,4 @@ public class WinColor {
         this.name = winColorName;
     }
 
-    public void setWinColor(WinColor.WinColorName winColorName) {
-        this.name = winColorName.name();
-    }
-
 }
