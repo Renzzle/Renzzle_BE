@@ -9,22 +9,24 @@ import java.util.List;
 
 public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle, Long> {
 
-    @Query(value = "SELECT * FROM community_puzzle cp " +
-            "WHERE (cp.created_at < :lastCreatedAt) OR " +
-            "(cp.created_at = :lastCreatedAt AND cp.id > :lastId) " +
+    @Query(value =
+            "SELECT * FROM community_puzzle cp " +
+            "WHERE (cp.created_at < :lastCreatedAt) OR (cp.created_at = :lastCreatedAt AND cp.id > :lastId) " +
             "ORDER BY cp.created_at DESC, cp.id ASC" +
-            "LIMIT :size", nativeQuery = true)
+            "LIMIT :size"
+            , nativeQuery = true)
     List<CommunityPuzzle> findPuzzlesSortByCreatedAt(
             @Param("lastCreatedAt") Instant lastCreatedAt,
             @Param("lastId") long lastId,
             @Param("size") int size
     );
 
-    @Query(value = "SELECT * FROM community_puzzle cp " +
-            "WHERE (cp.like_count < :lastLikeCnt) OR " +
-            "(cp.like_count = :lastLikeCnt AND cp.id > :lastId) " +
-            "ORDER BY cp.created_at DESC, cp.id ASC" +
-            "LIMIT :size", nativeQuery = true)
+    @Query(value =
+            "SELECT * FROM community_puzzle cp " +
+            "WHERE (cp.like_count < :lastLikeCnt) OR (cp.like_count = :lastLikeCnt AND cp.id > :lastId) " +
+            "ORDER BY cp.like_count DESC, cp.id ASC" +
+            "LIMIT :size"
+            , nativeQuery = true)
     List<CommunityPuzzle> findPuzzlesSortByLike(
             @Param("lastLikeCnt") int lastLikeCnt,
             @Param("lastId") long lastId,
