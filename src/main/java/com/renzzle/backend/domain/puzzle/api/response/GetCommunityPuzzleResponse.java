@@ -1,8 +1,7 @@
 package com.renzzle.backend.domain.puzzle.api.response;
 
 import lombok.Builder;
-
-import java.util.ArrayList;
+import java.util.List;
 
 @Builder
 public record GetCommunityPuzzleResponse(
@@ -17,5 +16,5 @@ public record GetCommunityPuzzleResponse(
         String difficulty,
         String winColor,
         int likeCount,
-        ArrayList<String> tag
+        List<String> tag
 ) { }

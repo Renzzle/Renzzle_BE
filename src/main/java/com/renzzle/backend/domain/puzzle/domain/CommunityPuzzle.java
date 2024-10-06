@@ -19,6 +19,10 @@ import static com.renzzle.backend.global.common.domain.Status.STATUS_IS_NOT_DELE
         name = "community_puzzle",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {"board_key", "status", "deleted_at"})
+        },
+        indexes = {
+                @Index(columnList = "created_at"),
+                @Index(columnList = "like_count")
         }
 )
 @SQLRestriction(value = STATUS_IS_NOT_DELETED)

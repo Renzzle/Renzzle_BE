@@ -50,7 +50,9 @@ public class CommunityController {
             throw new ValidationException(getErrorMessages(bindingResult));
         }
 
-        return ApiUtils.success(null);
+        SortOption sortOption = SortOption.valueOf(sort);
+
+        return ApiUtils.success(communityService.getCommunityPuzzleList(id, size, sortOption));
     }
 
     @PostMapping("/puzzle")
