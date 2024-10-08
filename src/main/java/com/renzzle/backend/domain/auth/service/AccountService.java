@@ -48,7 +48,7 @@ public class AccountService {
     }
 
     @Transactional
-    public Long createNewUser(String email, String password, String nickname) {
+    public UserEntity createNewUser(String email, String password, String nickname) {
         // validate email
         if(isDuplicatedEmail(email))
             throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
@@ -64,7 +64,7 @@ public class AccountService {
                 .password(encodedPassword)
                 .nickname(nickname)
                 .build();
-        return userRepository.save(user).getId();
+        return userRepository.save(user);
     }
 
     public LoginResponse createAuthTokens(Long id) {

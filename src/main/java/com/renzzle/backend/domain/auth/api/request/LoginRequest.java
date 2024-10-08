@@ -10,6 +10,6 @@ public record LoginRequest(
         String email,
 
         @NotEmpty(message = "비밀번호 정보가 없습니다")
-        @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,}$", message = "비밀번호의 형식이 올바르지 않습니다")
+        @Pattern(regexp = "^(?=.*[A-Za-z])[A-Za-z\\d]{8,}$", message = "비밀번호의 형식이 올바르지 않습니다")
         String password
 ) { }

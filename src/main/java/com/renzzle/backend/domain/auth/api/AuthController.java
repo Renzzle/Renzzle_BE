@@ -6,6 +6,7 @@ import com.renzzle.backend.domain.auth.api.response.ConfirmCodeResponse;
 import com.renzzle.backend.domain.auth.api.response.LoginResponse;
 import com.renzzle.backend.domain.auth.service.AccountService;
 import com.renzzle.backend.domain.auth.service.EmailService;
+import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.response.ApiResponse;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
@@ -95,9 +96,9 @@ public class AuthController {
             throw new CustomException(ErrorCode.INVALID_AUTH_VERITY_TOKEN);
         }
 
-        Long userId = accountService.createNewUser(request.email(), request.password(), request.nickname());
+        UserEntity user = accountService.createNewUser(request.email(), request.password(), request.nickname());
 
-        return ApiUtils.success(accountService.createAuthTokens(userId));
+        return ApiUtils.success(accountService.createAuthTokens(user.getId()));
     }
 
     @Operation(summary = "Login to service", description = "Issue authentication tokens for server access")
