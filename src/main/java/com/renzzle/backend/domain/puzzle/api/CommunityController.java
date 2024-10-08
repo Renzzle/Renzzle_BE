@@ -2,6 +2,7 @@ package com.renzzle.backend.domain.puzzle.api;
 
 import com.renzzle.backend.domain.puzzle.api.request.AddCommunityPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.api.request.CommunityPuzzleResultUpdateRequest;
+import com.renzzle.backend.domain.puzzle.api.request.GetCommunityPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.api.response.AddPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.api.response.GetCommunityPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.service.CommunityService;
@@ -34,24 +35,18 @@ public class CommunityController {
     @Operation(summary = "Get community puzzle data", description = "Return community puzzle list")
     @GetMapping("/puzzle")
     public ApiResponse<List<GetCommunityPuzzleResponse>> getCommunityPuzzle(
-            @RequestParam(required = false) Long id,
-
-            @Min(value = 1, message = "size는 최소 1이어야 합니다")
-            @Max(value = 100, message = "size는 최대 100이어야 합니다")
-            @RequestParam(defaultValue = "10") Integer size,
-
-            @ValidEnum(enumClass = SortOption.class, message = "잘못된 sort 형식입니다")
-            @RequestParam(defaultValue = "RECOMMEND") String sort,
-
+            @ModelAttribute GetCommunityPuzzleRequest request,
             BindingResult bindingResult
     ) {
         if(bindingResult.hasErrors()) {
             throw new ValidationException(getErrorMessages(bindingResult));
         }
 
+        int size = (request.size() != null) ? request.size() : 10;
+        String sort = (request.sort() != null) ? request.sort() : SortOption.RECOMMEND.name();
         SortOption sortOption = SortOption.valueOf(sort);
 
-        return ApiUtils.success(communityService.getCommunityPuzzleList(id, size, sortOption));
+        return ApiUtils.success(communityService.getCommunityPuzzleList(request.id(), size, sortOption));
     }
 
     @Operation(summary = "Register new community puzzle", description = "Add new community puzzle")

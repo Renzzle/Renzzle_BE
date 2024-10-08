@@ -143,7 +143,7 @@ public class CommunityService {
 
         if(id == null) {
             lastId = -1L;
-            lastCreatedAt = Instant.MAX;
+            lastCreatedAt = Instant.parse("9999-01-01T00:00:00Z");
         } else {
             lastId = id;
             CommunityPuzzle puzzle = communityPuzzleRepository.findById(id)

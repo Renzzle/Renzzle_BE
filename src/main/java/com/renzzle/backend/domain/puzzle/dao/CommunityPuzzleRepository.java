@@ -12,7 +12,7 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
     @Query(value =
             "SELECT * FROM community_puzzle cp " +
             "WHERE (cp.created_at < :lastCreatedAt) OR (cp.created_at = :lastCreatedAt AND cp.id > :lastId) " +
-            "ORDER BY cp.created_at DESC, cp.id ASC" +
+            "ORDER BY cp.created_at DESC, cp.id ASC " +
             "LIMIT :size"
             , nativeQuery = true)
     List<CommunityPuzzle> findPuzzlesSortByCreatedAt(
@@ -24,7 +24,7 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
     @Query(value =
             "SELECT * FROM community_puzzle cp " +
             "WHERE (cp.like_count < :lastLikeCnt) OR (cp.like_count = :lastLikeCnt AND cp.id > :lastId) " +
-            "ORDER BY cp.like_count DESC, cp.id ASC" +
+            "ORDER BY cp.like_count DESC, cp.id ASC " +
             "LIMIT :size"
             , nativeQuery = true)
     List<CommunityPuzzle> findPuzzlesSortByLike(
