@@ -1,5 +1,8 @@
 package com.renzzle.backend.global.util;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -57,12 +60,21 @@ public class BoardUtils {
         StringBuilder result = new StringBuilder();
 
         for (Integer num : minB) {
-            char c = (char) (num + 32);
-            result.append(c);
+            result.append(num);
         }
         for (Integer num : minW) {
-            char c = (char) (num + 32);
-            result.append(c);
+            result.append(num);
+        }
+
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            md.update(result.toString().getBytes(StandardCharsets.UTF_8));
+            result = new StringBuilder();
+            for (byte b : md.digest()) {
+                result.append(String.format("%02x", b));
+            }
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
         }
 
         return result.toString();

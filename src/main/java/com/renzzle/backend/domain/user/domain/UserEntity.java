@@ -7,6 +7,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 import java.time.Instant;
+import static com.renzzle.backend.global.common.constant.TimeConstant.CONST_FUTURE_INSTANT;
 import static com.renzzle.backend.global.common.domain.Status.STATUS_IS_NOT_DELETED;
 
 @Entity
@@ -66,7 +67,7 @@ public class UserEntity {
             this.status = Status.getDefaultStatus();
         }
         if(deletedAt == null) {
-            this.deletedAt = Instant.EPOCH;
+            this.deletedAt = CONST_FUTURE_INSTANT;
         }
         if(color == null) {
             this.color = Color.getRandomColor();

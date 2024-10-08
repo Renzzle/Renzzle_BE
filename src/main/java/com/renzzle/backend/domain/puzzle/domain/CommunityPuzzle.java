@@ -8,6 +8,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 import java.time.Instant;
+import static com.renzzle.backend.global.common.constant.TimeConstant.CONST_FUTURE_INSTANT;
 import static com.renzzle.backend.global.common.domain.Status.STATUS_IS_NOT_DELETED;
 
 @Entity
@@ -38,7 +39,7 @@ public class CommunityPuzzle {
     @Column(name = "board_status", nullable = false, length = 1023)
     private String boardStatus;
 
-    @Column(name = "board_key", nullable = false, length = 1023)
+    @Column(name = "board_key", nullable = false)
     private String boardKey;
 
     @Column(name = "depth", nullable = false)
@@ -89,7 +90,7 @@ public class CommunityPuzzle {
             this.status = Status.getDefaultStatus();
         }
         if(deletedAt == null) {
-            this.deletedAt = Instant.EPOCH;
+            this.deletedAt = CONST_FUTURE_INSTANT;
         }
     }
 

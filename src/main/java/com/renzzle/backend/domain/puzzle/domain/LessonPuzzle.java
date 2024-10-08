@@ -29,7 +29,7 @@ public class LessonPuzzle {
         @Column(name = "board_status", nullable = false, length = 1023)
         private String boardStatus;
 
-        @Column(name = "board_key", unique = true, nullable = false, length = 1023)
+        @Column(name = "board_key", unique = true, nullable = false)
         private String boardKey;
 
         @Column(name = "depth", nullable = false)

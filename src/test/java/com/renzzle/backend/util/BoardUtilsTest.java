@@ -113,8 +113,11 @@ public class BoardUtilsTest {
     public void makeBoardKeyTest() {
         String s1 = BoardUtils.makeBoardKey("h8i9i7h7j8i8j9k9");
         String s2 = BoardUtils.makeBoardKey("i7k9j8h7h8i8j9i9");
-
         Assertions.assertEquals(s1, s2);
+
+        s1 = BoardUtils.makeBoardKey("h8j9h7");
+        s2 = BoardUtils.makeBoardKey("h8j9h7h6h5h4h3h2a11n7");
+        Assertions.assertNotEquals(s1, s2);
     }
 
 }

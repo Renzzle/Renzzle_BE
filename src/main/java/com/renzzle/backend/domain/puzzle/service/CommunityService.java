@@ -21,13 +21,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static com.renzzle.backend.global.common.constant.TimeConstant.CONST_FUTURE_INSTANT;
+
 @Service
 @RequiredArgsConstructor
 public class CommunityService {
 
     private final CommunityPuzzleRepository communityPuzzleRepository;
     private final UserCommunityPuzzleRepository userCommunityPuzzleRepository;
-    private final UserRepository userRepository;
 
     @Transactional
     public AddPuzzleResponse addCommunityPuzzle(AddCommunityPuzzleRequest request, UserEntity user) {
@@ -145,7 +146,7 @@ public class CommunityService {
 
         if(id == null) {
             lastId = -1L;
-            lastCreatedAt = Instant.parse("9999-01-01T00:00:00Z");
+            lastCreatedAt = CONST_FUTURE_INSTANT;
         } else {
             lastId = id;
             CommunityPuzzle puzzle = communityPuzzleRepository.findById(id)
@@ -181,7 +182,7 @@ public class CommunityService {
 
         if(id == null) {
             lastId = -1L;
-            lastCreatedAt = Instant.MAX;
+            lastCreatedAt = CONST_FUTURE_INSTANT;
         } else {
             lastId = id;
             CommunityPuzzle puzzle = communityPuzzleRepository.findById(id)

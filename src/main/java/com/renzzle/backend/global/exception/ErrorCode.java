@@ -15,6 +15,7 @@ public enum ErrorCode {
 
     // SQL
     EMPTY_RESULT_ERROR(HttpStatus.NOT_FOUND, "S404", "요청의 결과가 존재하지 않습니다."),
+    CONSTRAINT_VIOLATION_ERROR(HttpStatus.CONFLICT, "S409", "데이터베이스 제약 조건을 위배하였습니다."),
 
     // Auth
     EXCEED_EMAIL_AUTH_REQUEST(HttpStatus.TOO_MANY_REQUESTS, "A429", "이메일 인증 횟수를 초과했습니다."),

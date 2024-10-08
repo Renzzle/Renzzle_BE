@@ -10,19 +10,16 @@ import com.renzzle.backend.global.common.constant.SortOption;
 import com.renzzle.backend.global.common.response.ApiResponse;
 import com.renzzle.backend.global.security.UserDetailsImpl;
 import com.renzzle.backend.global.util.ApiUtils;
-import com.renzzle.backend.global.validation.ValidEnum;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.ValidationException;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
-import static com.renzzle.backend.global.util.BindingResultUtils.getErrorMessages;
+import static com.renzzle.backend.global.util.ErrorUtils.getErrorMessages;
 
 @RestController
 @RequestMapping("/api/community")
