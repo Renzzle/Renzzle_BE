@@ -64,7 +64,7 @@ public class CommunityPuzzle {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    @Column(name = "deleted_at")
+    @Column(name = "deleted_at", nullable = false)
     private Instant deletedAt;
 
     @ManyToOne
@@ -87,6 +87,9 @@ public class CommunityPuzzle {
     public void prePersist() {
         if(status == null) {
             this.status = Status.getDefaultStatus();
+        }
+        if(deletedAt == null) {
+            this.deletedAt = Instant.EPOCH;
         }
     }
 

@@ -45,7 +45,7 @@ public class UserEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    @Column(name = "deleted_at")
+    @Column(name = "deleted_at", nullable = false)
     private Instant deletedAt;
 
     @ManyToOne
@@ -64,6 +64,9 @@ public class UserEntity {
     public void onPrePersist() {
         if(status == null) {
             this.status = Status.getDefaultStatus();
+        }
+        if(deletedAt == null) {
+            this.deletedAt = Instant.EPOCH;
         }
         if(color == null) {
             this.color = Color.getRandomColor();

@@ -66,9 +66,10 @@ public class CommunityService {
         Optional<UserCommunityPuzzle> findResult = userCommunityPuzzleRepository.findUserPuzzleInfo(user.getId(), puzzle.getId());
         UserCommunityPuzzle userPuzzleInfo = findResult.orElseGet(() -> userCommunityPuzzleRepository.save(
                 UserCommunityPuzzle.builder()
-                .user(user)
-                .puzzle(puzzle)
-                .build()));
+                        .user(user)
+                        .puzzle(puzzle)
+                        .lastTriedAt(Instant.now())
+                        .build()));
 
         puzzle.addSolve();
 
@@ -86,6 +87,7 @@ public class CommunityService {
                 UserCommunityPuzzle.builder()
                         .user(user)
                         .puzzle(puzzle)
+                        .lastTriedAt(Instant.now())
                         .build()));
 
         puzzle.addFail();
