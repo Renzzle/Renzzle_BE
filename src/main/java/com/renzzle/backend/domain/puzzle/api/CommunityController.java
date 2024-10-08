@@ -4,15 +4,13 @@ import com.renzzle.backend.domain.puzzle.api.request.AddCommunityPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.api.request.CommunityPuzzleResultUpdateRequest;
 import com.renzzle.backend.domain.puzzle.api.response.AddPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.api.response.GetCommunityPuzzleResponse;
-import com.renzzle.backend.domain.puzzle.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.service.CommunityService;
 import com.renzzle.backend.global.common.constant.SortOption;
 import com.renzzle.backend.global.common.response.ApiResponse;
-import com.renzzle.backend.global.exception.CustomException;
-import com.renzzle.backend.global.exception.ErrorCode;
 import com.renzzle.backend.global.security.UserDetailsImpl;
 import com.renzzle.backend.global.util.ApiUtils;
 import com.renzzle.backend.global.validation.ValidEnum;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.ValidationException;
@@ -33,6 +31,7 @@ public class CommunityController {
 
     private final CommunityService communityService;
 
+    @Operation(summary = "Get community puzzle data", description = "Return community puzzle list")
     @GetMapping("/puzzle")
     public ApiResponse<List<GetCommunityPuzzleResponse>> getCommunityPuzzle(
             @RequestParam(required = false) Long id,
@@ -55,6 +54,7 @@ public class CommunityController {
         return ApiUtils.success(communityService.getCommunityPuzzleList(id, size, sortOption));
     }
 
+    @Operation(summary = "Register new community puzzle", description = "Add new community puzzle")
     @PostMapping("/puzzle")
     public ApiResponse<AddPuzzleResponse> addCommunityPuzzle(
             @Valid @RequestBody AddCommunityPuzzleRequest request,
@@ -68,6 +68,7 @@ public class CommunityController {
         return ApiUtils.success(communityService.addCommunityPuzzle(request, user.getUser()));
     }
 
+    @Operation(summary = "Solve community puzzle", description = "Solve count increase & Apply correct rate")
     @PostMapping("/solve")
     public ApiResponse<Integer> solveCommunityPuzzle(
             @Valid @RequestBody CommunityPuzzleResultUpdateRequest request,
@@ -83,6 +84,7 @@ public class CommunityController {
         return ApiUtils.success(successCnt);
     }
 
+    @Operation(summary = "Fail community puzzle", description = "Fail count increase & Apply correct rate")
     @PostMapping("/fail")
     public ApiResponse<Integer> failCommunityPuzzle(
             @Valid @RequestBody CommunityPuzzleResultUpdateRequest request,
