@@ -1,5 +1,6 @@
 package com.renzzle.backend.global.config;
 
+import com.renzzle.backend.domain.auth.dao.AdminRepository;
 import com.renzzle.backend.domain.auth.service.JwtProvider;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.global.security.JwtAuthenticationFilter;
@@ -26,6 +27,7 @@ public class SecurityConfig {
 
     private final JwtProvider jwtProvider;
     private final UserRepository userRepository;
+    private final AdminRepository adminRepository;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
@@ -48,9 +50,10 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(request -> request
                         .requestMatchers(permitAllRequestMatchers.toArray(new RequestMatcher[0])).permitAll()
+                        .requestMatchers("/admin/**").hasRole("admin")
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(new JwtAuthenticationFilter(jwtProvider, userRepository, permitAllRequestMatchers), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtAuthenticationFilter(jwtProvider, userRepository, adminRepository, permitAllRequestMatchers), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 

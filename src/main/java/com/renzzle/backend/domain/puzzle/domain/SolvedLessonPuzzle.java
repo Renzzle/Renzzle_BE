@@ -4,6 +4,9 @@ import com.renzzle.backend.domain.user.domain.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Cascade;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
 import java.time.Instant;
 
 @Entity
@@ -20,12 +23,12 @@ public class SolvedLessonPuzzle {
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
-    @Cascade(org.hibernate.annotations.CascadeType.REMOVE)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private UserEntity user;
 
     @ManyToOne
     @JoinColumn(name = "lesson_id", nullable = false)
-    @Cascade(org.hibernate.annotations.CascadeType.REMOVE)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private LessonPuzzle puzzle;
 
     @Column(name = "solved_at", nullable = false)

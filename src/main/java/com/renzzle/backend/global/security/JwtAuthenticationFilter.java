@@ -1,6 +1,7 @@
 package com.renzzle.backend.global.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.renzzle.backend.domain.auth.dao.AdminRepository;
 import com.renzzle.backend.domain.auth.domain.GrantType;
 import com.renzzle.backend.domain.auth.service.JwtProvider;
 import com.renzzle.backend.domain.user.dao.UserRepository;
@@ -25,8 +26,10 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import static com.renzzle.backend.domain.auth.domain.Admin.ADMIN;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -34,6 +37,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
     private final UserRepository userRepository;
+    private final AdminRepository adminRepository;
     private final List<RequestMatcher> permitAllRequestMatchers;
 
     @Override
@@ -63,7 +67,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if(user.isEmpty())
             throw new CustomException(ErrorCode.GLOBAL_NOT_FOUND);
 
-        return new UserDetailsImpl(user.get(), user.get().getPassword(), null);
+        List<String> roles = new ArrayList<>();
+        if(adminRepository.existsByUser(user.get()))
+            roles.add(ADMIN);
+
+        return new UserDetailsImpl(user.get(), user.get().getPassword(), roles);
     }
 
     private String resolveToken(HttpServletRequest request) {

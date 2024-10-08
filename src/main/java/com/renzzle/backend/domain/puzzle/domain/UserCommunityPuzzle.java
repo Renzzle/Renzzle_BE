@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.CascadeType;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
 import java.time.Instant;
 
 @Entity
@@ -17,16 +20,16 @@ public class UserCommunityPuzzle {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Cascade(CascadeType.REMOVE)
     private Long id;
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private UserEntity user;
 
     @ManyToOne
     @JoinColumn(name = "community_id", nullable = false)
-    @Cascade(CascadeType.REMOVE)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private CommunityPuzzle puzzle;
 
     @Column(name = "last_tried_at", nullable = false)
