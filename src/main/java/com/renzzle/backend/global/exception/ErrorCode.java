@@ -35,7 +35,9 @@ public enum ErrorCode {
 
     //User
     CANNOT_LOAD_USER_INFO(HttpStatus.NOT_FOUND, "U404", "사용자 정보를 불러올 수 없습니다."),
-    CANNOT_FIND_USER(HttpStatus.BAD_REQUEST, "U400", "사용자를 찾을 수 없습니다.");
+    CANNOT_FIND_USER(HttpStatus.BAD_REQUEST, "U400", "사용자를 찾을 수 없습니다."),
+    LEVEL_NOT_FOUND(HttpStatus.NOT_FOUND, "U405", "해당 레벨을 찾을 수 없습니다."),
+    INVALID_SUBSCRIPTION_REQUEST(HttpStatus.BAD_REQUEST, "U410", "올바르지 않은 구독자 정보입니다.");
 
     private final HttpStatus status;
     private final String code;

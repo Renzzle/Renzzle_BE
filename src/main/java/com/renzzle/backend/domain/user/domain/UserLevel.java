@@ -31,14 +31,14 @@ public class UserLevel {
         return new UserLevel(LevelName.BEGINNER.name());
     }
 
-    public void setLevel(String levelName) {
+    public UserLevel setLevel(String levelName) {
         LevelName[] levelNames = LevelName.values();
         boolean isValid = Arrays.stream(levelNames)
                 .anyMatch(level -> level.name().equals(levelName));
-        if(!isValid)
+        if (!isValid)
             throw new CustomException(ErrorCode.VALIDATION_ERROR);
 
-        this.name = levelName;
+        return new UserLevel(levelName); // 새 인스턴스 반환
     }
 
     public void setLevel(LevelName levelName) {

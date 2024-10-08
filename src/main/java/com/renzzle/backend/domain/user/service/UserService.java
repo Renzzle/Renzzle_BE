@@ -1,8 +1,10 @@
 package com.renzzle.backend.domain.user.service;
 
+import com.renzzle.backend.domain.test.dao.JdbcEntityDao;
 import com.renzzle.backend.domain.user.api.response.SubscriptionResponse;
 import com.renzzle.backend.domain.user.api.response.UserResponse;
 import com.renzzle.backend.domain.user.dao.SubscriptionRepository;
+import com.renzzle.backend.domain.user.dao.UserLevelRepository;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.SubscriptionEntity;
 import com.renzzle.backend.domain.user.domain.UserEntity;
@@ -11,6 +13,7 @@ import com.renzzle.backend.global.common.domain.Status;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import com.renzzle.backend.global.security.UserDetailsImpl;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.Authentication;
@@ -24,10 +27,12 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserService {
 
     private final UserRepository userRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final UserLevelRepository userLevelRepository;
 
     public UserResponse getUser(Long userId) {
 
@@ -49,6 +54,8 @@ public class UserService {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
 
+        subscriptionRepository.deleteByUserId(userId);
+
         userRepository.deleteById(userId);
         return userId;
     }
@@ -59,10 +66,20 @@ public class UserService {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_LOAD_USER_INFO));
 
-        UserLevel currentLevel = user.getLevel();
+        UserLevel newLevel = userLevelRepository.findById(levelName)
+                .orElseThrow(() -> new CustomException(ErrorCode.LEVEL_NOT_FOUND));
+
+//        UserLevel currentLevel = user.getLevel();
+
+        log.info("Received level name: {}", levelName); // 매개변수 levelName 로그
+        log.info("Current user level before update: {}", user.getLevel().getName()); // 현재 레벨 로그
 
         // 사용자 레벨 업데이트
-        currentLevel.setLevel(levelName);
+        user.setLevel(newLevel);
+
+        log.info("Updated user level: {}", user.getLevel().getName());
+
+//        userRepository.save(user);
 
         // 업데이트된 사용자 정보 반환
         return UserResponse.builder()
@@ -74,10 +91,19 @@ public class UserService {
                 .build();
     }
 
+
     @Transactional(readOnly = true)
     public List<SubscriptionResponse> getUserSubscriptions(Long userId, Long id, Pageable pageable) {
-        // 구독한 유저 목록을 ID와 페이지 사이즈 기준으로 조회
+
         List<SubscriptionEntity> subscriptions = subscriptionRepository.findUserSubscriptions(userId, id, pageable);
+
+        if (subscriptions.isEmpty()) {
+            log.info("No subscriptions found for userId: {} and id: {}", userId, id);
+        } else {
+            log.info("Found {} subscriptions for userId: {} and id: {}", subscriptions.size(), userId, id);
+        }
+
+        log.info("Fetched subscriptions: {}", subscriptions);
 
         // SubscriptionEntity를 SubscriptionResponse로 변환하여 반환
         return subscriptions.stream()
@@ -88,14 +114,19 @@ public class UserService {
     // SubscriptionEntity를 SubscriptionResponse로 변환
     private SubscriptionResponse createSubscriptionResponse(SubscriptionEntity subscriptionEntity) {
         return SubscriptionResponse.builder()
-                .userId(subscriptionEntity.getSubscriber().getId())
-                .nickname(subscriptionEntity.getSubscriber().getNickname())
-                .profile(subscriptionEntity.getSubscriber().getColor())
+                .userId(subscriptionEntity.getSubscribedTo().getId())
+                .nickname(subscriptionEntity.getSubscribedTo().getNickname())
+                .profile(subscriptionEntity.getSubscribedTo().getColor())
                 .build();
     }
 
     @Transactional
     public Boolean changeSubscription(Long subscriberId, Long subscribedToId) {
+
+        if (subscriberId.equals(subscribedToId)) {
+            throw new CustomException(ErrorCode.INVALID_SUBSCRIPTION_REQUEST);
+        }
+
         UserEntity subscribedTo = userRepository.findById(subscribedToId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
 
@@ -115,6 +146,5 @@ public class UserService {
             return true;
         }
     }
-
 
 }

@@ -44,6 +44,7 @@ public class UserEntity {
     @JoinColumn(name = "color", nullable = false)
     private Color color;
 
+    @Setter
     @ManyToOne
     @JoinColumn(name = "level", nullable = false)
     private UserLevel level;
