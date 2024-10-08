@@ -20,6 +20,8 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.renzzle.backend.domain.auth.domain.Admin.ADMIN;
+
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -50,7 +52,8 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(request -> request
                         .requestMatchers(permitAllRequestMatchers.toArray(new RequestMatcher[0])).permitAll()
-                        .requestMatchers("/admin/**").hasRole("admin")
+                        .requestMatchers(HttpMethod.POST, "/api/lesson").hasRole(ADMIN)
+                        .requestMatchers(HttpMethod.DELETE, "/api/lesson/**").hasRole(ADMIN)
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(new JwtAuthenticationFilter(jwtProvider, userRepository, adminRepository, permitAllRequestMatchers), UsernamePasswordAuthenticationFilter.class)
