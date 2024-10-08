@@ -35,7 +35,7 @@ public class CommunityPuzzle {
     @Column(name = "title", nullable = false, length = 31)
     private String title;
 
-    @Column(name = "board_status",nullable = false, length = 1023)
+    @Column(name = "board_status", nullable = false, length = 1023)
     private String boardStatus;
 
     @Column(name = "board_key", nullable = false, length = 1023)
