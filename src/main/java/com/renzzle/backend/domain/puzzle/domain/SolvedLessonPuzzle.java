@@ -3,10 +3,8 @@ package com.renzzle.backend.domain.puzzle.domain;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
-
 import java.time.Instant;
 
 @Entity
