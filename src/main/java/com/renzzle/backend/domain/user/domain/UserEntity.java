@@ -35,7 +35,7 @@ public class UserEntity {
     @Column(name = "password", nullable = false)
     private String password;
 
-    @Column(name = "nickname", nullable = false, unique = true, length = 31)
+    @Column(name = "nickname", nullable = false, length = 31)
     private String nickname;
 
     @CreationTimestamp

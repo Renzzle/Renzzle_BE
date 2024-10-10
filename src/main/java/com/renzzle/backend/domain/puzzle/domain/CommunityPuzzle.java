@@ -3,10 +3,11 @@ package com.renzzle.backend.domain.puzzle.domain;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.domain.Status;
 import jakarta.persistence.*;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.SQLRestriction;
-import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.*;
+
 import java.time.Instant;
 import static com.renzzle.backend.global.common.constant.TimeConstant.CONST_FUTURE_INSTANT;
 import static com.renzzle.backend.global.common.domain.Status.STATUS_IS_NOT_DELETED;
@@ -74,6 +75,7 @@ public class CommunityPuzzle {
 
     @ManyToOne
     @JoinColumn(name = "author_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private UserEntity user;
 
     @ManyToOne
