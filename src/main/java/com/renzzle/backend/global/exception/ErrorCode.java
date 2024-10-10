@@ -24,6 +24,7 @@ public enum ErrorCode {
     INVALID_EMAIL(HttpStatus.UNAUTHORIZED, "A4012", "유효하지 않은 이메일입니다."),
     INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "A4013", "유효하지 않은 비밀번호입니다."),
     NOT_BEARER_GRANT_TYPE(HttpStatus.UNAUTHORIZED, "A4014", "인증 타입이 Bearer 타입이 아닙니다."),
+    ADMIN_ACCESS_DENIED(HttpStatus.FORBIDDEN, "A403", "관리자 권한이 없습니다."),
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "A4090", "이미 존재하는 이메일입니다."),
     DUPLICATE_NICKNAME(HttpStatus.CONFLICT, "A4091", "이미 존재하는 닉네임입니다."),
 

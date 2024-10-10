@@ -3,6 +3,7 @@ package com.renzzle.backend.global.config;
 import com.renzzle.backend.domain.auth.dao.AdminRepository;
 import com.renzzle.backend.domain.auth.service.JwtProvider;
 import com.renzzle.backend.domain.user.dao.UserRepository;
+import com.renzzle.backend.global.security.CustomAccessDeniedHandler;
 import com.renzzle.backend.global.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -30,6 +31,7 @@ public class SecurityConfig {
     private final JwtProvider jwtProvider;
     private final UserRepository userRepository;
     private final AdminRepository adminRepository;
+    private final CustomAccessDeniedHandler accessDeniedHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
@@ -52,10 +54,12 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(request -> request
                         .requestMatchers(permitAllRequestMatchers.toArray(new RequestMatcher[0])).permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/lesson").hasRole(ADMIN)
-                        .requestMatchers(HttpMethod.DELETE, "/api/lesson/**").hasRole(ADMIN)
+                        .requestMatchers(HttpMethod.POST, "/api/lesson").hasAuthority(ADMIN)
+                        .requestMatchers(HttpMethod.DELETE, "/api/lesson/**").hasAuthority(ADMIN)
                         .anyRequest().authenticated()
                 )
+                .exceptionHandling(exceptionHandling ->
+                        exceptionHandling.accessDeniedHandler(accessDeniedHandler))
                 .addFilterBefore(new JwtAuthenticationFilter(jwtProvider, userRepository, adminRepository, permitAllRequestMatchers), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }

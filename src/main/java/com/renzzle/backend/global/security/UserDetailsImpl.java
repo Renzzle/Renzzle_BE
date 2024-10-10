@@ -14,20 +14,20 @@ public class UserDetailsImpl implements UserDetails {
     @Getter
     private final UserEntity user;
     private final String password;
-    private final List<String> roles;
+    private final List<String> authorities;
 
-    public UserDetailsImpl(UserEntity user, String password, List<String> roles) {
+    public UserDetailsImpl(UserEntity user, String password, List<String> authorities) {
         this.user = user;
         this.password = password;
-        this.roles = roles;
+        this.authorities = authorities;
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        if (this.roles == null) {
+        if (this.authorities == null) {
             return Collections.emptyList();
         }
-        return this.roles.stream()
+        return this.authorities.stream()
                 .map(SimpleGrantedAuthority::new)
                 .toList();
     }
