@@ -79,7 +79,7 @@ public class UserEntity {
 
     @PreRemove
     public void onPreRemove() {
-        this.status.setStatus(Status.StatusName.DELETED);
+        this.status = Status.getStatus(Status.StatusName.DELETED);
         this.deletedAt = Instant.now();
     }
 
