@@ -25,7 +25,7 @@ public class LessonService {
             index = lessonPuzzleRepository.findTopIndex(request.chapter()) + 1;
         } else {
             index = request.puzzleIndex();
-            lessonPuzzleRepository.increaseIndexesFrom(index);
+            lessonPuzzleRepository.increaseIndexesFrom(request.chapter(), index);
         }
 
         LessonPuzzle puzzle = LessonPuzzle.builder()
