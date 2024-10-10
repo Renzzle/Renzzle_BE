@@ -12,7 +12,6 @@ public record AddLessonPuzzleRequest(
         @NotNull(message = "챕터 정보가 없습니다")
         Integer chapter,
 
-        @NotNull(message = "퍼즐 인덱스 정보가 없습니다")
         Integer puzzleIndex,
 
         @NotEmpty(message = "제목 정보가 없습니다")

@@ -1,6 +1,7 @@
 package com.renzzle.backend.domain.puzzle.api;
 
 import com.renzzle.backend.domain.puzzle.api.request.AddLessonPuzzleRequest;
+import com.renzzle.backend.domain.puzzle.domain.LessonPuzzle;
 import com.renzzle.backend.domain.puzzle.service.LessonService;
 import com.renzzle.backend.global.common.response.ApiResponse;
 import com.renzzle.backend.global.util.ApiUtils;
@@ -34,7 +35,9 @@ public class LessonController {
             throw new ValidationException(getErrorMessages(bindingResult));
         }
 
-        return ApiUtils.success(-1L);
+        LessonPuzzle puzzle = lessonService.createLessonPuzzle(request);
+
+        return ApiUtils.success(puzzle.getId());
     }
 
 }
