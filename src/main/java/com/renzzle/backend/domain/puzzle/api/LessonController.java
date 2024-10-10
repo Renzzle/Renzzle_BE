@@ -11,10 +11,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
 import static com.renzzle.backend.global.util.ErrorUtils.getErrorMessages;
 
 @RestController
@@ -38,6 +36,12 @@ public class LessonController {
         LessonPuzzle puzzle = lessonService.createLessonPuzzle(request);
 
         return ApiUtils.success(puzzle.getId());
+    }
+
+    @DeleteMapping("/{lessonId}")
+    public ApiResponse<Object> deleteLessonPuzzle(@PathVariable("lessonId") Long lessonId) {
+        lessonService.deleteLessonPuzzle(lessonId);
+        return ApiUtils.success(null);
     }
 
 }

@@ -9,6 +9,7 @@ import com.renzzle.backend.domain.puzzle.domain.WinColor;
 import com.renzzle.backend.global.util.BoardUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +18,7 @@ public class LessonService {
     private final LessonPuzzleRepository lessonPuzzleRepository;
     private final SolvedLessonPuzzleRepository solvedLessonPuzzleRepository;
 
+    @Transactional
     public LessonPuzzle createLessonPuzzle(AddLessonPuzzleRequest request) {
         String boardKey = BoardUtils.makeBoardKey(request.boardStatus());
 
@@ -41,6 +43,10 @@ public class LessonService {
                 .build();
 
         return lessonPuzzleRepository.save(puzzle);
+    }
+
+    public void deleteLessonPuzzle(Long lessonId) {
+        lessonPuzzleRepository.deleteById(lessonId);
     }
 
 }
