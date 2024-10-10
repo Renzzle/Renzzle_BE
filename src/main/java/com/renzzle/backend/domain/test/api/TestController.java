@@ -16,7 +16,7 @@ import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import static com.renzzle.backend.global.util.BindingResultUtils.getErrorMessages;
+import static com.renzzle.backend.global.util.ErrorUtils.getErrorMessages;
 
 @RestController
 @RequestMapping("/api/test")

@@ -26,7 +26,7 @@ public class EmailService {
     private final SpringTemplateEngine templateEngine;
     private final EmailRedisRepository emailRepository;
 
-    @Value("spring.mail.username")
+    @Value("${spring.mail.username}")
     private String senderEmail;
 
     private String generateRandomCode() {
