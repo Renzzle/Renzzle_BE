@@ -4,6 +4,7 @@ import com.renzzle.backend.domain.user.api.request.SubscriptionRequest;
 import com.renzzle.backend.domain.user.api.request.UpdateLevelRequest;
 import com.renzzle.backend.domain.user.api.response.SubscriptionResponse;
 import com.renzzle.backend.domain.user.api.response.UserResponse;
+import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.domain.user.service.UserService;
 import com.renzzle.backend.global.common.response.ApiResponse;
 import com.renzzle.backend.global.security.UserDetailsImpl;
@@ -52,8 +53,8 @@ public class UserController {
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @RequestBody UpdateLevelRequest request) {
 
-        Long userId = userDetails.getUser().getId();
-        UserResponse userResponse = userService.updateUserLevel(userId, request.getLevel());
+        UserEntity user = userDetails.getUser();
+        UserResponse userResponse = userService.updateUserLevel(user, request.level());
         return ApiUtils.success(userResponse);
     }
 
@@ -86,7 +87,7 @@ public class UserController {
             @RequestBody SubscriptionRequest request) {
 
         Long CurrentUserId = userDetails.getUser().getId();
-        Boolean isSubscribed = userService.changeSubscription(CurrentUserId, request.getUserId());
+        Boolean isSubscribed = userService.changeSubscription(CurrentUserId, request.userId());
 
         return ApiUtils.success(isSubscribed);
     }

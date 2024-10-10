@@ -3,6 +3,7 @@ package com.renzzle.backend.domain.user.domain;
 import com.renzzle.backend.global.common.domain.Status;
 import jakarta.persistence.*;
 import lombok.*;
+import org.apache.catalina.User;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import java.time.Instant;
@@ -44,10 +45,13 @@ public class UserEntity {
     @JoinColumn(name = "color", nullable = false)
     private Color color;
 
-    @Setter
     @ManyToOne
     @JoinColumn(name = "level", nullable = false)
     private UserLevel level;
+
+    public void setUserLevel(UserLevel UserLevel){
+        this.level = UserLevel;
+    }
 
     @PrePersist
     public void prePersist() {

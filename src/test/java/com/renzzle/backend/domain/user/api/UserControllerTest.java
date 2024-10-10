@@ -38,13 +38,13 @@ class UserControllerTest {
     void getUser_ShouldReturnUserDetails() throws Exception {
 
         // UserResponse 생성 - setup에서 하던 일을 여기로 옮김
-        UserResponse userResponse = UserResponse.builder()
-                .id(1L)
-                .email("tintintest46@mail.com")
-                .nickname("tintin")
-                .level(null)
-                .profile(null)
-                .build();
+        UserResponse userResponse = new UserResponse(
+                1L,
+                "tintintest46@mail.com",
+                "tintin",
+                null,
+                null
+        );
 
         // UserEntity로 변환
         UserEntity userEntity = UserEntity.builder()

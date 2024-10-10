@@ -39,13 +39,13 @@ public class UserService {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
 
-        return UserResponse.builder()
-                .id(user.getId())
-                .email(user.getEmail())
-                .nickname(user.getNickname())
-                .level(user.getLevel().getName())
-                .profile(user.getColor().getName())
-                .build();
+        return new UserResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getNickname(),
+                user.getLevel().getName(),
+                user.getColor().getName()
+        );
     }
 
     @Transactional
@@ -61,13 +61,15 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse updateUserLevel(Long userId, String levelName) {
+    public UserResponse updateUserLevel(UserEntity user, String levelName) {
 
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_LOAD_USER_INFO));
+//        UserEntity user = userRepository.findById(userId)
+//                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_LOAD_USER_INFO));
 
-        UserLevel newLevel = userLevelRepository.findById(levelName)
-                .orElseThrow(() -> new CustomException(ErrorCode.LEVEL_NOT_FOUND));
+//        UserLevel newLevel = userLevelRepository.findById(levelName)
+//                .orElseThrow(() -> new CustomException(ErrorCode.LEVEL_NOT_FOUND));
+        UserLevel newLevel = UserLevel.getLevel(levelName);
+
 
 //        UserLevel currentLevel = user.getLevel();
 
@@ -75,20 +77,17 @@ public class UserService {
         log.info("Current user level before update: {}", user.getLevel().getName()); // 현재 레벨 로그
 
         // 사용자 레벨 업데이트
-        user.setLevel(newLevel);
-
-        log.info("Updated user level: {}", user.getLevel().getName());
+        user.setUserLevel(newLevel);
 
 //        userRepository.save(user);
 
-        // 업데이트된 사용자 정보 반환
-        return UserResponse.builder()
-                .id(user.getId())
-                .email(user.getEmail())
-                .nickname(user.getNickname())
-                .level(user.getLevel().getName())
-                .profile(user.getColor().getName())
-                .build();
+        return new UserResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getNickname(),
+                user.getLevel().getName(),
+                user.getColor().getName()
+        );
     }
 
 
@@ -113,11 +112,11 @@ public class UserService {
 
     // SubscriptionEntity를 SubscriptionResponse로 변환
     private SubscriptionResponse createSubscriptionResponse(SubscriptionEntity subscriptionEntity) {
-        return SubscriptionResponse.builder()
-                .userId(subscriptionEntity.getSubscribedTo().getId())
-                .nickname(subscriptionEntity.getSubscribedTo().getNickname())
-                .profile(subscriptionEntity.getSubscribedTo().getColor())
-                .build();
+        return new SubscriptionResponse(
+                subscriptionEntity.getSubscribedTo().getId(),
+                subscriptionEntity.getSubscribedTo().getNickname(),
+                subscriptionEntity.getSubscribedTo().getColor()
+        );
     }
 
     @Transactional
@@ -146,5 +145,4 @@ public class UserService {
             return true;
         }
     }
-
 }

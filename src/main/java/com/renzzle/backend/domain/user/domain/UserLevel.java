@@ -31,20 +31,27 @@ public class UserLevel {
         return new UserLevel(LevelName.BEGINNER.name());
     }
 
-    public UserLevel setLevel(String levelName) {
+    public static UserLevel getLevel(String levelName) {
+        UserLevel userLevel = new UserLevel();
+        userLevel.setLevel(levelName);
+        return userLevel;
+    }
+
+    public static UserLevel getLevel(LevelName levelName) {
+        UserLevel userLevel = new UserLevel();
+        userLevel.name = levelName.name();
+        return userLevel;
+    }
+
+    private void setLevel(String levelName) {
         LevelName[] levelNames = LevelName.values();
         boolean isValid = Arrays.stream(levelNames)
                 .anyMatch(level -> level.name().equals(levelName));
-        if (!isValid)
-            throw new CustomException(ErrorCode.VALIDATION_ERROR);
+        if(!isValid)
+            throw new IllegalArgumentException("Invalid level name: " + levelName);
 
-        return new UserLevel(levelName); // 새 인스턴스 반환
+        this.name = levelName;
     }
-
-    public void setLevel(LevelName levelName) {
-        this.name = levelName.name();
-    }
-
     public String getName(){
         return name;
     }
