@@ -37,4 +37,8 @@ public class Color {
         return new Color(randomColorName.name());
     }
 
+    public String getName() {
+        return name;
+    }
+
 }
