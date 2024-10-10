@@ -8,9 +8,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 public interface LessonPuzzleRepository extends JpaRepository<LessonPuzzle, Long> {
 
-    @Query(value = "SELECT COALESCE(MAX(lesson_index), -1) FROM lesson_puzzle"
+    @Query(value = "SELECT COALESCE(MAX(lesson_index), -1) " +
+            "FROM lesson_puzzle " +
+            "WHERE chapter = :chapter"
             , nativeQuery = true)
-    int findTopIndex();
+    int findTopIndex(int chapter);
 
     @Modifying
     @Transactional

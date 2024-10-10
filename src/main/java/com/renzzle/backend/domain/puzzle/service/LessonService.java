@@ -22,7 +22,7 @@ public class LessonService {
 
         int index;
         if(request.puzzleIndex() == null) {
-            index = lessonPuzzleRepository.findTopIndex() + 1;
+            index = lessonPuzzleRepository.findTopIndex(request.chapter()) + 1;
         } else {
             index = request.puzzleIndex();
             lessonPuzzleRepository.increaseIndexesFrom(index);
