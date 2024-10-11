@@ -2,6 +2,7 @@ package com.renzzle.backend.domain.puzzle.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import java.time.Instant;
 
@@ -10,7 +11,12 @@ import java.time.Instant;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder(toBuilder = true)
-@Table(name = "lesson_puzzle")
+@Table(
+        name = "lesson_puzzle",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"chapter, lessonIndex"})
+        }
+)
 public class LessonPuzzle {
 
         @Id
@@ -20,7 +26,7 @@ public class LessonPuzzle {
         @Column(name = "chapter", nullable = false)
         private int chapter;
 
-        @Column(name = "lesson_index", unique = true, nullable = false)
+        @Column(name = "lesson_index", nullable = false)
         private int lessonIndex;
 
         @Column(name = "title", nullable = false, length = 31)
@@ -38,12 +44,13 @@ public class LessonPuzzle {
         @Column(name = "description")
         private String description;
 
+        @CreationTimestamp
+        @Column(name = "created_at", updatable = false, nullable = false)
+        private Instant createdAt;
+
         @UpdateTimestamp
         @Column(name = "updated_at", nullable = false)
         private Instant updatedAt;
-
-        @Column(name = "deleted_at")
-        private Instant deletedAt;
 
         @ManyToOne
         @JoinColumn(name = "difficulty", nullable = false)

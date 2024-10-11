@@ -67,11 +67,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if(user.isEmpty())
             throw new CustomException(ErrorCode.GLOBAL_NOT_FOUND);
 
-        List<String> roles = new ArrayList<>();
+        List<String> authorities = new ArrayList<>();
         if(adminRepository.existsByUser(user.get()))
-            roles.add(ADMIN);
+            authorities.add(ADMIN);
 
-        return new UserDetailsImpl(user.get(), user.get().getPassword(), roles);
+        return new UserDetailsImpl(user.get(), user.get().getPassword(), authorities);
     }
 
     private String resolveToken(HttpServletRequest request) {
