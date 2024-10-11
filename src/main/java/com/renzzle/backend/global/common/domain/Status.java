@@ -12,6 +12,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Status {
 
+    public static final String STATUS_IS_NOT_DELETED = "status != 'DELETED'";
+
     @Id
     @Column(length = 31)
     private String name;
@@ -28,8 +30,10 @@ public class Status {
         return new Status(StatusName.CREATED.name());
     }
 
-    public void setStatus(StatusName statusName) {
-        this.name = statusName.name();
+    public static Status getStatus(StatusName statusName) {
+        Status status = new Status();
+        status.name = statusName.name();
+        return status;
     }
 
 }
