@@ -34,9 +34,9 @@ public enum ErrorCode {
     CANNOT_PARSE_TOKEN(HttpStatus.UNAUTHORIZED, "J4014", "토큰 파싱에 실패하였습니다."),
 
     //User
-    CANNOT_LOAD_USER_INFO(HttpStatus.NOT_FOUND, "U4000", "사용자 정보를 불러올 수 없습니다."),
-    CANNOT_FIND_USER(HttpStatus.BAD_REQUEST, "U4010", "사용자를 찾을 수 없습니다."),
-    LEVEL_NOT_FOUND(HttpStatus.NOT_FOUND, "U4011", "해당 레벨을 찾을 수 없습니다."),
+    CANNOT_LOAD_USER_INFO(HttpStatus.NOT_FOUND, "U4040", "사용자 정보를 불러올 수 없습니다."),
+    CANNOT_FIND_USER(HttpStatus.BAD_REQUEST, "U4000", "사용자를 찾을 수 없습니다."),
+    LEVEL_NOT_FOUND(HttpStatus.NOT_FOUND, "U4041", "해당 레벨을 찾을 수 없습니다."),
     INVALID_SUBSCRIPTION_REQUEST(HttpStatus.BAD_REQUEST, "U4001", "올바르지 않은 구독자 정보입니다.");
 
     private final HttpStatus status;

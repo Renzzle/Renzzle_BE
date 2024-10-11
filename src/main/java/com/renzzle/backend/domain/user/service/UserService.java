@@ -39,13 +39,13 @@ public class UserService {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
 
-        return new UserResponse(
-                user.getId(),
-                user.getEmail(),
-                user.getNickname(),
-                user.getLevel().getName(),
-                user.getColor().getName()
-        );
+        return UserResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .nickname(user.getNickname())
+                .level(user.getLevel().getName())
+                .profile(user.getColor().getName())
+                .build();
     }
 
     @Transactional
@@ -63,31 +63,18 @@ public class UserService {
     @Transactional
     public UserResponse updateUserLevel(UserEntity user, String levelName) {
 
-//        UserEntity user = userRepository.findById(userId)
-//                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_LOAD_USER_INFO));
-
-//        UserLevel newLevel = userLevelRepository.findById(levelName)
-//                .orElseThrow(() -> new CustomException(ErrorCode.LEVEL_NOT_FOUND));
         UserLevel newLevel = UserLevel.getLevel(levelName);
-
-
-//        UserLevel currentLevel = user.getLevel();
-
-        log.info("Received level name: {}", levelName); // 매개변수 levelName 로그
-        log.info("Current user level before update: {}", user.getLevel().getName()); // 현재 레벨 로그
 
         // 사용자 레벨 업데이트
         user.setUserLevel(newLevel);
 
-//        userRepository.save(user);
-
-        return new UserResponse(
-                user.getId(),
-                user.getEmail(),
-                user.getNickname(),
-                user.getLevel().getName(),
-                user.getColor().getName()
-        );
+        return UserResponse.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .nickname(user.getNickname())
+                .level(user.getLevel().getName())
+                .profile(user.getColor().getName())
+                .build();
     }
 
 
@@ -112,12 +99,14 @@ public class UserService {
 
     // SubscriptionEntity를 SubscriptionResponse로 변환
     private SubscriptionResponse createSubscriptionResponse(SubscriptionEntity subscriptionEntity) {
-        return new SubscriptionResponse(
-                subscriptionEntity.getSubscribedTo().getId(),
-                subscriptionEntity.getSubscribedTo().getNickname(),
-                subscriptionEntity.getSubscribedTo().getColor()
-        );
+        return SubscriptionResponse.builder()
+                .userId(subscriptionEntity.getSubscribedTo().getId())
+                .nickname(subscriptionEntity.getSubscribedTo().getNickname())
+                .profile(subscriptionEntity.getSubscribedTo().getColor())
+                .build();
     }
+
+
 
     @Transactional
     public Boolean changeSubscription(Long subscriberId, Long subscribedToId) {
