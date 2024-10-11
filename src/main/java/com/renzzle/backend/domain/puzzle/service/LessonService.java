@@ -84,8 +84,12 @@ public class LessonService {
 
     @Transactional(readOnly = true)
     public double getLessonProgress(UserEntity user, int chapter) {
-        // TODO
-        return 0;
+        int allLessonCnt = lessonPuzzleRepository.countAllLessonByChapter(chapter);
+        if(allLessonCnt == 0) return 0.0;
+
+        int solveCnt = solvedLessonPuzzleRepository.countSolvedLesson(user.getId(), chapter);
+
+        return (double) solveCnt / allLessonCnt * 100;
     }
 
 }

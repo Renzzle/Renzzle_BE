@@ -29,4 +29,9 @@ public interface LessonPuzzleRepository extends JpaRepository<LessonPuzzle, Long
             nativeQuery = true)
     Optional<LessonPuzzle> findByChapterAndIndex(int chapter, int index);
 
+    @Query(value = "SELECT COUNT(*) FROM lesson_puzzle " +
+            "WHERE chapter = :chapter",
+            nativeQuery = true)
+    int countAllLessonByChapter(int chapter);
+
 }
