@@ -3,6 +3,7 @@ package com.renzzle.backend.domain.puzzle.domain;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import java.time.Instant;
@@ -12,7 +13,12 @@ import java.time.Instant;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder(toBuilder = true)
-@Table(name = "solved_lesson_puzzle")
+@Table(
+        name = "solved_lesson_puzzle",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"user_id", "lesson_id"})
+        }
+)
 public class SolvedLessonPuzzle {
 
     @Id
@@ -29,7 +35,8 @@ public class SolvedLessonPuzzle {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private LessonPuzzle puzzle;
 
-    @Column(name = "solved_at", nullable = false)
+    @CreationTimestamp
+    @Column(name = "solved_at", updatable = false, nullable = false)
     private Instant solvedAt;
 
 }
