@@ -6,21 +6,20 @@ import com.renzzle.backend.domain.puzzle.api.response.GetCommunityPuzzleResponse
 import com.renzzle.backend.domain.puzzle.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.dao.UserCommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.domain.*;
-import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.constant.SortOption;
+import com.renzzle.backend.global.common.domain.Status;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import com.renzzle.backend.global.util.BoardUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
+import static com.renzzle.backend.global.common.constant.StringConstant.DELETED_USER;
 import static com.renzzle.backend.global.common.constant.TimeConstant.CONST_FUTURE_INSTANT;
 
 @Service
@@ -116,6 +115,8 @@ public class CommunityService {
         for(CommunityPuzzle puzzle : puzzleList) {
             double correctRate = (double) puzzle.getSolvedCount() / (puzzle.getSolvedCount() + puzzle.getFailedCount()) * 100;
             List<String> tags = getTags(puzzle);
+            String authorName = (puzzle.getUser().getStatus() != Status.getStatus(Status.StatusName.DELETED)) ?
+                    puzzle.getUser().getNickname() : DELETED_USER;
 
             response.add(
                     GetCommunityPuzzleResponse.builder()
@@ -123,7 +124,7 @@ public class CommunityService {
                             .title(puzzle.getTitle())
                             .boardStatus(puzzle.getBoardStatus())
                             .authorId(puzzle.getUser().getId())
-                            .authorName(puzzle.getUser().getNickname())
+                            .authorName(authorName)
                             .solvedCount(puzzle.getSolvedCount())
                             .correctRate(correctRate)
                             .depth(puzzle.getDepth())

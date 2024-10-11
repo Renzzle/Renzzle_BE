@@ -30,8 +30,10 @@ public class Status {
         return new Status(StatusName.CREATED.name());
     }
 
-    public void setStatus(StatusName statusName) {
-        this.name = statusName.name();
+    public static Status getStatus(StatusName statusName) {
+        Status status = new Status();
+        status.name = statusName.name();
+        return status;
     }
 
 }

@@ -3,6 +3,7 @@ package com.renzzle.backend.domain.user.domain;
 import com.renzzle.backend.global.common.domain.Status;
 import jakarta.persistence.*;
 import lombok.*;
+import org.apache.catalina.User;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -35,7 +36,7 @@ public class UserEntity {
     @Column(name = "password", nullable = false)
     private String password;
 
-    @Column(name = "nickname", nullable = false, unique = true, length = 31)
+    @Column(name = "nickname", nullable = false, length = 31)
     private String nickname;
 
     @CreationTimestamp
@@ -61,6 +62,10 @@ public class UserEntity {
     @JoinColumn(name = "level", nullable = false)
     private UserLevel level;
 
+    public void setUserLevel(UserLevel UserLevel){
+        this.level = UserLevel;
+    }
+
     @PrePersist
     public void onPrePersist() {
         if(status == null) {
@@ -79,7 +84,7 @@ public class UserEntity {
 
     @PreRemove
     public void onPreRemove() {
-        this.status.setStatus(Status.StatusName.DELETED);
+        this.status = Status.getStatus(Status.StatusName.DELETED);
         this.deletedAt = Instant.now();
     }
 
