@@ -15,6 +15,7 @@ public enum ErrorCode {
 
     // SQL
     EMPTY_RESULT_ERROR(HttpStatus.NOT_FOUND, "S404", "요청의 결과가 존재하지 않습니다."),
+    CONSTRAINT_VIOLATION_ERROR(HttpStatus.CONFLICT, "S409", "데이터베이스 제약 조건을 위배하였습니다."),
 
     // Auth
     EXCEED_EMAIL_AUTH_REQUEST(HttpStatus.TOO_MANY_REQUESTS, "A429", "이메일 인증 횟수를 초과했습니다."),
@@ -35,9 +36,13 @@ public enum ErrorCode {
 
     //User
     CANNOT_LOAD_USER_INFO(HttpStatus.NOT_FOUND, "U4040", "사용자 정보를 불러올 수 없습니다."),
-    CANNOT_FIND_USER(HttpStatus.BAD_REQUEST, "U4000", "사용자를 찾을 수 없습니다."),
     LEVEL_NOT_FOUND(HttpStatus.NOT_FOUND, "U4041", "해당 레벨을 찾을 수 없습니다."),
-    INVALID_SUBSCRIPTION_REQUEST(HttpStatus.BAD_REQUEST, "U4001", "올바르지 않은 구독자 정보입니다.");
+    CANNOT_FIND_USER(HttpStatus.BAD_REQUEST, "U4000", "사용자를 찾을 수 없습니다."),
+    INVALID_SUBSCRIPTION_REQUEST(HttpStatus.BAD_REQUEST, "U4001", "올바르지 않은 구독자 정보입니다."),
+
+    // Community Puzzle
+    CANNOT_FIND_COMMUNITY_PUZZLE(HttpStatus.NOT_FOUND, "P404", "해당하는 커뮤니티 퍼즐을 찾을 수 없습니다.")
+    ;
 
     private final HttpStatus status;
     private final String code;

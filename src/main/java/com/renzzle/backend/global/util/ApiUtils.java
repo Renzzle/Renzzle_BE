@@ -6,8 +6,7 @@ import org.springframework.http.ResponseEntity;
 
 public class ApiUtils {
 
-    private ApiUtils() {
-    }
+    private ApiUtils() {}
 
     public static <T> ApiResponse<T> success(T response) {
         return ApiResponse.create(true, response, null);

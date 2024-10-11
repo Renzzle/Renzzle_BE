@@ -52,6 +52,7 @@ public class UserLevel {
 
         this.name = levelName;
     }
+
     public String getName(){
         return name;
     }
