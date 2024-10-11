@@ -82,4 +82,10 @@ public class LessonService {
         else return nextPuzzle.getId();
     }
 
+    @Transactional(readOnly = true)
+    public double getLessonProgress(UserEntity user, int chapter) {
+        // TODO
+        return 0;
+    }
+
 }

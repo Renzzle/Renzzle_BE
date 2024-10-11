@@ -2,6 +2,7 @@ package com.renzzle.backend.domain.puzzle.api;
 
 import com.renzzle.backend.domain.puzzle.api.request.AddLessonPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.api.request.SolveLessonPuzzleRequest;
+import com.renzzle.backend.domain.puzzle.api.response.GetLessonProgressResponse;
 import com.renzzle.backend.domain.puzzle.api.response.SolveLessonPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.domain.LessonPuzzle;
 import com.renzzle.backend.domain.puzzle.service.LessonService;
@@ -64,6 +65,13 @@ public class LessonController {
         return ApiUtils.success(SolveLessonPuzzleResponse.builder()
                 .unlockedId(unlockedId)
                 .build());
+    }
+
+    @Operation(summary = "Check lesson progress", description = "Return lesson progress by chapter")
+    @GetMapping("/{chapter}/progress")
+    public ApiResponse<GetLessonProgressResponse> getLessonProgress(@PathVariable("chapter") Integer chapter) {
+        // TODO
+        return ApiUtils.success(null);
     }
 
 }
