@@ -1,6 +1,8 @@
 package com.renzzle.backend.domain.puzzle.dao;
 
 import com.renzzle.backend.domain.puzzle.domain.LessonPuzzle;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -33,5 +35,7 @@ public interface LessonPuzzleRepository extends JpaRepository<LessonPuzzle, Long
             "WHERE chapter = :chapter",
             nativeQuery = true)
     int countAllLessonByChapter(int chapter);
+
+    Page<LessonPuzzle> findByChapter(int chapter, Pageable pageable);
 
 }
