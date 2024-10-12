@@ -33,4 +33,12 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
             @Param("size") int size
     );
 
+    List<CommunityPuzzle> findByTitleContaining(String title);
+
+    @Query(value = "SELECT * FROM community_puzzle cp " +
+            "JOIN user u ON cp.author_id = u.id " +
+            "WHERE u.nickname LIKE CONCAT('%', :name, '%')",
+            nativeQuery = true)
+    List<CommunityPuzzle> findByAuthorName(@Param("name") String name);
+
 }

@@ -111,6 +111,10 @@ public class CommunityService {
             }
         }
 
+        return buildGetCommunityPuzzleResponse(puzzleList);
+    }
+
+    private List<GetCommunityPuzzleResponse> buildGetCommunityPuzzleResponse(List<CommunityPuzzle> puzzleList) {
         List<GetCommunityPuzzleResponse> response = new ArrayList<>();
         for(CommunityPuzzle puzzle : puzzleList) {
             double correctRate = (double) puzzle.getSolvedCount() / (puzzle.getSolvedCount() + puzzle.getFailedCount()) * 100;
@@ -139,7 +143,6 @@ public class CommunityService {
         return response;
     }
 
-    @Transactional(readOnly = true)
     private List<CommunityPuzzle> getRecommendCommunityPuzzleList(Long id, Integer size) {
         // TODO: add recommend algorithm
         Instant lastCreatedAt;
@@ -158,7 +161,6 @@ public class CommunityService {
         return communityPuzzleRepository.findPuzzlesSortByCreatedAt(lastCreatedAt, lastId, size);
     }
 
-    @Transactional(readOnly = true)
     private List<CommunityPuzzle> getCommunityPuzzleListSortByLike(Long id, Integer size) {
         int lastLikeCnt;
         long lastId;
@@ -176,7 +178,6 @@ public class CommunityService {
         return communityPuzzleRepository.findPuzzlesSortByLike(lastLikeCnt, lastId, size);
     }
 
-    @Transactional(readOnly = true)
     private List<CommunityPuzzle> getCommunityPuzzleListSortByCreatedAt(Long id, Integer size) {
         Instant lastCreatedAt;
         long lastId;
@@ -194,7 +195,6 @@ public class CommunityService {
         return communityPuzzleRepository.findPuzzlesSortByCreatedAt(lastCreatedAt, lastId, size);
     }
 
-    @Transactional(readOnly = true)
     private List<String> getTags(CommunityPuzzle puzzle) {
         List<String> tags = new ArrayList<>();
 
@@ -209,6 +209,34 @@ public class CommunityService {
         }
 
         return tags;
+    }
+
+    @Transactional(readOnly = true)
+    public List<GetCommunityPuzzleResponse> searchCommunityPuzzle(String query) {
+        List<CommunityPuzzle> puzzles = new ArrayList<>();
+
+        Optional<CommunityPuzzle> searchById = findByIdQuery(query);
+        searchById.ifPresent(puzzles::add);
+
+        List<CommunityPuzzle> searchByTitle = communityPuzzleRepository.findByTitleContaining(query);
+        puzzles.addAll(searchByTitle);
+
+        List<CommunityPuzzle> searchByAuthor = communityPuzzleRepository.findByAuthorName(query);
+        puzzles.addAll(searchByAuthor);
+
+        return buildGetCommunityPuzzleResponse(puzzles);
+    }
+
+    private Optional<CommunityPuzzle> findByIdQuery(String query) {
+        if(query == null || query.isEmpty())
+            return Optional.empty();
+
+        try {
+            long id = Long.parseLong(query);
+            return communityPuzzleRepository.findById(id);
+        } catch(Exception e) {
+            return Optional.empty();
+        }
     }
 
 }

@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
@@ -16,7 +17,7 @@ public interface LessonPuzzleRepository extends JpaRepository<LessonPuzzle, Long
             "FROM lesson_puzzle " +
             "WHERE chapter = :chapter",
             nativeQuery = true)
-    int findTopIndex(int chapter);
+    int findTopIndex(@Param("chapter") int chapter);
 
     @Modifying
     @Transactional
@@ -24,17 +25,19 @@ public interface LessonPuzzleRepository extends JpaRepository<LessonPuzzle, Long
             "SET lesson_index = lesson_index + 1 " +
             "WHERE lesson_index >= :targetIdx AND chapter = :chapter",
             nativeQuery = true)
-    void increaseIndexesFrom(int chapter, int targetIdx);
+    void increaseIndexesFrom(@Param("chapter") int chapter,
+                             @Param("targetIdx") int targetIdx);
 
     @Query(value = "SELECT * FROM lesson_puzzle " +
             "WHERE chapter = :chapter AND lesson_index = :index",
             nativeQuery = true)
-    Optional<LessonPuzzle> findByChapterAndIndex(int chapter, int index);
+    Optional<LessonPuzzle> findByChapterAndIndex(@Param("chapter") int chapter,
+                                                 @Param("index") int index);
 
     @Query(value = "SELECT COUNT(*) FROM lesson_puzzle " +
             "WHERE chapter = :chapter",
             nativeQuery = true)
-    int countAllLessonByChapter(int chapter);
+    int countAllLessonByChapter(@Param("chapter") int chapter);
 
     Page<LessonPuzzle> findByChapter(int chapter, Pageable pageable);
 
