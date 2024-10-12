@@ -95,7 +95,7 @@ public class CommunityController {
     @Operation(summary = "Search community puzzle", description = "Return community puzzle list according to query")
     @GetMapping("/search")
     public ApiResponse<List<GetCommunityPuzzleResponse>> searchCommunityPuzzle(@RequestParam("query") String query) {
-        return ApiUtils.success(null);
+        return ApiUtils.success(communityService.searchCommunityPuzzle(query));
     }
 
 }
