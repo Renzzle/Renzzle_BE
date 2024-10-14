@@ -19,6 +19,15 @@ public interface LessonPuzzleRepository extends JpaRepository<LessonPuzzle, Long
             nativeQuery = true)
     int findTopIndex(@Param("chapter") int chapter);
 
+
+    @Query(value = "SELECT COALESCE(MAX(l.lesson_index), -1) " +
+            "FROM lesson_puzzle l " +
+            "JOIN solved_lesson_puzzle sl ON l.id = sl.lesson_id " +
+            "WHERE sl.user_id = :userId AND l.chapter = :chapter",
+            nativeQuery = true)
+    int findTopSolvedPuzzleIndex(@Param("userId") Long userId,
+                                 @Param("chapter") int chapter);
+
     @Modifying
     @Transactional
     @Query(value = "UPDATE lesson_puzzle " +

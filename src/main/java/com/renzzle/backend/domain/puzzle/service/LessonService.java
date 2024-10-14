@@ -98,9 +98,12 @@ public class LessonService {
             throw new CustomException(ErrorCode.NO_SUCH_LESSON_PAGE);
         }
 
+        int solvedTopIndex = lessonPuzzleRepository.findTopSolvedPuzzleIndex(user.getId(), chapter);
         List<GetLessonPuzzleResponse> response = new ArrayList<>();
         lessonPuzzles.forEach(lessonPuzzle -> {
             boolean isLocked = solvedLessonPuzzleRepository.existsByUserAndPuzzle(user, lessonPuzzle);
+            if(!isLocked && lessonPuzzle.getLessonIndex() == solvedTopIndex + 1)
+                isLocked = true;
 
             response.add(GetLessonPuzzleResponse.builder()
                     .id(lessonPuzzle.getId())
