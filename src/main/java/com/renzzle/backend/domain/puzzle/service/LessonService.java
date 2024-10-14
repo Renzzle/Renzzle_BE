@@ -100,7 +100,7 @@ public class LessonService {
 
         List<GetLessonPuzzleResponse> response = new ArrayList<>();
         lessonPuzzles.forEach(lessonPuzzle -> {
-            boolean isLocked = solvedLessonPuzzleRepository.existsByUserIdAndLessonId(user.getId(), lessonPuzzle.getId());
+            boolean isLocked = solvedLessonPuzzleRepository.existsByUserAndPuzzle(user, lessonPuzzle);
 
             response.add(GetLessonPuzzleResponse.builder()
                     .id(lessonPuzzle.getId())

@@ -1,6 +1,8 @@
 package com.renzzle.backend.domain.puzzle.dao;
 
+import com.renzzle.backend.domain.puzzle.domain.LessonPuzzle;
 import com.renzzle.backend.domain.puzzle.domain.SolvedLessonPuzzle;
+import com.renzzle.backend.domain.user.domain.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,7 +17,7 @@ public interface SolvedLessonPuzzleRepository extends JpaRepository<SolvedLesson
     Optional<SolvedLessonPuzzle> findByUserIdAndLessonId(@Param("userId") Long userId,
                                                          @Param("lessonId") Long lessonId);
 
-    boolean existsByUserIdAndLessonId(Long userId, Long lessonId);
+    boolean existsByUserAndPuzzle(UserEntity user, LessonPuzzle puzzle);
 
     @Query(value = "SELECT COUNT(*) " +
             "FROM solved_lesson_puzzle sl " +
