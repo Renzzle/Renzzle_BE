@@ -1,7 +1,5 @@
 package com.renzzle.backend.domain.puzzle.api.response;
 
-import com.renzzle.backend.domain.puzzle.domain.Difficulty;
-import com.renzzle.backend.domain.puzzle.domain.WinColor;
 import lombok.Builder;
 import java.util.List;
 
@@ -15,8 +13,8 @@ public record GetCommunityPuzzleResponse(
         int solvedCount,
         double correctRate,
         int depth,
-        Difficulty difficulty,
-        WinColor winColor,
+        String difficulty,
+        String winColor,
         int likeCount,
         List<String> tag
 ) { }

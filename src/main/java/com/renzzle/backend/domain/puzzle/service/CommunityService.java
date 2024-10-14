@@ -19,6 +19,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
 import static com.renzzle.backend.global.common.constant.StringConstant.DELETED_USER;
 import static com.renzzle.backend.global.common.constant.TimeConstant.CONST_FUTURE_INSTANT;
 
@@ -117,7 +119,9 @@ public class CommunityService {
     private List<GetCommunityPuzzleResponse> buildGetCommunityPuzzleResponse(List<CommunityPuzzle> puzzleList) {
         List<GetCommunityPuzzleResponse> response = new ArrayList<>();
         for(CommunityPuzzle puzzle : puzzleList) {
-            double correctRate = (double) puzzle.getSolvedCount() / (puzzle.getSolvedCount() + puzzle.getFailedCount()) * 100;
+            double correctRate = 0.0;
+            if(puzzle.getSolvedCount() != 0)
+                correctRate = (double) puzzle.getSolvedCount() / (puzzle.getSolvedCount() + puzzle.getFailedCount()) * 100;
             List<String> tags = getTags(puzzle);
             String authorName = (puzzle.getUser().getStatus() != Status.getStatus(Status.StatusName.DELETED)) ?
                     puzzle.getUser().getNickname() : DELETED_USER;
@@ -132,8 +136,8 @@ public class CommunityService {
                             .solvedCount(puzzle.getSolvedCount())
                             .correctRate(correctRate)
                             .depth(puzzle.getDepth())
-                            .difficulty(puzzle.getDifficulty())
-                            .winColor(puzzle.getWinColor())
+                            .difficulty(puzzle.getDifficulty().getName())
+                            .winColor(puzzle.getWinColor().getName())
                             .likeCount(puzzle.getLikeCount())
                             .tag(tags)
                             .build()
@@ -224,7 +228,7 @@ public class CommunityService {
         List<CommunityPuzzle> searchByAuthor = communityPuzzleRepository.findByAuthorName(query);
         puzzles.addAll(searchByAuthor);
 
-        return buildGetCommunityPuzzleResponse(puzzles);
+        return buildGetCommunityPuzzleResponse(puzzles.stream().distinct().toList());
     }
 
     private Optional<CommunityPuzzle> findByIdQuery(String query) {

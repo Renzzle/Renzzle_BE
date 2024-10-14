@@ -107,8 +107,8 @@ public class LessonService {
                     .title(lessonPuzzle.getTitle())
                     .boardStatus(lessonPuzzle.getBoardStatus())
                     .depth(lessonPuzzle.getDepth())
-                    .difficulty(lessonPuzzle.getDifficulty())
-                    .winColor(lessonPuzzle.getWinColor())
+                    .difficulty(lessonPuzzle.getDifficulty().getName())
+                    .winColor(lessonPuzzle.getWinColor().getName())
                     .description(lessonPuzzle.getDescription())
                     .isLocked(isLocked)
                     .build());
