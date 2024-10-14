@@ -37,6 +37,15 @@ public interface LessonPuzzleRepository extends JpaRepository<LessonPuzzle, Long
     void increaseIndexesFrom(@Param("chapter") int chapter,
                              @Param("targetIdx") int targetIdx);
 
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE lesson_puzzle " +
+            "SET lesson_index = lesson_index - 1 " +
+            "WHERE lesson_index > :targetIdx AND chapter = :chapter",
+            nativeQuery = true)
+    void decreaseIndexesFrom(@Param("chapter") int chapter,
+                             @Param("targetIdx") int targetIdx);
+
     @Query(value = "SELECT * FROM lesson_puzzle " +
             "WHERE chapter = :chapter AND lesson_index = :index",
             nativeQuery = true)

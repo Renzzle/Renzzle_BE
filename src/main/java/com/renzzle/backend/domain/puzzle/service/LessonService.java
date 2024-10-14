@@ -58,7 +58,12 @@ public class LessonService {
 
     @Transactional
     public void deleteLessonPuzzle(Long lessonId) {
+        Optional<LessonPuzzle> puzzle = lessonPuzzleRepository.findById(lessonId);
+        if(puzzle.isEmpty())
+            throw new CustomException(ErrorCode.CANNOT_FIND_LESSON_PUZZLE);
+
         lessonPuzzleRepository.deleteById(lessonId);
+        lessonPuzzleRepository.decreaseIndexesFrom(puzzle.get().getChapter(), puzzle.get().getLessonIndex());
     }
 
     @Transactional
