@@ -86,6 +86,8 @@ public class BoardUtils {
             if(!isCharInAtoO(charPart))
                 return false;
 
+            if(str.length() <= i + 1)
+                return false;
             if(!isNonZeroDigit(str.charAt(i + 1)))
                 return false;
             int digitsNum = calculateDigitsNum(str, i + 1);
@@ -151,6 +153,8 @@ public class BoardUtils {
         int n = (charPart - 'a') * 15;
 
         // determine the number of digits
+        if(index + 1 >= boardStatus.length())
+            throwIllegalBoardStatusException(boardStatus);
         if(!isNonZeroDigit(boardStatus.charAt(index + 1)))
             throwIllegalBoardStatusException(boardStatus);
         int digitsNum = calculateDigitsNum(boardStatus, index + 1);

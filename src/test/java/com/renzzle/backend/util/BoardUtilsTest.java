@@ -40,6 +40,13 @@ public class BoardUtilsTest {
         cause = exception.getCause();
         Assertions.assertInstanceOf(IllegalArgumentException.class, cause);
 
+        // no number part
+        exception = Assertions.assertThrows(InvocationTargetException.class, () -> {
+            method.invoke(null, "b", 0);
+        });
+        cause = exception.getCause();
+        Assertions.assertInstanceOf(IllegalArgumentException.class, cause);
+
         // character part invalid character
         exception = Assertions.assertThrows(InvocationTargetException.class, () -> {
             method.invoke(null, "r13", 0);
