@@ -1,12 +1,16 @@
 package com.renzzle.backend.domain.puzzle.api;
 
 import com.renzzle.backend.domain.puzzle.api.request.AddLessonPuzzleRequest;
+import com.renzzle.backend.domain.puzzle.api.request.GetLessonPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.api.request.SolveLessonPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.api.response.GetLessonProgressResponse;
+import com.renzzle.backend.domain.puzzle.api.response.GetLessonPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.api.response.SolveLessonPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.domain.LessonPuzzle;
 import com.renzzle.backend.domain.puzzle.service.LessonService;
 import com.renzzle.backend.global.common.response.ApiResponse;
+import com.renzzle.backend.global.exception.CustomException;
+import com.renzzle.backend.global.exception.ErrorCode;
 import com.renzzle.backend.global.security.UserDetailsImpl;
 import com.renzzle.backend.global.util.ApiUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 import static com.renzzle.backend.global.util.ErrorUtils.getErrorMessages;
 
 @RestController
@@ -67,11 +72,41 @@ public class LessonController {
                 .build());
     }
 
+    @Operation(summary = "Get lesson puzzle data", description = "Return lesson puzzle list")
+    @GetMapping("/{chapter}")
+    public ApiResponse<List<GetLessonPuzzleResponse>> getLessonPuzzle(
+            @PathVariable("chapter") Integer chapter,
+            @AuthenticationPrincipal UserDetailsImpl user,
+            @ModelAttribute GetLessonPuzzleRequest request,
+            BindingResult bindingResult
+    ) {
+        if(bindingResult.hasErrors()) {
+            throw new ValidationException(getErrorMessages(bindingResult));
+        }
+        if(chapter == null) {
+            throw new CustomException(ErrorCode.VALIDATION_ERROR);
+        }
+
+        int page = (request.page() != null) ? request.page() : 0;
+        int size = (request.size() != null) ? request.size() : 10;
+
+        return ApiUtils.success(lessonService.getLessonPuzzleList(user.getUser(), chapter, page, size));
+    }
+
     @Operation(summary = "Check lesson progress", description = "Return lesson progress by chapter")
     @GetMapping("/{chapter}/progress")
-    public ApiResponse<GetLessonProgressResponse> getLessonProgress(@PathVariable("chapter") Integer chapter) {
-        // TODO
-        return ApiUtils.success(null);
+    public ApiResponse<GetLessonProgressResponse> getLessonProgress(
+            @PathVariable("chapter") Integer chapter,
+            @AuthenticationPrincipal UserDetailsImpl user
+    ) {
+        if(chapter == null) {
+            throw new CustomException(ErrorCode.VALIDATION_ERROR);
+        }
+        double progress = lessonService.getLessonProgress(user.getUser(), chapter);
+
+        return ApiUtils.success(GetLessonProgressResponse.builder()
+                .progress(progress)
+                .build());
     }
 
 }

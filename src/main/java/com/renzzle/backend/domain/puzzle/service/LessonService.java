@@ -1,6 +1,7 @@
 package com.renzzle.backend.domain.puzzle.service;
 
 import com.renzzle.backend.domain.puzzle.api.request.AddLessonPuzzleRequest;
+import com.renzzle.backend.domain.puzzle.api.response.GetLessonPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.dao.LessonPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.dao.SolvedLessonPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.domain.Difficulty;
@@ -12,9 +13,15 @@ import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import com.renzzle.backend.global.util.BoardUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -51,7 +58,12 @@ public class LessonService {
 
     @Transactional
     public void deleteLessonPuzzle(Long lessonId) {
+        Optional<LessonPuzzle> puzzle = lessonPuzzleRepository.findById(lessonId);
+        if(puzzle.isEmpty())
+            throw new CustomException(ErrorCode.CANNOT_FIND_LESSON_PUZZLE);
+
         lessonPuzzleRepository.deleteById(lessonId);
+        lessonPuzzleRepository.decreaseIndexesFrom(puzzle.get().getChapter(), puzzle.get().getLessonIndex());
     }
 
     @Transactional
@@ -83,9 +95,44 @@ public class LessonService {
     }
 
     @Transactional(readOnly = true)
+    public List<GetLessonPuzzleResponse> getLessonPuzzleList(UserEntity user, int chapter, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("lessonIndex").ascending());
+        Page<LessonPuzzle> lessonPuzzles = lessonPuzzleRepository.findByChapter(chapter, pageable);
+
+        if(lessonPuzzles.isEmpty()) {
+            throw new CustomException(ErrorCode.NO_SUCH_LESSON_PAGE);
+        }
+
+        int solvedTopIndex = lessonPuzzleRepository.findTopSolvedPuzzleIndex(user.getId(), chapter);
+        List<GetLessonPuzzleResponse> response = new ArrayList<>();
+        lessonPuzzles.forEach(lessonPuzzle -> {
+            boolean isLocked = solvedLessonPuzzleRepository.existsByUserAndPuzzle(user, lessonPuzzle);
+            if(!isLocked && lessonPuzzle.getLessonIndex() == solvedTopIndex + 1)
+                isLocked = true;
+
+            response.add(GetLessonPuzzleResponse.builder()
+                    .id(lessonPuzzle.getId())
+                    .title(lessonPuzzle.getTitle())
+                    .boardStatus(lessonPuzzle.getBoardStatus())
+                    .depth(lessonPuzzle.getDepth())
+                    .difficulty(lessonPuzzle.getDifficulty().getName())
+                    .winColor(lessonPuzzle.getWinColor().getName())
+                    .description(lessonPuzzle.getDescription())
+                    .isLocked(isLocked)
+                    .build());
+        });
+
+        return response;
+    }
+
+    @Transactional(readOnly = true)
     public double getLessonProgress(UserEntity user, int chapter) {
-        // TODO
-        return 0;
+        int allLessonCnt = lessonPuzzleRepository.countAllLessonByChapter(chapter);
+        if(allLessonCnt == 0) return 0.0;
+
+        int solveCnt = solvedLessonPuzzleRepository.countSolvedLesson(user.getId(), chapter);
+
+        return (double) solveCnt / allLessonCnt * 100;
     }
 
 }

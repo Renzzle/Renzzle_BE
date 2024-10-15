@@ -14,7 +14,7 @@ import java.time.Instant;
 @Table(
         name = "lesson_puzzle",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"chapter, lessonIndex"})
+                @UniqueConstraint(columnNames = {"chapter, lesson_index"})
         }
 )
 public class LessonPuzzle {

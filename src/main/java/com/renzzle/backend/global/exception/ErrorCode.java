@@ -43,7 +43,8 @@ public enum ErrorCode {
 
     // Puzzle
     CANNOT_FIND_COMMUNITY_PUZZLE(HttpStatus.NOT_FOUND, "P4040", "해당하는 커뮤니티 퍼즐을 찾을 수 없습니다."),
-    CANNOT_FIND_LESSON_PUZZLE(HttpStatus.NOT_FOUND, "P4041", "해당하는 레슨 퍼즐을 찾을 수 없습니다.")
+    CANNOT_FIND_LESSON_PUZZLE(HttpStatus.NOT_FOUND, "P4041", "해당하는 레슨 퍼즐을 찾을 수 없습니다."),
+    NO_SUCH_LESSON_PAGE(HttpStatus.NOT_FOUND, "P4042", "해당하는 페이지의 레슨 퍼즐들을 찾을 수 없습니다.")
     ;
 
     private final HttpStatus status;

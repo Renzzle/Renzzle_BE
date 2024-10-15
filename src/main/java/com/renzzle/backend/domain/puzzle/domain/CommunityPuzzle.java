@@ -9,6 +9,8 @@ import lombok.*;
 import org.hibernate.annotations.*;
 
 import java.time.Instant;
+import java.util.Objects;
+
 import static com.renzzle.backend.global.common.constant.TimeConstant.CONST_FUTURE_INSTANT;
 import static com.renzzle.backend.global.common.domain.Status.STATUS_IS_NOT_DELETED;
 
@@ -116,6 +118,14 @@ public class CommunityPuzzle {
         if(isIncrease) this.likeCount++;
         else this.likeCount--;
         return this.likeCount;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CommunityPuzzle myObject = (CommunityPuzzle) o;
+        return Objects.equals(id, myObject.id);
     }
 
 }
