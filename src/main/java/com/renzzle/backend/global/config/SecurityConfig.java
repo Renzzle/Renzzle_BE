@@ -1,47 +1,67 @@
 package com.renzzle.backend.global.config;
 
-import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
+import com.renzzle.backend.domain.auth.dao.AdminRepository;
+import com.renzzle.backend.domain.auth.service.JwtProvider;
+import com.renzzle.backend.domain.user.dao.UserRepository;
+import com.renzzle.backend.global.security.CustomAccessDeniedHandler;
+import com.renzzle.backend.global.security.JwtAuthenticationFilter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.FormLoginConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
+import java.util.Arrays;
+import java.util.List;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
+import static com.renzzle.backend.domain.auth.domain.Admin.ADMIN;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
-    @Value("${JWT_SECRET_KEY}")
-    private String JWT_SECRET_KEY;
-
-    // for jwt provider
-    @Bean
-    public SecretKey secretKey() {
-        return Keys.hmacShaKeyFor(JWT_SECRET_KEY.getBytes(StandardCharsets.UTF_8));
-    }
+    private final JwtProvider jwtProvider;
+    private final UserRepository userRepository;
+    private final AdminRepository adminRepository;
+    private final CustomAccessDeniedHandler accessDeniedHandler;
 
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+        List<RequestMatcher> permitAllRequestMatchers = Arrays.asList(
+                AntPathRequestMatcher.antMatcher("/api/test/**"),
+                AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/email"),
+                AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/confirmCode"),
+                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/api/auth/duplicate/**"),
+                AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/login"),
+                AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/signup"),
+                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/swagger-ui/**"),
+                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/v3/api-docs/**")
+        );
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
-        httpSecurity.csrf(AbstractHttpConfigurer::disable)
+        return httpSecurity.csrf(AbstractHttpConfigurer::disable)
                 .formLogin(FormLoginConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable)
                 .sessionManagement((sessionManagement) ->
                         sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                );
-        return httpSecurity.build();
+                )
+                .authorizeHttpRequests(request -> request
+                        .requestMatchers(permitAllRequestMatchers.toArray(new RequestMatcher[0])).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/lesson").hasAuthority(ADMIN)
+                        .requestMatchers(HttpMethod.DELETE, "/api/lesson/**").hasAuthority(ADMIN)
+                        .anyRequest().authenticated()
+                )
+                .exceptionHandling(exceptionHandling ->
+                        exceptionHandling.accessDeniedHandler(accessDeniedHandler))
+                .addFilterBefore(new JwtAuthenticationFilter(jwtProvider, userRepository, adminRepository, permitAllRequestMatchers), UsernamePasswordAuthenticationFilter.class)
+                .build();
     }
 
 }
