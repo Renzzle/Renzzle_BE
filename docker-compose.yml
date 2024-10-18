@@ -9,6 +9,17 @@ services:
       - .env
     networks:
       - app-network
+    depends_on:
+      - redis  # Redis 서비스가 먼저 시작되도록 설정
+
+  redis:
+    image: redis:7.0.12
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    networks:
+      - app-network
 
 networks:
   app-network:
