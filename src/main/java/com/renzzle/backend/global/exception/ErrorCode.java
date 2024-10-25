@@ -40,6 +40,9 @@ public enum ErrorCode {
     LEVEL_NOT_FOUND(HttpStatus.NOT_FOUND, "U4041", "해당 레벨을 찾을 수 없습니다."),
     CANNOT_FIND_USER(HttpStatus.BAD_REQUEST, "U4000", "사용자를 찾을 수 없습니다."),
     INVALID_SUBSCRIPTION_REQUEST(HttpStatus.BAD_REQUEST, "U4001", "올바르지 않은 구독자 정보입니다."),
+    CANNOT_FIND_PUZZLE(HttpStatus.NOT_FOUND, "U4042", "해당하는 사용자 퍼즐을 찾을 수 없습니다."),
+    UNAUTHORIZED_ACTION(HttpStatus.UNAUTHORIZED, "U4010", "유효하지 않은 사용자입니다."),
+
 
     // Puzzle
     CANNOT_FIND_COMMUNITY_PUZZLE(HttpStatus.NOT_FOUND, "P4040", "해당하는 커뮤니티 퍼즐을 찾을 수 없습니다."),
