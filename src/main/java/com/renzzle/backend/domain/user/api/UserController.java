@@ -78,7 +78,12 @@ public class UserController {
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @RequestBody PuzzleLikeRequest request) {
         UserEntity user = userDetails.getUser();
+
+        log.info("Received request to change like status for puzzleId: {}", request.puzzleId());
+
         boolean isLiked = userService.toggleLike(request.puzzleId(), user);
+
+        log.info("Like status changed for puzzleId: {}. New status: {}", request.puzzleId(), isLiked);
 
         return ApiUtils.success(isLiked);
     }

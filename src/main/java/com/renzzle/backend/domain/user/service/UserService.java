@@ -151,7 +151,7 @@ public class UserService {
         List<CommunityPuzzle> puzzleList;
 
         puzzleList = getRecommendCommunityPuzzleList(userid, id, size);
-
+        log.info("puzzleList in getUserCommunityPuzzleList {}", puzzleList);
 
         return buildGetCommunityPuzzleResponse(puzzleList);
     }
@@ -171,10 +171,18 @@ public class UserService {
             lastCreatedAt = puzzle.getCreatedAt();
         }
 
-        return communityPuzzleRepository.findUserPuzzlesSortByCreatedAt(userId, lastCreatedAt, lastId, size);
+        log.info("Fetching puzzles for userId: {}, lastCreatedAt: {}, lastId: {}, size: {}", userId, lastCreatedAt, lastId, size);
+
+        List<CommunityPuzzle> puzzles = communityPuzzleRepository.findUserPuzzlesSortByCreatedAt(userId, lastCreatedAt, lastId, size);
+
+        // 쿼리 결과 로그
+        log.info("Fetched {} puzzles", puzzles.size());
+
+        return puzzles;
     }
 
     private List<GetCommunityPuzzleResponse> buildGetCommunityPuzzleResponse(List<CommunityPuzzle> puzzleList) {
+        log.info("puzzleList: {}", puzzleList);
         List<GetCommunityPuzzleResponse> response = new ArrayList<>();
         for(CommunityPuzzle puzzle : puzzleList) {
             double correctRate = 0.0;
@@ -200,6 +208,7 @@ public class UserService {
                             .tag(tags)
                             .build()
             );
+            log.info("Added puzzle response: {}", response);
         }
         return response;
     }
@@ -232,8 +241,11 @@ public class UserService {
                             .user(user)
                             .puzzle(puzzle)
                             .lastTriedAt(Instant.now())
+                            .like(false)
                             .build();
-                    return userCommunityPuzzleRepository.save(newUserPuzzle);
+
+                    userCommunityPuzzleRepository.save(newUserPuzzle);
+                    return newUserPuzzle;
                 });
 
         // 좋아요 상태 토글
