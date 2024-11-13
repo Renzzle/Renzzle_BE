@@ -20,7 +20,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class JwtProvider {
 
-    public static final int ACCESS_TOKEN_VALID_MINUTE = 60;
+    public static final int ACCESS_TOKEN_VALID_MINUTE = 60 * 50;
     public static final int REFRESH_TOKEN_VALID_MINUTE = 60 * 24 * 14;
     public static final int AUTH_VERITY_TOKEN_VALID_MINUTE = 5;
 

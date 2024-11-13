@@ -41,4 +41,34 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
             nativeQuery = true)
     List<CommunityPuzzle> findByAuthorName(@Param("name") String name);
 
+
+    @Query(value =
+            "SELECT * FROM community_puzzle cp " +
+                    "WHERE cp.id IN :puzzleIds " +
+                    "AND cp.id > :lastId " +
+                    "ORDER BY cp.like_count DESC, cp.id ASC " +
+                    "LIMIT :size",
+            nativeQuery = true)
+    List<CommunityPuzzle> findPuzzlesByIdsWithPagination(
+            @Param("puzzleIds") List<Long> puzzleIds,
+            @Param("lastId") Long lastId,
+            @Param("size") int size
+    );
+
+    @Query(value =
+            "SELECT * FROM community_puzzle cp " +
+                    "WHERE cp.author_id = :userId " +
+                    "AND ((cp.created_at < :lastCreatedAt) OR (cp.created_at = :lastCreatedAt AND cp.id > :lastId)) " +
+                    "ORDER BY cp.created_at DESC, cp.id ASC " +
+                    "LIMIT :size",
+            nativeQuery = true)
+    List<CommunityPuzzle> findUserPuzzlesSortByCreatedAt(
+            @Param("userId") Long userId,
+            @Param("lastCreatedAt") Instant lastCreatedAt,
+            @Param("lastId") long lastId,
+            @Param("size") int size
+    );
+
+
+
 }
