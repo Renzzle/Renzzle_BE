@@ -1,8 +1,6 @@
 name: Deploy to EC2 on Comment
 
 on:
-#  push:
-#    branches: [ "main", "fix/CD"]
   issue_comment:
     types: [created]
 
@@ -23,30 +21,8 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # Setup Redis
-      - name: Setup Redis
-        uses: shogo82148/actions-setup-redis@v1.30.1
-        with:
-          redis-version: 6.2.0
-          redis-port: 6379
-          auto-start: true
-          redis-password: ${{ secrets.REDIS_PASSWORD }}
-      # Redis Health Check
-      - name: Redis Health Check
-        run: redis-cli -h 127.0.0.1 -p 6379 -a ${{ secrets.REDIS_PASSWORD }} ping
-
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
-
-#      - name: Cache Gradle packages
-#        uses: actions/cache@v3
-#        with:
-#          path: |
-#            ~/.gradle/caches
-#            ~/.gradle/wrapper
-#          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-#          restore-keys: |
-#            ${{ runner.os }}-gradle-
 
       - name: Build and Test with Gradle
         env:
@@ -94,91 +70,20 @@ jobs:
           debug: true
           overwrite: true
 
-      - name: Install Redis on EC2 if not present
+      - name: Stop Existing Local Redis on EC2
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
           username: ec2-user
           key: ${{ secrets.PRIVATE_KEY }}
           script: |
-            # Check if Redis is installed
-            if ! command -v redis-server &> /dev/null; then
-              echo "Redis is not installed. Installing Redis..."
-            
-              # Install dependencies
-              sudo dnf install -y gcc make
-            
-              # Download and install Redis from source
-              REDIS_VERSION=7.0.12
-              curl -O http://download.redis.io/releases/redis-$REDIS_VERSION.tar.gz
-              tar xzf redis-$REDIS_VERSION.tar.gz
-              cd redis-$REDIS_VERSION
-              make
-              sudo make install
-            
-              # Start Redis server
-              redis-server --daemonize yes
-            
-              # Clean up
-              cd ..
-              rm -rf redis-$REDIS_VERSION redis-$REDIS_VERSION.tar.gz
-            
-              echo "Redis installation complete and server started."
+            # Check if Redis is running and stop it if necessary
+            if pgrep redis-server > /dev/null; then
+              echo "Existing Redis server found. Stopping Redis..."
+              sudo pkill redis-server
+              echo "Redis server stopped."
             else
-              echo "Redis is already installed. Checking if it is running..."
-            
-              # Check if Redis is running
-              if pgrep redis-server > /dev/null; then
-                echo "Redis is running."
-              else
-                echo "Redis is not running. Starting Redis..."
-                redis-server --daemonize yes
-              fi
-            fi
-
-      - name: Check Redis Status on EC2
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ec2-user
-          key: ${{ secrets.PRIVATE_KEY }}
-          script: |
-            REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
-            echo "Checking Redis server status..."
-            
-            # Check if requirepass is already set
-            CURRENT_PASS=$(redis-cli CONFIG GET requirepass | grep -v "requirepass")
-            if [ -n "$CURRENT_PASS" ]; then
-              echo "Redis has requirepass set. Using password for authentication."
-              REDIS_CLI="redis-cli -a $REDIS_PASSWORD"
-            else
-              echo "Redis does not have requirepass set."
-              REDIS_CLI="redis-cli"
-            fi
-            
-            # Check if Redis is running by pinging it with the appropriate authentication
-            if $REDIS_CLI ping | grep -q "PONG"; then
-              echo "Redis is running properly and responding to PING."
-            else
-              echo "Redis is not responding. Attempting to restart..."
-              redis-server --daemonize yes
-            
-              # Recheck status after restart
-              if $REDIS_CLI ping | grep -q "PONG"; then
-                echo "Redis has been restarted and is now running properly."
-              else
-                echo "Failed to restart Redis. Please check the logs."
-                exit 1
-              fi
-            fi
-            
-            # Set the requirepass if not already set
-            if [ -z "$CURRENT_PASS" ]; then
-              echo "Setting requirepass for Redis..."
-              redis-cli CONFIG SET requirepass "$REDIS_PASSWORD"
-              echo "requirepass has been set to $REDIS_PASSWORD."
-            else
-              echo "Redis already has a requirepass set."
+              echo "No local Redis server is running."
             fi
 
       - name: Create .env file and copy to EC2
@@ -191,7 +96,6 @@ jobs:
           echo "GMAIL_ADDRESS=\"${{ secrets.GMAIL_ADDRESS }}\"" >> .env
           echo "JWT_SECRET_KEY=\"${{ secrets.JWT_SECRET_KEY }}\"" >> .env
 
-      # 2. Copy the .env file to EC2
       - name: Copy .env file to EC2
         uses: appleboy/scp-action@master
         with:
@@ -211,17 +115,19 @@ jobs:
             set -e
             cd /home/ec2-user/
 
+            # Stop and remove existing containers
             ALL_CONTAINERS=$(docker ps -q)
             if [ -n "$ALL_CONTAINERS" ]; then
-            docker stop $ALL_CONTAINERS
-            docker rm $ALL_CONTAINERS
+              docker stop $ALL_CONTAINERS
+              docker rm $ALL_CONTAINERS
             fi
             
+            # Start containers with docker-compose
             docker-compose down
             docker-compose pull
             docker-compose up -d
             
-            # check container status
+            # Check container status
             echo "Running containers:"
             docker ps
 
