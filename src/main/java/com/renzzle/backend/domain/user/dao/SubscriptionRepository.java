@@ -15,13 +15,13 @@ public interface SubscriptionRepository extends JpaRepository<SubscriptionEntity
 //    @Query("SELECT s FROM SubscriptionEntity s WHERE s.subscriber.id = :userId AND (:id IS NULL OR s.id > :id) ORDER BY s.id ASC")
 //    List<SubscriptionEntity> findUserSubscriptions(@Param("userId") Long userId, @Param("id") Long id, @Param("size") int size);
 
-<<<<<<< Updated upstream
+//<<<<<<< Updated upstream
     @Query("SELECT s FROM SubscriptionEntity s WHERE s.subscriber.id = :userId AND (:id IS NULL OR s.id >= :id) ORDER BY s.id ASC")
     List<SubscriptionEntity> findUserSubscriptions(@Param("userId") Long userId, @Param("id") Long id, Pageable pageable);
-=======
-//    @Query("SELECT s FROM SubscriptionEntity s WHERE s.subscriber.id = :userId AND (:id IS NULL OR s.id >= :id) ORDER BY s.id ASC")
-//    List<SubscriptionEntity> findUserSubscriptions(@Param("userId") Long userId, @Param("id") Long id, Pageable pageable);
-
+////=======
+////    @Query("SELECT s FROM SubscriptionEntity s WHERE s.subscriber.id = :userId AND (:id IS NULL OR s.id >= :id) ORDER BY s.id ASC")
+////    List<SubscriptionEntity> findUserSubscriptions(@Param("userId") Long userId, @Param("id") Long id, Pageable pageable);
+//
     // 첫 번째 페이지 조회
     @Query(value = "SELECT s FROM subscription " +
             "WHERE subscriber.id = :userId " +
@@ -39,7 +39,7 @@ public interface SubscriptionRepository extends JpaRepository<SubscriptionEntity
     List<SubscriptionEntity> findUserSubscriptionsFromId(@Param("userId") Long userId,
                                                          @Param("id") Long id,
                                                          @Param("size") int size);
->>>>>>> Stashed changes
+//>>>>>>> Stashed changes
 
 
     @Query(value = "SELECT * FROM subscription " +
