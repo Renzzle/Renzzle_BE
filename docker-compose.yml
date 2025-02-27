@@ -21,6 +21,8 @@ services:
     networks:
       - app-network
     command: redis-server --requirepass ${REDIS_PASSWORD}
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
 
 networks:
   app-network:
