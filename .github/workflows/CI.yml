@@ -39,6 +39,9 @@ jobs:
           echo "GMAIL_ADDRESS=\"${{ secrets.GMAIL_ADDRESS }}\"" >> .env
           echo "JWT_SECRET_KEY=\"${{ secrets.JWT_SECRET_KEY }}\"" >> .env
 
+      - name: Load Environment Variables
+        run: export $(cat .env | xargs)
+
       - name: Start Docker Compose with .env
         run: docker compose --env-file .env up -d
 
