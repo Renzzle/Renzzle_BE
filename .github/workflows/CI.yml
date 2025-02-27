@@ -23,11 +23,24 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      # Docker Compose 실행 (Redis 포함)
-      - name: Start Docker Compose
-        env:
-          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
-        run: docker compose up -d
+#      # Docker Compose 실행 (Redis 포함)
+#      - name: Start Docker Compose
+#        env:
+#          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+#        run: docker compose up -d
+
+      - name: Create .env file
+        run: |
+          echo "DB_ADDRESS=${{ secrets.DB_ADDRESS }}" >> .env
+          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+          echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
+          echo "GMAIL_PASSWORD=${{ secrets.GMAIL_PASSWORD }}" >> .env
+          echo "GMAIL_ADDRESS=\"${{ secrets.GMAIL_ADDRESS }}\"" >> .env
+          echo "JWT_SECRET_KEY=\"${{ secrets.JWT_SECRET_KEY }}\"" >> .env
+
+      - name: Start Docker Compose with .env
+        run: docker compose --env-file .env up -d
 
       # Redis Health Check
       - name: Redis Health Check

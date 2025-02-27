@@ -3,6 +3,8 @@ services:
     image: renzzle/github-action:latest
     ports:
       - "9001:9001"
+    env_file:
+      - .env
     environment:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
     networks:
