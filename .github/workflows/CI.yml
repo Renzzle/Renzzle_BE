@@ -33,17 +33,8 @@ jobs:
           export GMAIL_PASSWORD=${{ secrets.GMAIL_PASSWORD }}
           export JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
 
-#      - name: Load Environment Variables
-#        run: export $(cat .env | xargs)
-
-#      - name: Start Docker Compose
-#        run: docker compose up -d
-#
-#      - name: Check Running Containers
-#        run: docker ps -a
-
-      - name: Check Redis Logs
-        run: docker logs redis
+      - name: Start Docker Compose
+        run: docker compose up -d
 
       # Redis Health Check
       - name: Redis Health Check
