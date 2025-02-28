@@ -23,15 +23,18 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Set Environment Variables
+      - name: Create .env file
         run: |
-          export DB_ADDRESS=${{ secrets.DB_ADDRESS }}
-          export DB_USER=${{ secrets.DB_USER }}
-          export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-          export REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
-          export GMAIL_ADDRESS=${{ secrets.GMAIL_ADDRESS }}
-          export GMAIL_PASSWORD=${{ secrets.GMAIL_PASSWORD }}
-          export JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
+          echo "DB_ADDRESS=${{ secrets.DB_ADDRESS }}" >> .env
+          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+          echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
+          echo "GMAIL_PASSWORD=${{ secrets.GMAIL_PASSWORD }}" >> .env
+          echo "GMAIL_ADDRESS=\"${{ secrets.GMAIL_ADDRESS }}\"" >> .env
+          echo "JWT_SECRET_KEY=\"${{ secrets.JWT_SECRET_KEY }}\"" >> .env
+
+      - name: Start Docker Compose with .env
+        run: docker compose --env-file .env up -d
 
       - name: Start Docker Compose
         run: docker compose up -d
@@ -56,6 +59,14 @@ jobs:
 
 
       - name: Build and Test with Gradle
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://${{ secrets.DB_ADDRESS }}
+          SPRING_DATASOURCE_USERNAME: ${{ secrets.DB_USER }}
+          SPRING_DATASOURCE_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          SPRING_DATA_REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          SPRING_JWT_SECRET: ${{ secrets.JWT_SECRET_KEY }}
+          SPRING_MAIL_USERNAME: ${{ secrets.GMAIL_ADDRESS }}
+          SPRING_MAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
         run: ./gradlew build --stacktrace
 
       - name: Test build success
