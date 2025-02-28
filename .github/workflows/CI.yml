@@ -23,11 +23,21 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Load Environment Variables
-        run: export $(cat .env | xargs)
+      - name: Set Environment Variables
+        run: |
+          export DB_ADDRESS=${{ secrets.DB_ADDRESS }}
+          export DB_USER=${{ secrets.DB_USER }}
+          export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          export REDIS_PASSWORD=${{ secrets.TEST_REDIS_PASSWORD }}
+          export GMAIL_ADDRESS=${{ secrets.GMAIL_ADDRESS }}
+          export GMAIL_PASSWORD=${{ secrets.GMAIL_PASSWORD }}
+          export JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
 
-      - name: Start Docker Compose with .env
-        run: docker compose --env-file .env up -d
+#      - name: Load Environment Variables
+#        run: export $(cat .env | xargs)
+
+      - name: Start Docker Compose
+        run: docker-compose up -d
 
       # Redis Health Check
       - name: Redis Health Check
@@ -46,15 +56,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Set Environment Variables
-        run: |
-          export DB_ADDRESS=${{ secrets.DB_ADDRESS }}
-          export DB_USER=${{ secrets.DB_USER }}
-          export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-          export REDIS_PASSWORD=${{ secrets.TEST_REDIS_PASSWORD }}
-          export GMAIL_ADDRESS=${{ secrets.GMAIL_ADDRESS }}
-          export GMAIL_PASSWORD=${{ secrets.GMAIL_PASSWORD }}
-          export JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
+
 
       - name: Build and Test with Gradle
         run: ./gradlew build --stacktrace
