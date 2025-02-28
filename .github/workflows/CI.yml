@@ -57,19 +57,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-
-
       - name: Build and Test with Gradle
         env:
-#          SPRING_DATASOURCE_URL: jdbc:mysql://${{ secrets.DB_ADDRESS }}
-#          SPRING_DATASOURCE_USERNAME: ${{ secrets.DB_USER }}
-#          SPRING_DATASOURCE_PASSWORD: ${{ secrets.DB_PASSWORD }}
-#          SPRING_DATA_REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
-#          SPRING_JWT_SECRET: ${{ secrets.JWT_SECRET_KEY }}
-#          SPRING_MAIL_USERNAME: ${{ secrets.GMAIL_ADDRESS }}
-#          SPRING_MAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
-          SPRING_PROFILES_ACTIVE: test
-        run: ./gradlew clean build --stacktrace
+          DB_ADDRESS: ${{ secrets.DB_ADDRESS }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          REDIS_PASSWORD: ${{ secrets.TEST_REDIS_PASSWORD }}
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+        run: ./gradlew clean build
 
       - name: Test build success
         run: echo "Build completed successfully!"
