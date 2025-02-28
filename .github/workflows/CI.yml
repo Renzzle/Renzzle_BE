@@ -29,15 +29,15 @@ jobs:
 #          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
 #        run: docker compose up -d
 
-      - name: Create .env file
-        run: |
-          echo "DB_ADDRESS=${{ secrets.DB_ADDRESS }}" >> .env
-          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
-          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-          echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
-          echo "GMAIL_PASSWORD=${{ secrets.GMAIL_PASSWORD }}" >> .env
-          echo "GMAIL_ADDRESS=\"${{ secrets.GMAIL_ADDRESS }}\"" >> .env
-          echo "JWT_SECRET_KEY=\"${{ secrets.JWT_SECRET_KEY }}\"" >> .env
+#      - name: Create .env file
+#        run: |
+#          echo "DB_ADDRESS=${{ secrets.DB_ADDRESS }}" >> .env
+#          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+#          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+#          echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
+#          echo "GMAIL_PASSWORD=${{ secrets.GMAIL_PASSWORD }}" >> .env
+#          echo "GMAIL_ADDRESS=\"${{ secrets.GMAIL_ADDRESS }}\"" >> .env
+#          echo "JWT_SECRET_KEY=\"${{ secrets.JWT_SECRET_KEY }}\"" >> .env
 
       - name: Load Environment Variables
         run: export $(cat .env | xargs)
@@ -62,15 +62,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
+      - name: Set Environment Variables
+        run: |
+          export DB_ADDRESS=${{ secrets.DB_ADDRESS }}
+          export DB_USER=${{ secrets.DB_USER }}
+          export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          export REDIS_PASSWORD=${{ secrets.TEST_REDIS_PASSWORD }}
+          export GMAIL_ADDRESS=${{ secrets.GMAIL_ADDRESS }}
+          export GMAIL_PASSWORD=${{ secrets.GMAIL_PASSWORD }}
+          export JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
+
       - name: Build and Test with Gradle
-        env:
-          DB_ADDRESS: ${{ secrets.DB_ADDRESS }}
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          REDIS_PASSWORD: ${{ secrets.TEST_REDIS_PASSWORD }}
-          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
-          GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
-          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
         run: ./gradlew build --stacktrace
 
       - name: Test build success
