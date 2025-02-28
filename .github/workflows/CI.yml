@@ -28,7 +28,7 @@ jobs:
           export DB_ADDRESS=${{ secrets.DB_ADDRESS }}
           export DB_USER=${{ secrets.DB_USER }}
           export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-          export REDIS_PASSWORD=${{ secrets.TEST_REDIS_PASSWORD }}
+          export REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
           export GMAIL_ADDRESS=${{ secrets.GMAIL_ADDRESS }}
           export GMAIL_PASSWORD=${{ secrets.GMAIL_PASSWORD }}
           export JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
@@ -36,8 +36,14 @@ jobs:
 #      - name: Load Environment Variables
 #        run: export $(cat .env | xargs)
 
-      - name: Start Docker Compose
-        run: docker compose up -d
+#      - name: Start Docker Compose
+#        run: docker compose up -d
+#
+#      - name: Check Running Containers
+#        run: docker ps -a
+
+      - name: Check Redis Logs
+        run: docker logs redis
 
       # Redis Health Check
       - name: Redis Health Check
