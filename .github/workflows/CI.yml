@@ -33,6 +33,7 @@ jobs:
           echo "GMAIL_ADDRESS=\"${{ secrets.GMAIL_ADDRESS }}\"" >> .env
           echo "JWT_SECRET_KEY=\"${{ secrets.JWT_SECRET_KEY }}\"" >> .env
 
+
       - name: Start Docker Compose with .env
         run: docker compose --env-file .env up -d
 
@@ -60,13 +61,14 @@ jobs:
 
       - name: Build and Test with Gradle
         env:
-          SPRING_DATASOURCE_URL: jdbc:mysql://${{ secrets.DB_ADDRESS }}
-          SPRING_DATASOURCE_USERNAME: ${{ secrets.DB_USER }}
-          SPRING_DATASOURCE_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          SPRING_DATA_REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
-          SPRING_JWT_SECRET: ${{ secrets.JWT_SECRET_KEY }}
-          SPRING_MAIL_USERNAME: ${{ secrets.GMAIL_ADDRESS }}
-          SPRING_MAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
+#          SPRING_DATASOURCE_URL: jdbc:mysql://${{ secrets.DB_ADDRESS }}
+#          SPRING_DATASOURCE_USERNAME: ${{ secrets.DB_USER }}
+#          SPRING_DATASOURCE_PASSWORD: ${{ secrets.DB_PASSWORD }}
+#          SPRING_DATA_REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+#          SPRING_JWT_SECRET: ${{ secrets.JWT_SECRET_KEY }}
+#          SPRING_MAIL_USERNAME: ${{ secrets.GMAIL_ADDRESS }}
+#          SPRING_MAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
+          SPRING_PROFILES_ACTIVE: test
         run: ./gradlew build --stacktrace
 
       - name: Test build success
