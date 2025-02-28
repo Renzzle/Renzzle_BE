@@ -37,7 +37,7 @@ jobs:
 #        run: export $(cat .env | xargs)
 
       - name: Start Docker Compose
-        run: docker-compose up -d
+        run: docker compose up -d
 
       # Redis Health Check
       - name: Redis Health Check
