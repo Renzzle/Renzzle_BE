@@ -40,25 +40,12 @@ jobs:
       - name: Start Docker Compose with .env
         run: docker compose --env-file .env up -d
 
-#      - name: Start Docker Compose
-#        run: docker compose up -d
-
       # Redis Health Check
       - name: Redis Health Check
         run: docker exec -i redis redis-cli -a $REDIS_PASSWORD ping
 
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
-
-#      - name: Cache Gradle packages
-#        uses: actions/cache@v3
-#        with:
-#          path: |
-#            ~/.gradle/caches
-#            ~/.gradle/wrapper
-#          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-#          restore-keys: |
-#            ${{ runner.os }}-gradle-
 
       - name: Verify Environment Variables Before Build
         run: |
@@ -70,14 +57,6 @@ jobs:
           echo "JWT_SECRET_KEY = (hidden)"
 
       - name: Build and Test with Gradle
-#        env:
-#          DB_ADDRESS: ${{ secrets.DB_ADDRESS }}
-#          DB_USER: ${{ secrets.DB_USER }}
-#          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-#          REDIS_PASSWORD: ${{ secrets.TEST_REDIS_PASSWORD }}
-#          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
-#          GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
-#          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
         run: ./gradlew build
 
       - name: Test build success
