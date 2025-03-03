@@ -60,6 +60,11 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	// html thymeleaf
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	//testcontainer
+	implementation 'mysql:mysql-connector-java:8.0.33'
+	testImplementation 'org.testcontainers:testcontainers:1.19.3'
+	testImplementation 'org.testcontainers:junit-jupiter:1.19.3'
+	testImplementation 'org.testcontainers:mysql:1.19.3'
 }
 
 tasks.named('test', Test){

@@ -27,7 +27,7 @@ public class JwtProvider {
     private final String CLAIM_USER_ID_KEY = "userId";
     private final String CLAIM_EMAIL_KEY = "email";
 
-    @Value("${JWT_SECRET_KEY}")
+    @Value("${spring.jwt.secret}")
     private String JWT_SECRET_KEY;
     private SecretKey secretKey;
 
