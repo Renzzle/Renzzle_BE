@@ -2,6 +2,7 @@ server:
   port: 9001
 
 spring:
+
   datasource:
     url: jdbc:mysql://${DB_ADDRESS}
     username: ${DB_USER}
@@ -45,6 +46,9 @@ spring:
           timeout: 5000
           starttls:
             enable: true
+  config:
+    activate:
+      on-profile: default
 
 springdoc:
   packages-to-scan: com.renzzle.backend
@@ -55,8 +59,4 @@ springdoc:
     disable-swagger-default-url: true
     display-request-duration: true
     operations-sorter: alpha
-#
-#logging:
-#  level:
-#    root: DEBUG
 

@@ -1,75 +1,61 @@
-  name: Java CI with Gradle
+name: Java CI with Gradle
 
-  on:
-    pull_request:
-      branches: [ "main"]
-    push:
-      branches: [ "main", "fix/CD", "feat/userapi"]
+on:
+  pull_request:
+    branches: [ "main"]
 
-  permissions:
-    write-all
+permissions:
+  write-all
 
-  jobs:
-    build:
-      runs-on: ubuntu-latest
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v3
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-        - name: Set up JDK 17
-          uses: actions/setup-java@v3
-          with:
-            java-version: '17'
-            distribution: 'temurin'
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
-        # Setup Redis
-        - name: Setup Redis
-          uses: shogo82148/actions-setup-redis@v1.30.1
-          with:
-            redis-version: 6.2.0
-            redis-port: 6379
-            auto-start: true
-            redis-password: 12345678
-        # Redis Health Check
-        - name: Redis Health Check
-          run: redis-cli -h 127.0.0.1 -p 6379 -a 12345678 ping
+      - name: Create .env file
+        run: |
+          echo "DB_ADDRESS=${{ secrets.DB_ADDRESS }}" >> .env
+          echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+          echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
+          echo "GMAIL_PASSWORD=${{ secrets.GMAIL_PASSWORD }}" >> .env
+          echo "GMAIL_ADDRESS=\"${{ secrets.GMAIL_ADDRESS }}\"" >> .env
+          echo "JWT_SECRET_KEY=\"${{ secrets.JWT_SECRET_KEY }}\"" >> .env
 
-        - name: Grant execute permission for gradlew
-          run: chmod +x ./gradlew
+      - name: Load environment variables from .env
+        run: cat .env >> $GITHUB_ENV
 
-        - name: Cache Gradle packages
-          uses: actions/cache@v3
-          with:
-            path: |
-              ~/.gradle/caches
-              ~/.gradle/wrapper
-            key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-            restore-keys: |
-              ${{ runner.os }}-gradle-
 
-        - name: Run Tests with Gradle
-          env:
-            DB_ADDRESS: ${{ secrets.DB_ADDRESS }}
-            DB_USER: ${{ secrets.DB_USER }}
-            DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-            REDIS_PASSWORD: ${{ secrets.TEST_REDIS_PASSWORD }}
-            GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
-            GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
-            JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-          run: |
-            ./gradlew test --stacktrace
+      - name: Start Docker Compose with .env
+        run: docker compose --env-file .env up -d
 
-        - name: Build and Test with Gradle
-          env:
-            DB_ADDRESS: ${{ secrets.DB_ADDRESS }}
-            DB_USER: ${{ secrets.DB_USER }}
-            DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-            REDIS_PASSWORD: ${{ secrets.TEST_REDIS_PASSWORD }}
-            GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
-            GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
-            JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-          run: ./gradlew build -x test --stacktrace
+      # Redis Health Check
+      - name: Redis Health Check
+        run: docker exec -i redis redis-cli -a $REDIS_PASSWORD ping
 
-        - name: Test build success
-          run: echo "Build completed successfully!"
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Verify Environment Variables Before Build
+        run: |
+          echo "DB_ADDRESS = $DB_ADDRESS"
+          echo "DB_USER = $DB_USER"
+          echo "DB_PASSWORD = (hidden)"
+          echo "REDIS_PASSWORD = (hidden)"
+          echo "GMAIL_ADDRESS = $GMAIL_ADDRESS"
+          echo "JWT_SECRET_KEY = (hidden)"
+
+      - name: Build and Test with Gradle
+        run: ./gradlew build
+
+      - name: Test build success
+        run: echo "Build completed successfully!"

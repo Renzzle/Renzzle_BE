@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     image: renzzle/github-action:latest
@@ -7,18 +5,23 @@ services:
       - "9001:9001"
     env_file:
       - .env
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     networks:
       - app-network
     depends_on:
       - redis
 
   redis:
+    container_name: redis
     image: redis:7.0.12
     ports:
       - "6379:6379"
     networks:
       - app-network
     command: redis-server --requirepass ${REDIS_PASSWORD}
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
 
 networks:
   app-network:
