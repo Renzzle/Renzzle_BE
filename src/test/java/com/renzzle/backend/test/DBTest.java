@@ -8,31 +8,18 @@ import com.renzzle.backend.domain.test.domain.JdbcEntity;
 import com.renzzle.backend.domain.test.domain.TestEntity;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
-
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
-@ExtendWith(SpringExtension.class)
 @SpringBootTest
-@ContextConfiguration(classes = TestContainersConfig.class)
-@Testcontainers
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-//@ActiveProfiles("test")
+@ActiveProfiles("test")
+@ContextConfiguration(initializers = TestContainersConfig.class)
 public class DBTest {
 
     @Autowired
@@ -44,6 +31,7 @@ public class DBTest {
     @Test
     @Transactional
     public void jpaCRDTest() {
+
         final String testName = "test";
         // create
         TestEntity entity = TestEntity.builder().name(testName).build();
