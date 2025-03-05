@@ -1,5 +1,7 @@
 package com.renzzle.backend.test;
 
+import com.renzzle.backend.BackendApplication;
+import com.renzzle.backend.config.TestContainersConfig;
 import com.renzzle.backend.domain.test.dao.JdbcEntityDao;
 import com.renzzle.backend.domain.test.dao.TestRepository;
 import com.renzzle.backend.domain.test.domain.JdbcEntity;
@@ -7,16 +9,17 @@ import com.renzzle.backend.domain.test.domain.TestEntity;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-
 import java.util.Optional;
 
-@ExtendWith(SpringExtension.class)
 @SpringBootTest
+@ActiveProfiles("test")
+@ContextConfiguration(initializers = TestContainersConfig.class)
 public class DBTest {
 
     @Autowired
@@ -28,6 +31,7 @@ public class DBTest {
     @Test
     @Transactional
     public void jpaCRDTest() {
+
         final String testName = "test";
         // create
         TestEntity entity = TestEntity.builder().name(testName).build();

@@ -1,12 +1,18 @@
 package com.renzzle.backend.auth;
 
+import com.renzzle.backend.config.TestContainersConfig;
 import com.renzzle.backend.domain.auth.service.JwtProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest
+@ActiveProfiles("test")
+@ContextConfiguration(initializers = TestContainersConfig.class)
 public class JwtTest {
 
     @Autowired
