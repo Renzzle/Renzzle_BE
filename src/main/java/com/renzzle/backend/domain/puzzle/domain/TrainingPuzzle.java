@@ -12,9 +12,9 @@ import java.time.Instant;
 @AllArgsConstructor
 @Builder(toBuilder = true)
 @Table(
-        name = "lesson_puzzle",
+        name = "training_puzzle",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"chapter, lesson_index"})
+                @UniqueConstraint(columnNames = {"chapter, training_index"})
         }
 )
 public class TrainingPuzzle {
@@ -23,11 +23,11 @@ public class TrainingPuzzle {
         @GeneratedValue(strategy = GenerationType.IDENTITY)
         private Long id;
 
-        @Column(name = "chapter", nullable = false)
-        private int chapter;
+//        @Column(name = "chapter", nullable = false)
+//        private int chapter;
 
-        @Column(name = "lesson_index", nullable = false)
-        private int lessonIndex;
+        @Column(name = "training_index", nullable = false)
+        private int trainingIndex;
 
         @Column(name = "title", nullable = false, length = 31)
         private String title;

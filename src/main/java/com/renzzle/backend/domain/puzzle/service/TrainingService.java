@@ -107,7 +107,7 @@ public class TrainingService {
         List<GetTrainingPuzzleResponse> response = new ArrayList<>();
         lessonPuzzles.forEach(lessonPuzzle -> {
             boolean isLocked = solvedLessonPuzzleRepository.existsByUserAndPuzzle(user, lessonPuzzle);
-            if(!isLocked && lessonPuzzle.getLessonIndex() == solvedTopIndex + 1)
+            if(!isLocked && lessonPuzzle.getTrainingIndex() == solvedTopIndex + 1)
                 isLocked = true;
 
             response.add(GetTrainingPuzzleResponse.builder()
@@ -127,7 +127,7 @@ public class TrainingService {
 
     @Transactional(readOnly = true)
     public double getLessonProgress(UserEntity user, int chapter) {
-        int allLessonCnt = lessonPuzzleRepository.countAllLessonByChapter(chapter);
+        int allLessonCnt = lessonPuzzleRepository.countAllTrainingByChapter(chapter);
         if(allLessonCnt == 0) return 0.0;
 
         int solveCnt = solvedLessonPuzzleRepository.countSolvedLesson(user.getId(), chapter);

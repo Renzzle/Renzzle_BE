@@ -13,49 +13,49 @@ import java.util.Optional;
 
 public interface TrainingPuzzleRepository extends JpaRepository<TrainingPuzzle, Long> {
 
-    @Query(value = "SELECT COALESCE(MAX(lesson_index), -1) " +
-            "FROM lesson_puzzle " +
+    @Query(value = "SELECT COALESCE(MAX(training_index), -1) " +
+            "FROM training_puzzle " +
             "WHERE chapter = :chapter",
             nativeQuery = true)
     int findTopIndex(@Param("chapter") int chapter);
 
 
-    @Query(value = "SELECT COALESCE(MAX(l.lesson_index), -1) " +
-            "FROM lesson_puzzle l " +
-            "JOIN solved_lesson_puzzle sl ON l.id = sl.lesson_id " +
-            "WHERE sl.user_id = :userId AND l.chapter = :chapter",
+    @Query(value = "SELECT COALESCE(MAX(t.lesson_index), -1) " +
+            "FROM training_puzzle t " +
+            "JOIN solved_training_puzzle st ON t.id = st.training_id " +
+            "WHERE st.user_id = :userId AND t.chapter = :chapter",
             nativeQuery = true)
     int findTopSolvedPuzzleIndex(@Param("userId") Long userId,
                                  @Param("chapter") int chapter);
 
     @Modifying
     @Transactional
-    @Query(value = "UPDATE lesson_puzzle " +
-            "SET lesson_index = lesson_index + 1 " +
-            "WHERE lesson_index >= :targetIdx AND chapter = :chapter",
+    @Query(value = "UPDATE training_puzzle " +
+            "SET training_index = training_index + 1 " +
+            "WHERE training_index >= :targetIdx AND chapter = :chapter",
             nativeQuery = true)
     void increaseIndexesFrom(@Param("chapter") int chapter,
                              @Param("targetIdx") int targetIdx);
 
     @Modifying
     @Transactional
-    @Query(value = "UPDATE lesson_puzzle " +
-            "SET lesson_index = lesson_index - 1 " +
-            "WHERE lesson_index > :targetIdx AND chapter = :chapter",
+    @Query(value = "UPDATE training_puzzle " +
+            "SET training_index = training_index - 1 " +
+            "WHERE training_index > :targetIdx AND chapter = :chapter",
             nativeQuery = true)
     void decreaseIndexesFrom(@Param("chapter") int chapter,
                              @Param("targetIdx") int targetIdx);
 
-    @Query(value = "SELECT * FROM lesson_puzzle " +
-            "WHERE chapter = :chapter AND lesson_index = :index",
+    @Query(value = "SELECT * FROM training_puzzle " +
+            "WHERE chapter = :chapter AND training_index = :index",
             nativeQuery = true)
     Optional<TrainingPuzzle> findByChapterAndIndex(@Param("chapter") int chapter,
                                                    @Param("index") int index);
 
-    @Query(value = "SELECT COUNT(*) FROM lesson_puzzle " +
+    @Query(value = "SELECT COUNT(*) FROM training_puzzle " +
             "WHERE chapter = :chapter",
             nativeQuery = true)
-    int countAllLessonByChapter(@Param("chapter") int chapter);
+    int countAllTrainingByChapter(@Param("chapter") int chapter);
 
     Page<TrainingPuzzle> findByChapter(int chapter, Pageable pageable);
 

@@ -44,5 +44,4 @@ public class Difficulty {
 
         this.name = difficultyName;
     }
-
 }
