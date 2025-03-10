@@ -1,13 +1,13 @@
 package com.renzzle.backend.domain.puzzle.api;
 
-import com.renzzle.backend.domain.puzzle.api.request.AddLessonPuzzleRequest;
-import com.renzzle.backend.domain.puzzle.api.request.GetLessonPuzzleRequest;
-import com.renzzle.backend.domain.puzzle.api.request.SolveLessonPuzzleRequest;
-import com.renzzle.backend.domain.puzzle.api.response.GetLessonProgressResponse;
-import com.renzzle.backend.domain.puzzle.api.response.GetLessonPuzzleResponse;
-import com.renzzle.backend.domain.puzzle.api.response.SolveLessonPuzzleResponse;
-import com.renzzle.backend.domain.puzzle.domain.LessonPuzzle;
-import com.renzzle.backend.domain.puzzle.service.LessonService;
+import com.renzzle.backend.domain.puzzle.api.request.AddTrainingPuzzleRequest;
+import com.renzzle.backend.domain.puzzle.api.request.GetTrainingPuzzleRequest;
+import com.renzzle.backend.domain.puzzle.api.request.SolveTrainingPuzzleRequest;
+import com.renzzle.backend.domain.puzzle.api.response.GetTrainingProgressResponse;
+import com.renzzle.backend.domain.puzzle.api.response.GetTrainingPuzzleResponse;
+import com.renzzle.backend.domain.puzzle.api.response.SolveTrainingPuzzleResponse;
+import com.renzzle.backend.domain.puzzle.domain.TrainingPuzzle;
+import com.renzzle.backend.domain.puzzle.service.TrainingService;
 import com.renzzle.backend.global.common.response.ApiResponse;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
@@ -25,27 +25,43 @@ import java.util.List;
 import static com.renzzle.backend.global.util.ErrorUtils.getErrorMessages;
 
 @RestController
-@RequestMapping("/api/lesson")
+@RequestMapping("/api/training")
 @RequiredArgsConstructor
-@Tag(name = "Lesson Puzzle API", description = "Lesson Puzzle API")
-public class LessonController {
+@Tag(name = "Training Puzzle API", description = "Training Puzzle API")
+public class TrainingController {
 
-    private final LessonService lessonService;
+    private final TrainingService lessonService;
 
-    @Operation(summary = "Add lesson puzzle", description = "Add lesson puzzle & Only admins are available")
+    @Operation(summary = "Add training puzzle", description = "Add training puzzle & Only admins are available")
     @PostMapping("")
     public ApiResponse<Long> addLessonPuzzle(
-            @Valid @RequestBody AddLessonPuzzleRequest request,
+            @Valid @RequestBody AddTrainingPuzzleRequest request,
             BindingResult bindingResult
     ) {
         if(bindingResult.hasErrors()) {
             throw new ValidationException(getErrorMessages(bindingResult));
         }
 
-        LessonPuzzle puzzle = lessonService.createLessonPuzzle(request);
+        TrainingPuzzle puzzle = lessonService.createLessonPuzzle(request);
 
         return ApiUtils.success(puzzle.getId());
     }
+
+//    @Operation(summary = "Add training puzzle pack", description = "Add training puzzle & Only admins are available")
+//    @PostMapping("/pack")
+//    public ApiResponse<Long> addLessonPuzzlePack(
+//            @Valid @RequestBody AddTrainingPuzzlePackRequest request,
+//            BindingResult bindingResult
+//    ) {
+//        if(bindingResult.hasErrors()) {
+//            throw new ValidationException(getErrorMessages(bindingResult));
+//        }
+//
+//        TrainingPuzzle puzzle = lessonService.createLessonPuzzlePack(request);
+//
+//        return ApiUtils.success(puzzle.getId());
+//    }
+
 
     @Operation(summary = "Delete lesson puzzle", description = "Delete lesson puzzle & Only admins are available")
     @DeleteMapping("/{lessonId}")
@@ -56,8 +72,8 @@ public class LessonController {
 
     @Operation(summary = "Solve lesson puzzle", description = "Return unlocked lesson puzzle id (can be null)")
     @PostMapping("/solve")
-    public ApiResponse<SolveLessonPuzzleResponse> solveLessonPuzzle(
-            @Valid @RequestBody SolveLessonPuzzleRequest request,
+    public ApiResponse<SolveTrainingPuzzleResponse> solveLessonPuzzle(
+            @Valid @RequestBody SolveTrainingPuzzleRequest request,
             @AuthenticationPrincipal UserDetailsImpl user,
             BindingResult bindingResult
     ) {
@@ -67,17 +83,17 @@ public class LessonController {
 
         Long unlockedId = lessonService.solveLessonPuzzle(user.getUser(), request.puzzleId());
 
-        return ApiUtils.success(SolveLessonPuzzleResponse.builder()
+        return ApiUtils.success(SolveTrainingPuzzleResponse.builder()
                 .unlockedId(unlockedId)
                 .build());
     }
 
     @Operation(summary = "Get lesson puzzle data", description = "Return lesson puzzle list")
     @GetMapping("/{chapter}")
-    public ApiResponse<List<GetLessonPuzzleResponse>> getLessonPuzzle(
+    public ApiResponse<List<GetTrainingPuzzleResponse>> getLessonPuzzle(
             @PathVariable("chapter") Integer chapter,
             @AuthenticationPrincipal UserDetailsImpl user,
-            @ModelAttribute GetLessonPuzzleRequest request,
+            @ModelAttribute GetTrainingPuzzleRequest request,
             BindingResult bindingResult
     ) {
         if(bindingResult.hasErrors()) {
@@ -95,7 +111,7 @@ public class LessonController {
 
     @Operation(summary = "Check lesson progress", description = "Return lesson progress by chapter")
     @GetMapping("/{chapter}/progress")
-    public ApiResponse<GetLessonProgressResponse> getLessonProgress(
+    public ApiResponse<GetTrainingProgressResponse> getLessonProgress(
             @PathVariable("chapter") Integer chapter,
             @AuthenticationPrincipal UserDetailsImpl user
     ) {
@@ -104,7 +120,7 @@ public class LessonController {
         }
         double progress = lessonService.getLessonProgress(user.getUser(), chapter);
 
-        return ApiUtils.success(GetLessonProgressResponse.builder()
+        return ApiUtils.success(GetTrainingProgressResponse.builder()
                 .progress(progress)
                 .build());
     }

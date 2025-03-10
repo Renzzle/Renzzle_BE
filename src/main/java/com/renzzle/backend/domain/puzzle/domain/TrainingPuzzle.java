@@ -17,7 +17,7 @@ import java.time.Instant;
                 @UniqueConstraint(columnNames = {"chapter, lesson_index"})
         }
 )
-public class LessonPuzzle {
+public class TrainingPuzzle {
 
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)

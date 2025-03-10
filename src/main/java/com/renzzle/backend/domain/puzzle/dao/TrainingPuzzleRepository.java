@@ -1,6 +1,6 @@
 package com.renzzle.backend.domain.puzzle.dao;
 
-import com.renzzle.backend.domain.puzzle.domain.LessonPuzzle;
+import com.renzzle.backend.domain.puzzle.domain.TrainingPuzzle;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
-public interface LessonPuzzleRepository extends JpaRepository<LessonPuzzle, Long> {
+public interface TrainingPuzzleRepository extends JpaRepository<TrainingPuzzle, Long> {
 
     @Query(value = "SELECT COALESCE(MAX(lesson_index), -1) " +
             "FROM lesson_puzzle " +
@@ -49,14 +49,14 @@ public interface LessonPuzzleRepository extends JpaRepository<LessonPuzzle, Long
     @Query(value = "SELECT * FROM lesson_puzzle " +
             "WHERE chapter = :chapter AND lesson_index = :index",
             nativeQuery = true)
-    Optional<LessonPuzzle> findByChapterAndIndex(@Param("chapter") int chapter,
-                                                 @Param("index") int index);
+    Optional<TrainingPuzzle> findByChapterAndIndex(@Param("chapter") int chapter,
+                                                   @Param("index") int index);
 
     @Query(value = "SELECT COUNT(*) FROM lesson_puzzle " +
             "WHERE chapter = :chapter",
             nativeQuery = true)
     int countAllLessonByChapter(@Param("chapter") int chapter);
 
-    Page<LessonPuzzle> findByChapter(int chapter, Pageable pageable);
+    Page<TrainingPuzzle> findByChapter(int chapter, Pageable pageable);
 
 }

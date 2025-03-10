@@ -3,7 +3,7 @@ package com.renzzle.backend.domain.puzzle.api.request;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
-public record GetLessonPuzzleRequest(
+public record GetTrainingPuzzleRequest(
         @Min(value = 0, message = "page는 최소 0이어야 합니다")
         Integer page,
 

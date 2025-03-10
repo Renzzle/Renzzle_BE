@@ -8,29 +8,29 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-public record AddLessonPuzzleRequest(
-        @NotNull(message = "챕터 정보가 없습니다")
-        Integer chapter,
+public record AddTrainingPuzzleRequest(
+        @NotNull(message = "팩 정보가 없습니다")
+        Integer packId,
 
         Integer puzzleIndex,
 
-        @NotEmpty(message = "제목 정보가 없습니다")
-        @Size(min = 1, max = 30, message = "제목은 1~30 자리의 문자열이어야 합니다")
-        String title,
+//        @NotEmpty(message = "제목 정보가 없습니다")
+//        @Size(min = 1, max = 30, message = "제목은 1~30 자리의 문자열이어야 합니다")
+//        String title,
 
         @NotEmpty(message = "보드 정보가 없습니다")
         @ValidBoardString
         String boardStatus,
 
-        @Size(max = 1023, message = "설명은 1023자 이하로 작성해야 합니다")
-        String description,
+        @Size(max = 1023, message = "정답은 1023자 이하로 작성해야 합니다")
+        String answer,
 
         @NotNull(message = "깊이 정보가 없습니다")
         Integer depth,
 
-        @NotEmpty(message = "난이도 정보가 없습니다")
-        @ValidEnum(enumClass = Difficulty.DifficultyName.class, message = "잘못된 Difficulty 타입입니다")
-        String difficulty,
+//        @NotEmpty(message = "난이도 정보가 없습니다")
+//        @ValidEnum(enumClass = Difficulty.DifficultyName.class, message = "잘못된 Difficulty 타입입니다")
+//        String difficulty,
 
         @NotEmpty(message = "승리 색상 정보가 없습니다")
         @ValidEnum(enumClass = WinColor.WinColorName.class, message = "잘못된 WinColor 타입입니다")

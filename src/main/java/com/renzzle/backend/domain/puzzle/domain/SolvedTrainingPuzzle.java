@@ -19,7 +19,7 @@ import java.time.Instant;
                 @UniqueConstraint(columnNames = {"user_id", "lesson_id"})
         }
 )
-public class SolvedLessonPuzzle {
+public class SolvedTrainingPuzzle {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,7 +33,7 @@ public class SolvedLessonPuzzle {
     @ManyToOne
     @JoinColumn(name = "lesson_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    private LessonPuzzle puzzle;
+    private TrainingPuzzle puzzle;
 
     @CreationTimestamp
     @Column(name = "solved_at", updatable = false, nullable = false)
