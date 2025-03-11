@@ -95,8 +95,8 @@ public class TrainingService {
     }
 
     @Transactional(readOnly = true)
-    public List<GetTrainingPuzzleResponse> getLessonPuzzleList(UserEntity user, int chapter, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("lessonIndex").ascending());
+    public List<GetTrainingPuzzleResponse> getLessonPuzzleList(UserEntity user, int chapter) {
+//        Pageable pageable = PageRequest.of(page, size, Sort.by("lessonIndex").ascending());
         Page<TrainingPuzzle> lessonPuzzles = lessonPuzzleRepository.findByChapter(chapter, pageable);
 
         if(lessonPuzzles.isEmpty()) {

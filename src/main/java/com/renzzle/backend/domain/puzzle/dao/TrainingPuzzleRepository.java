@@ -57,6 +57,6 @@ public interface TrainingPuzzleRepository extends JpaRepository<TrainingPuzzle, 
             nativeQuery = true)
     int countAllTrainingByChapter(@Param("chapter") int chapter);
 
-    Page<TrainingPuzzle> findByChapter(int chapter, Pageable pageable);
+//    Page<TrainingPuzzle> findByChapter(int chapter, Pageable pageable);
 
 }

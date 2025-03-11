@@ -88,6 +88,9 @@ public class TrainingController {
                 .build());
     }
 
+    /*
+                LEGACY : 레슨 문제 조회
+
     @Operation(summary = "Get lesson puzzle data", description = "Return lesson puzzle list")
     @GetMapping("/{chapter}")
     public ApiResponse<List<GetTrainingPuzzleResponse>> getLessonPuzzle(
@@ -108,6 +111,30 @@ public class TrainingController {
 
         return ApiUtils.success(lessonService.getLessonPuzzleList(user.getUser(), chapter, page, size));
     }
+
+     */
+
+    @Operation(summary = "Get training puzzle data", description = "Return training puzzle list")
+    @GetMapping("puzzle/{pack}")
+    public ApiResponse<List<GetTrainingPuzzleResponse>> getLessonPuzzle(
+            @PathVariable("pack") Integer pack,
+            @AuthenticationPrincipal UserDetailsImpl user,
+            @ModelAttribute GetTrainingPuzzleRequest request,
+            BindingResult bindingResult
+    ) {
+        if(bindingResult.hasErrors()) {
+            throw new ValidationException(getErrorMessages(bindingResult));
+        }
+        if(pack == null) {
+            throw new CustomException(ErrorCode.VALIDATION_ERROR);
+        }
+//
+//        int page = (request.page() != null) ? request.page() : 0;
+//        int size = (request.size() != null) ? request.size() : 10;
+
+        return ApiUtils.success(lessonService.getLessonPuzzleList(user.getUser(), pack));
+    }
+
 
     @Operation(summary = "Check lesson progress", description = "Return lesson progress by chapter")
     @GetMapping("/{chapter}/progress")
