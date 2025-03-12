@@ -27,9 +27,6 @@ public record AddTrainingPuzzleRequest(
         @NotNull(message = "깊이 정보가 없습니다")
         Integer depth,
 
-        @NotNull(message = "레이팅 정보가 없습니다")
-        double rating,
-
 //        @NotEmpty(message = "난이도 정보가 없습니다")
 //        @ValidEnum(enumClass = Difficulty.DifficultyName.class, message = "잘못된 Difficulty 타입입니다")
 //        String difficulty,

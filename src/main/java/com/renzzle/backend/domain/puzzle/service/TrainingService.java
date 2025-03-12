@@ -1,8 +1,10 @@
 package com.renzzle.backend.domain.puzzle.service;
 
 import com.renzzle.backend.domain.puzzle.api.request.AddTrainingPuzzleRequest;
+import com.renzzle.backend.domain.puzzle.api.request.CreatePackRequest;
 import com.renzzle.backend.domain.puzzle.api.response.GetTrainingPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.dao.PackRepository;
+import com.renzzle.backend.domain.puzzle.dao.PackTranslationRepository;
 import com.renzzle.backend.domain.puzzle.dao.TrainingPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.dao.SolvedTrainingPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.domain.*;
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +28,7 @@ public class TrainingService {
     private final TrainingPuzzleRepository trainingPuzzleRepository;
     private final SolvedTrainingPuzzleRepository solvedTrainingPuzzleRepository;
     private final PackRepository packRepository;
+    private final PackTranslationRepository packTranslationRepository;
 
     @Transactional
     public TrainingPuzzle createTrainingPuzzle(AddTrainingPuzzleRequest request) {
@@ -39,6 +43,8 @@ public class TrainingService {
         Pack pack = packRepository.findById(request.packId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_PACK));
 
+        double rating = request.depth() * 200;  // ELO 값 정해진 후 재정의 필요 !
+
         // increase puzzle_count
         packRepository.increasePuzzleCount(request.packId());
 
@@ -48,7 +54,7 @@ public class TrainingService {
                 .boardStatus(request.boardStatus())
                 .boardKey(boardKey)
                 .depth(request.depth())
-                .rating(request.rating())
+                .rating(rating)
                 .winColor(WinColor.getWinColor(request.winColor()))
                 .build();
 
@@ -110,14 +116,42 @@ public class TrainingService {
         return response;
     }
 
-    @Transactional(readOnly = true)
-    public double getLessonProgress(UserEntity user, int chapter) {
-        int allLessonCnt = trainingPuzzleRepository.countAllTrainingByChapter(chapter);
-        if(allLessonCnt == 0) return 0.0;
+//    @Transactional(readOnly = true)
+//    public double getLessonProgress(UserEntity user, int chapter) {
+//        int allLessonCnt = trainingPuzzleRepository.countAllTrainingByChapter(chapter);
+//        if(allLessonCnt == 0) return 0.0;
+//
+//        int solveCnt = solvedTrainingPuzzleRepository.countSolvedLesson(user.getId(), chapter);
+//
+//        return (double) solveCnt / allLessonCnt * 100;
+//    }
 
-        int solveCnt = solvedTrainingPuzzleRepository.countSolvedLesson(user.getId(), chapter);
+    @Transactional
+    public Pack createPack(CreatePackRequest request) {
 
-        return (double) solveCnt / allLessonCnt * 100;
+        Pack pack = Pack.builder()
+                .price(request.price())
+                .difficulty(Difficulty.getDifficulty(request.difficulty()))
+                .puzzle_count(0)
+                .build();
+
+        Pack savedPack = packRepository.save(pack);
+
+        List<PackTranslation> translations = request.info().stream()
+                .map(info -> PackTranslation.builder()
+                        .pack(savedPack)
+                        .language_code(info.langCode())
+                        .title(info.title())
+                        .author(info.author())
+                        .description(info.description())
+                        .build())
+                .collect(Collectors.toList());
+
+        packTranslationRepository.saveAll(translations);
+
+
+
+        return savedPack;
     }
 
 }

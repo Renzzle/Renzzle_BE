@@ -5,19 +5,19 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.test.context.support.TestPropertySourceUtils;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-//@Testcontainers
+@Testcontainers
 public class TestContainersConfig implements ApplicationContextInitializer<ConfigurableApplicationContext>{
 
-    // MySQL 컨테이너
     protected static MySQLContainer<?> mysqlContainer =
             new MySQLContainer<>(DockerImageName.parse("mysql:8.0"))
                     .withDatabaseName("testdb")
                     .withUsername("test")
                     .withPassword("test");
 
-    // Redis 컨테이너
     protected static GenericContainer<?> redisContainer =
             new GenericContainer<>(DockerImageName.parse("redis:6.2"))
                     .withExposedPorts(6379);

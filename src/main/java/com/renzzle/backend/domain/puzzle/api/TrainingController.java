@@ -1,9 +1,11 @@
 package com.renzzle.backend.domain.puzzle.api;
 
 import com.renzzle.backend.domain.puzzle.api.request.AddTrainingPuzzleRequest;
+import com.renzzle.backend.domain.puzzle.api.request.CreatePackRequest;
 import com.renzzle.backend.domain.puzzle.api.response.GetTrainingProgressResponse;
 import com.renzzle.backend.domain.puzzle.api.response.GetTrainingPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.api.response.SolveTrainingPuzzleResponse;
+import com.renzzle.backend.domain.puzzle.domain.Pack;
 import com.renzzle.backend.domain.puzzle.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.puzzle.service.TrainingService;
 import com.renzzle.backend.global.common.response.ApiResponse;
@@ -78,6 +80,21 @@ public class TrainingController {
         }
 
         return ApiUtils.success(lessonService.getTrainingPuzzleList(user.getUser(), pack));
+    }
+
+    @Operation(summary = "Create Pack", description = "Create pack & Only admins are available")
+    @PostMapping("/pack")
+    public ApiResponse<Long> addTrainingPuzzle(
+            @Valid @RequestBody CreatePackRequest request,
+            BindingResult bindingResult
+    ) {
+        if(bindingResult.hasErrors()) {
+            throw new ValidationException(getErrorMessages(bindingResult));
+        }
+
+        Pack pack = lessonService.createPack(request);
+
+        return ApiUtils.success(pack.getId());
     }
 
     /*

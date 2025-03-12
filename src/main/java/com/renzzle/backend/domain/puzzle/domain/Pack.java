@@ -12,7 +12,7 @@ public class Pack {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long packId;
+    private Long id;
 
     @Column(name = "puzzle_count", nullable = false)
     private int puzzle_count;
@@ -23,7 +23,4 @@ public class Pack {
     @ManyToOne
     @JoinColumn(name = "difficulty", nullable = false)
     private Difficulty difficulty;
-
-
-
 }
