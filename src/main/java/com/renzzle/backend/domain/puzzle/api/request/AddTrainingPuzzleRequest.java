@@ -1,6 +1,5 @@
 package com.renzzle.backend.domain.puzzle.api.request;
 
-import com.renzzle.backend.domain.puzzle.domain.Difficulty;
 import com.renzzle.backend.domain.puzzle.domain.WinColor;
 import com.renzzle.backend.global.validation.ValidBoardString;
 import com.renzzle.backend.global.validation.ValidEnum;
@@ -10,7 +9,7 @@ import jakarta.validation.constraints.Size;
 
 public record AddTrainingPuzzleRequest(
         @NotNull(message = "팩 정보가 없습니다")
-        Integer packId,
+        Long packId,
 
         Integer puzzleIndex,
 
@@ -27,6 +26,9 @@ public record AddTrainingPuzzleRequest(
 
         @NotNull(message = "깊이 정보가 없습니다")
         Integer depth,
+
+        @NotNull(message = "레이팅 정보가 없습니다")
+        double rating,
 
 //        @NotEmpty(message = "난이도 정보가 없습니다")
 //        @ValidEnum(enumClass = Difficulty.DifficultyName.class, message = "잘못된 Difficulty 타입입니다")

@@ -24,4 +24,6 @@ public class Pack {
     @JoinColumn(name = "difficulty", nullable = false)
     private Difficulty difficulty;
 
+
+
 }

@@ -11,11 +11,11 @@ import java.util.Optional;
 
 public interface SolvedTrainingPuzzleRepository extends JpaRepository<SolvedTrainingPuzzle, Long> {
 
-    @Query(value = "SELECT * FROM solved_lesson_puzzle " +
-            "WHERE user_id = :userId AND lesson_id = :lessonId",
+    @Query(value = "SELECT * FROM solved_training_puzzle " +
+            "WHERE user_id = :userId AND training_id = :puzzleId",
             nativeQuery = true)
     Optional<SolvedTrainingPuzzle> findByUserIdAndLessonId(@Param("userId") Long userId,
-                                                           @Param("lessonId") Long lessonId);
+                                                           @Param("puzzleId") Long puzzleId);
 
     boolean existsByUserAndPuzzle(UserEntity user, TrainingPuzzle puzzle);
 

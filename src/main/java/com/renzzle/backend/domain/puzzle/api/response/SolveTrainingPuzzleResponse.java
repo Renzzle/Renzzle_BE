@@ -4,5 +4,5 @@ import lombok.Builder;
 
 @Builder
 public record SolveTrainingPuzzleResponse(
-        Long unlockedId
+        boolean isSolved
 ) { }
