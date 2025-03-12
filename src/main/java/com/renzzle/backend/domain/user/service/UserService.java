@@ -41,7 +41,6 @@ public class UserService {
 
 
     public UserResponse getUser(Long userId) {
-
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
 

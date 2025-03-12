@@ -48,7 +48,6 @@ public class UserController {
     @Operation(summary = "Retrieve user information", description = "Get the details of the user info")
     @GetMapping
     public ApiResponse<UserResponse> getUser(@AuthenticationPrincipal UserDetailsImpl userDetails) {
-
         Long UserId = userDetails.getUser().getId();
         UserResponse userResponse = userService.getUser(UserId);
         return ApiUtils.success(userResponse);
