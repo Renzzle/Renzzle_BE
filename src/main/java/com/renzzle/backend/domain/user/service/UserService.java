@@ -38,7 +38,6 @@ public class UserService {
     private final CommunityPuzzleRepository communityPuzzleRepository;
     private final UserCommunityPuzzleRepository userCommunityPuzzleRepository;
 
-
     public UserResponse getUser(Long userId) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
@@ -47,23 +46,17 @@ public class UserService {
                 .id(user.getId())
                 .email(user.getEmail())
                 .nickname(user.getNickname())
+                .currency(user.getCurrency())
                 .build();
     }
 
     @Transactional
     public Long deleteUser(Long userId) {
-
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
-
-        subscriptionRepository.deleteByUserId(userId);
-
-        userRepository.deleteById(userId);
+        user.softDelete();
         return userId;
     }
-
-
-
 
     @Transactional(readOnly = true)
     public List<SubscriptionResponse> getUserSubscriptions(Long userId, Long id, int size) {

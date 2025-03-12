@@ -83,8 +83,7 @@ public class UserEntity {
         }
     }
 
-    @PreRemove
-    public void onPreRemove() {
+    public void softDelete() {
         this.status = Status.getStatus(Status.StatusName.DELETED);
         this.deletedAt = Instant.now();
     }

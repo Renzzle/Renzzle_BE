@@ -45,7 +45,7 @@ public class UserController {
 
     private final UserService userService;
 
-    @Operation(summary = "Retrieve user information", description = "Get the details of the user info")
+    @Operation(summary = "Retrieve user information", description = "Get the details of the user information")
     @GetMapping
     public ApiResponse<UserResponse> getUser(@AuthenticationPrincipal UserDetailsImpl userDetails) {
         Long UserId = userDetails.getUser().getId();
@@ -53,22 +53,11 @@ public class UserController {
         return ApiUtils.success(userResponse);
     }
 
-    @Operation(summary = "Delete a user", description = "Delete the user")
+    @Operation(summary = "Delete the user", description = "Delete the user, but no actual data(soft delete)")
     @DeleteMapping
     public ApiResponse<Long> deleteUser(@AuthenticationPrincipal UserDetailsImpl userDetails) {
         Long deletedUserId = userService.deleteUser(userDetails.getUser().getId());
-        return ApiUtils.success(deletedUserId);  // 삭제된 userId 반환
-    }
-
-    @Operation(summary = "Update user level", description = "Update the level of the currently logged-in user")
-    @PatchMapping("/level")
-    public ApiResponse<UserResponse> updateLevel(
-            @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @RequestBody UpdateLevelRequest request) {
-
-        UserEntity user = userDetails.getUser();
-        UserResponse userResponse = userService.updateUserLevel(user, request.level());
-        return ApiUtils.success(userResponse);
+        return ApiUtils.success(deletedUserId);
     }
 
     @Operation(summary = "Subscribe or unsubscribe to a user", description = "change the subscription status of a user")
