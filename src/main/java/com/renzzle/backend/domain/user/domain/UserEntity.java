@@ -21,6 +21,7 @@ import static com.renzzle.backend.global.common.domain.Status.STATUS_IS_NOT_DELE
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {"email", "status", "deleted_at"}),
                 @UniqueConstraint(columnNames = {"nickname", "status", "deleted_at"}),
+                @UniqueConstraint(columnNames = {"device_id", "status", "deleted_at"})
         }
 )
 @SQLRestriction(value = STATUS_IS_NOT_DELETED)
@@ -39,6 +40,21 @@ public class UserEntity {
     @Column(name = "nickname", nullable = false, length = 31)
     private String nickname;
 
+    @Column(name = "rating")
+    private double rating = 1000.0;
+
+    @Column(name = "mmr")
+    private double mmr = 1000.0;
+
+    @Column(name = "currency")
+    private int currency = 0;
+
+    @Column(name = "device_id", nullable = false, length = 1024)
+    private String deviceId;
+
+    @Column(name = "lastAccessedAt", nullable = false)
+    private Instant lastAccessedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)
     private Instant createdAt;
@@ -54,31 +70,16 @@ public class UserEntity {
     @JoinColumn(name = "status", nullable = false)
     private Status status;
 
-    @ManyToOne
-    @JoinColumn(name = "color", nullable = false)
-    private Color color;
-
-    @ManyToOne
-    @JoinColumn(name = "level", nullable = false)
-    private UserLevel level;
-
-    public void setUserLevel(UserLevel UserLevel){
-        this.level = UserLevel;
-    }
-
     @PrePersist
     public void onPrePersist() {
         if(status == null) {
             this.status = Status.getDefaultStatus();
         }
+        if(lastAccessedAt == null) {
+            this.lastAccessedAt = Instant.now();
+        }
         if(deletedAt == null) {
             this.deletedAt = CONST_FUTURE_INSTANT;
-        }
-        if(color == null) {
-            this.color = Color.getRandomColor();
-        }
-        if(level == null) {
-            this.level = UserLevel.getDefaultLevel();
         }
     }
 

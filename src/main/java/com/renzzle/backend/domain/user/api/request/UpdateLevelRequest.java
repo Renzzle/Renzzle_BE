@@ -1,6 +1,5 @@
 package com.renzzle.backend.domain.user.api.request;
 
-import com.renzzle.backend.domain.user.domain.UserLevel;
 import jakarta.validation.constraints.NotNull;
 
 public record UpdateLevelRequest(

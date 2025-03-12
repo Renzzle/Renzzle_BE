@@ -13,7 +13,6 @@ import com.renzzle.backend.domain.user.dao.SubscriptionRepository;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.SubscriptionEntity;
 import com.renzzle.backend.domain.user.domain.UserEntity;
-import com.renzzle.backend.domain.user.domain.UserLevel;
 import com.renzzle.backend.global.common.domain.Status;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
@@ -48,8 +47,6 @@ public class UserService {
                 .id(user.getId())
                 .email(user.getEmail())
                 .nickname(user.getNickname())
-                .level(user.getLevel().getName())
-                .profile(user.getColor().getName())
                 .build();
     }
 
@@ -65,22 +62,7 @@ public class UserService {
         return userId;
     }
 
-    @Transactional
-    public UserResponse updateUserLevel(UserEntity user, String levelName) {
 
-        UserLevel newLevel = UserLevel.getLevel(levelName);
-
-        // 사용자 레벨 업데이트
-        user.setUserLevel(newLevel);
-
-        return UserResponse.builder()
-                .id(user.getId())
-                .email(user.getEmail())
-                .nickname(user.getNickname())
-                .level(user.getLevel().getName())
-                .profile(user.getColor().getName())
-                .build();
-    }
 
 
     @Transactional(readOnly = true)
@@ -113,7 +95,6 @@ public class UserService {
         return SubscriptionResponse.builder()
                 .userId(subscriptionEntity.getSubscribedTo().getId())
                 .nickname(subscriptionEntity.getSubscribedTo().getNickname())
-                .profile(subscriptionEntity.getSubscribedTo().getColor())
                 .build();
     }
 
