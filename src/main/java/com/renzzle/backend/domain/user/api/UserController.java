@@ -1,14 +1,8 @@
 package com.renzzle.backend.domain.user.api;
 
 import com.renzzle.backend.domain.puzzle.api.request.GetCommunityPuzzleRequest;
-import com.renzzle.backend.domain.puzzle.api.request.GetLessonPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.api.response.GetCommunityPuzzleResponse;
-import com.renzzle.backend.domain.puzzle.api.response.GetLessonPuzzleResponse;
-import com.renzzle.backend.domain.user.api.request.GetUserPuzzleRequest;
 import com.renzzle.backend.domain.user.api.request.PuzzleLikeRequest;
-import com.renzzle.backend.domain.user.api.request.SubscriptionRequest;
-import com.renzzle.backend.domain.user.api.request.UpdateLevelRequest;
-import com.renzzle.backend.domain.user.api.response.GetUserCommunityPuzzleResponse;
 import com.renzzle.backend.domain.user.api.response.LikeResponse;
 import com.renzzle.backend.domain.user.api.response.SubscriptionResponse;
 import com.renzzle.backend.domain.user.api.response.UserResponse;
@@ -20,14 +14,10 @@ import com.renzzle.backend.global.exception.ErrorCode;
 import com.renzzle.backend.global.security.UserDetailsImpl;
 import com.renzzle.backend.global.util.ApiUtils;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
@@ -93,37 +83,6 @@ public class UserController {
         Long userId = userDetails.getUser().getId();
         List<LikeResponse> likeResponse = userService.getUserLike(userId, id, size);
         return ApiUtils.success(likeResponse);
-    }
-
-    @Operation(summary = "Retrieve user subscription list", description = "Retrieve the subscribed users by the user")
-    @GetMapping("/subscribe")
-    public ApiResponse<List<SubscriptionResponse>> getUserSubscriptions(
-            @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @RequestParam(value = "id", required = false) Long id,
-            @RequestParam(value = "size", defaultValue = "10") int size) {
-
-        log.info("Received parameters - ID: {}, Size: {}", id, size);
-
-        if (userDetails == null) {
-            log.error("User details not found");
-            throw new CustomException(ErrorCode.CANNOT_FIND_USER);
-        }
-
-        Long userId = userDetails.getUser().getId();
-        List<SubscriptionResponse> subscriptionResponses = userService.getUserSubscriptions(userId, id, size);
-        return ApiUtils.success(subscriptionResponses);
-    }
-
-    @Operation(summary = "Subscribe or unsubscribe to a user", description = "change the subscription status of a user")
-    @PostMapping("/subscribe")
-    public ApiResponse<Boolean> changeSubscriptionStatus(
-            @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @RequestBody SubscriptionRequest request) {
-
-        Long CurrentUserId = userDetails.getUser().getId();
-        Boolean isSubscribed = userService.changeSubscription(CurrentUserId, request.userId());
-
-        return ApiUtils.success(isSubscribed);
     }
 
     @Operation(summary = "Get user puzzle data", description = "Return puzzle list for a user")
