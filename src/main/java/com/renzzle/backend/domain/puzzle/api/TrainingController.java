@@ -1,9 +1,8 @@
 package com.renzzle.backend.domain.puzzle.api;
 
-import com.renzzle.backend.domain.puzzle.api.request.AddTrainingPuzzleRequest;
-import com.renzzle.backend.domain.puzzle.api.request.CreatePackRequest;
-import com.renzzle.backend.domain.puzzle.api.request.TranslationRequest;
+import com.renzzle.backend.domain.puzzle.api.request.*;
 import com.renzzle.backend.domain.puzzle.api.response.GetPackResponse;
+import com.renzzle.backend.domain.puzzle.api.response.GetTrainingPuzzleAnswerResponse;
 import com.renzzle.backend.domain.puzzle.api.response.GetTrainingPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.api.response.SolveTrainingPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.domain.Pack;
@@ -83,6 +82,7 @@ public class TrainingController {
         return ApiUtils.success(trainingService.getTrainingPuzzleList(user.getUser(), pack));
     }
 
+    //완료 0313
     @Operation(summary = "Create Pack", description = "Create pack & Only admins are available")
     @PostMapping("/pack")
     public ApiResponse<Long> addTrainingPuzzle(
@@ -98,6 +98,7 @@ public class TrainingController {
         return ApiUtils.success(pack.getId());
     }
 
+    //완료 0313
     @Operation(summary = "Add Translation", description = "Add Translation & Only admins are available")
     @PostMapping("/pack/translation")
     public ApiResponse<Long> addTranslation(
@@ -115,6 +116,7 @@ public class TrainingController {
         return ApiUtils.success(null);
     }
 
+    //완료 0314
     @Operation(summary = "Get Training Packs", description = "Get Training Packs")
     @GetMapping("/pack")
     public ApiResponse<List<GetPackResponse>> getTrainigPack(
@@ -127,81 +129,38 @@ public class TrainingController {
         return ApiUtils.success(packs);
     }
 
-    /*
-    LEGACY : 레슨 문제 삭제
-    @Operation(summary = "Delete lesson puzzle", description = "Delete lesson puzzle & Only admins are available")
-    @DeleteMapping("/{lessonId}")
-    public ApiResponse<Object> deleteLessonPuzzle(@PathVariable("lessonId") Long lessonId) {
-        lessonService.deleteLessonPuzzle(lessonId);
-        return ApiUtils.success(null);
-    }
-     */
+    // 0315
+    @Operation(summary = "Purchase Training Pack", description = "Purchase Training Pack")
+    @PostMapping("/pack/purchase")
+    public ApiResponse<Integer> PurchaseTrainingPack(
+            @Valid @RequestBody PurchaseTrainingPackRequest request,
+            BindingResult bindingResult,
+            @AuthenticationPrincipal UserDetailsImpl user
+    ){
 
-    /*
-    LEGACY : 레슨 문제 성공 요청
-    @Operation(summary = "Solve lesson puzzle", description = "Return unlocked lesson puzzle id (can be null)")
-    @PostMapping("/solve")
-    public ApiResponse<SolveTrainingPuzzleResponse> solveLessonPuzzle(
-            @Valid @RequestBody SolveTrainingPuzzleRequest request,
-            @AuthenticationPrincipal UserDetailsImpl user,
-            BindingResult bindingResult
-    ) {
         if(bindingResult.hasErrors()) {
             throw new ValidationException(getErrorMessages(bindingResult));
         }
 
-        Long unlockedId = lessonService.solveLessonPuzzle(user.getUser(), request.puzzleId());
+        Integer currency = trainingService.purchaseTrainingPack(user.getUser(), request);
 
-        return ApiUtils.success(SolveTrainingPuzzleResponse.builder()
-                .unlockedId(unlockedId)
-                .build());
+        return ApiUtils.success(currency);
     }
+    // 0315
+    @Operation(summary = "Purchase Training Puzzle Answer", description = "Purchase Training Puzzle Answer")
+    @PostMapping("/puzzle/{puzzleId}/answer")
+    public ApiResponse<GetTrainingPuzzleAnswerResponse> PurchaseTrainingPuzzleAnswer(
+            @PathVariable("puzzleId") Long puzzleId,
+            BindingResult bindingResult,
+            @AuthenticationPrincipal UserDetailsImpl user
+    ){
 
-     */
-
-
-
-    /*
-                LEGACY : 레슨 문제 조회
-
-    @Operation(summary = "Get lesson puzzle data", description = "Return lesson puzzle list")
-    @GetMapping("/{chapter}")
-    public ApiResponse<List<GetTrainingPuzzleResponse>> getLessonPuzzle(
-            @PathVariable("chapter") Integer chapter,
-            @AuthenticationPrincipal UserDetailsImpl user,
-            @ModelAttribute GetTrainingPuzzleRequest request,
-            BindingResult bindingResult
-    ) {
         if(bindingResult.hasErrors()) {
             throw new ValidationException(getErrorMessages(bindingResult));
         }
-        if(chapter == null) {
-            throw new CustomException(ErrorCode.VALIDATION_ERROR);
-        }
 
-        int page = (request.page() != null) ? request.page() : 0;
-        int size = (request.size() != null) ? request.size() : 10;
+        GetTrainingPuzzleAnswerResponse response = trainingService.purchaseTrainingPuzzleAnswer(user.getUser(), puzzleId);
 
-        return ApiUtils.success(lessonService.getLessonPuzzleList(user.getUser(), chapter, page, size));
+        return ApiUtils.success(response);
     }
-     */
-
-//
-//
-//    @Operation(summary = "Check lesson progress", description = "Return lesson progress by chapter")
-//    @GetMapping("/{chapter}/progress")
-//    public ApiResponse<GetTrainingProgressResponse> getLessonProgress(
-//            @PathVariable("chapter") Integer chapter,
-//            @AuthenticationPrincipal UserDetailsImpl user
-//    ) {
-//        if(chapter == null) {
-//            throw new CustomException(ErrorCode.VALIDATION_ERROR);
-//        }
-//        double progress = lessonService.getLessonProgress(user.getUser(), chapter);
-//
-//        return ApiUtils.success(GetTrainingProgressResponse.builder()
-//                .progress(progress)
-//                .build());
-//    }
-
 }

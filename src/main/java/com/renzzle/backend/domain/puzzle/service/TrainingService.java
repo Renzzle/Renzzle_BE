@@ -1,12 +1,12 @@
 package com.renzzle.backend.domain.puzzle.service;
 
-import com.renzzle.backend.domain.puzzle.api.request.AddTrainingPuzzleRequest;
-import com.renzzle.backend.domain.puzzle.api.request.CreatePackRequest;
-import com.renzzle.backend.domain.puzzle.api.request.TranslationRequest;
+import com.renzzle.backend.domain.puzzle.api.request.*;
 import com.renzzle.backend.domain.puzzle.api.response.GetPackResponse;
+import com.renzzle.backend.domain.puzzle.api.response.GetTrainingPuzzleAnswerResponse;
 import com.renzzle.backend.domain.puzzle.api.response.GetTrainingPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.dao.*;
 import com.renzzle.backend.domain.puzzle.domain.*;
+import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
@@ -30,6 +30,7 @@ public class TrainingService {
     private final PackRepository packRepository;
     private final PackTranslationRepository packTranslationRepository;
     private final UserPackRepository userPackRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public TrainingPuzzle createTrainingPuzzle(AddTrainingPuzzleRequest request) {
@@ -95,11 +96,11 @@ public class TrainingService {
     }
 
     @Transactional(readOnly = true)
-    public List<GetTrainingPuzzleResponse> getTrainingPuzzleList(UserEntity user, Long pack) {
-        List<TrainingPuzzle> trainingPuzzles = trainingPuzzleRepository.findByPack_PackId(pack);
+    public List<GetTrainingPuzzleResponse> getTrainingPuzzleList(UserEntity user, Long packId) {
+        List<TrainingPuzzle> trainingPuzzles = trainingPuzzleRepository.findByPack_PackId(packId);
 
         if(trainingPuzzles.isEmpty()) {
-            throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PAGE);
+            throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK);
         }
 
         List<GetTrainingPuzzleResponse> response = new ArrayList<>();
@@ -217,4 +218,57 @@ public class TrainingService {
 
         return result;
     }
+
+    @Transactional(readOnly = true)
+    public Integer purchaseTrainingPack(UserEntity user, PurchaseTrainingPackRequest request) {
+
+        Pack pack = packRepository.findById(request.packId())
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_PACK));
+
+        int price = pack.getPrice();
+        int currentCurrency = user.getCurrency();
+
+        if (currentCurrency < price) {
+            throw new CustomException(ErrorCode.INSUFFICIENT_CURRENCY);
+        }
+
+        int newCurrency = currentCurrency - price;
+        user.setCurrency(newCurrency);
+        userRepository.save(user);
+
+        UserPack userPack = UserPack.builder()
+                .user(user)
+                .pack(pack)
+                .solved_count(0)
+                .build();
+
+        userPackRepository.save(userPack);
+
+        return newCurrency;
+
+    }
+
+    @Transactional(readOnly = true)
+    public GetTrainingPuzzleAnswerResponse purchaseTrainingPuzzleAnswer(UserEntity user, Long puzzleId) {
+
+        TrainingPuzzle puzzle = trainingPuzzleRepository.findById(puzzleId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
+
+        int currentCurrency = user.getCurrency();
+        if (currentCurrency < 100) {
+            throw new CustomException(ErrorCode.INSUFFICIENT_CURRENCY);
+        }
+
+        int newCurrency = currentCurrency - 100;
+        user.setCurrency(newCurrency);
+        userRepository.save(user);
+
+        GetTrainingPuzzleAnswerResponse response = GetTrainingPuzzleAnswerResponse.builder()
+                .answer(puzzle.getAnswer())
+                .currency(newCurrency)
+                .build();
+
+        return response;
+    }
+
 }

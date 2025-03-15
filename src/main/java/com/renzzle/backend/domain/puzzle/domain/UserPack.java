@@ -30,8 +30,4 @@ public class UserPack {
 
     @Column(name = "solved_count", nullable = false)
     private int solved_count;
-
-
-
-
 }

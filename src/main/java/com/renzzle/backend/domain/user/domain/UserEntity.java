@@ -39,6 +39,9 @@ public class UserEntity {
     @Column(name = "nickname", nullable = false, length = 31)
     private String nickname;
 
+    @Column(name = "currency", nullable = false)
+    private Integer currency;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)
     private Instant createdAt;
@@ -65,6 +68,8 @@ public class UserEntity {
     public void setUserLevel(UserLevel UserLevel){
         this.level = UserLevel;
     }
+
+    public void setCurrency(Integer currency){this.currency = currency;}
 
     @PrePersist
     public void onPrePersist() {

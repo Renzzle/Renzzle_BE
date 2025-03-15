@@ -47,8 +47,9 @@ public enum ErrorCode {
     // Puzzle
     CANNOT_FIND_COMMUNITY_PUZZLE(HttpStatus.NOT_FOUND, "P4040", "해당하는 커뮤니티 퍼즐을 찾을 수 없습니다."),
     CANNOT_FIND_TRAINING_PUZZLE(HttpStatus.NOT_FOUND, "P4041", "해당하는 레슨 퍼즐을 찾을 수 없습니다."),
-    NO_SUCH_TRAINING_PAGE(HttpStatus.NOT_FOUND, "P4042", "해당하는 페이지의 레슨 퍼즐들을 찾을 수 없습니다."),
-    CANNOT_FIND_PACK(HttpStatus.NOT_FOUND, "P4043", "해당하는 팩을 찾을 수 없습니다.")
+    NO_SUCH_TRAINING_PACK(HttpStatus.NOT_FOUND, "P4042", "해당하는 팩 정보를 찾을 수 없습니다."),
+    CANNOT_FIND_PACK(HttpStatus.NOT_FOUND, "P4043", "해당하는 팩을 찾을 수 없습니다."),
+    INSUFFICIENT_CURRENCY(HttpStatus.BAD_REQUEST, "P4021", "재화가 부족합니다.")
     ;
 
     private final HttpStatus status;
