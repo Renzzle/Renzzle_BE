@@ -2,11 +2,10 @@ package com.renzzle.backend.domain.puzzle.service;
 
 import com.renzzle.backend.domain.puzzle.api.request.AddTrainingPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.api.request.CreatePackRequest;
+import com.renzzle.backend.domain.puzzle.api.request.TranslationRequest;
+import com.renzzle.backend.domain.puzzle.api.response.GetPackResponse;
 import com.renzzle.backend.domain.puzzle.api.response.GetTrainingPuzzleResponse;
-import com.renzzle.backend.domain.puzzle.dao.PackRepository;
-import com.renzzle.backend.domain.puzzle.dao.PackTranslationRepository;
-import com.renzzle.backend.domain.puzzle.dao.TrainingPuzzleRepository;
-import com.renzzle.backend.domain.puzzle.dao.SolvedTrainingPuzzleRepository;
+import com.renzzle.backend.domain.puzzle.dao.*;
 import com.renzzle.backend.domain.puzzle.domain.*;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.exception.CustomException;
@@ -18,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -29,6 +29,7 @@ public class TrainingService {
     private final SolvedTrainingPuzzleRepository solvedTrainingPuzzleRepository;
     private final PackRepository packRepository;
     private final PackTranslationRepository packTranslationRepository;
+    private final UserPackRepository userPackRepository;
 
     @Transactional
     public TrainingPuzzle createTrainingPuzzle(AddTrainingPuzzleRequest request) {
@@ -154,4 +155,66 @@ public class TrainingService {
         return savedPack;
     }
 
+    @Transactional
+    public void addTranslation(TranslationRequest request) {
+
+        Pack pack = packRepository.findById(request.packId())
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_PACK));
+
+        PackTranslation translation = PackTranslation.builder()
+                .pack(pack)
+                .language_code(request.langCode())
+                .title(request.title())
+                .author(request.author())
+                .description(request.description())
+                .build();
+
+        packTranslationRepository.save(translation);
+    }
+
+    @Transactional(readOnly = true)
+    public List<GetPackResponse> getTrainingPackList(UserEntity user, String difficulty, String lang){
+
+        List<Pack> packs = packRepository.findByDifficulty(Difficulty.getDifficulty(difficulty));
+
+        List<Long> packIds = packs.stream().map(Pack::getId).collect(Collectors.toList());
+        List<PackTranslation> translations = packTranslationRepository
+                .findAllByPackIdInAndLanguageCode(packIds, lang);
+
+        Long userId = user.getId();
+
+        List<UserPack> userPacks = userPackRepository.findAllByUserIdAndPackIdIn(userId, packIds);
+        Map<Long, UserPack> userPackMap = userPacks.stream()
+                .collect(Collectors.toMap(up -> up.getPack().getId(), up -> up));
+
+        Map<Long, PackTranslation> translationMap = translations.stream()
+                .collect(Collectors.toMap(
+                        t -> t.getPack().getId(),  // key: packId
+                        t -> t                     // value: PackTranslation 객체
+                ));
+
+        List<GetPackResponse> result = new ArrayList<>();
+        for (Pack pack : packs) {
+            PackTranslation translation = translationMap.get(pack.getId());
+            UserPack up = userPackMap.get(pack.getId());
+
+            // locked 여부, solvedPuzzleCount 계산
+            boolean locked = (up == null);
+            int solvedCount = (up != null) ? up.getSolved_count() : 0;
+
+            GetPackResponse dto = new GetPackResponse(
+                    pack.getId(),
+                    translation != null ? translation.getTitle() : null,
+                    translation != null ? translation.getAuthor() : null,
+                    translation != null ? translation.getDescription() : null,
+                    pack.getPrice(),
+                    pack.getPuzzle_count(),
+                    solvedCount,
+                    locked
+            );
+            result.add(dto);
+        }
+
+        return result;
+    }
 }

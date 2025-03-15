@@ -28,6 +28,9 @@ public class UserPack {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Pack pack;
 
+    @Column(name = "solved_count", nullable = false)
+    private int solved_count;
+
 
 
 

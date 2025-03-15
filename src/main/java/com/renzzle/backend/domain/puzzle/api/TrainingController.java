@@ -2,7 +2,8 @@ package com.renzzle.backend.domain.puzzle.api;
 
 import com.renzzle.backend.domain.puzzle.api.request.AddTrainingPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.api.request.CreatePackRequest;
-import com.renzzle.backend.domain.puzzle.api.response.GetTrainingProgressResponse;
+import com.renzzle.backend.domain.puzzle.api.request.TranslationRequest;
+import com.renzzle.backend.domain.puzzle.api.response.GetPackResponse;
 import com.renzzle.backend.domain.puzzle.api.response.GetTrainingPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.api.response.SolveTrainingPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.domain.Pack;
@@ -30,7 +31,7 @@ import static com.renzzle.backend.global.util.ErrorUtils.getErrorMessages;
 @Tag(name = "Training Puzzle API", description = "Training Puzzle API")
 public class TrainingController {
 
-    private final TrainingService lessonService;
+    private final TrainingService trainingService;
 
     //완료 0311
     @Operation(summary = "Add training puzzle", description = "Add training puzzle & Only admins are available")
@@ -43,7 +44,7 @@ public class TrainingController {
             throw new ValidationException(getErrorMessages(bindingResult));
         }
 
-        TrainingPuzzle puzzle = lessonService.createTrainingPuzzle(request);
+        TrainingPuzzle puzzle = trainingService.createTrainingPuzzle(request);
 
         return ApiUtils.success(puzzle.getId());
     }
@@ -52,7 +53,7 @@ public class TrainingController {
     @Operation(summary = "Delete training puzzle", description = "Delete training puzzle & Only admins are available")
     @DeleteMapping("puzzle/{puzzleId}")
     public ApiResponse<Object> deleteTrainingPuzzle(@PathVariable("puzzleId") Long puzzleId) {
-        lessonService.deleteTrainingPuzzle(puzzleId);
+        trainingService.deleteTrainingPuzzle(puzzleId);
         return ApiUtils.success(null);
     }
 
@@ -63,7 +64,7 @@ public class TrainingController {
             @PathVariable("puzzleId") Long puzzleId,
             @AuthenticationPrincipal UserDetailsImpl user) {
 
-        lessonService.solveLessonPuzzle(user.getUser(), puzzleId);
+        trainingService.solveLessonPuzzle(user.getUser(), puzzleId);
 
         return ApiUtils.success(null);
     }
@@ -71,7 +72,7 @@ public class TrainingController {
     //완료 0311
     @Operation(summary = "Get training puzzle data", description = "Return training puzzle list")
     @GetMapping("puzzle/{pack}")
-    public ApiResponse<List<GetTrainingPuzzleResponse>> getLessonPuzzle(
+    public ApiResponse<List<GetTrainingPuzzleResponse>> getTrainingPuzzle(
             @PathVariable("pack") Long pack,
             @AuthenticationPrincipal UserDetailsImpl user
     ) {
@@ -79,7 +80,7 @@ public class TrainingController {
             throw new CustomException(ErrorCode.VALIDATION_ERROR);
         }
 
-        return ApiUtils.success(lessonService.getTrainingPuzzleList(user.getUser(), pack));
+        return ApiUtils.success(trainingService.getTrainingPuzzleList(user.getUser(), pack));
     }
 
     @Operation(summary = "Create Pack", description = "Create pack & Only admins are available")
@@ -92,9 +93,38 @@ public class TrainingController {
             throw new ValidationException(getErrorMessages(bindingResult));
         }
 
-        Pack pack = lessonService.createPack(request);
+        Pack pack = trainingService.createPack(request);
 
         return ApiUtils.success(pack.getId());
+    }
+
+    @Operation(summary = "Add Translation", description = "Add Translation & Only admins are available")
+    @PostMapping("/pack/translation")
+    public ApiResponse<Long> addTranslation(
+            @Valid @RequestBody TranslationRequest request,
+            BindingResult bindingResult
+    ) {
+        if(bindingResult.hasErrors()) {
+            throw new ValidationException(getErrorMessages(bindingResult));
+        }
+        trainingService.addTranslation(request);
+
+
+//        Pack pack = lessonService.createPack(request);
+
+        return ApiUtils.success(null);
+    }
+
+    @Operation(summary = "Get Training Packs", description = "Get Training Packs")
+    @GetMapping("/pack")
+    public ApiResponse<List<GetPackResponse>> getTrainigPack(
+            @RequestParam(name = "difficulty", required = true) String difficulty,
+            @RequestParam(name = "lang", defaultValue = "en") String lang,
+            @AuthenticationPrincipal UserDetailsImpl user
+    ){
+        List<GetPackResponse> packs = trainingService.getTrainingPackList(user.getUser(), difficulty, lang);
+
+        return ApiUtils.success(packs);
     }
 
     /*

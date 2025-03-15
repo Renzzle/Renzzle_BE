@@ -1,11 +1,14 @@
 package com.renzzle.backend.domain.puzzle.dao;
 
+import com.renzzle.backend.domain.puzzle.domain.Difficulty;
 import com.renzzle.backend.domain.puzzle.domain.Pack;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 public interface PackRepository extends JpaRepository<Pack, Long> {
 
@@ -17,4 +20,5 @@ public interface PackRepository extends JpaRepository<Pack, Long> {
             nativeQuery = true)
     void increasePuzzleCount(@Param("pack_id") Long packId);
 
+    List<Pack> findByDifficulty(Difficulty difficulty);
 }
