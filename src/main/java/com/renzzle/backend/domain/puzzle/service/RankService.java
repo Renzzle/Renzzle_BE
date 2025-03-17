@@ -38,19 +38,22 @@ public class RankService {
         String boardStatus = puzzle.getBoardStatus();
         WinColor winColor = puzzle.getWinColor();
 
+        double adjustedRating = calculateAdjustedRating(user.getLatentRating(), puzzle.getRating(),false);
+
         // 세션 ID 생성
         Long sessionId = generateSessionId();
 
-        // 3-3. Redis에 세션 정보 저장
+        // Redis에 세션 정보 저장
         String key = "ranking:session:" + sessionId;
         Map<String, Object> sessionData = new HashMap<>();
         sessionData.put("userId", user.getId());
         sessionData.put("boardStatus", boardStatus);
         sessionData.put("winColor", winColor);
-        // 기타 필요한 데이터 (예: solvedCount, 점수, 시작 시간 등)
+        sessionData.put("adjustRating", adjustedRating);
+
         redisTemplate.opsForHash().putAll(key, sessionData);
 
-        // 3-4. TTL 5분 설정 (300초)
+        // TTL 5분 설정 (300초)
         redisTemplate.expire(key, 5, TimeUnit.MINUTES);
 
         RankStartResponse response = RankStartResponse.builder()
@@ -68,6 +71,14 @@ public class RankService {
             throw new CustomException(ErrorCode.SESSION_GENERATION_FAILED);
         }
         return sessionId;
+    }
+
+    private double calculateAdjustedRating(double currentRating, double puzzleRating, boolean isSolved) {
+        final int K = 30;
+        double expectedScore = 1.0 / (1.0 + Math.pow(10, (puzzleRating - currentRating) / 400));
+        double actualScore = isSolved ? 1.0 : 0.0;
+        double ratingChange = K * (actualScore - expectedScore);
+        return currentRating + ratingChange;
     }
 
 

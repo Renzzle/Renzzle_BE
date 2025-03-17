@@ -43,7 +43,7 @@ public class TrainingService {
         }
 
         Pack pack = packRepository.findById(request.packId())
-                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_PACK));
+                .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
         double rating = request.depth() * 200;  // ELO 값 정해진 후 재정의 필요 !
 
@@ -160,7 +160,7 @@ public class TrainingService {
     public void addTranslation(TranslationRequest request) {
 
         Pack pack = packRepository.findById(request.packId())
-                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_PACK));
+                .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
         PackTranslation translation = PackTranslation.builder()
                 .pack(pack)
@@ -223,7 +223,7 @@ public class TrainingService {
     public Integer purchaseTrainingPack(UserEntity user, PurchaseTrainingPackRequest request) {
 
         Pack pack = packRepository.findById(request.packId())
-                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_PACK));
+                .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
         int price = pack.getPrice();
         int currentCurrency = user.getCurrency();
