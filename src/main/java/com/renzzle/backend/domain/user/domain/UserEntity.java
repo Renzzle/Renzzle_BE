@@ -85,6 +85,10 @@ public class UserEntity {
         if(deletedAt == null) {
             this.deletedAt = CONST_FUTURE_INSTANT;
         }
+        // TODO: initialize device id
+        if(deviceId == null) {
+            this.deviceId = "";
+        }
     }
 
     public void softDelete() {
