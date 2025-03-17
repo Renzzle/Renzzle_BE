@@ -150,7 +150,7 @@ public class TrainingController {
     @Operation(summary = "Purchase Training Puzzle Answer", description = "Purchase Training Puzzle Answer")
     @PostMapping("/puzzle/{puzzleId}/answer")
     public ApiResponse<GetTrainingPuzzleAnswerResponse> PurchaseTrainingPuzzleAnswer(
-            @PathVariable("puzzleId") Long puzzleId,
+            @Valid @RequestBody PurchaseTrainingPuzzleAnswerRequest request,
             BindingResult bindingResult,
             @AuthenticationPrincipal UserDetailsImpl user
     ){
@@ -159,7 +159,7 @@ public class TrainingController {
             throw new ValidationException(getErrorMessages(bindingResult));
         }
 
-        GetTrainingPuzzleAnswerResponse response = trainingService.purchaseTrainingPuzzleAnswer(user.getUser(), puzzleId);
+        GetTrainingPuzzleAnswerResponse response = trainingService.purchaseTrainingPuzzleAnswer(user.getUser(), request);
 
         return ApiUtils.success(response);
     }

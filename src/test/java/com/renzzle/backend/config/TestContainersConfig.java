@@ -9,7 +9,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-@Testcontainers
+//@Testcontainers
 public class TestContainersConfig implements ApplicationContextInitializer<ConfigurableApplicationContext>{
 
     protected static MySQLContainer<?> mysqlContainer =

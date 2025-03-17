@@ -118,15 +118,6 @@ public class TrainingService {
         return response;
     }
 
-//    @Transactional(readOnly = true)
-//    public double getLessonProgress(UserEntity user, int chapter) {
-//        int allLessonCnt = trainingPuzzleRepository.countAllTrainingByChapter(chapter);
-//        if(allLessonCnt == 0) return 0.0;
-//
-//        int solveCnt = solvedTrainingPuzzleRepository.countSolvedLesson(user.getId(), chapter);
-//
-//        return (double) solveCnt / allLessonCnt * 100;
-//    }
 
     @Transactional
     public Pack createPack(CreatePackRequest request) {
@@ -219,6 +210,7 @@ public class TrainingService {
         return result;
     }
 
+    //purchase 시 currentCurrency < price 체크하는 부분은 엔티티쪽으로 코드 옮기기
     @Transactional(readOnly = true)
     public Integer purchaseTrainingPack(UserEntity user, PurchaseTrainingPackRequest request) {
 
@@ -249,9 +241,9 @@ public class TrainingService {
     }
 
     @Transactional(readOnly = true)
-    public GetTrainingPuzzleAnswerResponse purchaseTrainingPuzzleAnswer(UserEntity user, Long puzzleId) {
+    public GetTrainingPuzzleAnswerResponse purchaseTrainingPuzzleAnswer(UserEntity user, PurchaseTrainingPuzzleAnswerRequest request) {
 
-        TrainingPuzzle puzzle = trainingPuzzleRepository.findById(puzzleId)
+        TrainingPuzzle puzzle = trainingPuzzleRepository.findById(request.puzzleId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
 
         int currentCurrency = user.getCurrency();

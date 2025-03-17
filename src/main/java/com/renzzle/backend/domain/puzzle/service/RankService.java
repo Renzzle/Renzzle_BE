@@ -65,6 +65,8 @@ public class RankService {
         return response;
     }
 
+
+
     private Long generateSessionId() {
         Long sessionId = redisTemplate.opsForValue().increment("RANK_SESSION_SEQ");
         if (sessionId == null) {
