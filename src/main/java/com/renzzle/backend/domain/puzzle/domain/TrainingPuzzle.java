@@ -3,6 +3,8 @@ package com.renzzle.backend.domain.puzzle.domain;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.hibernate.annotations.UpdateTimestamp;
 import java.time.Instant;
 
@@ -12,25 +14,24 @@ import java.time.Instant;
 @AllArgsConstructor
 @Builder(toBuilder = true)
 @Table(
-        name = "lesson_puzzle",
+        name = "training_puzzle",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"chapter, lesson_index"})
+                @UniqueConstraint(columnNames = {"pack_id, training_index"})
         }
 )
-public class LessonPuzzle {
+public class TrainingPuzzle {
 
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
         private Long id;
 
-        @Column(name = "chapter", nullable = false)
-        private int chapter;
+        @ManyToOne
+        @JoinColumn(name = "pack_id", nullable = false)
+        @OnDelete(action = OnDeleteAction.CASCADE)
+        private Pack pack;
 
-        @Column(name = "lesson_index", nullable = false)
-        private int lessonIndex;
-
-        @Column(name = "title", nullable = false, length = 31)
-        private String title;
+        @Column(name = "training_index", nullable = false)
+        private int trainingIndex;
 
         @Column(name = "board_status", nullable = false, length = 1023)
         private String boardStatus;
@@ -38,11 +39,14 @@ public class LessonPuzzle {
         @Column(name = "board_key", unique = true, nullable = false)
         private String boardKey;
 
+        @Column(name = "answer", nullable = false, length = 1023)
+        private String answer;
+
         @Column(name = "depth", nullable = false)
         private int depth;
 
-        @Column(name = "description")
-        private String description;
+        @Column(name = "rating", nullable = false)
+        private double rating;
 
         @CreationTimestamp
         @Column(name = "created_at", updatable = false, nullable = false)
@@ -51,10 +55,6 @@ public class LessonPuzzle {
         @UpdateTimestamp
         @Column(name = "updated_at", nullable = false)
         private Instant updatedAt;
-
-        @ManyToOne
-        @JoinColumn(name = "difficulty", nullable = false)
-        private Difficulty difficulty;
 
         @ManyToOne
         @JoinColumn(name = "win_color", nullable = false)

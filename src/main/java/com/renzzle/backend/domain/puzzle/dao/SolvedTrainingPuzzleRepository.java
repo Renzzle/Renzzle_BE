@@ -1,7 +1,7 @@
 package com.renzzle.backend.domain.puzzle.dao;
 
-import com.renzzle.backend.domain.puzzle.domain.LessonPuzzle;
-import com.renzzle.backend.domain.puzzle.domain.SolvedLessonPuzzle;
+import com.renzzle.backend.domain.puzzle.domain.TrainingPuzzle;
+import com.renzzle.backend.domain.puzzle.domain.SolvedTrainingPuzzle;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -9,15 +9,15 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
-public interface SolvedLessonPuzzleRepository extends JpaRepository<SolvedLessonPuzzle, Long> {
+public interface SolvedTrainingPuzzleRepository extends JpaRepository<SolvedTrainingPuzzle, Long> {
 
-    @Query(value = "SELECT * FROM solved_lesson_puzzle " +
-            "WHERE user_id = :userId AND lesson_id = :lessonId",
+    @Query(value = "SELECT * FROM solved_training_puzzle " +
+            "WHERE user_id = :userId AND training_id = :puzzleId",
             nativeQuery = true)
-    Optional<SolvedLessonPuzzle> findByUserIdAndLessonId(@Param("userId") Long userId,
-                                                         @Param("lessonId") Long lessonId);
+    Optional<SolvedTrainingPuzzle> findByUserIdAndLessonId(@Param("userId") Long userId,
+                                                           @Param("puzzleId") Long puzzleId);
 
-    boolean existsByUserAndPuzzle(UserEntity user, LessonPuzzle puzzle);
+    boolean existsByUserAndPuzzle(UserEntity user, TrainingPuzzle puzzle);
 
     @Query(value = "SELECT COUNT(*) " +
             "FROM solved_lesson_puzzle sl " +

@@ -42,11 +42,16 @@ public enum ErrorCode {
     INVALID_SUBSCRIPTION_REQUEST(HttpStatus.BAD_REQUEST, "U4001", "올바르지 않은 구독자 정보입니다."),
     CANNOT_FIND_PUZZLE(HttpStatus.NOT_FOUND, "U4042", "해당하는 사용자 퍼즐을 찾을 수 없습니다."),
     UNAUTHORIZED_ACTION(HttpStatus.UNAUTHORIZED, "U4010", "유효하지 않은 사용자입니다."),
+    INSUFFICIENT_CURRENCY(HttpStatus.BAD_REQUEST, "U4020", "재화가 부족합니다."),
 
     // Puzzle
     CANNOT_FIND_COMMUNITY_PUZZLE(HttpStatus.NOT_FOUND, "P4040", "해당하는 커뮤니티 퍼즐을 찾을 수 없습니다."),
-    CANNOT_FIND_LESSON_PUZZLE(HttpStatus.NOT_FOUND, "P4041", "해당하는 레슨 퍼즐을 찾을 수 없습니다."),
-    NO_SUCH_LESSON_PAGE(HttpStatus.NOT_FOUND, "P4042", "해당하는 페이지의 레슨 퍼즐들을 찾을 수 없습니다.")
+    CANNOT_FIND_TRAINING_PUZZLE(HttpStatus.NOT_FOUND, "P4041", "해당하는 레슨 퍼즐을 찾을 수 없습니다."),
+    NO_SUCH_TRAINING_PACK(HttpStatus.NOT_FOUND, "P4042", "해당하는 팩 정보를 찾을 수 없습니다."),
+
+    //Rank
+    SESSION_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "R5001", "세션 ID 생성에 실패하였습니다.")
+
     ;
 
     private final HttpStatus status;
