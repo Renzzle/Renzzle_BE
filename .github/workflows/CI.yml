@@ -38,6 +38,11 @@ jobs:
       - name: Start Docker Compose with .env
         run: docker compose --env-file .env up -d
 
+      - name: Check Running Containers
+        run: docker ps -a
+
+
+
       # Redis Health Check
       - name: Redis Health Check
         run: docker exec -i redis redis-cli -a $REDIS_PASSWORD ping

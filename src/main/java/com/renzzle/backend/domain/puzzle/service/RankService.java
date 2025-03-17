@@ -27,7 +27,7 @@ public class RankService {
     @Transactional
     public RankStartResponse RankStart(UserEntity user) {
 
-        double userRating = user.getLatentRating();
+        double userRating = user.getMmr();
         double minRating = userRating - 100;
         double maxRating = userRating + 100;
 
@@ -38,7 +38,7 @@ public class RankService {
         String boardStatus = puzzle.getBoardStatus();
         WinColor winColor = puzzle.getWinColor();
 
-        double adjustedRating = calculateAdjustedRating(user.getLatentRating(), puzzle.getRating(),false);
+        double adjustedRating = calculateAdjustedRating(user.getMmr(), puzzle.getRating(),false);
 
         // 세션 ID 생성
         Long sessionId = generateSessionId();
