@@ -44,7 +44,6 @@ public enum ErrorCode {
     UNAUTHORIZED_ACTION(HttpStatus.UNAUTHORIZED, "U4010", "유효하지 않은 사용자입니다."),
     INSUFFICIENT_CURRENCY(HttpStatus.BAD_REQUEST, "U4020", "재화가 부족합니다."),
 
-
     // Puzzle
     CANNOT_FIND_COMMUNITY_PUZZLE(HttpStatus.NOT_FOUND, "P4040", "해당하는 커뮤니티 퍼즐을 찾을 수 없습니다."),
     CANNOT_FIND_TRAINING_PUZZLE(HttpStatus.NOT_FOUND, "P4041", "해당하는 레슨 퍼즐을 찾을 수 없습니다."),
