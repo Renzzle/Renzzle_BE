@@ -1,6 +1,10 @@
 package com.renzzle.backend.domain.user.domain;
 
+import com.renzzle.backend.global.common.constant.DoubleConstant;
+import com.renzzle.backend.global.common.constant.ItemPrice;
 import com.renzzle.backend.global.common.domain.Status;
+import com.renzzle.backend.global.exception.CustomException;
+import com.renzzle.backend.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.*;
 import org.apache.catalina.User;
@@ -41,10 +45,10 @@ public class UserEntity {
     private String nickname;
 
     @Column(name = "rating")
-    private double rating = 1000.0;
+    private double rating = DoubleConstant.DEFAULT_RATING;
 
     @Column(name = "mmr")
-    private double mmr = 1000.0;
+    private double mmr = DoubleConstant.DEFAULT_RATING;
 
     @Column(name = "currency")
     private int currency = 0;
@@ -86,6 +90,13 @@ public class UserEntity {
     public void softDelete() {
         this.status = Status.getStatus(Status.StatusName.DELETED);
         this.deletedAt = Instant.now();
+    }
+
+    public void changeNickname(String nickname) {
+        if(this.currency < ItemPrice.CHANGE_NICKNAME.getPrice())
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
+        this.nickname = nickname;
+        this.currency -= ItemPrice.CHANGE_NICKNAME.getPrice();
     }
 
 }

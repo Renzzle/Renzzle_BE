@@ -12,7 +12,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
@@ -36,21 +35,20 @@ class UserControllerTest {
 
     @Test
     void getUserTest() throws Exception {
-        UserResponse userResponse = new UserResponse(
-                1L,
-                "tintintest46@mail.com",
-                "tintin",
-                null,
-                null
-        );
-        Mockito.when(userService.getUser(Mockito.eq(1L))).thenReturn(userResponse);
-
         // set user information in SecurityContext
         UserEntity userEntity = UserEntity.builder().id(1L).build();
         UserDetailsImpl userDetails = new UserDetailsImpl(userEntity, "", new ArrayList<>());
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities())
         );
+
+        UserResponse userResponse = new UserResponse(
+                1L,
+                "tintintest46@mail.com",
+                "tintin",
+                1300
+        );
+        Mockito.when(userService.getUserResponse(Mockito.eq(userEntity))).thenReturn(userResponse);
 
         // GET /api/user request test by using MockMvc
         mockMvc.perform(get("/api/user"))
@@ -60,7 +58,7 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.response.nickname").value("tintin"));
 
         // check if userService.getUser() is called
-        Mockito.verify(userService).getUser(1L);
+        Mockito.verify(userService).getUserResponse(userEntity);
     }
 
 }

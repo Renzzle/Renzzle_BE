@@ -43,7 +43,6 @@ public enum ErrorCode {
     CANNOT_FIND_PUZZLE(HttpStatus.NOT_FOUND, "U4042", "해당하는 사용자 퍼즐을 찾을 수 없습니다."),
     UNAUTHORIZED_ACTION(HttpStatus.UNAUTHORIZED, "U4010", "유효하지 않은 사용자입니다."),
 
-
     // Puzzle
     CANNOT_FIND_COMMUNITY_PUZZLE(HttpStatus.NOT_FOUND, "P4040", "해당하는 커뮤니티 퍼즐을 찾을 수 없습니다."),
     CANNOT_FIND_LESSON_PUZZLE(HttpStatus.NOT_FOUND, "P4041", "해당하는 레슨 퍼즐을 찾을 수 없습니다."),

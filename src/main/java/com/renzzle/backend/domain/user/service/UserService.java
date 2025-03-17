@@ -6,11 +6,12 @@ import com.renzzle.backend.domain.puzzle.dao.UserCommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.domain.Tag;
 import com.renzzle.backend.domain.puzzle.domain.UserCommunityPuzzle;
+import com.renzzle.backend.domain.user.api.response.ChangeNicknameResponse;
 import com.renzzle.backend.domain.user.api.response.LikeResponse;
-import com.renzzle.backend.domain.user.api.response.SubscriptionResponse;
 import com.renzzle.backend.domain.user.api.response.UserResponse;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
+import com.renzzle.backend.global.common.constant.ItemPrice;
 import com.renzzle.backend.global.common.domain.Status;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
@@ -21,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.renzzle.backend.global.common.constant.StringConstant.DELETED_USER;
 import static com.renzzle.backend.global.common.constant.TimeConstant.CONST_FUTURE_INSTANT;
@@ -35,10 +35,7 @@ public class UserService {
     private final CommunityPuzzleRepository communityPuzzleRepository;
     private final UserCommunityPuzzleRepository userCommunityPuzzleRepository;
 
-    public UserResponse getUser(Long userId) {
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
-
+    public UserResponse getUserResponse(UserEntity user) {
         return UserResponse.builder()
                 .id(user.getId())
                 .email(user.getEmail())
@@ -48,11 +45,23 @@ public class UserService {
     }
 
     @Transactional
-    public Long deleteUser(Long userId) {
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
-        user.softDelete();
-        return userId;
+    public Long deleteUser(UserEntity user) {
+        Optional<UserEntity> persistedUser = userRepository.findById(user.getId());
+        persistedUser.ifPresent(UserEntity::softDelete);
+        return user.getId();
+    }
+
+    @Transactional
+    public ChangeNicknameResponse changeNickname(UserEntity user, String nickname) {
+        Optional<UserEntity> persistedUser = userRepository.findById(user.getId());
+
+        if(persistedUser.isEmpty())
+            throw new CustomException(ErrorCode.CANNOT_FIND_USER);
+
+        persistedUser.get().changeNickname(nickname);
+        return ChangeNicknameResponse.builder()
+                .currency(persistedUser.get().getCurrency())
+                .build();
     }
 
     public List<GetCommunityPuzzleResponse> getUserCommunityPuzzleList(Long userid, long id, int size) {
@@ -120,10 +129,6 @@ public class UserService {
         }
         return response;
     }
-
-
-//
-
 
     public void deleteUserPuzzle(Long puzzleId, UserEntity user) {
         Optional<CommunityPuzzle> puzzle = communityPuzzleRepository.findById(puzzleId);
@@ -229,4 +234,5 @@ public class UserService {
 
         return tags;
     }
+
 }

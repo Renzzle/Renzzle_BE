@@ -2,9 +2,10 @@ package com.renzzle.backend.domain.user.api;
 
 import com.renzzle.backend.domain.puzzle.api.request.GetCommunityPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.api.response.GetCommunityPuzzleResponse;
+import com.renzzle.backend.domain.user.api.request.ChangeNicknameRequest;
 import com.renzzle.backend.domain.user.api.request.PuzzleLikeRequest;
+import com.renzzle.backend.domain.user.api.response.ChangeNicknameResponse;
 import com.renzzle.backend.domain.user.api.response.LikeResponse;
-import com.renzzle.backend.domain.user.api.response.SubscriptionResponse;
 import com.renzzle.backend.domain.user.api.response.UserResponse;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.domain.user.service.UserService;
@@ -28,7 +29,7 @@ import static com.renzzle.backend.global.util.ErrorUtils.getErrorMessages;
 
 @Slf4j
 @RestController
-@RequestMapping("api/user")
+@RequestMapping("/api/user")
 @RequiredArgsConstructor
 @Tag(name = "User API", description = "User management API")
 public class UserController {
@@ -38,16 +39,23 @@ public class UserController {
     @Operation(summary = "Retrieve user information", description = "Get the details of the user information")
     @GetMapping
     public ApiResponse<UserResponse> getUser(@AuthenticationPrincipal UserDetailsImpl userDetails) {
-        Long UserId = userDetails.getUser().getId();
-        UserResponse userResponse = userService.getUser(UserId);
+        UserResponse userResponse = userService.getUserResponse(userDetails.getUser());
         return ApiUtils.success(userResponse);
     }
 
     @Operation(summary = "Delete the user", description = "Delete the user, but no actual data(soft delete)")
     @DeleteMapping
     public ApiResponse<Long> deleteUser(@AuthenticationPrincipal UserDetailsImpl userDetails) {
-        Long deletedUserId = userService.deleteUser(userDetails.getUser().getId());
+        Long deletedUserId = userService.deleteUser(userDetails.getUser());
         return ApiUtils.success(deletedUserId);
+    }
+
+    @Operation(summary = "Change user nickname", description = "Change nickname & Return remaining currency")
+    @PatchMapping("/nickname")
+    public ApiResponse<ChangeNicknameResponse> changeNickname(@AuthenticationPrincipal UserDetailsImpl userDetails,
+                                                              @RequestBody ChangeNicknameRequest request) {
+        ChangeNicknameResponse response = userService.changeNickname(userDetails.getUser(), request.nickname());
+        return ApiUtils.success(response);
     }
 
     @Operation(summary = "Subscribe or unsubscribe to a user", description = "change the subscription status of a user")
