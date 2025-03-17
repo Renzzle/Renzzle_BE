@@ -8,6 +8,7 @@ import com.renzzle.backend.domain.puzzle.dao.*;
 import com.renzzle.backend.domain.puzzle.domain.*;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
+import com.renzzle.backend.global.common.constant.ItemPrice;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import com.renzzle.backend.global.util.BoardUtils;
@@ -210,22 +211,15 @@ public class TrainingService {
         return result;
     }
 
-    //purchase 시 currentCurrency < price 체크하는 부분은 엔티티쪽으로 코드 옮기기
     @Transactional(readOnly = true)
     public Integer purchaseTrainingPack(UserEntity user, PurchaseTrainingPackRequest request) {
 
         Pack pack = packRepository.findById(request.packId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
-        int price = pack.getPrice();
-        int currentCurrency = user.getCurrency();
+        //차감되는 금액이므로 음수로 전달
+        user.purchase(-pack.getPrice());
 
-        if (currentCurrency < price) {
-            throw new CustomException(ErrorCode.INSUFFICIENT_CURRENCY);
-        }
-
-        int newCurrency = currentCurrency - price;
-        user.setCurrency(newCurrency);
         userRepository.save(user);
 
         UserPack userPack = UserPack.builder()
@@ -235,9 +229,7 @@ public class TrainingService {
                 .build();
 
         userPackRepository.save(userPack);
-
-        return newCurrency;
-
+        return user.getCurrency();
     }
 
     @Transactional(readOnly = true)
@@ -246,21 +238,13 @@ public class TrainingService {
         TrainingPuzzle puzzle = trainingPuzzleRepository.findById(request.puzzleId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
 
-        int currentCurrency = user.getCurrency();
-        if (currentCurrency < 100) {
-            throw new CustomException(ErrorCode.INSUFFICIENT_CURRENCY);
-        }
-
-        int newCurrency = currentCurrency - 100;
-        user.setCurrency(newCurrency);
+        user.purchase(ItemPrice.HINT.getPrice());
         userRepository.save(user);
 
-        GetTrainingPuzzleAnswerResponse response = GetTrainingPuzzleAnswerResponse.builder()
+        return GetTrainingPuzzleAnswerResponse.builder()
                 .answer(puzzle.getAnswer())
-                .currency(newCurrency)
+                .currency(user.getCurrency())
                 .build();
-
-        return response;
     }
 
 }
