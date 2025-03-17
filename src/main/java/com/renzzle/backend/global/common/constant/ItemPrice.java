@@ -5,8 +5,8 @@ import lombok.Getter;
 @Getter
 public enum ItemPrice {
 
-    CHANGE_NICKNAME(-2500),
-    HINT(-100);
+    CHANGE_NICKNAME(2500),
+    HINT(100);
 
     private final int price;
 

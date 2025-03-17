@@ -98,8 +98,7 @@ public class UserEntity {
         if(this.currency < price)
             throw new CustomException(ErrorCode.INSUFFICIENT_CURRENCY);
 
-        this.currency = this.currency + price;
-
+        this.currency -= price;
     }
 
     public void softDelete() {
@@ -108,10 +107,8 @@ public class UserEntity {
     }
 
     public void changeNickname(String nickname) {
-        if(this.currency < ItemPrice.CHANGE_NICKNAME.getPrice())
-            throw new CustomException(ErrorCode.INSUFFICIENT_CURRENCY);
+        purchase(ItemPrice.CHANGE_NICKNAME.getPrice());
         this.nickname = nickname;
-        this.currency -= ItemPrice.CHANGE_NICKNAME.getPrice();
     }
 
 }

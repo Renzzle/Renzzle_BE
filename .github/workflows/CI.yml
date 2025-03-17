@@ -34,17 +34,9 @@ jobs:
       - name: Load environment variables from .env
         run: cat .env >> $GITHUB_ENV
 
-
       - name: Start Docker Compose with .env
         run: docker compose --env-file .env up -d
 
-      - name: Check Running Containers
-        run: docker ps -a
-
-      - name: Check Redis Log
-        run: docker logs redis:7.0.12
-
-      # Redis Health Check
       - name: Redis Health Check
         run: docker exec -i redis redis-cli -a $REDIS_PASSWORD ping
 
