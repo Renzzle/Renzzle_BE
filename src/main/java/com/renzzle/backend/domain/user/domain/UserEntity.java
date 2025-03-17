@@ -1,6 +1,10 @@
 package com.renzzle.backend.domain.user.domain;
 
+import com.renzzle.backend.global.common.constant.DoubleConstant;
+import com.renzzle.backend.global.common.constant.ItemPrice;
 import com.renzzle.backend.global.common.domain.Status;
+import com.renzzle.backend.global.exception.CustomException;
+import com.renzzle.backend.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.*;
 import org.apache.catalina.User;
@@ -21,6 +25,7 @@ import static com.renzzle.backend.global.common.domain.Status.STATUS_IS_NOT_DELE
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {"email", "status", "deleted_at"}),
                 @UniqueConstraint(columnNames = {"nickname", "status", "deleted_at"}),
+                @UniqueConstraint(columnNames = {"device_id", "status", "deleted_at"})
         }
 )
 @SQLRestriction(value = STATUS_IS_NOT_DELETED)
@@ -39,6 +44,21 @@ public class UserEntity {
     @Column(name = "nickname", nullable = false, length = 31)
     private String nickname;
 
+    @Column(name = "rating")
+    private double rating = DoubleConstant.DEFAULT_RATING;
+
+    @Column(name = "mmr")
+    private double mmr = DoubleConstant.DEFAULT_RATING;
+
+    @Column(name = "currency")
+    private int currency = 0;
+
+    @Column(name = "device_id", nullable = false, length = 1024)
+    private String deviceId;
+
+    @Column(name = "lastAccessedAt", nullable = false)
+    private Instant lastAccessedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)
     private Instant createdAt;
@@ -54,38 +74,33 @@ public class UserEntity {
     @JoinColumn(name = "status", nullable = false)
     private Status status;
 
-    @ManyToOne
-    @JoinColumn(name = "color", nullable = false)
-    private Color color;
-
-    @ManyToOne
-    @JoinColumn(name = "level", nullable = false)
-    private UserLevel level;
-
-    public void setUserLevel(UserLevel UserLevel){
-        this.level = UserLevel;
-    }
-
     @PrePersist
     public void onPrePersist() {
         if(status == null) {
             this.status = Status.getDefaultStatus();
         }
+        if(lastAccessedAt == null) {
+            this.lastAccessedAt = Instant.now();
+        }
         if(deletedAt == null) {
             this.deletedAt = CONST_FUTURE_INSTANT;
         }
-        if(color == null) {
-            this.color = Color.getRandomColor();
-        }
-        if(level == null) {
-            this.level = UserLevel.getDefaultLevel();
+        // TODO: initialize device id
+        if(deviceId == null) {
+            this.deviceId = "";
         }
     }
 
-    @PreRemove
-    public void onPreRemove() {
+    public void softDelete() {
         this.status = Status.getStatus(Status.StatusName.DELETED);
         this.deletedAt = Instant.now();
+    }
+
+    public void changeNickname(String nickname) {
+        if(this.currency < ItemPrice.CHANGE_NICKNAME.getPrice())
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
+        this.nickname = nickname;
+        this.currency -= ItemPrice.CHANGE_NICKNAME.getPrice();
     }
 
 }

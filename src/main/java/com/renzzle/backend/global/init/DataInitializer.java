@@ -5,9 +5,7 @@ import com.renzzle.backend.domain.auth.domain.Admin;
 import com.renzzle.backend.domain.auth.service.AccountService;
 import com.renzzle.backend.domain.puzzle.domain.Difficulty;
 import com.renzzle.backend.domain.puzzle.domain.WinColor;
-import com.renzzle.backend.domain.user.domain.Color;
 import com.renzzle.backend.domain.user.domain.UserEntity;
-import com.renzzle.backend.domain.user.domain.UserLevel;
 import com.renzzle.backend.global.common.domain.Status;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,8 +35,6 @@ public class DataInitializer implements CommandLineRunner {
         try {
             jdbcTemplate.batchUpdate(
                     getInsertEnumSql("status", Status.StatusName.class),
-                    getInsertEnumSql("user_level", UserLevel.LevelName.class),
-                    getInsertEnumSql("color", Color.ColorName.class),
                     getInsertEnumSql("difficulty", Difficulty.DifficultyName.class),
                     getInsertEnumSql("win_color", WinColor.WinColorName.class)
             );

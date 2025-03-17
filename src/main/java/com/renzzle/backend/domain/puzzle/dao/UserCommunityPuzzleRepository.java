@@ -1,14 +1,10 @@
 package com.renzzle.backend.domain.puzzle.dao;
 
-import com.renzzle.backend.domain.puzzle.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.domain.UserCommunityPuzzle;
-import com.renzzle.backend.domain.user.api.response.LikeResponse;
-import com.renzzle.backend.domain.user.domain.SubscriptionEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
