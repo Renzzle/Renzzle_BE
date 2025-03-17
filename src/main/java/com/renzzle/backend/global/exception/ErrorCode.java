@@ -49,7 +49,11 @@ public enum ErrorCode {
     CANNOT_FIND_TRAINING_PUZZLE(HttpStatus.NOT_FOUND, "P4041", "해당하는 레슨 퍼즐을 찾을 수 없습니다."),
     NO_SUCH_TRAINING_PACK(HttpStatus.NOT_FOUND, "P4042", "해당하는 팩 정보를 찾을 수 없습니다."),
     CANNOT_FIND_PACK(HttpStatus.NOT_FOUND, "P4043", "해당하는 팩을 찾을 수 없습니다."),
-    INSUFFICIENT_CURRENCY(HttpStatus.BAD_REQUEST, "P4021", "재화가 부족합니다.")
+    INSUFFICIENT_CURRENCY(HttpStatus.BAD_REQUEST, "P4021", "재화가 부족합니다."),
+
+    //Rank
+    SESSION_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "R5001", "세션 ID 생성에 실패하였습니다.")
+
     ;
 
     private final HttpStatus status;

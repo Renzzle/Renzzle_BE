@@ -42,6 +42,12 @@ public class UserEntity {
     @Column(name = "currency", nullable = false)
     private Integer currency;
 
+    @Column(name = "rating", nullable = false)
+    private double rating;
+
+    @Column(name = "latent_rating", nullable = false)
+    private double latentRating;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)
     private Instant createdAt;

@@ -33,9 +33,6 @@ public class TrainingPuzzle {
         @Column(name = "training_index", nullable = false)
         private int trainingIndex;
 
-//        @Column(name = "title", nullable = false, length = 31)
-//        private String title;
-
         @Column(name = "board_status", nullable = false, length = 1023)
         private String boardStatus;
 
@@ -51,9 +48,6 @@ public class TrainingPuzzle {
         @Column(name = "rating", nullable = false)
         private double rating;
 
-//        @Column(name = "description")
-//        private String description;
-
         @CreationTimestamp
         @Column(name = "created_at", updatable = false, nullable = false)
         private Instant createdAt;
@@ -61,10 +55,6 @@ public class TrainingPuzzle {
         @UpdateTimestamp
         @Column(name = "updated_at", nullable = false)
         private Instant updatedAt;
-
-//        @ManyToOne
-//        @JoinColumn(name = "difficulty", nullable = false)
-//        private Difficulty difficulty;
 
         @ManyToOne
         @JoinColumn(name = "win_color", nullable = false)
