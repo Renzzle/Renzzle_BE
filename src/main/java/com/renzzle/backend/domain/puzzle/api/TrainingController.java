@@ -86,7 +86,7 @@ public class TrainingController {
     //완료 0313
     @Operation(summary = "Create Pack", description = "Create pack & Only admins are available")
     @PostMapping("/pack")
-    public ApiResponse<Long> addTrainingPuzzle(
+    public ApiResponse<Long> addTrainingPack(
             @Valid @RequestBody CreateTrainingPackRequest request,
             BindingResult bindingResult
     ) {
@@ -110,9 +110,6 @@ public class TrainingController {
             throw new ValidationException(getErrorMessages(bindingResult));
         }
         trainingService.addTranslation(request);
-
-
-//        Pack pack = lessonService.createPack(request);
 
         return ApiUtils.success(null);
     }

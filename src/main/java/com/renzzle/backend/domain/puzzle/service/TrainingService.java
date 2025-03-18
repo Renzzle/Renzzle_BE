@@ -81,8 +81,7 @@ public class TrainingService {
 
         // solve puzzle again
         if(existInfo.isPresent()) {
-            // ALREADY_SOLVED_PUZZLE 라는 에러를 만들어야 할까?
-            return;
+            throw new CustomException(ErrorCode.ALREADY_SOLVED_PUZZLE);
         }
 
         TrainingPuzzle trainingPuzzle = trainingPuzzleRepository.findById(puzzleId).orElseThrow(
