@@ -87,7 +87,7 @@ public class TrainingController {
     @Operation(summary = "Create Pack", description = "Create pack & Only admins are available")
     @PostMapping("/pack")
     public ApiResponse<Long> addTrainingPuzzle(
-            @Valid @RequestBody CreatePackRequest request,
+            @Valid @RequestBody CreateTrainingPackRequest request,
             BindingResult bindingResult
     ) {
         if(bindingResult.hasErrors()) {
@@ -121,11 +121,16 @@ public class TrainingController {
     @Operation(summary = "Get Training Packs", description = "Get Training Packs")
     @GetMapping("/pack")
     public ApiResponse<List<GetPackResponse>> getTrainigPack(
-            @RequestParam(name = "difficulty", required = true) String difficulty,
-            @RequestParam(name = "lang", defaultValue = "en") String lang,
+            @Valid @RequestBody GetTrainingPackRequest request,
+            BindingResult bindingResult,
             @AuthenticationPrincipal UserDetailsImpl user
     ){
-        List<GetPackResponse> packs = trainingService.getTrainingPackList(user.getUser(), difficulty, lang);
+
+        if(bindingResult.hasErrors()) {
+            throw new ValidationException(getErrorMessages(bindingResult));
+        }
+
+        List<GetPackResponse> packs = trainingService.getTrainingPackList(user.getUser(), request);
 
         return ApiUtils.success(packs);
     }

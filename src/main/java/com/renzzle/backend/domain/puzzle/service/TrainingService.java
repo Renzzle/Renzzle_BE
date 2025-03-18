@@ -9,7 +9,6 @@ import com.renzzle.backend.domain.puzzle.domain.*;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.constant.ItemPrice;
-import com.renzzle.backend.global.common.constant.LanguageCode;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import com.renzzle.backend.global.util.BoardUtils;
@@ -122,7 +121,7 @@ public class TrainingService {
 
 
     @Transactional
-    public Pack createPack(CreatePackRequest request) {
+    public Pack createPack(CreateTrainingPackRequest request) {
 
         Pack pack = Pack.builder()
                 .price(request.price())
@@ -167,13 +166,13 @@ public class TrainingService {
     }
 
     @Transactional(readOnly = true)
-    public List<GetPackResponse> getTrainingPackList(UserEntity user, String difficulty, String lang){
+    public List<GetPackResponse> getTrainingPackList(UserEntity user, GetTrainingPackRequest request){
 
-        List<Pack> packs = packRepository.findByDifficulty(Difficulty.getDifficulty(difficulty));
+        List<Pack> packs = packRepository.findByDifficulty(Difficulty.getDifficulty(request.difficulty()));
 
         List<Long> packIds = packs.stream().map(Pack::getId).collect(Collectors.toList());
         List<PackTranslation> translations = packTranslationRepository
-                .findAllByPack_IdInAndLanguageCode(packIds, lang);
+                .findAllByPack_IdInAndLanguageCode(packIds, request.lang().name());
 
         Long userId = user.getId();
 
