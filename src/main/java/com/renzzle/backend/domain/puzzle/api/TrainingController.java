@@ -69,18 +69,18 @@ public class TrainingController {
     }
 
     //완료 0311
-    @Operation(summary = "Get training puzzle data", description = "Return training puzzle list")
-    @GetMapping("puzzle/{pack}")
-    public ApiResponse<List<GetTrainingPuzzleResponse>> getTrainingPuzzle(
-            @PathVariable("pack") Long pack,
-            @AuthenticationPrincipal UserDetailsImpl user
-    ) {
-        if(pack == null) {
-            throw new CustomException(ErrorCode.VALIDATION_ERROR);
-        }
-
-        return ApiUtils.success(trainingService.getTrainingPuzzleList(user.getUser(), pack));
-    }
+//    @Operation(summary = "Get training puzzle data", description = "Return training puzzle list")
+//    @GetMapping("puzzle/{pack}")
+//    public ApiResponse<List<GetTrainingPuzzleResponse>> getTrainingPuzzle(
+//            @PathVariable("pack") Long pack,
+//            @AuthenticationPrincipal UserDetailsImpl user
+//    ) {
+//        if(pack == null) {
+//            throw new CustomException(ErrorCode.VALIDATION_ERROR);
+//        }
+//
+//        return ApiUtils.success(trainingService.getTrainingPuzzleList(user.getUser(), pack));
+//    }
 
     //완료 0313
     @Operation(summary = "Create Pack", description = "Create pack & Only admins are available")
@@ -116,18 +116,18 @@ public class TrainingController {
         return ApiUtils.success(null);
     }
 
-    //완료 0314
-    @Operation(summary = "Get Training Packs", description = "Get Training Packs")
-    @GetMapping("/pack")
-    public ApiResponse<List<GetPackResponse>> getTrainigPack(
-            @RequestParam(name = "difficulty", required = true) String difficulty,
-            @RequestParam(name = "lang", defaultValue = "en") String lang,
-            @AuthenticationPrincipal UserDetailsImpl user
-    ){
-        List<GetPackResponse> packs = trainingService.getTrainingPackList(user.getUser(), difficulty, lang);
-
-        return ApiUtils.success(packs);
-    }
+//    //완료 0314
+//    @Operation(summary = "Get Training Packs", description = "Get Training Packs")
+//    @GetMapping("/pack")
+//    public ApiResponse<List<GetPackResponse>> getTrainigPack(
+//            @RequestParam(name = "difficulty", required = true) String difficulty,
+//            @RequestParam(name = "lang", defaultValue = "en") String lang,
+//            @AuthenticationPrincipal UserDetailsImpl user
+//    ){
+//        List<GetPackResponse> packs = trainingService.getTrainingPackList(user.getUser(), difficulty, lang);
+//
+//        return ApiUtils.success(packs);
+//    }
 
     // 0315
     @Operation(summary = "Purchase Training Pack", description = "Purchase Training Pack")

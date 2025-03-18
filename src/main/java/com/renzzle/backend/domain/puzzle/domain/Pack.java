@@ -15,7 +15,7 @@ public class Pack {
     private Long id;
 
     @Column(name = "puzzle_count", nullable = false)
-    private int puzzle_count;
+    private int puzzleCount;
 
     @Column(name = "price", nullable = false)
     private int price;
