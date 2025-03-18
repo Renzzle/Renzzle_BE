@@ -26,9 +26,9 @@ public class DataInitializer implements CommandLineRunner {
     private final JdbcTemplate jdbcTemplate;
 
     @Value("${spring.mail.username}")
-    private final String adminEmail;
+    private String adminEmail;
     @Value("${spring.mail.password}")
-    private final String adminPassword;
+    private String adminPassword;
 
     @Override
     public void run(String... args) {

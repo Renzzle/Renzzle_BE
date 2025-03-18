@@ -1,19 +1,21 @@
-package com.renzzle.backend.auth;
+package com.renzzle.backend.domain.auth.service;
 
-import com.renzzle.backend.config.TestContainersConfig;
-import com.renzzle.backend.domain.auth.service.JwtProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@SpringBootTest
-@ActiveProfiles("test")
-@ContextConfiguration(initializers = TestContainersConfig.class)
+import static com.renzzle.backend.domain.auth.service.JwtTest.JWT_TEST_PROPERTY;
+
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration(classes = JwtProvider.class)
+@TestPropertySource(properties = JWT_TEST_PROPERTY)
 public class JwtTest {
+
+    public static final String JWT_TEST_PROPERTY = "spring.jwt.secret=ad3sf2sf98a7sd9f87a0ds98f70a98sd7f098asd70f98";
 
     @Autowired
     private JwtProvider jwtProvider;
