@@ -68,7 +68,8 @@ public class TrainingController {
         return ApiUtils.success(null);
     }
 
-    //완료 0311
+
+//    //미완료
 //    @Operation(summary = "Get training puzzle data", description = "Return training puzzle list")
 //    @GetMapping("puzzle/{pack}")
 //    public ApiResponse<List<GetTrainingPuzzleResponse>> getTrainingPuzzle(
@@ -116,18 +117,18 @@ public class TrainingController {
         return ApiUtils.success(null);
     }
 
-//    //완료 0314
-//    @Operation(summary = "Get Training Packs", description = "Get Training Packs")
-//    @GetMapping("/pack")
-//    public ApiResponse<List<GetPackResponse>> getTrainigPack(
-//            @RequestParam(name = "difficulty", required = true) String difficulty,
-//            @RequestParam(name = "lang", defaultValue = "en") String lang,
-//            @AuthenticationPrincipal UserDetailsImpl user
-//    ){
-//        List<GetPackResponse> packs = trainingService.getTrainingPackList(user.getUser(), difficulty, lang);
-//
-//        return ApiUtils.success(packs);
-//    }
+    //미완료
+    @Operation(summary = "Get Training Packs", description = "Get Training Packs")
+    @GetMapping("/pack")
+    public ApiResponse<List<GetPackResponse>> getTrainigPack(
+            @RequestParam(name = "difficulty", required = true) String difficulty,
+            @RequestParam(name = "lang", defaultValue = "en") String lang,
+            @AuthenticationPrincipal UserDetailsImpl user
+    ){
+        List<GetPackResponse> packs = trainingService.getTrainingPackList(user.getUser(), difficulty, lang);
+
+        return ApiUtils.success(packs);
+    }
 
     // 0315
     @Operation(summary = "Purchase Training Pack", description = "Purchase Training Pack")

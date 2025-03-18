@@ -18,14 +18,18 @@ public class TestContainersConfig implements ApplicationContextInitializer<Confi
 
     private static final GenericContainer<?> redisContainer =
             new GenericContainer<>(DockerImageName.parse("redis:6.2"))
-                    .withExposedPorts(6379)
-                    .withEnv("REDIS_PASSWORD", "715095");
+                    .withExposedPorts(6379);
+//                    .withEnv("REDIS_PASSWORD", "715095");
+
+    static {
+        mysqlContainer.start();
+        redisContainer.start();
+    }
 
     @Override
     public void initialize(@NotNull ConfigurableApplicationContext applicationContext) {
         try {
-            mysqlContainer.start();
-            redisContainer.start();
+
 
             TestPropertySourceUtils.addInlinedPropertiesToEnvironment(applicationContext,
                     "spring.datasource.url=" + mysqlContainer.getJdbcUrl(),

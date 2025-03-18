@@ -97,7 +97,7 @@ public class TrainingService {
 
 //    @Transactional(readOnly = true)
 //    public List<GetTrainingPuzzleResponse> getTrainingPuzzleList(UserEntity user, Long packId) {
-//        List<TrainingPuzzle> trainingPuzzles = trainingPuzzleRepository.findByPackId(packId);
+//        List<TrainingPuzzle> trainingPuzzles = trainingPuzzleRepository.findByPack_Id(packId);
 //
 //        if(trainingPuzzles.isEmpty()) {
 //            throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK);
@@ -133,7 +133,7 @@ public class TrainingService {
         List<PackTranslation> translations = request.info().stream()
                 .map(info -> PackTranslation.builder()
                         .pack(savedPack)
-                        .language_code(info.langCode())
+                        .languageCode(info.langCode())
                         .title(info.title())
                         .author(info.author())
                         .description(info.description())
@@ -155,7 +155,7 @@ public class TrainingService {
 
         PackTranslation translation = PackTranslation.builder()
                 .pack(pack)
-                .language_code(request.langCode())
+                .languageCode(request.langCode())
                 .title(request.title())
                 .author(request.author())
                 .description(request.description())
@@ -164,51 +164,51 @@ public class TrainingService {
         packTranslationRepository.save(translation);
     }
 
-//    @Transactional(readOnly = true)
-//    public List<GetPackResponse> getTrainingPackList(UserEntity user, String difficulty, String lang){
-//
-//        List<Pack> packs = packRepository.findByDifficulty(Difficulty.getDifficulty(difficulty));
-//
-//        List<Long> packIds = packs.stream().map(Pack::getId).collect(Collectors.toList());
-//        List<PackTranslation> translations = packTranslationRepository
-//                .findAllByIdInAndLanguageCode(packIds, lang);
-//
-//        Long userId = user.getId();
-//
-//        List<UserPack> userPacks = userPackRepository.findAllByUserIdAndPackIdIn(userId, packIds);
-//        Map<Long, UserPack> userPackMap = userPacks.stream()
-//                .collect(Collectors.toMap(up -> up.getPack().getId(), up -> up));
-//
-//        Map<Long, PackTranslation> translationMap = translations.stream()
-//                .collect(Collectors.toMap(
-//                        t -> t.getPack().getId(),  // key: packId
-//                        t -> t                     // value: PackTranslation 객체
-//                ));
-//
-//        List<GetPackResponse> result = new ArrayList<>();
-//        for (Pack pack : packs) {
-//            PackTranslation translation = translationMap.get(pack.getId());
-//            UserPack up = userPackMap.get(pack.getId());
-//
-//            // locked 여부, solvedPuzzleCount 계산
-//            boolean locked = (up == null);
-//            int solvedCount = (up != null) ? up.getSolved_count() : 0;
-//
-//            GetPackResponse dto = new GetPackResponse(
-//                    pack.getId(),
-//                    translation != null ? translation.getTitle() : null,
-//                    translation != null ? translation.getAuthor() : null,
-//                    translation != null ? translation.getDescription() : null,
-//                    pack.getPrice(),
-//                    pack.getPuzzle_count(),
-//                    solvedCount,
-//                    locked
-//            );
-//            result.add(dto);
-//        }
-//
-//        return result;
-//    }
+    @Transactional(readOnly = true)
+    public List<GetPackResponse> getTrainingPackList(UserEntity user, String difficulty, String lang){
+
+        List<Pack> packs = packRepository.findByDifficulty(Difficulty.getDifficulty(difficulty));
+
+        List<Long> packIds = packs.stream().map(Pack::getId).collect(Collectors.toList());
+        List<PackTranslation> translations = packTranslationRepository
+                .findAllByPack_IdInAndLanguageCode(packIds, lang);
+
+        Long userId = user.getId();
+
+        List<UserPack> userPacks = userPackRepository.findAllByUserIdAndPackIdIn(userId, packIds);
+        Map<Long, UserPack> userPackMap = userPacks.stream()
+                .collect(Collectors.toMap(up -> up.getPack().getId(), up -> up));
+
+        Map<Long, PackTranslation> translationMap = translations.stream()
+                .collect(Collectors.toMap(
+                        t -> t.getPack().getId(),  // key: packId
+                        t -> t                     // value: PackTranslation 객체
+                ));
+
+        List<GetPackResponse> result = new ArrayList<>();
+        for (Pack pack : packs) {
+            PackTranslation translation = translationMap.get(pack.getId());
+            UserPack up = userPackMap.get(pack.getId());
+
+            // locked 여부, solvedPuzzleCount 계산
+            boolean locked = (up == null);
+            int solvedCount = (up != null) ? up.getSolved_count() : 0;
+
+            GetPackResponse dto = new GetPackResponse(
+                    pack.getId(),
+                    translation != null ? translation.getTitle() : null,
+                    translation != null ? translation.getAuthor() : null,
+                    translation != null ? translation.getDescription() : null,
+                    pack.getPrice(),
+                    pack.getPuzzleCount(),
+                    solvedCount,
+                    locked
+            );
+            result.add(dto);
+        }
+
+        return result;
+    }
 
     @Transactional(readOnly = true)
     public Integer purchaseTrainingPack(UserEntity user, PurchaseTrainingPackRequest request) {

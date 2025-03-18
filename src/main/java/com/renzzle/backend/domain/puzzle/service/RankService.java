@@ -56,14 +56,14 @@ public class RankService {
 //        // TTL 5분 설정 (300초)
 //        redisTemplate.expire(key, 5, TimeUnit.MINUTES);
 //
-//        RankStartResponse response = RankStartResponse.builder()
+//        return RankStartResponse.builder()
 //                .sessionId(sessionId)
 //                .boardStatus(boardStatus)
 //                .winColor(winColor)
 //                .build();
-//
-//        return response;
 //    }
+//
+//
 //
 //    private Long generateSessionId() {
 //        Long sessionId = redisTemplate.opsForValue().increment("RANK_SESSION_SEQ");
@@ -80,5 +80,4 @@ public class RankService {
 //        double ratingChange = K * (actualScore - expectedScore);
 //        return currentRating + ratingChange;
 //    }
-
 }

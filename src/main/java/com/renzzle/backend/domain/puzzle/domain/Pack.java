@@ -14,8 +14,10 @@ public class Pack {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+
     @Column(name = "puzzle_count", nullable = false)
     private int puzzleCount;
+
 
     @Column(name = "price", nullable = false)
     private int price;
