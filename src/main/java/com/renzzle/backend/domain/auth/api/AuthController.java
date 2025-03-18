@@ -95,7 +95,7 @@ public class AuthController {
             throw new CustomException(ErrorCode.INVALID_AUTH_VERITY_TOKEN);
         }
 
-        UserEntity user = accountService.createNewUser(request.email(), request.password(), request.nickname());
+        UserEntity user = accountService.createNewUser(request.email(), request.password(), request.nickname(), request.deviceId());
 
         return ApiUtils.success(accountService.createAuthTokens(user.getId()));
     }

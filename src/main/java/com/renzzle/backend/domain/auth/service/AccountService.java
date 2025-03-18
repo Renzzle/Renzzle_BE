@@ -47,15 +47,22 @@ public class AccountService {
         return userRepository.existsByNickname(nickname);
     }
 
+    @Transactional(readOnly = true)
+    public boolean isDuplicateSignUp(String deviceId) {
+        return userRepository.existsByDeviceId(deviceId);
+    }
+
     @Transactional
-    public UserEntity createNewUser(String email, String password, String nickname) {
+    public UserEntity createNewUser(String email, String password, String nickname, String deviceId) {
         // validate email
         if(isDuplicatedEmail(email))
             throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
-
         // validate nickname
         if(isDuplicateNickname(nickname))
             throw new CustomException(ErrorCode.DUPLICATE_NICKNAME);
+        // validate duplicate sign-up
+        if(isDuplicateSignUp(deviceId))
+            throw new CustomException(ErrorCode.DUPLICATE_DEVICE);
 
         String encodedPassword = passwordEncoder.encode(password);
 
@@ -63,6 +70,7 @@ public class AccountService {
                 .email(email)
                 .password(encodedPassword)
                 .nickname(nickname)
+                .deviceId(deviceId)
                 .build();
         return userRepository.save(user);
     }
