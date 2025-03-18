@@ -125,7 +125,7 @@ public class TrainingService {
         Pack pack = Pack.builder()
                 .price(request.price())
                 .difficulty(Difficulty.getDifficulty(request.difficulty()))
-                .puzzle_count(0)
+                .puzzleCount(0)
                 .build();
 
         Pack savedPack = packRepository.save(pack);
