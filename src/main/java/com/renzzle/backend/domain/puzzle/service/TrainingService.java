@@ -3,11 +3,13 @@ package com.renzzle.backend.domain.puzzle.service;
 import com.renzzle.backend.domain.puzzle.api.request.*;
 import com.renzzle.backend.domain.puzzle.api.response.GetPackResponse;
 import com.renzzle.backend.domain.puzzle.api.response.GetTrainingPuzzleAnswerResponse;
+import com.renzzle.backend.domain.puzzle.api.response.GetTrainingPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.dao.*;
 import com.renzzle.backend.domain.puzzle.domain.*;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.constant.ItemPrice;
+import com.renzzle.backend.global.common.constant.LanguageCode;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import com.renzzle.backend.global.util.BoardUtils;
@@ -95,28 +97,28 @@ public class TrainingService {
         solvedTrainingPuzzleRepository.save(solvedLessonPuzzle);
     }
 
-//    @Transactional(readOnly = true)
-//    public List<GetTrainingPuzzleResponse> getTrainingPuzzleList(UserEntity user, Long packId) {
-//        List<TrainingPuzzle> trainingPuzzles = trainingPuzzleRepository.findByPack_Id(packId);
-//
-//        if(trainingPuzzles.isEmpty()) {
-//            throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK);
-//        }
-//
-//        List<GetTrainingPuzzleResponse> response = new ArrayList<>();
-//        trainingPuzzles.forEach(trainingPuzzle -> {
-//            boolean isSolved = solvedTrainingPuzzleRepository.existsByUserAndPuzzle(user, trainingPuzzle);
-//
-//            response.add(GetTrainingPuzzleResponse.builder()
-//                    .id(trainingPuzzle.getId())
-//                    .boardStatus(trainingPuzzle.getBoardStatus())
-//                    .depth(trainingPuzzle.getDepth())
-//                    .winColor(trainingPuzzle.getWinColor().getName())
-//                    .isSolved(isSolved)
-//                    .build());
-//        });
-//        return response;
-//    }
+    @Transactional(readOnly = true)
+    public List<GetTrainingPuzzleResponse> getTrainingPuzzleList(UserEntity user, Long packId) {
+        List<TrainingPuzzle> trainingPuzzles = trainingPuzzleRepository.findByPack_Id(packId);
+
+        if(trainingPuzzles.isEmpty()) {
+            throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK);
+        }
+
+        List<GetTrainingPuzzleResponse> response = new ArrayList<>();
+        trainingPuzzles.forEach(trainingPuzzle -> {
+            boolean isSolved = solvedTrainingPuzzleRepository.existsByUserAndPuzzle(user, trainingPuzzle);
+
+            response.add(GetTrainingPuzzleResponse.builder()
+                    .id(trainingPuzzle.getId())
+                    .boardStatus(trainingPuzzle.getBoardStatus())
+                    .depth(trainingPuzzle.getDepth())
+                    .winColor(trainingPuzzle.getWinColor().getName())
+                    .isSolved(isSolved)
+                    .build());
+        });
+        return response;
+    }
 
 
     @Transactional
@@ -133,7 +135,7 @@ public class TrainingService {
         List<PackTranslation> translations = request.info().stream()
                 .map(info -> PackTranslation.builder()
                         .pack(savedPack)
-                        .languageCode(info.langCode())
+                        .languageCode(info.langCode().name())
                         .title(info.title())
                         .author(info.author())
                         .description(info.description())
@@ -155,7 +157,7 @@ public class TrainingService {
 
         PackTranslation translation = PackTranslation.builder()
                 .pack(pack)
-                .languageCode(request.langCode())
+                .languageCode(request.langCode().name())
                 .title(request.title())
                 .author(request.author())
                 .description(request.description())

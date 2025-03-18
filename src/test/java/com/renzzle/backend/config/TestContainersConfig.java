@@ -29,8 +29,6 @@ public class TestContainersConfig implements ApplicationContextInitializer<Confi
     @Override
     public void initialize(@NotNull ConfigurableApplicationContext applicationContext) {
         try {
-
-
             TestPropertySourceUtils.addInlinedPropertiesToEnvironment(applicationContext,
                     "spring.datasource.url=" + mysqlContainer.getJdbcUrl(),
                     "spring.datasource.username=" + mysqlContainer.getUsername(),
@@ -43,6 +41,5 @@ public class TestContainersConfig implements ApplicationContextInitializer<Confi
             throw new RuntimeException("TestContainers Failed: " + e.getMessage(), e);
         }
     }
-
 }
 

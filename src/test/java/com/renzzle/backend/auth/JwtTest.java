@@ -50,5 +50,4 @@ public class JwtTest {
 
         Assertions.assertEquals(email, parsedEmail);
     }
-
 }

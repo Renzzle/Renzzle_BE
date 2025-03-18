@@ -69,19 +69,19 @@ public class TrainingController {
     }
 
 
-//    //미완료
-//    @Operation(summary = "Get training puzzle data", description = "Return training puzzle list")
-//    @GetMapping("puzzle/{pack}")
-//    public ApiResponse<List<GetTrainingPuzzleResponse>> getTrainingPuzzle(
-//            @PathVariable("pack") Long pack,
-//            @AuthenticationPrincipal UserDetailsImpl user
-//    ) {
-//        if(pack == null) {
-//            throw new CustomException(ErrorCode.VALIDATION_ERROR);
-//        }
-//
-//        return ApiUtils.success(trainingService.getTrainingPuzzleList(user.getUser(), pack));
-//    }
+    //미완료
+    @Operation(summary = "Get training puzzle data", description = "Return training puzzle list")
+    @GetMapping("puzzle/{pack}")
+    public ApiResponse<List<GetTrainingPuzzleResponse>> getTrainingPuzzle(
+            @PathVariable("pack") Long pack,
+            @AuthenticationPrincipal UserDetailsImpl user
+    ) {
+        if(pack == null) {
+            throw new CustomException(ErrorCode.VALIDATION_ERROR);
+        }
+
+        return ApiUtils.success(trainingService.getTrainingPuzzleList(user.getUser(), pack));
+    }
 
     //완료 0313
     @Operation(summary = "Create Pack", description = "Create pack & Only admins are available")
