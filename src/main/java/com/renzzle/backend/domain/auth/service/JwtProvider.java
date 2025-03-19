@@ -10,6 +10,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Map;
 
@@ -17,9 +20,11 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class JwtProvider {
 
-    public static final int ACCESS_TOKEN_VALID_MINUTE = 60 * 50;
-    public static final int REFRESH_TOKEN_VALID_MINUTE = 60 * 24 * 14;
-    public static final int AUTH_VERITY_TOKEN_VALID_MINUTE = 5;
+    private final Clock clock;
+
+    public static final int ACCESS_TOKEN_VALID_MINUTE = 60; // 1 hour
+    public static final int REFRESH_TOKEN_VALID_MINUTE = 60 * 24 * 14; // 2 weeks
+    public static final int AUTH_VERITY_TOKEN_VALID_MINUTE = 5; // 5 minute
 
     private final String CLAIM_USER_ID_KEY = "userId";
     private final String CLAIM_EMAIL_KEY = "email";
@@ -34,11 +39,12 @@ public class JwtProvider {
     }
 
     private String createToken(Map<String, Object> claims, int validMin) {
-        Date now = new Date();
-        Date validity = new Date(now.getTime() + (validMin * 60000L));
+        Instant now = clock.instant();
+        Date issuedAt = Date.from(now);
+        Date validity = Date.from(now.plus(validMin, ChronoUnit.MINUTES));
 
         return Jwts.builder()
-                .setIssuedAt(now)
+                .setIssuedAt(issuedAt)
                 .setExpiration(validity)
                 .addClaims(claims)
                 .signWith(secretKey, SignatureAlgorithm.HS256)
