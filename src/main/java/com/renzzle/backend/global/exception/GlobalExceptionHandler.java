@@ -6,9 +6,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+
+import static com.renzzle.backend.global.util.ErrorUtils.getErrorMessages;
 import static com.renzzle.backend.global.util.ErrorUtils.getStakeTrace;
 
 @Slf4j
@@ -23,6 +26,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ValidationException.class)
     private ResponseEntity<?> handleValidationException(ValidationException e) {
         return handleException(e, ErrorCode.VALIDATION_ERROR, e.getMessage());
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    private ResponseEntity<?> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+        return handleException(e, ErrorCode.VALIDATION_ERROR, getErrorMessages(e));
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)

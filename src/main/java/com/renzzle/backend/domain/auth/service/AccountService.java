@@ -1,5 +1,7 @@
 package com.renzzle.backend.domain.auth.service;
 
+import com.renzzle.backend.domain.auth.api.request.LoginRequest;
+import com.renzzle.backend.domain.auth.api.request.SignupRequest;
 import com.renzzle.backend.domain.auth.api.response.LoginResponse;
 import com.renzzle.backend.domain.auth.dao.RefreshTokenRedisRepository;
 import com.renzzle.backend.domain.auth.domain.GrantType;
@@ -8,6 +10,7 @@ import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
+import com.renzzle.backend.global.util.ApiUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,18 +27,8 @@ import static com.renzzle.backend.domain.auth.service.JwtProvider.REFRESH_TOKEN_
 public class AccountService {
 
     private final UserRepository userRepository;
-    private final RefreshTokenRedisRepository refreshTokenRepository;
-    private final JwtProvider jwtProvider;
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-
-    public String createAuthVerityToken(String email) {
-        return jwtProvider.createAuthVerityToken(email);
-    }
-
-    public boolean verifyAuthVerityToken(String token, String email) {
-        String tokenValue = jwtProvider.getEmail(token);
-        return tokenValue.equals(email);
-    }
+    private final AuthService authService;
 
     @Transactional(readOnly = true)
     public boolean isDuplicatedEmail(String email) {
@@ -48,8 +41,19 @@ public class AccountService {
     }
 
     @Transactional(readOnly = true)
-    public boolean isDuplicateSignUp(String deviceId) {
+    private boolean isDuplicateSignUp(String deviceId) {
         return userRepository.existsByDeviceId(deviceId);
+    }
+
+    @Transactional
+    public LoginResponse signUp(SignupRequest request) {
+        if(!authService.verifyAuthVerityToken(request.authVerityToken(), request.email())) {
+            throw new CustomException(ErrorCode.INVALID_AUTH_VERITY_TOKEN);
+        }
+
+        UserEntity user = createNewUser(request.email(), request.password(), request.nickname(), request.deviceId());
+
+        return authService.createAuthTokens(user.getId());
     }
 
     @Transactional
@@ -75,29 +79,13 @@ public class AccountService {
         return userRepository.save(user);
     }
 
-    public LoginResponse createAuthTokens(Long id) {
-        String grantType = GrantType.BEARER.getType();
-        String accessToken = jwtProvider.createAccessToken(id);
-        String refreshToken = jwtProvider.createRefreshToken(id);
-        Instant accessTokenExpiredAt = Instant.now().plus(Duration.ofMinutes(ACCESS_TOKEN_VALID_MINUTE));
-        Instant refreshTokenExpiredAt = Instant.now().plus(Duration.ofMinutes(REFRESH_TOKEN_VALID_MINUTE));
-
-        refreshTokenRepository.save(RefreshTokenEntity.builder()
-                .id(id)
-                .token(refreshToken)
-                .build());
-
-        return LoginResponse.builder()
-                .grantType(grantType)
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .accessTokenExpiredAt(accessTokenExpiredAt)
-                .refreshTokenExpiredAt(refreshTokenExpiredAt)
-                .build();
+    @Transactional
+    public LoginResponse login(LoginRequest request) {
+        long userId = verifyLoginInfo(request.email(), request.password());
+        return authService.createAuthTokens(userId);
     }
 
-    @Transactional(readOnly = true)
-    public Long verifyLoginInfo(String email, String password) {
+    private Long verifyLoginInfo(String email, String password) {
         Optional<UserEntity> user = userRepository.findByEmail(email);
 
         if(user.isEmpty())
@@ -107,18 +95,6 @@ public class AccountService {
             throw new CustomException(ErrorCode.INVALID_PASSWORD);
 
         return user.get().getId();
-    }
-
-    public Long deleteRefreshToken(Long id) {
-        refreshTokenRepository.deleteById(id);
-        return id;
-    }
-
-    public boolean verifyRefreshToken(String token) {
-        Long userId = jwtProvider.getUserId(token);
-        Optional<RefreshTokenEntity> tokenEntity = refreshTokenRepository.findById(userId);
-
-        return tokenEntity.isPresent();
     }
 
 }
