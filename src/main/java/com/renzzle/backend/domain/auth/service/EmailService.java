@@ -6,10 +6,8 @@ import com.renzzle.backend.domain.auth.api.response.AuthEmailResponse;
 import com.renzzle.backend.domain.auth.api.response.ConfirmCodeResponse;
 import com.renzzle.backend.domain.auth.dao.EmailRedisRepository;
 import com.renzzle.backend.domain.auth.domain.AuthEmailEntity;
-import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
-import com.renzzle.backend.global.util.ApiUtils;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
-
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -59,7 +56,6 @@ public class EmailService {
 
         return AuthEmailResponse
                 .builder()
-                .code(code)
                 .requestCount(count + 1)
                 .build();
     }

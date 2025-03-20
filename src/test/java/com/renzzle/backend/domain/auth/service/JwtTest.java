@@ -41,7 +41,7 @@ public class JwtTest {
     private String authVerityToken;
 
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         when(clock.instant()).thenReturn(Instant.now());
         when(clock.getZone()).thenReturn(ZoneId.systemDefault());
 
