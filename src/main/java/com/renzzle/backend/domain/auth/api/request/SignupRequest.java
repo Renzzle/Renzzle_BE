@@ -20,5 +20,8 @@ public record SignupRequest(
         String nickname,
 
         @NotEmpty(message = "토큰 정보가 없습니다")
-        String authVerityToken
+        String authVerityToken,
+
+        @NotEmpty(message = "기기 고유번호 정보가 없습니다")
+        String deviceId
 ) { }

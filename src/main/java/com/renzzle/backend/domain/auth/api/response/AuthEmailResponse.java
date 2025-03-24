@@ -4,6 +4,5 @@ import lombok.Builder;
 
 @Builder
 public record AuthEmailResponse(
-        String code,
         int requestCount
 ) { }

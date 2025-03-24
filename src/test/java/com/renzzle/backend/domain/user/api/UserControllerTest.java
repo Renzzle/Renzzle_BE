@@ -1,6 +1,5 @@
 package com.renzzle.backend.domain.user.api;
 
-import com.renzzle.backend.config.TestContainersConfig;
 import com.renzzle.backend.domain.user.api.response.UserResponse;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.domain.user.service.UserService;
@@ -13,7 +12,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.ArrayList;
@@ -24,7 +22,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(UserController.class)
 @ActiveProfiles("test")
-@ContextConfiguration(initializers = TestContainersConfig.class)
 class UserControllerTest {
 
     @Autowired

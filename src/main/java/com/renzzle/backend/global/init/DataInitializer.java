@@ -40,7 +40,8 @@ public class DataInitializer implements CommandLineRunner {
             );
 
             if(!accountService.isDuplicateNickname(ADMIN)) {
-                UserEntity user = accountService.createNewUser(adminEmail, adminPassword, ADMIN);
+                String adminDeviceId = "admin_device127";
+                UserEntity user = accountService.createNewUser(adminEmail, adminPassword, ADMIN, adminDeviceId);
                 adminRepository.save(Admin.builder().user(user).build());
             }
         } catch(DuplicateKeyException e) {
