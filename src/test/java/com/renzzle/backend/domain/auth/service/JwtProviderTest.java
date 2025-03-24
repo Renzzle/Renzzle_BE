@@ -15,7 +15,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
-import static com.renzzle.backend.domain.auth.service.JwtTest.JWT_TEST_PROPERTY;
+import static com.renzzle.backend.domain.auth.service.JwtProviderTest.JWT_TEST_PROPERTY;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
@@ -23,7 +23,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 @ContextConfiguration(classes = JwtProvider.class)
 @TestPropertySource(properties = JWT_TEST_PROPERTY)
-public class JwtTest {
+public class JwtProviderTest {
 
     public static final String JWT_TEST_PROPERTY = "spring.jwt.secret=ad3sf2sf98a7sd9f87a0ds98f70a98sd7f098asd70f98";
 

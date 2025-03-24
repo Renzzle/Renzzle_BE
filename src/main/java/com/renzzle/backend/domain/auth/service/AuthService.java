@@ -8,11 +8,10 @@ import com.renzzle.backend.domain.auth.domain.RefreshTokenEntity;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
-import com.renzzle.backend.global.security.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
@@ -23,6 +22,7 @@ import static com.renzzle.backend.domain.auth.service.JwtProvider.REFRESH_TOKEN_
 @RequiredArgsConstructor
 public class AuthService {
 
+    private final Clock clock;
     private final RefreshTokenRedisRepository refreshTokenRepository;
     private final JwtProvider jwtProvider;
 
@@ -40,8 +40,8 @@ public class AuthService {
         String grantType = GrantType.BEARER.getType();
         String accessToken = jwtProvider.createAccessToken(id);
         String refreshToken = jwtProvider.createRefreshToken(id);
-        Instant accessTokenExpiredAt = Instant.now().plus(Duration.ofMinutes(ACCESS_TOKEN_VALID_MINUTE));
-        Instant refreshTokenExpiredAt = Instant.now().plus(Duration.ofMinutes(REFRESH_TOKEN_VALID_MINUTE));
+        Instant accessTokenExpiredAt = clock.instant().plus(Duration.ofMinutes(ACCESS_TOKEN_VALID_MINUTE));
+        Instant refreshTokenExpiredAt = clock.instant().plus(Duration.ofMinutes(REFRESH_TOKEN_VALID_MINUTE));
 
         refreshTokenRepository.save(RefreshTokenEntity.builder()
                 .id(id)

@@ -27,7 +27,7 @@ import java.util.Random;
 @RequiredArgsConstructor
 public class EmailService {
 
-    public static final int EMAIL_CODE_VALID_MINUTE = 5;
+    public static final int EMAIL_CODE_VALID_SECOND = 5 * 60; // 5 minute
     public static final int EMAIL_VERIFICATION_LIMIT = 5;
 
     private final Clock clock;
@@ -136,7 +136,7 @@ public class EmailService {
             Instant issuedAt = Instant.parse(emailEntity.get().issuedAt());
 
             Duration duration = Duration.between(issuedAt, now);
-            if (duration.toMinutes() > EMAIL_CODE_VALID_MINUTE) {
+            if (duration.toSeconds() > EMAIL_CODE_VALID_SECOND) {
                 return false;
             }
         }

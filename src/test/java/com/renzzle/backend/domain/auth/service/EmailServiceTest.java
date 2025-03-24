@@ -36,6 +36,8 @@ import static org.mockito.Mockito.*;
 public class EmailServiceTest {
 
     @Mock
+    Clock clock;
+    @Mock
     private JavaMailSender javaMailSender;
     @Mock
     private SpringTemplateEngine templateEngine;
@@ -49,10 +51,13 @@ public class EmailServiceTest {
     @InjectMocks
     private EmailService emailService;
 
+    private final String FIXED_TIME = "2025-03-20T10:00:00Z";
+    private final String FIXED_TIME_BEFORE_5MIN = "2025-03-20T09:55:00Z";
+    private final String FIXED_TIME_BEFORE_5MIN_1SEC = "2025-03-20T09:54:59Z";
+
     @BeforeEach
     public void setUp() {
-        Clock clock = Clock.fixed(Instant.parse("2025-03-20T10:00:00Z"), ZoneId.of("UTC"));
-        emailService = new EmailService(clock, javaMailSender, templateEngine, emailRepository, accountService, authService);
+        lenient().when(clock.instant()).thenReturn(Instant.parse(FIXED_TIME));
     }
 
     @Test
@@ -102,7 +107,7 @@ public class EmailServiceTest {
     void sendCode_ExceedRequestCount_ShouldThrowException() {
         // Given
         AuthEmailRequest request = new AuthEmailRequest("test@example.com");
-        AuthEmailEntity emailEntity = new AuthEmailEntity("test@example.com", "123456", EMAIL_VERIFICATION_LIMIT, "2025-03-20T10:00:00Z");
+        AuthEmailEntity emailEntity = new AuthEmailEntity("test@example.com", "123456", EMAIL_VERIFICATION_LIMIT, FIXED_TIME);
         when(emailRepository.findById(request.email())).thenReturn(Optional.of(emailEntity));
 
         // When & Then
@@ -117,7 +122,7 @@ public class EmailServiceTest {
     void confirmCode_ShouldReturnAuthVerityToken() {
         // Given
         ConfirmCodeRequest request = new ConfirmCodeRequest("test@example.com", "123456");
-        AuthEmailEntity emailEntity = new AuthEmailEntity("test@example.com", "123456", 1, "2025-03-20T09:55:00Z");
+        AuthEmailEntity emailEntity = new AuthEmailEntity("test@example.com", "123456", 1, FIXED_TIME_BEFORE_5MIN);
         when(emailRepository.findById(request.email())).thenReturn(Optional.of(emailEntity));
         when(authService.createAuthVerityToken(request.email())).thenReturn("authToken123");
 
@@ -133,7 +138,7 @@ public class EmailServiceTest {
     void confirmCode_WithExpiredCode_ShouldThrowException() {
         // Given
         ConfirmCodeRequest request = new ConfirmCodeRequest("test@example.com", "123456");
-        AuthEmailEntity emailEntity = new AuthEmailEntity("test@example.com", "123456", 1, "2025-03-20T09:50:00Z");
+        AuthEmailEntity emailEntity = new AuthEmailEntity("test@example.com", "123456", 1, FIXED_TIME_BEFORE_5MIN_1SEC);
         when(emailRepository.findById(request.email())).thenReturn(Optional.of(emailEntity));
 
         // When & Then
@@ -148,7 +153,7 @@ public class EmailServiceTest {
     void confirmCode_WithWrongCode_ShouldThrowException() {
         // Given
         ConfirmCodeRequest request = new ConfirmCodeRequest("test@example.com", "654321");
-        AuthEmailEntity emailEntity = new AuthEmailEntity("test@example.com", "123456", 1, "2025-03-20T09:55:00Z");
+        AuthEmailEntity emailEntity = new AuthEmailEntity("test@example.com", "123456", 1, FIXED_TIME_BEFORE_5MIN);
         when(emailRepository.findById(request.email())).thenReturn(Optional.of(emailEntity));
 
         // When & Then
