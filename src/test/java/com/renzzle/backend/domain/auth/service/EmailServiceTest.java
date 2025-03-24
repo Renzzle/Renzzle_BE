@@ -52,8 +52,6 @@ public class EmailServiceTest {
     private EmailService emailService;
 
     private final String FIXED_TIME = "2025-03-20T10:00:00Z";
-    private final String FIXED_TIME_BEFORE_5MIN = "2025-03-20T09:55:00Z";
-    private final String FIXED_TIME_BEFORE_5MIN_1SEC = "2025-03-20T09:54:59Z";
 
     @BeforeEach
     public void setUp() {
@@ -61,8 +59,8 @@ public class EmailServiceTest {
     }
 
     @Test
-    void sendCode_shouldReturnRequestCountAndSendEmail() throws MessagingException, IOException {
-        // Given
+    public void sendCode_ShouldReturnRequestCountAndSendEmail() throws MessagingException, IOException {
+        // given
         AuthEmailRequest request = new AuthEmailRequest("test@example.com");
         when(accountService.isDuplicatedEmail(request.email())).thenReturn(false);
         when(emailRepository.findById(request.email())).thenReturn(Optional.empty());
@@ -76,10 +74,10 @@ public class EmailServiceTest {
                 }
         );
 
-        // When
+        // when
         AuthEmailResponse response = emailService.sendCode(request);
 
-        // Then
+        // then
         assertThat(response).isNotNull();
         assertThat(response.requestCount()).isEqualTo(1);
         assertThat(mimeMessage.getAllRecipients()[0].toString()).isEqualTo("test@example.com");
@@ -90,12 +88,12 @@ public class EmailServiceTest {
     }
 
     @Test
-    void sendCode_WithDuplicatedEmail_ShouldThrowException() {
-        // Given
+    public void sendCode_WithDuplicatedEmail_ShouldThrowException() {
+        // given
         AuthEmailRequest request = new AuthEmailRequest("duplicate@example.com");
         when(accountService.isDuplicatedEmail(request.email())).thenReturn(true);
 
-        // When & Then
+        // when & then
         CustomException exception = assertThrows(CustomException.class, () -> {
             emailService.sendCode(request);
         });
@@ -104,13 +102,13 @@ public class EmailServiceTest {
     }
 
     @Test
-    void sendCode_ExceedRequestCount_ShouldThrowException() {
-        // Given
+    public void sendCode_ExceedRequestCount_ShouldThrowException() {
+        // given
         AuthEmailRequest request = new AuthEmailRequest("test@example.com");
         AuthEmailEntity emailEntity = new AuthEmailEntity("test@example.com", "123456", EMAIL_VERIFICATION_LIMIT, FIXED_TIME);
         when(emailRepository.findById(request.email())).thenReturn(Optional.of(emailEntity));
 
-        // When & Then
+        // when & then
         CustomException exception = assertThrows(CustomException.class, () -> {
             emailService.sendCode(request);
         });
@@ -119,29 +117,31 @@ public class EmailServiceTest {
     }
 
     @Test
-    void confirmCode_ShouldReturnAuthVerityToken() {
-        // Given
+    public void confirmCode_ShouldReturnAuthVerityToken() {
+        // given
         ConfirmCodeRequest request = new ConfirmCodeRequest("test@example.com", "123456");
-        AuthEmailEntity emailEntity = new AuthEmailEntity("test@example.com", "123456", 1, FIXED_TIME_BEFORE_5MIN);
+        String fixedTimeBefore5min = Instant.parse(FIXED_TIME).minusSeconds(60 * 5).toString();
+        AuthEmailEntity emailEntity = new AuthEmailEntity("test@example.com", "123456", 1, fixedTimeBefore5min);
         when(emailRepository.findById(request.email())).thenReturn(Optional.of(emailEntity));
         when(authService.createAuthVerityToken(request.email())).thenReturn("authToken123");
 
-        // When
+        // when
         ConfirmCodeResponse response = emailService.confirmCode(request);
 
-        // Then
+        // then
         assertThat(response).isNotNull();
         assertThat(response.authVerityToken()).isEqualTo("authToken123");
     }
 
     @Test
-    void confirmCode_WithExpiredCode_ShouldThrowException() {
-        // Given
+    public void confirmCode_WithExpiredCode_ShouldThrowException() {
+        // given
         ConfirmCodeRequest request = new ConfirmCodeRequest("test@example.com", "123456");
-        AuthEmailEntity emailEntity = new AuthEmailEntity("test@example.com", "123456", 1, FIXED_TIME_BEFORE_5MIN_1SEC);
+        String fixedTimeBefore5min1sec = Instant.parse(FIXED_TIME).minusSeconds(60 * 5 + 1).toString();
+        AuthEmailEntity emailEntity = new AuthEmailEntity("test@example.com", "123456", 1, fixedTimeBefore5min1sec);
         when(emailRepository.findById(request.email())).thenReturn(Optional.of(emailEntity));
 
-        // When & Then
+        // when & then
         CustomException exception = assertThrows(CustomException.class, () -> {
             emailService.confirmCode(request);
         });
@@ -150,13 +150,14 @@ public class EmailServiceTest {
     }
 
     @Test
-    void confirmCode_WithWrongCode_ShouldThrowException() {
-        // Given
+    public void confirmCode_WithWrongCode_ShouldThrowException() {
+        // given
         ConfirmCodeRequest request = new ConfirmCodeRequest("test@example.com", "654321");
-        AuthEmailEntity emailEntity = new AuthEmailEntity("test@example.com", "123456", 1, FIXED_TIME_BEFORE_5MIN);
+        String fixedTimeBefore5min = Instant.parse(FIXED_TIME).minusSeconds(60 * 5).toString();
+        AuthEmailEntity emailEntity = new AuthEmailEntity("test@example.com", "123456", 1, fixedTimeBefore5min);
         when(emailRepository.findById(request.email())).thenReturn(Optional.of(emailEntity));
 
-        // When & Then
+        // when & then
         CustomException exception = assertThrows(CustomException.class, () -> {
             emailService.confirmCode(request);
         });
