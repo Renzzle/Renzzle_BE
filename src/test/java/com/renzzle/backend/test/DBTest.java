@@ -18,7 +18,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import java.util.Optional;
 
 @SpringBootTest
-@ActiveProfiles("test")
 @ContextConfiguration(initializers = TestContainersConfig.class)
 public class DBTest {
 

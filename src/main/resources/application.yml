@@ -10,7 +10,6 @@ spring:
     username: ${DB_USER}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
-    initialization-mode: always
 
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
@@ -48,6 +47,9 @@ spring:
           timeout: 5000
           starttls:
             enable: true
+  sql:
+    init:
+      mode: always
 
 springdoc:
   packages-to-scan: com.renzzle.backend
@@ -58,19 +60,3 @@ springdoc:
     disable-swagger-default-url: true
     display-request-duration: true
     operations-sorter: alpha
-
----
-
-# test 프로파일에 대한 오버라이드 설정
-spring:
-  config:
-    activate:
-      on-profile: test
-
-  # 테스트에서는 별도의 JWT 비밀키와 메일 계정 정보를 사용합니다.
-  jwt:
-    secret: testcodeasdasdadsadadadsdasdadastestcodeasdasdadsadadadsdasdadas
-
-  mail:
-    username: test@gmail.com
-    password: password

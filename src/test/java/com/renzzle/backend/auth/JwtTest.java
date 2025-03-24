@@ -11,7 +11,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest
-@ActiveProfiles("test")
 @ContextConfiguration(initializers = TestContainersConfig.class)
 public class JwtTest {
 

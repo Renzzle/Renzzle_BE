@@ -34,11 +34,15 @@ public class TestContainersConfig implements ApplicationContextInitializer<Confi
                     "spring.datasource.password=" + mysqlContainer.getPassword(),
                     "spring.data.redis.host=" + redisContainer.getHost(),
                     "spring.data.redis.port=" + redisContainer.getFirstMappedPort(),
+                    "spring.jwt.secret=" + "testsecrettestsecrettestsecrettestsecret",
+                    "spring.mail.username=" + "test@gmail.com",
+                    "spring.mail.password=" + "password",
                     "REDIS_PASSWORD=" + "376198"
             );
         } catch (Exception e) {
             throw new RuntimeException("TestContainers Failed: " + e.getMessage(), e);
         }
     }
+
 }
 

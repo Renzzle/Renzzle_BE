@@ -5,5 +5,5 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    # 필요에 따라 개발용 이미지 태그를 지정할 수 있습니다.
+    # TODO : mysql 이미지 추가하기
     image: myapp:dev
