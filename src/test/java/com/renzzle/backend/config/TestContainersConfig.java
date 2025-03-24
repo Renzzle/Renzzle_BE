@@ -19,7 +19,6 @@ public class TestContainersConfig implements ApplicationContextInitializer<Confi
     private static final GenericContainer<?> redisContainer =
             new GenericContainer<>(DockerImageName.parse("redis:6.2"))
                     .withExposedPorts(6379);
-//                    .withEnv("REDIS_PASSWORD", "715095");
 
     static {
         mysqlContainer.start();
@@ -35,7 +34,7 @@ public class TestContainersConfig implements ApplicationContextInitializer<Confi
                     "spring.datasource.password=" + mysqlContainer.getPassword(),
                     "spring.data.redis.host=" + redisContainer.getHost(),
                     "spring.data.redis.port=" + redisContainer.getFirstMappedPort(),
-                    "REDIS_PASSWORD=" + "715095"
+                    "REDIS_PASSWORD=" + "376198"
             );
         } catch (Exception e) {
             throw new RuntimeException("TestContainers Failed: " + e.getMessage(), e);

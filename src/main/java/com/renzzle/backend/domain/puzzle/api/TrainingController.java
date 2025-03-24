@@ -36,12 +36,8 @@ public class TrainingController {
     @Operation(summary = "Add training puzzle", description = "Add training puzzle & Only admins are available")
     @PostMapping("/puzzle")
     public ApiResponse<Long> addTrainingPuzzle(
-            @Valid @RequestBody AddTrainingPuzzleRequest request,
-            BindingResult bindingResult
+            @Valid @RequestBody AddTrainingPuzzleRequest request
     ) {
-        if(bindingResult.hasErrors()) {
-            throw new ValidationException(getErrorMessages(bindingResult));
-        }
 
         TrainingPuzzle puzzle = trainingService.createTrainingPuzzle(request);
 
@@ -63,23 +59,18 @@ public class TrainingController {
             @PathVariable("puzzleId") Long puzzleId,
             @AuthenticationPrincipal UserDetailsImpl user) {
 
-        trainingService.solveLessonPuzzle(user.getUser(), puzzleId);
+        trainingService.solveTrainingPuzzle(user.getUser(), puzzleId);
 
         return ApiUtils.success(null);
     }
 
 
-    //미완료
     @Operation(summary = "Get training puzzle data", description = "Return training puzzle list")
     @GetMapping("puzzle/{pack}")
     public ApiResponse<List<GetTrainingPuzzleResponse>> getTrainingPuzzle(
             @PathVariable("pack") Long pack,
             @AuthenticationPrincipal UserDetailsImpl user
     ) {
-        if(pack == null) {
-            throw new CustomException(ErrorCode.VALIDATION_ERROR);
-        }
-
         return ApiUtils.success(trainingService.getTrainingPuzzleList(user.getUser(), pack));
     }
 
@@ -87,12 +78,8 @@ public class TrainingController {
     @Operation(summary = "Create Pack", description = "Create pack & Only admins are available")
     @PostMapping("/pack")
     public ApiResponse<Long> addTrainingPack(
-            @Valid @RequestBody CreateTrainingPackRequest request,
-            BindingResult bindingResult
+            @Valid @RequestBody CreateTrainingPackRequest request
     ) {
-        if(bindingResult.hasErrors()) {
-            throw new ValidationException(getErrorMessages(bindingResult));
-        }
 
         Pack pack = trainingService.createPack(request);
 
@@ -103,12 +90,8 @@ public class TrainingController {
     @Operation(summary = "Add Translation", description = "Add Translation & Only admins are available")
     @PostMapping("/pack/translation")
     public ApiResponse<Long> addTranslation(
-            @Valid @RequestBody TranslationRequest request,
-            BindingResult bindingResult
+            @Valid @RequestBody TranslationRequest request
     ) {
-        if(bindingResult.hasErrors()) {
-            throw new ValidationException(getErrorMessages(bindingResult));
-        }
         trainingService.addTranslation(request);
 
         return ApiUtils.success(null);
@@ -119,13 +102,8 @@ public class TrainingController {
     @GetMapping("/pack")
     public ApiResponse<List<GetPackResponse>> getTrainigPack(
             @Valid @RequestBody GetTrainingPackRequest request,
-            BindingResult bindingResult,
             @AuthenticationPrincipal UserDetailsImpl user
     ){
-
-        if(bindingResult.hasErrors()) {
-            throw new ValidationException(getErrorMessages(bindingResult));
-        }
 
         List<GetPackResponse> packs = trainingService.getTrainingPackList(user.getUser(), request);
 
@@ -137,13 +115,8 @@ public class TrainingController {
     @PostMapping("/pack/purchase")
     public ApiResponse<Integer> PurchaseTrainingPack(
             @Valid @RequestBody PurchaseTrainingPackRequest request,
-            BindingResult bindingResult,
             @AuthenticationPrincipal UserDetailsImpl user
     ){
-
-        if(bindingResult.hasErrors()) {
-            throw new ValidationException(getErrorMessages(bindingResult));
-        }
 
         Integer currency = trainingService.purchaseTrainingPack(user.getUser(), request);
 
@@ -154,14 +127,8 @@ public class TrainingController {
     @PostMapping("/puzzle/{puzzleId}/answer")
     public ApiResponse<GetTrainingPuzzleAnswerResponse> PurchaseTrainingPuzzleAnswer(
             @Valid @RequestBody PurchaseTrainingPuzzleAnswerRequest request,
-            BindingResult bindingResult,
             @AuthenticationPrincipal UserDetailsImpl user
     ){
-
-        if(bindingResult.hasErrors()) {
-            throw new ValidationException(getErrorMessages(bindingResult));
-        }
-
         GetTrainingPuzzleAnswerResponse response = trainingService.purchaseTrainingPuzzleAnswer(user.getUser(), request);
 
         return ApiUtils.success(response);

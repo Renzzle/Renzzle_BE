@@ -13,6 +13,7 @@ import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import com.renzzle.backend.global.util.BoardUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +34,7 @@ public class TrainingService {
     private final UserPackRepository userPackRepository;
     private final UserRepository userRepository;
 
+    //service test, repo test
     @Transactional
     public TrainingPuzzle createTrainingPuzzle(AddTrainingPuzzleRequest request) {
         String boardKey = BoardUtils.makeBoardKey(request.boardStatus());
@@ -58,12 +60,13 @@ public class TrainingService {
                 .boardKey(boardKey)
                 .depth(request.depth())
                 .rating(rating)
-                .winColor(WinColor.getWinColor(request.winColor()))
+                .winColor(WinColor.getWinColor(request.winColor().getName()))
                 .build();
 
         return trainingPuzzleRepository.save(puzzle);
     }
 
+    //service test, repo test
     @Transactional
     public void deleteTrainingPuzzle(Long puzzleId) {
         Optional<TrainingPuzzle> puzzle = trainingPuzzleRepository.findById(puzzleId);
@@ -74,10 +77,11 @@ public class TrainingService {
         trainingPuzzleRepository.decreaseIndexesFrom(puzzle.get().getTrainingIndex());
     }
 
+    //service test, repo test
     @Transactional
-    public void solveLessonPuzzle(UserEntity user, Long puzzleId) {
+    public void solveTrainingPuzzle(UserEntity user, Long puzzleId) {
         Optional<SolvedTrainingPuzzle> existInfo
-                = solvedTrainingPuzzleRepository.findByUserIdAndLessonId(user.getId(), puzzleId);
+                = solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId);
 
         // solve puzzle again
         if(existInfo.isPresent()) {
@@ -88,15 +92,21 @@ public class TrainingService {
                 () -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE)
         );
 
-        SolvedTrainingPuzzle solvedLessonPuzzle = SolvedTrainingPuzzle.builder()
+        SolvedTrainingPuzzle solvedTrainingPuzzle = SolvedTrainingPuzzle.builder()
                 .user(user)
                 .puzzle(trainingPuzzle)
                 .build();
-        solvedTrainingPuzzleRepository.save(solvedLessonPuzzle);
+        solvedTrainingPuzzleRepository.save(solvedTrainingPuzzle);
     }
 
+    //service test, repo test
     @Transactional(readOnly = true)
     public List<GetTrainingPuzzleResponse> getTrainingPuzzleList(UserEntity user, Long packId) {
+
+        if(packId == null) {
+            throw new CustomException(ErrorCode.VALIDATION_ERROR);
+        }
+
         List<TrainingPuzzle> trainingPuzzles = trainingPuzzleRepository.findByPack_Id(packId);
 
         if(trainingPuzzles.isEmpty()) {
@@ -119,6 +129,7 @@ public class TrainingService {
     }
 
 
+    // service test, repo test
     @Transactional
     public Pack createPack(CreateTrainingPackRequest request) {
 
@@ -142,16 +153,21 @@ public class TrainingService {
 
         packTranslationRepository.saveAll(translations);
 
-
-
         return savedPack;
     }
 
+    // service test, repo test
     @Transactional
     public void addTranslation(TranslationRequest request) {
 
         Pack pack = packRepository.findById(request.packId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
+
+        boolean exists = packTranslationRepository.existsByPackAndLanguageCode(pack, request.langCode().name());
+
+        if (exists) {
+            throw new CustomException(ErrorCode.ALREADY_EXISTING_TRANSLATION);
+        }
 
         PackTranslation translation = PackTranslation.builder()
                 .pack(pack)
@@ -164,10 +180,15 @@ public class TrainingService {
         packTranslationRepository.save(translation);
     }
 
+    // service test, repo test
     @Transactional(readOnly = true)
     public List<GetPackResponse> getTrainingPackList(UserEntity user, GetTrainingPackRequest request){
 
         List<Pack> packs = packRepository.findByDifficulty(Difficulty.getDifficulty(request.difficulty()));
+
+        if (packs.isEmpty()) {
+            throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACKS);
+        }
 
         List<Long> packIds = packs.stream().map(Pack::getId).collect(Collectors.toList());
         List<PackTranslation> translations = packTranslationRepository
@@ -210,14 +231,14 @@ public class TrainingService {
         return result;
     }
 
+    //service test, repo test
     @Transactional(readOnly = true)
     public Integer purchaseTrainingPack(UserEntity user, PurchaseTrainingPackRequest request) {
 
         Pack pack = packRepository.findById(request.packId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
-        //차감되는 금액이므로 음수로 전달
-        user.purchase(-pack.getPrice());
+        user.purchase(pack.getPrice());
 
         userRepository.save(user);
 
@@ -245,5 +266,6 @@ public class TrainingService {
                 .currency(user.getCurrency())
                 .build();
     }
+
 
 }

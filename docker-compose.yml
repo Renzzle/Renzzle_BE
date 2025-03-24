@@ -1,6 +1,5 @@
 services:
   app:
-    image: renzzle/github-action:latest
     ports:
       - "9001:9001"
     env_file:

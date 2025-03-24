@@ -2,6 +2,8 @@ server:
   port: 9001
 
 spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:default}
 
   datasource:
     url: jdbc:mysql://${DB_ADDRESS}
@@ -46,9 +48,6 @@ spring:
           timeout: 5000
           starttls:
             enable: true
-  config:
-    activate:
-      on-profile: default
 
 springdoc:
   packages-to-scan: com.renzzle.backend
@@ -60,3 +59,18 @@ springdoc:
     display-request-duration: true
     operations-sorter: alpha
 
+---
+
+# test 프로파일에 대한 오버라이드 설정
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  # 테스트에서는 별도의 JWT 비밀키와 메일 계정 정보를 사용합니다.
+  jwt:
+    secret: testcodeasdasdadsadadadsdasdadastestcodeasdasdadsadadadsdasdadas
+
+  mail:
+    username: test@gmail.com
+    password: password
