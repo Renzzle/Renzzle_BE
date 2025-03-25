@@ -1,11 +1,17 @@
 package com.renzzle.backend.domain.puzzle.service;
 
-import com.renzzle.backend.domain.puzzle.api.request.*;
-import com.renzzle.backend.domain.puzzle.api.response.GetPackResponse;
-import com.renzzle.backend.domain.puzzle.api.response.GetTrainingPuzzleAnswerResponse;
-import com.renzzle.backend.domain.puzzle.api.response.GetTrainingPuzzleResponse;
-import com.renzzle.backend.domain.puzzle.dao.*;
-import com.renzzle.backend.domain.puzzle.domain.*;
+import com.renzzle.backend.domain.puzzle.shared.domain.Difficulty;
+import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
+import com.renzzle.backend.domain.puzzle.training.api.response.GetPackResponse;
+import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleAnswerResponse;
+import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleResponse;
+import com.renzzle.backend.domain.puzzle.training.api.request.*;
+import com.renzzle.backend.domain.puzzle.training.dao.*;
+import com.renzzle.backend.domain.puzzle.training.domain.Pack;
+import com.renzzle.backend.domain.puzzle.training.domain.PackTranslation;
+import com.renzzle.backend.domain.puzzle.training.domain.SolvedTrainingPuzzle;
+import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
+import com.renzzle.backend.domain.puzzle.training.service.TrainingService;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.constant.ItemPrice;

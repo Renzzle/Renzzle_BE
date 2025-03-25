@@ -1,7 +1,7 @@
 package com.renzzle.backend.domain.user.api;
 
-import com.renzzle.backend.domain.puzzle.api.request.GetCommunityPuzzleRequest;
-import com.renzzle.backend.domain.puzzle.api.response.GetCommunityPuzzleResponse;
+import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzleRequest;
+import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleResponse;
 import com.renzzle.backend.domain.user.api.request.ChangeNicknameRequest;
 import com.renzzle.backend.domain.user.api.request.PuzzleLikeRequest;
 import com.renzzle.backend.domain.user.api.response.ChangeNicknameResponse;
