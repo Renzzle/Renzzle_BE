@@ -1,16 +1,17 @@
 package com.renzzle.backend.domain.puzzle.service;
 
 import com.renzzle.backend.config.TestContainersConfig;
-import com.renzzle.backend.domain.puzzle.api.request.CreateTrainingPackRequest;
-import com.renzzle.backend.domain.puzzle.api.request.PackTranslationRequest;
-import com.renzzle.backend.domain.puzzle.dao.*;
-import com.renzzle.backend.domain.puzzle.domain.*;
+import com.renzzle.backend.domain.puzzle.shared.domain.Difficulty;
+import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
+import com.renzzle.backend.domain.puzzle.training.api.request.CreateTrainingPackRequest;
+import com.renzzle.backend.domain.puzzle.training.api.request.PackTranslationRequest;
+import com.renzzle.backend.domain.puzzle.training.dao.*;
+import com.renzzle.backend.domain.puzzle.training.domain.*;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.constant.ItemPrice;
 import com.renzzle.backend.global.common.constant.LanguageCode;
 import com.renzzle.backend.global.common.domain.Status;
-import com.renzzle.backend.global.init.DataInitializer;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

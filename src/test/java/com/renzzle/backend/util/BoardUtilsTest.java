@@ -1,6 +1,6 @@
 package com.renzzle.backend.util;
 
-import com.renzzle.backend.global.util.BoardUtils;
+import com.renzzle.backend.domain.puzzle.shared.util.BoardUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import java.lang.reflect.InvocationTargetException;

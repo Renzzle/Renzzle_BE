@@ -1,6 +1,6 @@
 package com.renzzle.backend.global.validation;
 
-import com.renzzle.backend.global.util.BoardUtils;
+import com.renzzle.backend.domain.puzzle.shared.util.BoardUtils;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 

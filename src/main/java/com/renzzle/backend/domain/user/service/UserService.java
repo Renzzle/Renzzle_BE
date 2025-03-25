@@ -1,17 +1,16 @@
 package com.renzzle.backend.domain.user.service;
 
-import com.renzzle.backend.domain.puzzle.api.response.GetCommunityPuzzleResponse;
-import com.renzzle.backend.domain.puzzle.dao.CommunityPuzzleRepository;
-import com.renzzle.backend.domain.puzzle.dao.UserCommunityPuzzleRepository;
-import com.renzzle.backend.domain.puzzle.domain.CommunityPuzzle;
-import com.renzzle.backend.domain.puzzle.domain.Tag;
-import com.renzzle.backend.domain.puzzle.domain.UserCommunityPuzzle;
+import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleResponse;
+import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
+import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
+import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
+import com.renzzle.backend.domain.puzzle.community.domain.Tag;
+import com.renzzle.backend.domain.puzzle.community.domain.UserCommunityPuzzle;
 import com.renzzle.backend.domain.user.api.response.ChangeNicknameResponse;
 import com.renzzle.backend.domain.user.api.response.LikeResponse;
 import com.renzzle.backend.domain.user.api.response.UserResponse;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
-import com.renzzle.backend.global.common.constant.ItemPrice;
 import com.renzzle.backend.global.common.domain.Status;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
