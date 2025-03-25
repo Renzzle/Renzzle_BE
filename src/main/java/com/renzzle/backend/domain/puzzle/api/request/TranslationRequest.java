@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.puzzle.api.request;
 
+import com.renzzle.backend.global.common.constant.LanguageCode;
 import jakarta.validation.constraints.NotBlank;
 
 public record TranslationRequest(
@@ -8,7 +9,7 @@ public record TranslationRequest(
         Long packId,
 
         @NotBlank(message = "langCode는 필수입니다")
-        String langCode,
+        LanguageCode langCode,
 
         @NotBlank(message = "title은 필수입니다")
         String title,

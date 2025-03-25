@@ -35,6 +35,8 @@ jobs:
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
         run: ./gradlew build -x test --stacktrace
 
+        # TODO : 빌드 시 테스트 되게 하기
+
       - name: Set up Docker environment
         run: |
           sudo apt-get update
@@ -107,7 +109,7 @@ jobs:
             
             docker-compose down
             docker-compose pull
-            docker-compose up -d
+            docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
             
             # check container status
             echo "Running containers:"

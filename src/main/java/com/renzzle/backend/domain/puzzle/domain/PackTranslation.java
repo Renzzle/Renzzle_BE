@@ -23,7 +23,7 @@ public class PackTranslation {
     private Pack pack;
 
     @Column(name = "language_code", nullable = false, length = 15)
-    private String language_code;
+    private String languageCode;
 
     @Column(name = "title", nullable = false, length = 225)
     private String title;
