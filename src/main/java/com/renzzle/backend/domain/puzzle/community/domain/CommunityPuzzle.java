@@ -38,29 +38,35 @@ public class CommunityPuzzle {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "title", nullable = false, length = 31)
-    private String title;
-
     @Column(name = "board_status", nullable = false, length = 1023)
     private String boardStatus;
 
     @Column(name = "board_key", nullable = false)
     private String boardKey;
 
-    @Column(name = "depth", nullable = false)
+    @Column(name = "answer", nullable = false, length = 1023)
+    private String answer;
+
+    @Column(name = "depth")
     private int depth;
 
-    @Column(name = "like_count", nullable = false)
+    @Column(name = "rating")
+    private double rating;
+
     @Builder.Default
+    @Column(name = "like_count")
     private int likeCount = 0;
 
-    @Column(name = "solved_count", nullable = false)
     @Builder.Default
-    private int solvedCount = 0;
+    @Column(name = "dislike_count")
+    private int dislikeCount = 0;
 
-    @Column(name = "failed_count", nullable = false)
     @Builder.Default
-    private int failedCount = 0;
+    @Column(name = "view")
+    private int view = 0;
+
+    @Column(name = "description", length = 127)
+    private String description;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)
@@ -83,10 +89,6 @@ public class CommunityPuzzle {
     private UserEntity user;
 
     @ManyToOne
-    @JoinColumn(name = "difficulty", nullable = false)
-    private Difficulty difficulty;
-
-    @ManyToOne
     @JoinColumn(name = "win_color", nullable = false)
     private WinColor winColor;
 
@@ -100,34 +102,14 @@ public class CommunityPuzzle {
         }
     }
 
-    @PreRemove
-    public void onPreRemove() {
+    public void softDelete() {
         this.status = Status.getStatus(Status.StatusName.DELETED);
         this.deletedAt = Instant.now();
     }
 
-    public int addSolve() {
-        this.solvedCount++;
-        return this.solvedCount;
-    }
-
-    public int addFail() {
-        this.failedCount++;
-        return this.failedCount;
-    }
-
-    public int changeLike(boolean isIncrease) {
+    public void changeLike(boolean isIncrease) {
         if(isIncrease) this.likeCount++;
         else this.likeCount--;
-        return this.likeCount;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        CommunityPuzzle myObject = (CommunityPuzzle) o;
-        return Objects.equals(id, myObject.id);
     }
 
 }

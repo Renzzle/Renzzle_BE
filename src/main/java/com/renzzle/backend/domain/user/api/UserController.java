@@ -58,65 +58,65 @@ public class UserController {
         return ApiUtils.success(response);
     }
 
-    @Operation(summary = "Subscribe or unsubscribe to a user", description = "change the subscription status of a user")
-    @PostMapping("/like")
-    public ApiResponse<Boolean> changeLikeStatus(
-            @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @RequestBody PuzzleLikeRequest request) {
-        UserEntity user = userDetails.getUser();
-
-        log.info("Received request to change like status for puzzleId: {}", request.puzzleId());
-
-        boolean isLiked = userService.toggleLike(request.puzzleId(), user);
-
-        log.info("Like status changed for puzzleId: {}. New status: {}", request.puzzleId(), isLiked);
-
-        return ApiUtils.success(isLiked);
-    }
-
-    @Operation(summary = "Retrieve user like list", description = "Retrieve user like list")
-    @GetMapping("/like")
-    public ApiResponse<List<LikeResponse>> getUserLike(
-            @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @RequestParam(value = "id", required = false) Long id,
-            @RequestParam(value = "size", defaultValue = "10") int size) {
-
-        log.info("Received parameters - ID: {}, Size: {}", id, size);
-
-        if (userDetails == null) {
-            log.error("User details not found");
-            throw new CustomException(ErrorCode.CANNOT_FIND_USER);
-        }
-
-        Long userId = userDetails.getUser().getId();
-        List<LikeResponse> likeResponse = userService.getUserLike(userId, id, size);
-        return ApiUtils.success(likeResponse);
-    }
-
-    @Operation(summary = "Get user puzzle data", description = "Return puzzle list for a user")
-    @GetMapping("/{userId}/puzzle")
-    public ApiResponse<List<GetCommunityPuzzleResponse>> getUserPuzzle(
-            @PathVariable("userId") Long userId,
-            @ModelAttribute GetCommunityPuzzleRequest request,
-            BindingResult bindingResult
-    ) {
-        if(bindingResult.hasErrors()) {
-            throw new ValidationException(getErrorMessages(bindingResult));
-        }
-
-        int size = (request.size() != null) ? request.size() : 10;
-
-        return ApiUtils.success(userService.getUserCommunityPuzzleList(userId, request.id(), size));
-    }
-
-    @Operation(summary = "Delete user puzzle", description = "Delete user puzzle")
-    @DeleteMapping("/{puzzleId}")
-    public ApiResponse<Object> deleteUserPuzzle(
-            @PathVariable("puzzleId") Long puzzleId,
-            @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        UserEntity user = userDetails.getUser();
-        userService.deleteUserPuzzle(puzzleId, user);
-        return ApiUtils.success(null);
-    }
+//    @Operation(summary = "Subscribe or unsubscribe to a user", description = "change the subscription status of a user")
+//    @PostMapping("/like")
+//    public ApiResponse<Boolean> changeLikeStatus(
+//            @AuthenticationPrincipal UserDetailsImpl userDetails,
+//            @RequestBody PuzzleLikeRequest request) {
+//        UserEntity user = userDetails.getUser();
+//
+//        log.info("Received request to change like status for puzzleId: {}", request.puzzleId());
+//
+//        boolean isLiked = userService.toggleLike(request.puzzleId(), user);
+//
+//        log.info("Like status changed for puzzleId: {}. New status: {}", request.puzzleId(), isLiked);
+//
+//        return ApiUtils.success(isLiked);
+//    }
+//
+//    @Operation(summary = "Retrieve user like list", description = "Retrieve user like list")
+//    @GetMapping("/like")
+//    public ApiResponse<List<LikeResponse>> getUserLike(
+//            @AuthenticationPrincipal UserDetailsImpl userDetails,
+//            @RequestParam(value = "id", required = false) Long id,
+//            @RequestParam(value = "size", defaultValue = "10") int size) {
+//
+//        log.info("Received parameters - ID: {}, Size: {}", id, size);
+//
+//        if (userDetails == null) {
+//            log.error("User details not found");
+//            throw new CustomException(ErrorCode.CANNOT_FIND_USER);
+//        }
+//
+//        Long userId = userDetails.getUser().getId();
+//        List<LikeResponse> likeResponse = userService.getUserLike(userId, id, size);
+//        return ApiUtils.success(likeResponse);
+//    }
+//
+//    @Operation(summary = "Get user puzzle data", description = "Return puzzle list for a user")
+//    @GetMapping("/{userId}/puzzle")
+//    public ApiResponse<List<GetCommunityPuzzleResponse>> getUserPuzzle(
+//            @PathVariable("userId") Long userId,
+//            @ModelAttribute GetCommunityPuzzleRequest request,
+//            BindingResult bindingResult
+//    ) {
+//        if(bindingResult.hasErrors()) {
+//            throw new ValidationException(getErrorMessages(bindingResult));
+//        }
+//
+//        int size = (request.size() != null) ? request.size() : 10;
+//
+//        return ApiUtils.success(userService.getUserCommunityPuzzleList(userId, request.id(), size));
+//    }
+//
+//    @Operation(summary = "Delete user puzzle", description = "Delete user puzzle")
+//    @DeleteMapping("/{puzzleId}")
+//    public ApiResponse<Object> deleteUserPuzzle(
+//            @PathVariable("puzzleId") Long puzzleId,
+//            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+//        UserEntity user = userDetails.getUser();
+//        userService.deleteUserPuzzle(puzzleId, user);
+//        return ApiUtils.success(null);
+//    }
 
 }
