@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
 
-public record CreatePackRequest(
+public record CreateTrainingPackRequest(
         @NotNull(message = "info가 필요합니다")
         List<PackTranslationRequest> info,
 

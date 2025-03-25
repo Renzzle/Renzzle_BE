@@ -1,0 +1,9 @@
+version: "3.8"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # TODO : mysql 이미지 추가하기
+    image: myapp:dev

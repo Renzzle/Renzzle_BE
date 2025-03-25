@@ -57,9 +57,8 @@ public interface TrainingPuzzleRepository extends JpaRepository<TrainingPuzzle, 
             nativeQuery = true)
     int countAllTrainingByChapter(@Param("chapter") int chapter);
 
-//    Page<TrainingPuzzle> findByChapter(int chapter, Pageable pageable);
 
-    //List<TrainingPuzzle> findByPackId(Long packId);
+    List<TrainingPuzzle> findByPack_Id(Long packId);
 
     @Query(value = "SELECT * FROM training_puzzle " +
             "WHERE rating BETWEEN :minRating AND :maxRating ORDER BY RAND() LIMIT 1",

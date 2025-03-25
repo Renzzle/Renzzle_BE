@@ -16,7 +16,6 @@ import org.springframework.test.context.ContextConfiguration;
 import java.util.Optional;
 
 @SpringBootTest
-@ActiveProfiles("test")
 @ContextConfiguration(initializers = TestContainersConfig.class)
 public class DBTest {
 

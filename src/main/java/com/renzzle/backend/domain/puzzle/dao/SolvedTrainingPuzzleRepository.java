@@ -14,7 +14,7 @@ public interface SolvedTrainingPuzzleRepository extends JpaRepository<SolvedTrai
     @Query(value = "SELECT * FROM solved_training_puzzle " +
             "WHERE user_id = :userId AND training_id = :puzzleId",
             nativeQuery = true)
-    Optional<SolvedTrainingPuzzle> findByUserIdAndLessonId(@Param("userId") Long userId,
+    Optional<SolvedTrainingPuzzle> findByUserIdAndPuzzleId(@Param("userId") Long userId,
                                                            @Param("puzzleId") Long puzzleId);
 
     boolean existsByUserAndPuzzle(UserEntity user, TrainingPuzzle puzzle);
