@@ -34,7 +34,7 @@ public class TrainingService {
     private final UserPackRepository userPackRepository;
     private final UserRepository userRepository;
 
-    //service test, repo test
+    // service test, repo test
     @Transactional
     public TrainingPuzzle createTrainingPuzzle(AddTrainingPuzzleRequest request) {
         String boardKey = BoardUtils.makeBoardKey(request.boardStatus());
@@ -48,7 +48,7 @@ public class TrainingService {
         Pack pack = packRepository.findById(request.packId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
-        double rating = request.depth() * 200;  // ELO 값 정해진 후 재정의 필요 !
+        double rating = request.depth() * 200;  // TODO: ELO 값 정해진 후 재정의 필요 !
 
         // increase puzzle_count
         packRepository.increasePuzzleCount(request.packId());
@@ -66,7 +66,7 @@ public class TrainingService {
         return trainingPuzzleRepository.save(puzzle);
     }
 
-    //service test, repo test
+    // service test, repo test
     @Transactional
     public void deleteTrainingPuzzle(Long puzzleId) {
         Optional<TrainingPuzzle> puzzle = trainingPuzzleRepository.findById(puzzleId);
@@ -77,7 +77,7 @@ public class TrainingService {
         trainingPuzzleRepository.decreaseIndexesFrom(puzzle.get().getTrainingIndex());
     }
 
-    //service test, repo test
+    // service test, repo test
     @Transactional
     public void solveTrainingPuzzle(UserEntity user, Long puzzleId) {
         Optional<SolvedTrainingPuzzle> existInfo
@@ -99,10 +99,9 @@ public class TrainingService {
         solvedTrainingPuzzleRepository.save(solvedTrainingPuzzle);
     }
 
-    //service test, repo test
+    // service test, repo test
     @Transactional(readOnly = true)
     public List<GetTrainingPuzzleResponse> getTrainingPuzzleList(UserEntity user, Long packId) {
-
         if(packId == null) {
             throw new CustomException(ErrorCode.VALIDATION_ERROR);
         }
@@ -132,7 +131,6 @@ public class TrainingService {
     // service test, repo test
     @Transactional
     public Pack createPack(CreateTrainingPackRequest request) {
-
         Pack pack = Pack.builder()
                 .price(request.price())
                 .difficulty(Difficulty.getDifficulty(request.difficulty()))
@@ -159,7 +157,6 @@ public class TrainingService {
     // service test, repo test
     @Transactional
     public void addTranslation(TranslationRequest request) {
-
         Pack pack = packRepository.findById(request.packId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
@@ -183,7 +180,6 @@ public class TrainingService {
     // service test, repo test
     @Transactional(readOnly = true)
     public List<GetPackResponse> getTrainingPackList(UserEntity user, GetTrainingPackRequest request){
-
         List<Pack> packs = packRepository.findByDifficulty(Difficulty.getDifficulty(request.difficulty()));
 
         if (packs.isEmpty()) {
@@ -231,10 +227,9 @@ public class TrainingService {
         return result;
     }
 
-    //service test, repo test
+    // service test, repo test
     @Transactional(readOnly = true)
     public Integer purchaseTrainingPack(UserEntity user, PurchaseTrainingPackRequest request) {
-
         Pack pack = packRepository.findById(request.packId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
@@ -254,7 +249,6 @@ public class TrainingService {
 
     @Transactional(readOnly = true)
     public GetTrainingPuzzleAnswerResponse purchaseTrainingPuzzleAnswer(UserEntity user, PurchaseTrainingPuzzleAnswerRequest request) {
-
         TrainingPuzzle puzzle = trainingPuzzleRepository.findById(request.puzzleId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
 
@@ -266,6 +260,5 @@ public class TrainingService {
                 .currency(user.getCurrency())
                 .build();
     }
-
 
 }
