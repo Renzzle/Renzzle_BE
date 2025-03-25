@@ -69,8 +69,8 @@ jobs:
           username: ec2-user
           key: ${{ secrets.PRIVATE_KEY }}
           source: |
-            ./docker-compose.yml
-            ./docker-compose.prod.yml
+            docker-compose.yml
+            docker-compose.prod.yml
           target: '/home/ec2-user/'
           port: 22
           timeout: 30s
