@@ -72,6 +72,20 @@ jobs:
           debug: true
           overwrite: true
 
+      - name: Copy Docker Compose prod file to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ec2-user
+          key: ${{ secrets.PRIVATE_KEY }}
+          source: './docker-compose.prod.yml'
+          target: '/home/ec2-user/'
+          port: 22
+          timeout: 30s
+          command_timeout: 10m
+          debug: true
+          overwrite: true
+
       - name: Create .env file and copy to EC2
         run: |
           echo "DB_ADDRESS=${{ secrets.DB_ADDRESS }}" >> .env
@@ -107,8 +121,8 @@ jobs:
               docker rm $ALL_CONTAINERS
             fi
             
-            docker-compose down
-            docker-compose pull
+            docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
+            docker-compose -f docker-compose.yml -f docker-compose.prod.yml pull
             docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
             
             # check container status
