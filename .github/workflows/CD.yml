@@ -111,9 +111,9 @@ jobs:
               docker rm $ALL_CONTAINERS
             fi
             
-            docker-compose down
-            docker-compose pull
-            docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+            docker compose down
+            docker compose pull
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
             
             # check container status
             echo "Running containers:"
