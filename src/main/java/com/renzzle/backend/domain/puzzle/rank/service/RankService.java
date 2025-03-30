@@ -6,10 +6,12 @@ import com.renzzle.backend.domain.puzzle.rank.api.response.RankResultResponse;
 import com.renzzle.backend.domain.puzzle.rank.api.response.RankStartResponse;
 import com.renzzle.backend.domain.puzzle.rank.domain.RankSessionData;
 import com.renzzle.backend.domain.puzzle.training.dao.TrainingPuzzleRepository;
+import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
+import com.renzzle.backend.global.util.EloUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -28,28 +30,54 @@ public class RankService {
     private final UserRepository userRepository;
 
     private static final long TTL_MINUTES = 5;
+    private static final double TARGET_WIN_PROBABILITY = 0.7;
+    private static final double MMR_THRESHOLD = 1500.0;
+    private static final double WIN_PROBABILITY_DELTA = 0.05; // 동적 조정 기본 값
 
     public RankStartResponse startRankGame(UserEntity user) {
         Long userId = user.getId();
         String redisKey = String.valueOf(userId);
 
-        // TODO : 문제를 받은 뒤, 해당 문제를 틀렸다고 가정한 값을 미리 DB에 업데이트
-        // 단, 여기 값을 수정해야함.
-        user.updateRatingTo(user.getRating() - 30);
-        user.updateMmrTo(user.getMmr() - 20);
-        userRepository.save(user);
+        //TODO: 사용자의 레에팅에 알맞는 문제를 찾는다. 사용자 레이팅에서 어느 정도의 승률의 문제를 선정해야할지 고민
 
-        //TODO: 사용자의 레에팅에 알맞는 문제를 찾는다. 사용자 레이팅에서 승률 60% 정도의 문제로 시작
+        double originalMmr = user.getMmr();
+        double originalRating = user.getRating();
+
+        // 사용자의 레이팅 & 기대 승률 을 통해 적합한 문제를 가져옴
+        double desiredProblemRating = EloUtil.getProblemRatingForTargetWinProbability(originalMmr, TARGET_WIN_PROBABILITY);
+
+        TrainingPuzzle puzzle = null;
+        int tolerance = 10;
+
+        while (puzzle == null) {
+            puzzle = trainingPuzzleRepository.findFirstByRatingBetweenOrderByRatingAsc(desiredProblemRating - tolerance, desiredProblemRating + tolerance);
+            tolerance += 10;
+        }
+
+        double mmrPenalty = EloUtil.calculateMMRDecrease(originalRating, puzzle.getRating());
+        double ratingPenalty = EloUtil.calculateRatingDecrease(originalMmr, puzzle.getRating());
+
+        if(originalMmr >= MMR_THRESHOLD) {
+            mmrPenalty *= 1.5;
+            ratingPenalty *= 1.5;
+        }
+
+        double penaltyMmr = originalMmr + mmrPenalty;
+        double penaltyMmrRating = originalRating + ratingPenalty;
+
+        user.updateMmrTo(penaltyMmr);
+        user.updateRatingTo(penaltyMmrRating);
+        userRepository.save(user);
 
         RankSessionData sessionData = new RankSessionData();
 
         sessionData.setUserId(userId);  // sessionId == userId
-        sessionData.setBoardState("a1a2a3a4");
-        sessionData.setLastProblemRating(1000);
-        sessionData.setRatingBeforePenalty(1500);
-        sessionData.setMmrBeforePenalty(1500);
-        sessionData.setInitialMmr(user.getMmr());
-        sessionData.setWinnerColor("BLACK");
+        sessionData.setBoardState(puzzle.getBoardStatus());
+        sessionData.setLastProblemRating(puzzle.getRating());
+        sessionData.setMmrBeforePenalty(originalMmr);
+        sessionData.setRatingBeforePenalty(originalRating);
+        sessionData.setTargetWinProbability(TARGET_WIN_PROBABILITY);
+        sessionData.setWinnerColor(puzzle.getWinColor().getName());
 
         redisTemplate.opsForValue().set(redisKey, sessionData, TTL_MINUTES, TimeUnit.MINUTES);
 
@@ -74,13 +102,78 @@ public class RankService {
         }
         log.info("남은 TTL: {}분", redisTemplate.getExpire(redisKey, TimeUnit.MINUTES));
 
-        if (request.isSolved()) {
-            // TODO: ELO를 통한 레이팅 값 업데이트
-            double updatedRating = session.getRatingBeforePenalty() + 30;
-            session.setRatingBeforePenalty(updatedRating);
-            double updatedMmr = session.getRatingBeforePenalty() + 20;
-            session.setRatingBeforePenalty(updatedMmr);
+        double userBeforeMmr = session.getMmrBeforePenalty();
+        double userBeforeRating = session.getRatingBeforePenalty();
+        double lastProblemRating = session.getLastProblemRating();
+        double WinProbability = session.getTargetWinProbability();
+
+        double rewardMultiplier;
+        double penaltyMultiplier;
+        if (userBeforeMmr >= MMR_THRESHOLD) {
+            rewardMultiplier = 0.5;
+            penaltyMultiplier = 1.5;
+        } else {
+            rewardMultiplier = 1.5;
+            penaltyMultiplier = 0.5;
         }
+        /*
+        이전 문제를 풀었다면
+        다음 문제 기대 승률 조정
+        배수 적용 하여 mmr % rating 값 조정 및 변수 값 업데이트
+         */
+        if (request.isSolved()) {
+            WinProbability += WIN_PROBABILITY_DELTA;
+            double mmrIncrease = EloUtil.calculateMMRIncrease(userBeforeMmr, lastProblemRating);
+            double ratingIncrease = EloUtil.calculateRatingIncrease(userBeforeRating, lastProblemRating);
+            mmrIncrease = Math.round(mmrIncrease * rewardMultiplier);
+            ratingIncrease = Math.round(ratingIncrease * rewardMultiplier);
+
+            user.updateMmrTo(userBeforeMmr + mmrIncrease);
+            user.updateRatingTo(userBeforeRating + ratingIncrease);
+
+            userBeforeMmr = userBeforeMmr + mmrIncrease;
+            userBeforeRating = userBeforeRating + ratingIncrease;
+        } else {
+            WinProbability -= WIN_PROBABILITY_DELTA;
+            double mmrDecrease = EloUtil.calculateMMRDecrease(userBeforeMmr, lastProblemRating);
+            double ratingDecrease = EloUtil.calculateRatingDecrease(userBeforeRating, lastProblemRating);
+
+            mmrDecrease = Math.round(mmrDecrease * penaltyMultiplier);
+            ratingDecrease = Math.round(ratingDecrease * penaltyMultiplier);
+
+            user.updateMmrTo(userBeforeMmr + mmrDecrease);
+            user.updateRatingTo(userBeforeRating + ratingDecrease);
+
+            userBeforeMmr = userBeforeMmr + mmrDecrease;
+            userBeforeRating = userBeforeRating + ratingDecrease;
+        }
+
+        // 사용자의 레이팅 & 기대 승률 을 통해 적합한 문제를 가져옴
+        double desiredProblemRating = EloUtil.getProblemRatingForTargetWinProbability(userBeforeMmr, WinProbability);
+
+        TrainingPuzzle puzzle = null;
+        int tolerance = 10;
+
+        while (puzzle == null) {
+            puzzle = trainingPuzzleRepository.findFirstByRatingBetweenOrderByRatingAsc(desiredProblemRating - tolerance, desiredProblemRating + tolerance);
+            tolerance += 10;
+        }
+
+        double ratingPenalty = EloUtil.calculateRatingDecrease(userBeforeRating, puzzle.getRating());
+        double mmrPenalty = EloUtil.calculateMMRDecrease(userBeforeMmr, puzzle.getRating());
+
+        if(userBeforeMmr >= MMR_THRESHOLD) {
+            mmrPenalty *= 1.5;
+            ratingPenalty *= 1.5;
+        }
+
+        double penaltyMmr = userBeforeMmr + mmrPenalty;
+        double penaltyRating = userBeforeRating + ratingPenalty;
+
+        user.updateMmrTo(penaltyMmr);
+        user.updateRatingTo(penaltyRating);
+
+        userRepository.save(user);
 
         // TODO: 이전 문제 저장. 이 때 문제의 풀이 여부도 저장한다.
         /*
@@ -88,23 +181,20 @@ public class RankService {
          */
 //        trainingPuzzleRepository.saveProblemResult(session);
 
-        // TODO : 문제를 풀고 난 뒤, 해당 문제를 틀렸다고 가정한 값을 미리 DB에 업데이트
-        // 단, 여기 값을 수정해야함.
-        user.updateRatingTo(user.getRating() - 30);
-        user.updateMmrTo(user.getMmr() - 20);
-        userRepository.save(user);
 
-        // TODO: 새 문제를 ELO 시스템에 의해 할당 및 세션 갱신
-        session.setBoardState("a1a3a5f3g5");
-        session.setLastProblemRating(950);
-        session.setWinnerColor("WHITE");
-        session.setRatingBeforePenalty(session.getLastProblemRating());
+        // 세션 갱신: 새 문제 정보 반영 (boardState와 winnerColor는 예시)
+        session.setBoardState(puzzle.getBoardStatus());
+        session.setLastProblemRating(puzzle.getRating());
+        session.setWinnerColor(puzzle.getWinColor().getName());
+        session.setMmrBeforePenalty(userBeforeMmr);
+        session.setRatingBeforePenalty(userBeforeRating);
+        session.setTargetWinProbability(WinProbability);
 
         redisTemplate.opsForValue().set(redisKey, session, currentTTL, TimeUnit.MINUTES);
 
         return RankResultResponse.builder()
-                .boardStatus(session.getBoardState())
-                .winColor(session.getWinnerColor())
+                .boardStatus(puzzle.getBoardStatus())
+                .winColor(puzzle.getWinColor().getName())
                 .build();
     }
 
@@ -113,18 +203,9 @@ public class RankService {
         RankSessionData session = redisTemplate.opsForValue().get(redisKey);
         if (session != null) {
             redisTemplate.delete(redisKey);
-//            trainingPuzzleRepository.saveProblemResult(session);
         }
         return RankEndResponse.builder()
                 .rating(user.getRating())
                 .build();
-    }
-
-    private double calculateAdjustedRating(double currentRating, double puzzleRating, boolean isSolved) {
-        final int K = 30;
-        double expectedScore = 1.0 / (1.0 + Math.pow(10, (puzzleRating - currentRating) / 400));
-        double actualScore = isSolved ? 1.0 : 0.0;
-        double ratingChange = K * (actualScore - expectedScore);
-        return currentRating + ratingChange;
     }
 }

@@ -18,15 +18,6 @@ public interface TrainingPuzzleRepository extends JpaRepository<TrainingPuzzle, 
             nativeQuery = true)
     int findTopIndex(@Param("packId") Long packId);
 
-
-//    @Query(value = "SELECT COALESCE(MAX(t.lesson_index), -1) " +
-//            "FROM training_puzzle t " +
-//            "JOIN solved_training_puzzle st ON t.id = st.training_id " +
-//            "WHERE st.user_id = :userId AND t.chapter = :chapter",
-//            nativeQuery = true)
-//    int findTopSolvedPuzzleIndex(@Param("userId") Long userId,
-//                                 @Param("chapter") int chapter);
-
     @Modifying
     @Transactional
     @Query(value = "UPDATE training_puzzle " +
@@ -63,5 +54,7 @@ public interface TrainingPuzzleRepository extends JpaRepository<TrainingPuzzle, 
             nativeQuery = true)
     Optional<TrainingPuzzle> findRandomByRatingBetween(@Param("minRating") double minRating,
                                                        @Param("maxRating") double maxRating);
+
+    TrainingPuzzle findFirstByRatingBetweenOrderByRatingAsc(double minRating, double maxRating);
 
 }

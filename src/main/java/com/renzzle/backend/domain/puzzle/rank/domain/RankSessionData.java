@@ -12,7 +12,7 @@ public class RankSessionData {
     private String boardState;
     private double lastProblemRating;  // 레이팅 변경 전 문제 레이팅
     private String winnerColor;
-    private double initialMmr;
-    private double ratingBeforePenalty;
     private double mmrBeforePenalty;
+    private double ratingBeforePenalty;
+    private double targetWinProbability;
 }
