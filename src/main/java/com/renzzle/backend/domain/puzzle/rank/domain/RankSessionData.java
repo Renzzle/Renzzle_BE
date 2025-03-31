@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 public class RankSessionData {
     private Long userId;
     private String boardState;
-    private double lastProblemRating;  // 레이팅 변경 전 문제 레이팅
+    private double lastProblemRating;
     private String winnerColor;
     private double mmrBeforePenalty;
     private double ratingBeforePenalty;

@@ -1,4 +1,4 @@
-package com.renzzle.backend.domain.puzzle.service;
+package com.renzzle.backend.domain.puzzle.training.service;
 
 import com.renzzle.backend.domain.puzzle.training.domain.Difficulty;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;

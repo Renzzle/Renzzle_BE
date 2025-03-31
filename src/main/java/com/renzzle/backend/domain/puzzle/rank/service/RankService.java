@@ -11,9 +11,10 @@ import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
-import com.renzzle.backend.global.util.EloUtil;
+import com.renzzle.backend.global.util.ELOUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +30,9 @@ public class RankService {
     private final TrainingPuzzleRepository trainingPuzzleRepository;
     private final UserRepository userRepository;
 
-    private static final long TTL_MINUTES = 5;
+    @Value("${rank.session.ttl}")
+    private long sessionTtlSeconds;
+
     private static final double TARGET_WIN_PROBABILITY = 0.7;
     private static final double MMR_THRESHOLD = 1500.0;
     private static final double WIN_PROBABILITY_DELTA = 0.05; // 동적 조정 기본 값
@@ -43,24 +46,10 @@ public class RankService {
         double originalMmr = user.getMmr();
         double originalRating = user.getRating();
 
-        // 사용자의 레이팅 & 기대 승률 을 통해 적합한 문제를 가져옴
-        double desiredProblemRating = EloUtil.getProblemRatingForTargetWinProbability(originalMmr, TARGET_WIN_PROBABILITY);
+        TrainingPuzzle puzzle = getNextPuzzle(originalMmr, TARGET_WIN_PROBABILITY);
 
-        TrainingPuzzle puzzle = null;
-        int tolerance = 10;
-
-        while (puzzle == null) {
-            puzzle = trainingPuzzleRepository.findFirstByRatingBetweenOrderByRatingAsc(desiredProblemRating - tolerance, desiredProblemRating + tolerance);
-            tolerance += 10;
-        }
-
-        double mmrPenalty = EloUtil.calculateMMRDecrease(originalRating, puzzle.getRating());
-        double ratingPenalty = EloUtil.calculateRatingDecrease(originalMmr, puzzle.getRating());
-
-        if(originalMmr >= MMR_THRESHOLD) {
-            mmrPenalty *= 1.5;
-            ratingPenalty *= 1.5;
-        }
+        double mmrPenalty = ELOUtil.calculateMMRDecrease(originalRating, puzzle.getRating());
+        double ratingPenalty = ELOUtil.calculateRatingDecrease(originalMmr, puzzle.getRating());
 
         double penaltyMmr = originalMmr + mmrPenalty;
         double penaltyMmrRating = originalRating + ratingPenalty;
@@ -79,7 +68,7 @@ public class RankService {
         sessionData.setTargetWinProbability(TARGET_WIN_PROBABILITY);
         sessionData.setWinnerColor(puzzle.getWinColor().getName());
 
-        redisTemplate.opsForValue().set(redisKey, sessionData, TTL_MINUTES, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(redisKey, sessionData, sessionTtlSeconds, TimeUnit.SECONDS);
 
         return RankStartResponse.builder()
                 .boardStatus(sessionData.getBoardState())
@@ -96,26 +85,16 @@ public class RankService {
             throw new CustomException(ErrorCode.EMPTY_SESSION_DATA);
         }
 
-        Long currentTTL = redisTemplate.getExpire(redisKey, TimeUnit.MINUTES);
+        Long currentTTL = redisTemplate.getExpire(redisKey, TimeUnit.SECONDS);
         if (currentTTL == null || currentTTL <= 0) {
             throw new CustomException(ErrorCode.INVALID_SESSION_TTL);
         }
-        log.info("남은 TTL: {}분", redisTemplate.getExpire(redisKey, TimeUnit.MINUTES));
+        log.info("남은 TTL: {}초", redisTemplate.getExpire(redisKey, TimeUnit.SECONDS));
 
         double userBeforeMmr = session.getMmrBeforePenalty();
         double userBeforeRating = session.getRatingBeforePenalty();
         double lastProblemRating = session.getLastProblemRating();
         double WinProbability = session.getTargetWinProbability();
-
-        double rewardMultiplier;
-        double penaltyMultiplier;
-        if (userBeforeMmr >= MMR_THRESHOLD) {
-            rewardMultiplier = 0.5;
-            penaltyMultiplier = 1.5;
-        } else {
-            rewardMultiplier = 1.5;
-            penaltyMultiplier = 0.5;
-        }
         /*
         이전 문제를 풀었다면
         다음 문제 기대 승률 조정
@@ -123,10 +102,9 @@ public class RankService {
          */
         if (request.isSolved()) {
             WinProbability += WIN_PROBABILITY_DELTA;
-            double mmrIncrease = EloUtil.calculateMMRIncrease(userBeforeMmr, lastProblemRating);
-            double ratingIncrease = EloUtil.calculateRatingIncrease(userBeforeRating, lastProblemRating);
-            mmrIncrease = Math.round(mmrIncrease * rewardMultiplier);
-            ratingIncrease = Math.round(ratingIncrease * rewardMultiplier);
+
+            double mmrIncrease = ELOUtil.calculateMMRIncrease(userBeforeMmr, lastProblemRating);
+            double ratingIncrease = ELOUtil.calculateRatingIncrease(userBeforeRating, lastProblemRating);
 
             user.updateMmrTo(userBeforeMmr + mmrIncrease);
             user.updateRatingTo(userBeforeRating + ratingIncrease);
@@ -135,11 +113,8 @@ public class RankService {
             userBeforeRating = userBeforeRating + ratingIncrease;
         } else {
             WinProbability -= WIN_PROBABILITY_DELTA;
-            double mmrDecrease = EloUtil.calculateMMRDecrease(userBeforeMmr, lastProblemRating);
-            double ratingDecrease = EloUtil.calculateRatingDecrease(userBeforeRating, lastProblemRating);
-
-            mmrDecrease = Math.round(mmrDecrease * penaltyMultiplier);
-            ratingDecrease = Math.round(ratingDecrease * penaltyMultiplier);
+            double mmrDecrease = ELOUtil.calculateMMRDecrease(userBeforeMmr, lastProblemRating);
+            double ratingDecrease = ELOUtil.calculateRatingDecrease(userBeforeRating, lastProblemRating);
 
             user.updateMmrTo(userBeforeMmr + mmrDecrease);
             user.updateRatingTo(userBeforeRating + ratingDecrease);
@@ -149,18 +124,10 @@ public class RankService {
         }
 
         // 사용자의 레이팅 & 기대 승률 을 통해 적합한 문제를 가져옴
-        double desiredProblemRating = EloUtil.getProblemRatingForTargetWinProbability(userBeforeMmr, WinProbability);
+        TrainingPuzzle puzzle = getNextPuzzle(userBeforeMmr, WinProbability);
 
-        TrainingPuzzle puzzle = null;
-        int tolerance = 10;
-
-        while (puzzle == null) {
-            puzzle = trainingPuzzleRepository.findFirstByRatingBetweenOrderByRatingAsc(desiredProblemRating - tolerance, desiredProblemRating + tolerance);
-            tolerance += 10;
-        }
-
-        double ratingPenalty = EloUtil.calculateRatingDecrease(userBeforeRating, puzzle.getRating());
-        double mmrPenalty = EloUtil.calculateMMRDecrease(userBeforeMmr, puzzle.getRating());
+        double ratingPenalty = ELOUtil.calculateRatingDecrease(userBeforeRating, puzzle.getRating());
+        double mmrPenalty = ELOUtil.calculateMMRDecrease(userBeforeMmr, puzzle.getRating());
 
         if(userBeforeMmr >= MMR_THRESHOLD) {
             mmrPenalty *= 1.5;
@@ -190,7 +157,7 @@ public class RankService {
         session.setRatingBeforePenalty(userBeforeRating);
         session.setTargetWinProbability(WinProbability);
 
-        redisTemplate.opsForValue().set(redisKey, session, currentTTL, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(redisKey, session, currentTTL, TimeUnit.SECONDS);
 
         return RankResultResponse.builder()
                 .boardStatus(puzzle.getBoardStatus())
@@ -207,5 +174,19 @@ public class RankService {
         return RankEndResponse.builder()
                 .rating(user.getRating())
                 .build();
+    }
+
+    private TrainingPuzzle getNextPuzzle(double originalMmr, double targetWinProbability) {
+        // 사용자의 레이팅 & 기대 승률 을 통해 적합한 문제를 가져옴
+        double desiredProblemRating = ELOUtil.getProblemRatingForTargetWinProbability(originalMmr, targetWinProbability);
+
+        TrainingPuzzle puzzle = null;
+        int tolerance = 10;
+
+        while (puzzle == null) {
+            puzzle = trainingPuzzleRepository.findFirstByRatingBetweenOrderByRatingAsc(desiredProblemRating - tolerance, desiredProblemRating + tolerance);
+            tolerance += 10;
+        }
+        return puzzle;
     }
 }
