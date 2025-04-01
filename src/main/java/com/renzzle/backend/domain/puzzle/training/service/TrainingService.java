@@ -85,9 +85,7 @@ public class TrainingService {
                 = solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId);
 
         // solve puzzle again
-        if(existInfo.isPresent()) {
-            throw new CustomException(ErrorCode.ALREADY_SOLVED_PUZZLE);
-        }
+        existInfo.ifPresent(SolvedTrainingPuzzle::updateSolvedAtToNow);
 
         TrainingPuzzle trainingPuzzle = trainingPuzzleRepository.findById(puzzleId).orElseThrow(
                 () -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE)

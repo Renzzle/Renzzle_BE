@@ -53,7 +53,7 @@ spring:
 
 rank:
   session:
-    ttl: 300 # 초 단위, 운영 기본값
+    ttl: 3600 # 초 단위, 운영 기본값
 
 springdoc:
   packages-to-scan: com.renzzle.backend

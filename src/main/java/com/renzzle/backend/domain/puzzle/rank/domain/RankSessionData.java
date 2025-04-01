@@ -15,4 +15,5 @@ public class RankSessionData {
     private double mmrBeforePenalty;
     private double ratingBeforePenalty;
     private double targetWinProbability;
+    private boolean isStarted = false;
 }

@@ -4,6 +4,8 @@ import com.renzzle.backend.domain.puzzle.rank.api.request.RankResultRequest;
 import com.renzzle.backend.domain.puzzle.rank.api.response.RankEndResponse;
 import com.renzzle.backend.domain.puzzle.rank.api.response.RankResultResponse;
 import com.renzzle.backend.domain.puzzle.rank.api.response.RankStartResponse;
+import com.renzzle.backend.domain.puzzle.rank.dao.LatestRankPuzzleRepository;
+import com.renzzle.backend.domain.puzzle.rank.domain.LatestRankPuzzle;
 import com.renzzle.backend.domain.puzzle.rank.domain.RankSessionData;
 import com.renzzle.backend.domain.puzzle.training.dao.TrainingPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
@@ -19,7 +21,11 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
+
+import static com.renzzle.backend.global.util.ELOUtil.TARGET_WIN_PROBABILITY;
+import static com.renzzle.backend.global.util.ELOUtil.WIN_PROBABILITY_DELTA;
 
 @Service
 @RequiredArgsConstructor
@@ -29,24 +35,30 @@ public class RankService {
     private final RedisTemplate<String, RankSessionData> redisTemplate;
     private final TrainingPuzzleRepository trainingPuzzleRepository;
     private final UserRepository userRepository;
+    private final LatestRankPuzzleRepository latestRankPuzzleRepository;
 
     @Value("${rank.session.ttl}")
-    private long sessionTtlSeconds;
-
-    private static final double TARGET_WIN_PROBABILITY = 0.7;
-    private static final double MMR_THRESHOLD = 1500.0;
-    private static final double WIN_PROBABILITY_DELTA = 0.05; // 동적 조정 기본 값
+    private long sessionTTLSeconds;
 
     public RankStartResponse startRankGame(UserEntity user) {
         Long userId = user.getId();
         String redisKey = String.valueOf(userId);
 
-        //TODO: 사용자의 레에팅에 알맞는 문제를 찾는다. 사용자 레이팅에서 어느 정도의 승률의 문제를 선정해야할지 고민
-
         double originalMmr = user.getMmr();
         double originalRating = user.getRating();
 
         TrainingPuzzle puzzle = getNextPuzzle(originalMmr, TARGET_WIN_PROBABILITY);
+
+        LatestRankPuzzle latestPuzzle = LatestRankPuzzle.builder()
+                .user(user)
+                .boardStatus(puzzle.getBoardStatus())
+                .answer(puzzle.getAnswer())
+                .isSolved(false)
+                .assignedAt(Instant.now())
+                .winColor(puzzle.getWinColor())
+                .build();
+
+        latestRankPuzzleRepository.save(latestPuzzle);
 
         double mmrPenalty = ELOUtil.calculateMMRDecrease(originalRating, puzzle.getRating());
         double ratingPenalty = ELOUtil.calculateRatingDecrease(originalMmr, puzzle.getRating());
@@ -57,15 +69,16 @@ public class RankService {
 
         RankSessionData sessionData = new RankSessionData();
 
-        sessionData.setUserId(userId);  // sessionId == userId
+        sessionData.setUserId(userId);
         sessionData.setBoardState(puzzle.getBoardStatus());
         sessionData.setLastProblemRating(puzzle.getRating());
         sessionData.setMmrBeforePenalty(originalMmr);
         sessionData.setRatingBeforePenalty(originalRating);
         sessionData.setTargetWinProbability(TARGET_WIN_PROBABILITY);
         sessionData.setWinnerColor(puzzle.getWinColor().getName());
+        sessionData.setStarted(true);
 
-        redisTemplate.opsForValue().set(redisKey, sessionData, sessionTtlSeconds, TimeUnit.SECONDS);
+        redisTemplate.opsForValue().set(redisKey, sessionData, sessionTTLSeconds, TimeUnit.SECONDS);
 
         return RankStartResponse.builder()
                 .boardStatus(sessionData.getBoardState())
@@ -75,6 +88,7 @@ public class RankService {
 
     @Transactional
     public RankResultResponse resultRankGame(UserEntity user, RankResultRequest request) {
+
         String redisKey = String.valueOf( user.getId());
         RankSessionData session = redisTemplate.opsForValue().get(redisKey);
 
@@ -82,11 +96,22 @@ public class RankService {
             throw new CustomException(ErrorCode.EMPTY_SESSION_DATA);
         }
 
+        if(!session.isStarted()){
+            throw new CustomException(ErrorCode.EMPTY_SESSION_DATA);
+        }
+
         Long currentTTL = redisTemplate.getExpire(redisKey, TimeUnit.SECONDS);
         if (currentTTL == null || currentTTL <= 0) {
             throw new CustomException(ErrorCode.INVALID_SESSION_TTL);
         }
-        log.info("남은 TTL: {}초", redisTemplate.getExpire(redisKey, TimeUnit.SECONDS));
+//        log.info("남은 TTL: {}초", redisTemplate.getExpire(redisKey, TimeUnit.SECONDS));
+
+        // 이전 문제 조회 및 풀이 여부 업데이트
+        LatestRankPuzzle previousPuzzle = latestRankPuzzleRepository
+                .findTopByUserOrderByAssignedAtDesc(user)
+                .orElseThrow(() -> new CustomException(ErrorCode.PUZZLE_NOT_FOUND));
+
+        previousPuzzle.solvedUpdate(request.isSolved());
 
         double userBeforeMmr = session.getMmrBeforePenalty();
         double userBeforeRating = session.getRatingBeforePenalty();
@@ -126,27 +151,22 @@ public class RankService {
         double ratingPenalty = ELOUtil.calculateRatingDecrease(userBeforeRating, puzzle.getRating());
         double mmrPenalty = ELOUtil.calculateMMRDecrease(userBeforeMmr, puzzle.getRating());
 
-        if(userBeforeMmr >= MMR_THRESHOLD) {
-            mmrPenalty *= 1.5;
-            ratingPenalty *= 1.5;
-        }
-
-        double penaltyMmr = userBeforeMmr + mmrPenalty;
-        double penaltyRating = userBeforeRating + ratingPenalty;
-
-        user.updateMmrTo(penaltyMmr);
-        user.updateRatingTo(penaltyRating);
+        user.updateMmrTo(userBeforeMmr + mmrPenalty);
+        user.updateRatingTo(userBeforeRating + ratingPenalty);
 
         userRepository.save(user);
 
-        // TODO: 이전 문제 저장. 이 때 문제의 풀이 여부도 저장한다.
-        /*
-        사용자가 랭킹전에서 마주한 문제는 어디에 저장해둬야하는거지?
-         */
-//        trainingPuzzleRepository.saveProblemResult(session);
+        LatestRankPuzzle nextPuzzle = LatestRankPuzzle.builder()
+                .user(user)
+                .boardStatus(puzzle.getBoardStatus())
+                .answer(puzzle.getAnswer())
+                .isSolved(false)
+                .assignedAt(Instant.now())
+                .winColor(puzzle.getWinColor())
+                .build();
 
+        latestRankPuzzleRepository.save(nextPuzzle);
 
-        // 세션 갱신: 새 문제 정보 반영 (boardState와 winnerColor는 예시)
         session.setBoardState(puzzle.getBoardStatus());
         session.setLastProblemRating(puzzle.getRating());
         session.setWinnerColor(puzzle.getWinColor().getName());
@@ -165,9 +185,16 @@ public class RankService {
     public RankEndResponse endRankGame(UserEntity user) {
         String redisKey = String.valueOf( user.getId());
         RankSessionData session = redisTemplate.opsForValue().get(redisKey);
-        if (session != null) {
-            redisTemplate.delete(redisKey);
+
+        if (session == null) {
+            throw new CustomException(ErrorCode.EMPTY_SESSION_DATA);
         }
+        if (!session.isStarted()) {
+            throw new CustomException(ErrorCode.IS_NOT_STARTED);
+        }
+
+        redisTemplate.delete(redisKey);
+
         return RankEndResponse.builder()
                 .rating(user.getRating())
                 .build();

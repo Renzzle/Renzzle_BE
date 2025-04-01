@@ -7,6 +7,8 @@ public class ELOUtil {
     private static final double MMR_THRESHOLD = 1500.0;
     private static final double HIGH_REWARD = 0.5;
     private static final double LOW_REWARD = 1.5;
+    public static final double TARGET_WIN_PROBABILITY = 0.7;
+    public static final double WIN_PROBABILITY_DELTA = 0.05;
 
     private static double getRewardMultiplier(double userMmr) {
         return userMmr >= MMR_THRESHOLD ? HIGH_REWARD : LOW_REWARD;
