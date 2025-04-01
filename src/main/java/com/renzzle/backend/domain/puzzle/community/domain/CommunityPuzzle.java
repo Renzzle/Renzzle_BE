@@ -1,6 +1,5 @@
 package com.renzzle.backend.domain.puzzle.community.domain;
 
-import com.renzzle.backend.domain.puzzle.shared.domain.Difficulty;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.domain.Status;
@@ -11,7 +10,6 @@ import lombok.*;
 import org.hibernate.annotations.*;
 
 import java.time.Instant;
-import java.util.Objects;
 
 import static com.renzzle.backend.global.common.constant.TimeConstant.CONST_FUTURE_INSTANT;
 import static com.renzzle.backend.global.common.domain.Status.STATUS_IS_NOT_DELETED;
@@ -47,11 +45,14 @@ public class CommunityPuzzle {
     @Column(name = "answer", nullable = false, length = 1023)
     private String answer;
 
-    @Column(name = "depth")
-    private int depth;
+    @Column(name = "depth", nullable = false)
+    private Integer depth;
 
-    @Column(name = "rating")
-    private double rating;
+    @Column(name = "isVerified", nullable = false)
+    private Boolean isVerified;
+
+    @Column(name = "rating", nullable = false)
+    private Double rating;
 
     @Builder.Default
     @Column(name = "like_count")

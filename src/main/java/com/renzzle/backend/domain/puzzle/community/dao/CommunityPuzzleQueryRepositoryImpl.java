@@ -104,7 +104,8 @@ public class CommunityPuzzleQueryRepositoryImpl implements CommunityPuzzleQueryR
                 .from(userCommunityPuzzle)
                 .where(
                         userCommunityPuzzle.user.id.eq(userId),
-                        userCommunityPuzzle.puzzle.id.eq(communityPuzzle.id)
+                        userCommunityPuzzle.puzzle.id.eq(communityPuzzle.id),
+                        userCommunityPuzzle.isSolved.eq(true)
                 );
 
         return solved
