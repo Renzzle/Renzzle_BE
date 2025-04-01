@@ -4,18 +4,24 @@ import com.renzzle.backend.domain.puzzle.community.api.request.AddCommunityPuzzl
 import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.community.api.response.AddPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleResponse;
+import com.renzzle.backend.domain.puzzle.community.api.response.GetSingleCommunityPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.domain.*;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.domain.puzzle.shared.util.BoardUtils;
+import com.renzzle.backend.global.common.domain.Status;
+import com.renzzle.backend.global.exception.CustomException;
+import com.renzzle.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.renzzle.backend.global.common.constant.StringConstant.DELETED_USER;
 
 @Service
 @RequiredArgsConstructor
@@ -50,13 +56,9 @@ public class CommunityService {
     public List<GetCommunityPuzzleResponse> getCommunityPuzzleList(GetCommunityPuzzleRequest request, UserEntity user) {
         List<CommunityPuzzle> puzzleList = communityPuzzleRepository.searchCommunityPuzzles(request, user.getId());
 
-        return buildGetCommunityPuzzleResponse(puzzleList, user);
-    }
-
-    private List<GetCommunityPuzzleResponse> buildGetCommunityPuzzleResponse(List<CommunityPuzzle> puzzleList, UserEntity user) {
         List<GetCommunityPuzzleResponse> response = new ArrayList<>();
         for(CommunityPuzzle puzzle : puzzleList) {
-            boolean isSolved = communityPuzzleRepository.checkIsSolvedPuzzle(puzzle.getId(), user.getId());
+            boolean isSolved = userCommunityPuzzleRepository.checkIsSolvedPuzzle(puzzle.getId(), user.getId());
 
             response.add(
                     GetCommunityPuzzleResponse.builder()
@@ -75,6 +77,31 @@ public class CommunityService {
         }
 
         return response;
+    }
+
+    @Transactional(readOnly = true)
+    public GetSingleCommunityPuzzleResponse getCommunityPuzzleById(Long puzzleId, UserEntity user) {
+        CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
+
+        boolean isSolved = userCommunityPuzzleRepository.checkIsSolvedPuzzle(puzzle.getId(), user.getId());
+        boolean myLike = userCommunityPuzzleRepository.getMyLike(user.getId(), puzzleId).orElse(false);
+        boolean myDislike = userCommunityPuzzleRepository.getMyDislike(user.getId(), puzzleId).orElse(false);;
+
+        return GetSingleCommunityPuzzleResponse.builder()
+                .id(puzzle.getId())
+                .boardStatus(puzzle.getBoardStatus())
+                .authorId(puzzle.getUser().getId())
+                .authorName(puzzle.getUser().getNickname())
+                .depth(puzzle.getDepth())
+                .winColor(puzzle.getWinColor().getName())
+                .likeCount(puzzle.getLikeCount())
+                .createdAt(puzzle.getCreatedAt().toString())
+                .isSolved(isSolved)
+                .isVerified(puzzle.getIsVerified())
+                .myLike(myLike)
+                .myDislike(myDislike)
+                .build();
     }
 
 //    @Transactional(readOnly = true)

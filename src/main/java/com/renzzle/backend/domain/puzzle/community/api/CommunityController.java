@@ -4,6 +4,7 @@ import com.renzzle.backend.domain.puzzle.community.api.request.AddCommunityPuzzl
 import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.community.api.response.AddPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleResponse;
+import com.renzzle.backend.domain.puzzle.community.api.response.GetSingleCommunityPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.community.service.CommunityService;
 import com.renzzle.backend.global.common.response.ApiResponse;
 import com.renzzle.backend.global.security.UserDetailsImpl;
@@ -35,11 +36,20 @@ public class CommunityController {
 
     @Operation(summary = "Get community puzzle data", description = "Return community puzzle list")
     @GetMapping("/puzzle")
-    public ApiResponse<List<GetCommunityPuzzleResponse>> getCommunityPuzzle(
+    public ApiResponse<List<GetCommunityPuzzleResponse>> getCommunityPuzzles(
             @ModelAttribute GetCommunityPuzzleRequest request,
             @AuthenticationPrincipal UserDetailsImpl user
     ) {
         return ApiUtils.success(communityService.getCommunityPuzzleList(request, user.getUser()));
+    }
+
+    @Operation(summary = "Get a single community puzzle data", description = "Return a specific community puzzle by ID")
+    @GetMapping("/puzzle/{puzzleId}")
+    public ApiResponse<GetSingleCommunityPuzzleResponse> getCommunityPuzzleById(
+            @PathVariable Long puzzleId,
+            @AuthenticationPrincipal UserDetailsImpl user
+    ) {
+        return ApiUtils.success(communityService.getCommunityPuzzleById(puzzleId, user.getUser()));
     }
 
 //    @Operation(summary = "Solve community puzzle", description = "Solve count increase & Apply correct rate")

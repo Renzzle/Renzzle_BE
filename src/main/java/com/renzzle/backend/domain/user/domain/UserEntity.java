@@ -12,6 +12,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 import java.time.Instant;
+
+import static com.renzzle.backend.global.common.constant.StringConstant.DELETED_USER;
 import static com.renzzle.backend.global.common.constant.TimeConstant.CONST_FUTURE_INSTANT;
 import static com.renzzle.backend.global.common.domain.Status.STATUS_IS_NOT_DELETED;
 
@@ -90,16 +92,21 @@ public class UserEntity {
         }
     }
 
+    public void softDelete() {
+        this.status = Status.getStatus(Status.StatusName.DELETED);
+        this.deletedAt = Instant.now();
+    }
+
+    public String getNickname() {
+        return status.equals(Status.getStatus(Status.StatusName.DELETED))
+                ? DELETED_USER : nickname;
+    }
+
     public void purchase(int price){
         if(this.currency < price)
             throw new CustomException(ErrorCode.INSUFFICIENT_CURRENCY);
 
         this.currency -= price;
-    }
-
-    public void softDelete() {
-        this.status = Status.getStatus(Status.StatusName.DELETED);
-        this.deletedAt = Instant.now();
     }
 
     public void changeNickname(String nickname) {
