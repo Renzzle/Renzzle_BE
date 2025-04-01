@@ -3,6 +3,7 @@ package com.renzzle.backend.domain.puzzle.community.api.response;
 import lombok.Builder;
 
 @Builder
-public record AddPuzzleResponse(
-        long puzzleId
+public record GetCommunityPuzzleAnswerResponse(
+        String answer,
+        int currency
 ) { }

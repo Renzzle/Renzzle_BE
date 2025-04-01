@@ -7,10 +7,11 @@ import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.*;
-import org.apache.catalina.User;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.Clock;
 import java.time.Instant;
 
 import static com.renzzle.backend.global.common.constant.StringConstant.DELETED_USER;
@@ -92,9 +93,9 @@ public class UserEntity {
         }
     }
 
-    public void softDelete() {
+    public void softDelete(Clock clock) {
         this.status = Status.getStatus(Status.StatusName.DELETED);
-        this.deletedAt = Instant.now();
+        this.deletedAt = clock.instant();
     }
 
     public String getNickname() {

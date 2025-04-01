@@ -1,11 +1,12 @@
 package com.renzzle.backend.domain.puzzle.community.domain;
 
 import com.renzzle.backend.domain.user.domain.UserEntity;
-import com.renzzle.backend.global.common.domain.Status;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+
+import java.time.Clock;
 import java.time.Instant;
 
 import static com.renzzle.backend.global.common.constant.TimeConstant.CONST_FUTURE_INSTANT;
@@ -57,6 +58,11 @@ public class UserCommunityPuzzle {
         if(solvedAt == null) {
             this.solvedAt = CONST_FUTURE_INSTANT;
         }
+    }
+
+    public void solvePuzzle(Clock clock) {
+        isSolved = true;
+        solvedAt = clock.instant();
     }
 
 }

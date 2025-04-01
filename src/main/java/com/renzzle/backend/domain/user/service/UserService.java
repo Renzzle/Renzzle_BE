@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.util.*;
 
 @Service
@@ -20,6 +21,7 @@ import java.util.*;
 @Slf4j
 public class UserService {
 
+    private final Clock clock;
     private final UserRepository userRepository;
     private final CommunityPuzzleRepository communityPuzzleRepository;
     private final UserCommunityPuzzleRepository userCommunityPuzzleRepository;
@@ -36,7 +38,9 @@ public class UserService {
     @Transactional
     public Long deleteUser(UserEntity user) {
         Optional<UserEntity> persistedUser = userRepository.findById(user.getId());
-        persistedUser.ifPresent(UserEntity::softDelete);
+        persistedUser.ifPresent(u -> {
+            u.softDelete(clock);
+        });
         return user.getId();
     }
 

@@ -10,6 +10,8 @@ import java.util.Optional;
 
 public interface UserCommunityPuzzleRepository extends JpaRepository<UserCommunityPuzzle, Long> {
 
+    Optional<UserCommunityPuzzle> findByUser_IdAndPuzzle_Id(Long userId, Long puzzleId);
+
     @Query("SELECT CASE WHEN EXISTS (" +
             "    SELECT 1 FROM UserCommunityPuzzle ucp " +
             "    WHERE ucp.user.id = :userId " +
@@ -29,25 +31,5 @@ public interface UserCommunityPuzzleRepository extends JpaRepository<UserCommuni
             "WHERE ucp.user.id = :userId " +
             "AND ucp.puzzle.id = :puzzleId")
     Optional<Boolean> getMyDislike(@Param("userId") Long userId, @Param("puzzleId") Long puzzleId);
-
-    @Query("SELECT u FROM UserCommunityPuzzle u WHERE u.user.id = :userId AND u.puzzle.id = :puzzleId")
-    Optional<UserCommunityPuzzle> findUserPuzzleInfo(@Param("userId") Long userId, @Param("puzzleId") Long puzzleId);
-
-    @Query("SELECT u.puzzle.id FROM UserCommunityPuzzle u WHERE u.user.id = :userId")
-    List<Long> findCommunityIdsByUserId(@Param("userId") Long userId);
-
-//    @Query(value =
-//            "SELECT cp FROM UserCommunityPuzzle ucp " +
-//                    "JOIN ucp.puzzle cp " +
-//                    "WHERE ucp.user.id = :userId AND " +
-//                    "(cp.createdAt < :lastCreatedAt OR (cp.createdAt = :lastCreatedAt AND cp.id > :lastId)) " +
-//                    "ORDER BY cp.createdAt DESC, cp.id ASC" +
-//                    "LIMIT :size"
-//                    , nativeQuery = true)
-//    List<CommunityPuzzle> findUserPuzzlesSortByCreatedAt(
-//            @Param("lastCreatedAt") Instant lastCreatedAt,
-//            @Param("lastId") long lastId,
-//            @Param("size") int size,
-//            @Param("userId") Long userId);
 
 }

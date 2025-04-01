@@ -2,7 +2,8 @@ package com.renzzle.backend.domain.puzzle.community.api;
 
 import com.renzzle.backend.domain.puzzle.community.api.request.AddCommunityPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzleRequest;
-import com.renzzle.backend.domain.puzzle.community.api.response.AddPuzzleResponse;
+import com.renzzle.backend.domain.puzzle.community.api.response.AddCommunityPuzzleResponse;
+import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleAnswerResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetSingleCommunityPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.community.service.CommunityService;
@@ -27,7 +28,7 @@ public class CommunityController {
 
     @Operation(summary = "Register new community puzzle", description = "Add new community puzzle")
     @PostMapping("/puzzle")
-    public ApiResponse<AddPuzzleResponse> addCommunityPuzzle(
+    public ApiResponse<AddCommunityPuzzleResponse> addCommunityPuzzle(
             @Valid @RequestBody AddCommunityPuzzleRequest request,
             @AuthenticationPrincipal UserDetailsImpl user
     ) {
@@ -52,32 +53,23 @@ public class CommunityController {
         return ApiUtils.success(communityService.getCommunityPuzzleById(puzzleId, user.getUser()));
     }
 
-//    @Operation(summary = "Solve community puzzle", description = "Solve count increase & Apply correct rate")
-//    @PostMapping("/solve")
-//    public ApiResponse<Integer> solveCommunityPuzzle(
-//            @Valid @RequestBody CommunityPuzzleResultUpdateRequest request,
-//            @AuthenticationPrincipal UserDetailsImpl user
-//    ) {
-//        int successCnt = communityService.solveCommunityPuzzle(request.puzzleId(), user.getUser());
-//
-//        return ApiUtils.success(successCnt);
-//    }
-//
-//    @Operation(summary = "Fail community puzzle", description = "Fail count increase & Apply correct rate")
-//    @PostMapping("/fail")
-//    public ApiResponse<Integer> failCommunityPuzzle(
-//            @Valid @RequestBody CommunityPuzzleResultUpdateRequest request,
-//            @AuthenticationPrincipal UserDetailsImpl user
-//    ) {
-//        int failCnt = communityService.failCommunityPuzzle(request.puzzleId(), user.getUser());
-//
-//        return ApiUtils.success(failCnt);
-//    }
-//
-//    @Operation(summary = "Search community puzzle", description = "Return community puzzle list according to query")
-//    @GetMapping("/search")
-//    public ApiResponse<List<GetCommunityPuzzleResponse>> searchCommunityPuzzle(@RequestParam("query") String query) {
-//        return ApiUtils.success(communityService.searchCommunityPuzzle(query));
-//    }
+    @Operation(summary = "Get community puzzle answer", description = "Return community puzzle answer & remaining currency")
+    @PostMapping("/puzzle/{puzzleId}/answer")
+    public ApiResponse<GetCommunityPuzzleAnswerResponse> getCommunityPuzzleAnswer(
+            @PathVariable Long puzzleId,
+            @AuthenticationPrincipal UserDetailsImpl user
+    ) {
+        return ApiUtils.success(communityService.getCommunityPuzzleAnswer(puzzleId, user.getUser()));
+    }
+
+    @Operation(summary = "Solve community puzzle", description = "Save the information that a user has solved puzzle")
+    @PostMapping("/puzzle/{puzzleId}/solve")
+    public ApiResponse<Void> solveCommunityPuzzle(
+            @PathVariable Long puzzleId,
+            @AuthenticationPrincipal UserDetailsImpl user
+    ) {
+        communityService.solveCommunityPuzzle(puzzleId, user.getUser());
+        return ApiUtils.success(null);
+    }
 
 }
