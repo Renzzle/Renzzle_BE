@@ -4,6 +4,5 @@ import lombok.Builder;
 
 @Builder
 public record AddPuzzleResponse(
-        long id,
-        String title
+        long puzzleId
 ) { }

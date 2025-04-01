@@ -1,17 +1,11 @@
 package com.renzzle.backend.domain.user.service;
 
-import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
-import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
-import com.renzzle.backend.domain.puzzle.community.domain.Tag;
-import com.renzzle.backend.domain.puzzle.community.domain.UserCommunityPuzzle;
 import com.renzzle.backend.domain.user.api.response.ChangeNicknameResponse;
-import com.renzzle.backend.domain.user.api.response.LikeResponse;
 import com.renzzle.backend.domain.user.api.response.UserResponse;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
-import com.renzzle.backend.global.common.domain.Status;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
@@ -19,11 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.*;
-
-import static com.renzzle.backend.global.common.constant.StringConstant.DELETED_USER;
-import static com.renzzle.backend.global.common.constant.TimeConstant.CONST_FUTURE_INSTANT;
 
 @Service
 @RequiredArgsConstructor
