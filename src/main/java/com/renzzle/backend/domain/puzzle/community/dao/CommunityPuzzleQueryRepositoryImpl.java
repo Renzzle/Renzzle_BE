@@ -24,7 +24,6 @@ import static com.renzzle.backend.domain.user.domain.QUserEntity.userEntity;
 @RequiredArgsConstructor
 public class CommunityPuzzleQueryRepositoryImpl implements CommunityPuzzleQueryRepository {
 
-    @Autowired
     private JPAQueryFactory queryFactory;
     QCommunityPuzzle p2 = new QCommunityPuzzle("p2");
 
