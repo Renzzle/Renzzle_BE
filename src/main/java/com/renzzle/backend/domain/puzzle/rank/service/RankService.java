@@ -51,11 +51,8 @@ public class RankService {
         double mmrPenalty = ELOUtil.calculateMMRDecrease(originalRating, puzzle.getRating());
         double ratingPenalty = ELOUtil.calculateRatingDecrease(originalMmr, puzzle.getRating());
 
-        double penaltyMmr = originalMmr + mmrPenalty;
-        double penaltyMmrRating = originalRating + ratingPenalty;
-
-        user.updateMmrTo(penaltyMmr);
-        user.updateRatingTo(penaltyMmrRating);
+        user.updateMmrTo(originalMmr + mmrPenalty);
+        user.updateRatingTo(originalRating + ratingPenalty);
         userRepository.save(user);
 
         RankSessionData sessionData = new RankSessionData();
