@@ -56,4 +56,23 @@ public class UserCommunityPuzzle {
     @Column(name = "liked_at")
     private Instant likedAt;
 
+    public boolean toggleLike(Instant likedAt) {
+        like = !like;
+        if (like) {
+            dislike = false;
+            this.likedAt = likedAt;
+        } else {
+            this.likedAt = null;
+        }
+        return like;
+    }
+
+    public boolean toggleDislike() {
+        dislike = !dislike;
+        if (dislike) {
+            like = false;
+        }
+        return dislike;
+    }
+
 }

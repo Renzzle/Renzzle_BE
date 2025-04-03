@@ -6,12 +6,16 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.security.core.parameters.P;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
 public interface UserCommunityPuzzleRepository extends JpaRepository<UserCommunityPuzzle, Long> {
+
+    @Query("SELECT ucp FROM UserCommunityPuzzle ucp WHERE ucp.user.id = :userId AND ucp.puzzle.id = :puzzleId")
+    Optional<UserCommunityPuzzle> findByUserIdAndPuzzleId(@Param("userId") Long userId, @Param("puzzleId") Long puzzleId);
 
     @Query("SELECT CASE WHEN EXISTS (" +
             "    SELECT 1 FROM UserCommunityPuzzle ucp " +

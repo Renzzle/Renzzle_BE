@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.swing.text.html.Option;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
@@ -147,6 +148,49 @@ public class CommunityService {
                         .solvedAt(clock.instant())
                         .build()
         );
+    }
+
+    @Transactional
+    public boolean toggleLike(Long puzzleId, UserEntity user) {
+        CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
+
+        Optional<UserCommunityPuzzle> ucp = userCommunityPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId);
+        if (ucp.isPresent()) {
+            return ucp.get().toggleLike(clock.instant());
+        }
+
+        userCommunityPuzzleRepository.save(
+                UserCommunityPuzzle.builder()
+                        .user(user)
+                        .puzzle(puzzle)
+                        .like(true)
+                        .likedAt(clock.instant())
+                        .build()
+        );
+
+        return true;
+    }
+
+    @Transactional
+    public boolean toggleDislike(Long puzzleId, UserEntity user) {
+        CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
+
+        Optional<UserCommunityPuzzle> ucp = userCommunityPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId);
+        if (ucp.isPresent()) {
+            return ucp.get().toggleDislike();
+        }
+
+        userCommunityPuzzleRepository.save(
+                UserCommunityPuzzle.builder()
+                        .user(user)
+                        .puzzle(puzzle)
+                        .dislike(true)
+                        .build()
+        );
+
+        return true;
     }
 
 }

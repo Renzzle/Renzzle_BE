@@ -72,4 +72,22 @@ public class CommunityController {
         return ApiUtils.success(null);
     }
 
+    @Operation(summary = "Like community puzzle", description = "Registers a like to the puzzle by the user")
+    @PostMapping("/puzzle/{puzzleId}/like")
+    public ApiResponse<Boolean> likePuzzle(
+            @PathVariable Long puzzleId,
+            @AuthenticationPrincipal UserDetailsImpl user
+    ) {
+        return ApiUtils.success(communityService.toggleLike(puzzleId, user.getUser()));
+    }
+
+    @Operation(summary = "Dislike community puzzle", description = "Registers a dislike to the puzzle by the user")
+    @PostMapping("/puzzle/{puzzleId}/dislike")
+    public ApiResponse<Boolean> dislikePuzzle(
+            @PathVariable Long puzzleId,
+            @AuthenticationPrincipal UserDetailsImpl user
+    ) {
+        return ApiUtils.success(communityService.toggleDislike(puzzleId, user.getUser()));
+    }
+
 }
