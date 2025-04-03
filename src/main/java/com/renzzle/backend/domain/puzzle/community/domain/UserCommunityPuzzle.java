@@ -42,7 +42,7 @@ public class UserCommunityPuzzle {
     @Column(name = "is_solved")
     private boolean isSolved = false;
 
-    @Column(name = "solved_at", nullable = false)
+    @Column(name = "solved_at")
     private Instant solvedAt;
 
     @Builder.Default
@@ -53,16 +53,7 @@ public class UserCommunityPuzzle {
     @Column(name = "dislike")
     private boolean dislike = false;
 
-    @PrePersist
-    public void prePersist() {
-        if(solvedAt == null) {
-            this.solvedAt = CONST_FUTURE_INSTANT;
-        }
-    }
-
-    public void solvePuzzle(Clock clock) {
-        isSolved = true;
-        solvedAt = clock.instant();
-    }
+    @Column(name = "liked_at")
+    private Instant likedAt;
 
 }

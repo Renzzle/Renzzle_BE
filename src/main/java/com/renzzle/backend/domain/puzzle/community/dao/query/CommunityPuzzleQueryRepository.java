@@ -1,4 +1,4 @@
-package com.renzzle.backend.domain.puzzle.community.dao;
+package com.renzzle.backend.domain.puzzle.community.dao.query;
 
 import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;

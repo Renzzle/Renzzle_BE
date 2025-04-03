@@ -4,7 +4,7 @@ import com.renzzle.backend.domain.puzzle.community.api.request.AddCommunityPuzzl
 import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.community.api.response.AddCommunityPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleAnswerResponse;
-import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleResponse;
+import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlesResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetSingleCommunityPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.community.service.CommunityService;
 import com.renzzle.backend.global.common.response.ApiResponse;
@@ -37,7 +37,7 @@ public class CommunityController {
 
     @Operation(summary = "Get community puzzle data", description = "Return community puzzle list")
     @GetMapping("/puzzle")
-    public ApiResponse<List<GetCommunityPuzzleResponse>> getCommunityPuzzles(
+    public ApiResponse<List<GetCommunityPuzzlesResponse>> getCommunityPuzzles(
             @ModelAttribute GetCommunityPuzzleRequest request,
             @AuthenticationPrincipal UserDetailsImpl user
     ) {

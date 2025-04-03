@@ -4,12 +4,14 @@ import com.renzzle.backend.domain.puzzle.community.api.request.AddCommunityPuzzl
 import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.community.api.response.AddCommunityPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleAnswerResponse;
-import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleResponse;
+import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlesResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetSingleCommunityPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
+import com.renzzle.backend.domain.puzzle.community.dao.projection.LikeDislikeProjection;
 import com.renzzle.backend.domain.puzzle.community.domain.*;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
+import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.domain.puzzle.shared.util.BoardUtils;
 import com.renzzle.backend.global.exception.CustomException;
@@ -32,6 +34,7 @@ public class CommunityService {
     private final Clock clock;
     private final CommunityPuzzleRepository communityPuzzleRepository;
     private final UserCommunityPuzzleRepository userCommunityPuzzleRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public AddCommunityPuzzleResponse addCommunityPuzzle(AddCommunityPuzzleRequest request, UserEntity user) {
@@ -56,15 +59,15 @@ public class CommunityService {
     }
 
     @Transactional(readOnly = true)
-    public List<GetCommunityPuzzleResponse> getCommunityPuzzleList(GetCommunityPuzzleRequest request, UserEntity user) {
+    public List<GetCommunityPuzzlesResponse> getCommunityPuzzleList(GetCommunityPuzzleRequest request, UserEntity user) {
         List<CommunityPuzzle> puzzleList = communityPuzzleRepository.searchCommunityPuzzles(request, user.getId());
 
-        List<GetCommunityPuzzleResponse> response = new ArrayList<>();
-        for(CommunityPuzzle puzzle : puzzleList) {
+        List<GetCommunityPuzzlesResponse> response = new ArrayList<>();
+        for (CommunityPuzzle puzzle : puzzleList) {
             boolean isSolved = userCommunityPuzzleRepository.checkIsSolvedPuzzle(puzzle.getId(), user.getId());
 
             response.add(
-                    GetCommunityPuzzleResponse.builder()
+                    GetCommunityPuzzlesResponse.builder()
                             .id(puzzle.getId())
                             .boardStatus(puzzle.getBoardStatus())
                             .authorId(puzzle.getUser().getId())
@@ -88,8 +91,11 @@ public class CommunityService {
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
 
         boolean isSolved = userCommunityPuzzleRepository.checkIsSolvedPuzzle(puzzle.getId(), user.getId());
-        boolean myLike = userCommunityPuzzleRepository.getMyLike(user.getId(), puzzleId).orElse(false);
-        boolean myDislike = userCommunityPuzzleRepository.getMyDislike(user.getId(), puzzleId).orElse(false);;
+
+        Optional<LikeDislikeProjection> result = userCommunityPuzzleRepository
+                .getMyLikeDislike(user.getId(), puzzleId);
+        Boolean myLike = result.map(LikeDislikeProjection::getLike).orElse(false);
+        Boolean myDislike = result.map(LikeDislikeProjection::getDislike).orElse(false);
 
         return GetSingleCommunityPuzzleResponse.builder()
                 .id(puzzle.getId())
@@ -109,10 +115,13 @@ public class CommunityService {
 
     @Transactional
     public GetCommunityPuzzleAnswerResponse getCommunityPuzzleAnswer(Long puzzleId, UserEntity user) {
+        UserEntity persistedUser = userRepository.findById(user.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
+
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
 
-        user.purchase(HINT.getPrice());
+        persistedUser.purchase(HINT.getPrice());
 
         return GetCommunityPuzzleAnswerResponse.builder()
                 .answer(puzzle.getAnswer())
@@ -122,14 +131,13 @@ public class CommunityService {
 
     @Transactional
     public void solveCommunityPuzzle(Long puzzleId, UserEntity user) {
-        Optional<UserCommunityPuzzle> ucp = userCommunityPuzzleRepository.findByUser_IdAndPuzzle_Id(user.getId(), puzzleId);
-        if (ucp.isPresent()) {
-            ucp.get().solvePuzzle(clock);
-            return;
-        }
-
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
+
+        int updatedRows = userCommunityPuzzleRepository.solvePuzzle(user.getId(), puzzleId, clock.instant());
+        if (updatedRows == 1) {
+            return;
+        }
 
         userCommunityPuzzleRepository.save(
                 UserCommunityPuzzle.builder()

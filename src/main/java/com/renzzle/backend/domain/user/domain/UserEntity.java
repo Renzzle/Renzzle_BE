@@ -93,11 +93,6 @@ public class UserEntity {
         }
     }
 
-    public void softDelete(Clock clock) {
-        this.status = Status.getStatus(Status.StatusName.DELETED);
-        this.deletedAt = clock.instant();
-    }
-
     public String getNickname() {
         return status.equals(Status.getStatus(Status.StatusName.DELETED))
                 ? DELETED_USER : nickname;

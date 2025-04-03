@@ -103,14 +103,4 @@ public class CommunityPuzzle {
         }
     }
 
-    public void softDelete() {
-        this.status = Status.getStatus(Status.StatusName.DELETED);
-        this.deletedAt = Instant.now();
-    }
-
-    public void changeLike(boolean isIncrease) {
-        if(isIncrease) this.likeCount++;
-        else this.likeCount--;
-    }
-
 }

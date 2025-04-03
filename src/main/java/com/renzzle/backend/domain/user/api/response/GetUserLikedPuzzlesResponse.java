@@ -1,10 +1,9 @@
-package com.renzzle.backend.domain.puzzle.community.api.response;
+package com.renzzle.backend.domain.user.api.response;
 
 import lombok.Builder;
-import java.util.List;
 
 @Builder
-public record GetCommunityPuzzleResponse(
+public record GetUserLikedPuzzlesResponse(
         long id,
         String boardStatus,
         long authorId,

@@ -1,4 +1,4 @@
-package com.renzzle.backend.domain.puzzle.community.dao;
+package com.renzzle.backend.domain.puzzle.community.dao.query;
 
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
@@ -11,7 +11,6 @@ import com.renzzle.backend.domain.puzzle.community.domain.QCommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.global.common.constant.SortOption;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
