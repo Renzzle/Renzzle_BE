@@ -36,7 +36,7 @@ public enum ErrorCode {
     ILLEGAL_TOKEN(HttpStatus.UNAUTHORIZED, "J4013", "토큰이 없거나 잘못된 형식의 토큰입니다."),
     CANNOT_PARSE_TOKEN(HttpStatus.UNAUTHORIZED, "J4014", "토큰 파싱에 실패하였습니다."),
 
-    //User
+    // User
     CANNOT_LOAD_USER_INFO(HttpStatus.NOT_FOUND, "U4040", "사용자 정보를 불러올 수 없습니다."),
     LEVEL_NOT_FOUND(HttpStatus.NOT_FOUND, "U4041", "해당 레벨을 찾을 수 없습니다."),
     CANNOT_FIND_PUZZLE(HttpStatus.NOT_FOUND, "U4042", "해당하는 사용자 퍼즐을 찾을 수 없습니다."),
@@ -52,6 +52,7 @@ public enum ErrorCode {
     NO_SUCH_TRAINING_PACKS(HttpStatus.NOT_FOUND, "P4043", "해당하는 난이도의 팩 정보를 찾을 수 없습니다."),
     ALREADY_SOLVED_PUZZLE(HttpStatus.BAD_REQUEST, "P4000", "이미 풀이를 완료한 퍼즐입니다."),
     ALREADY_EXISTING_TRANSLATION(HttpStatus.BAD_REQUEST, "P4001", "이미 해당 언어의 번역본이 존재합니다."),
+    COMMUNITY_PUZZLE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "P403", "해당하는 커뮤니티 퍼즐에 대한 권한이 없습니다."),
 
     //Rank
     SESSION_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "R5001", "세션 ID 생성에 실패하였습니다.")

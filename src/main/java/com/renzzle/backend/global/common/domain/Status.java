@@ -7,6 +7,8 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
+import java.util.Objects;
+
 @Entity
 @Table(name = "status")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -34,6 +36,17 @@ public class Status {
         Status status = new Status();
         status.name = statusName.name();
         return status;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Status) {
+            return Objects.equals(this.name, ((Status) obj).name);
+        } else if (obj instanceof StatusName) {
+            return Objects.equals(this.name, ((StatusName) obj).name());
+        } else {
+            return false;
+        }
     }
 
 }

@@ -5,7 +5,11 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+
+import java.time.Clock;
 import java.time.Instant;
+
+import static com.renzzle.backend.global.common.constant.TimeConstant.CONST_FUTURE_INSTANT;
 
 @Entity
 @Getter
@@ -34,36 +38,41 @@ public class UserCommunityPuzzle {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private CommunityPuzzle puzzle;
 
-    @Column(name = "last_tried_at", nullable = false)
-    private Instant lastTriedAt;
-
-    @Column(name = "solved_count", nullable = false)
     @Builder.Default
-    private int solvedCount = 0;
+    @Column(name = "is_solved")
+    private boolean isSolved = false;
 
-    @Column(name = "failed_count", nullable = false)
-    @Builder.Default
-    private int failedCount = 0;
+    @Column(name = "solved_at")
+    private Instant solvedAt;
 
-    @Column(name = "is_liked", nullable = false)
     @Builder.Default
+    @Column(name = "like")
     private boolean like = false;
 
-    public int addSolve() {
-        this.solvedCount++;
-        lastTriedAt = Instant.now();
-        return this.solvedCount;
+    @Builder.Default
+    @Column(name = "dislike")
+    private boolean dislike = false;
+
+    @Column(name = "liked_at")
+    private Instant likedAt;
+
+    public boolean toggleLike(Instant likedAt) {
+        like = !like;
+        if (like) {
+            dislike = false;
+            this.likedAt = likedAt;
+        } else {
+            this.likedAt = null;
+        }
+        return like;
     }
 
-    public int addFail() {
-        this.failedCount++;
-        lastTriedAt = Instant.now();
-        return this.failedCount;
-    }
-
-    public boolean toggleLike() {
-        this.like = !this.like;
-        return this.like;
+    public boolean toggleDislike() {
+        dislike = !dislike;
+        if (dislike) {
+            like = false;
+        }
+        return dislike;
     }
 
 }
