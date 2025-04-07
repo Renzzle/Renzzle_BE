@@ -1,4 +1,4 @@
-package com.renzzle.backend.domain.puzzle.shared.domain;
+package com.renzzle.backend.domain.puzzle.training.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

@@ -105,6 +105,19 @@ public class UserEntity {
         this.currency -= price;
     }
 
+    public void updateRatingTo(double newRating) {
+        this.rating = newRating;
+    }
+
+    public void updateMmrTo(double newMmr) {
+        this.mmr = newMmr;
+    }
+
+    public void softDelete() {
+        this.status = Status.getStatus(Status.StatusName.DELETED);
+        this.deletedAt = Instant.now();
+    }
+
     public void changeNickname(String nickname) {
         purchase(ItemPrice.CHANGE_NICKNAME.getPrice());
         this.nickname = nickname;

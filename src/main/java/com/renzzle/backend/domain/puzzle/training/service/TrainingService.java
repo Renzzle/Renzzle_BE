@@ -1,6 +1,6 @@
 package com.renzzle.backend.domain.puzzle.training.service;
 
-import com.renzzle.backend.domain.puzzle.shared.domain.Difficulty;
+import com.renzzle.backend.domain.puzzle.training.domain.Difficulty;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleAnswerResponse;
@@ -81,23 +81,22 @@ public class TrainingService {
     // service test, repo test
     @Transactional
     public void solveTrainingPuzzle(UserEntity user, Long puzzleId) {
-        Optional<SolvedTrainingPuzzle> existInfo
-                = solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId);
+        Optional<SolvedTrainingPuzzle> existInfo =
+                solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId);
 
-        // solve puzzle again
-        if(existInfo.isPresent()) {
-            throw new CustomException(ErrorCode.ALREADY_SOLVED_PUZZLE);
+        if (existInfo.isPresent()) {
+            existInfo.get().updateSolvedAtToNow();
+        } else {
+            TrainingPuzzle trainingPuzzle = trainingPuzzleRepository.findById(puzzleId)
+                    .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
+
+            SolvedTrainingPuzzle solvedTrainingPuzzle = SolvedTrainingPuzzle.builder()
+                    .user(user)
+                    .puzzle(trainingPuzzle)
+                    .build();
+
+            solvedTrainingPuzzleRepository.save(solvedTrainingPuzzle);
         }
-
-        TrainingPuzzle trainingPuzzle = trainingPuzzleRepository.findById(puzzleId).orElseThrow(
-                () -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE)
-        );
-
-        SolvedTrainingPuzzle solvedTrainingPuzzle = SolvedTrainingPuzzle.builder()
-                .user(user)
-                .puzzle(trainingPuzzle)
-                .build();
-        solvedTrainingPuzzleRepository.save(solvedTrainingPuzzle);
     }
 
     // service test, repo test
@@ -250,15 +249,17 @@ public class TrainingService {
 
     @Transactional(readOnly = true)
     public GetTrainingPuzzleAnswerResponse purchaseTrainingPuzzleAnswer(UserEntity user, PurchaseTrainingPuzzleAnswerRequest request) {
+        UserEntity newUser = userRepository.findById(user.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
         TrainingPuzzle puzzle = trainingPuzzleRepository.findById(request.puzzleId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
 
-        user.purchase(ItemPrice.HINT.getPrice());
-        userRepository.save(user);
+        newUser.purchase(ItemPrice.HINT.getPrice());
+//        userRepository.save(newUser);
 
         return GetTrainingPuzzleAnswerResponse.builder()
                 .answer(puzzle.getAnswer())
-                .currency(user.getCurrency())
+                .currency(newUser.getCurrency())
                 .build();
     }
 

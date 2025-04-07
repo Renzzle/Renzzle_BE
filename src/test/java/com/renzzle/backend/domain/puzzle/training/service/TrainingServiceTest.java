@@ -1,6 +1,6 @@
-package com.renzzle.backend.domain.puzzle.service;
+package com.renzzle.backend.domain.puzzle.training.service;
 
-import com.renzzle.backend.domain.puzzle.shared.domain.Difficulty;
+import com.renzzle.backend.domain.puzzle.training.domain.Difficulty;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleAnswerResponse;
@@ -285,6 +285,35 @@ public class TrainingServiceTest {
                     .save(any(SolvedTrainingPuzzle.class));
         }
 
+        @DisplayName("testSolveLessonPuzzle_AlreadySolved: 이미 풀이한 퍼즐의 경우 solvedAt을 갱신")
+        @Test
+        public void testSolveLessonPuzzle_AlreadySolved() {
+            // given
+            Long puzzleId = 1L;
+            UserEntity user = UserEntity.builder()
+                    .id(100L)
+                    .email("test@example.com")
+                    .password("password")
+                    .nickname("testUser")
+                    .deviceId("dummy-device")
+                    .lastAccessedAt(Instant.now())
+                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt은 미래 시점으로 설정 (예시)
+                    .status(Status.getDefaultStatus())
+                    .build();
+
+            SolvedTrainingPuzzle existingSolvedPuzzle = mock(SolvedTrainingPuzzle.class);
+            when(solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId))
+                    .thenReturn(Optional.of(existingSolvedPuzzle));
+
+            // when
+            trainingService.solveTrainingPuzzle(user, puzzleId);
+
+            // then
+            verify(existingSolvedPuzzle, times(1)).updateSolvedAtToNow();
+            verify(solvedTrainingPuzzleRepository, never()).save(any());
+            verify(trainingPuzzleRepository, never()).findById(any());
+        }
+
         @Test
         @DisplayName("getTrainingPuzzleList : 유효한 Pack ID에 대해 TrainingPuzzle 목록과 solved 여부가 올바르게 조회")
         public void testGetTrainingPuzzleList() {
@@ -449,9 +478,9 @@ public class TrainingServiceTest {
                     .status(Status.getDefaultStatus())
                     .build();
 
-            // 어떤 UserEntity가 저장 요청되더라도, 그 UserEntity 객체 자체를 반환하라 라는 의미
-            when(userRepository.save(any(UserEntity.class)))
-                    .thenAnswer(invocation -> invocation.getArgument(0));
+
+            when(userRepository.findById(eq(user.getId())))
+                    .thenReturn(Optional.of(user));
 
             PurchaseTrainingPuzzleAnswerRequest request = new PurchaseTrainingPuzzleAnswerRequest(puzzleId);
 
@@ -462,7 +491,6 @@ public class TrainingServiceTest {
             assertThat(response.answer()).isEqualTo("Correct Answer");
             assertThat(response.currency()).isEqualTo(500 - hintPrice);
         }
-
     }
 
     @Nested
@@ -565,42 +593,7 @@ public class TrainingServiceTest {
             verify(trainingPuzzleRepository, never()).decreaseIndexesFrom(anyInt());
         }
 
-        @DisplayName("testSolveLessonPuzzle_AlreadySolved: 이미 풀이한 퍼즐의 경우 ALREADY_SOLVED_PUZZLE 예외가 발생")
-        @Test
-        public void testSolveLessonPuzzle_AlreadySolved() {
-            // given
-            Long puzzleId = 1L;
-            UserEntity user = UserEntity.builder()
-                    .id(100L)
-                    .email("test@example.com")
-                    .password("password")
-                    .nickname("testUser")
-                    .deviceId("dummy-device")
-                    .lastAccessedAt(Instant.now())
-                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt은 미래 시점으로 설정 (예시)
-                    .status(Status.getDefaultStatus())
-                    .build();
 
-            // 이미 해당 user와 puzzleId에 대해 풀이 기록이 존재함
-            SolvedTrainingPuzzle existingSolvedPuzzle = SolvedTrainingPuzzle.builder()
-                    .user(user)
-                    .build();
-            when(solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId))
-                    .thenReturn(Optional.of(existingSolvedPuzzle));
-
-            // when
-            CustomException exception = assertThrows(CustomException.class,
-                    () -> trainingService.solveTrainingPuzzle(user, puzzleId));
-
-            // then
-            assertEquals(ErrorCode.ALREADY_SOLVED_PUZZLE, exception.getErrorCode());
-
-            verify(solvedTrainingPuzzleRepository, times(1))
-                    .findByUserIdAndPuzzleId(user.getId(), puzzleId);
-            // 퍼즐 조회 및 저장은 일어나지 않아야 함
-            verify(trainingPuzzleRepository, never()).findById(anyLong());
-            verify(solvedTrainingPuzzleRepository, never()).save(any(SolvedTrainingPuzzle.class));
-        }
 
         @DisplayName("testSolveLessonPuzzle_PuzzleNotFound: 주어진 puzzleId에 해당하는 퍼즐이 없으면 CANNOT_FIND_TRAINING_PUZZLE 예외가 발생")
         @Test
@@ -747,6 +740,9 @@ public class TrainingServiceTest {
 
             when(trainingPuzzleRepository.findById(eq(puzzleId)))
                     .thenReturn(Optional.empty());
+
+            when(userRepository.findById(eq(user.getId())))
+                    .thenReturn(Optional.of(user));
 
             // when
             CustomException exception = assertThrows(CustomException.class, () ->

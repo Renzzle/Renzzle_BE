@@ -35,7 +35,9 @@ public class TestContainersConfig implements ApplicationContextInitializer<Confi
                     "spring.jwt.secret=" + "testsecrettestsecrettestsecrettestsecret",
                     "spring.mail.username=" + "test@gmail.com",
                     "spring.mail.password=" + "password",
+                    "rank.session.ttl=" + "10",
                     "REDIS_PASSWORD=" + "376198"
+
             );
         } catch (Exception e) {
             throw new RuntimeException("TestContainers Failed: " + e.getMessage(), e);

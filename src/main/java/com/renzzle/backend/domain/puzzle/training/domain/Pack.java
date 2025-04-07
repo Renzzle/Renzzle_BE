@@ -1,6 +1,5 @@
 package com.renzzle.backend.domain.puzzle.training.domain;
 
-import com.renzzle.backend.domain.puzzle.shared.domain.Difficulty;
 import jakarta.persistence.*;
 import lombok.*;
 

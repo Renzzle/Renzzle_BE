@@ -51,6 +51,10 @@ spring:
     init:
       mode: always
 
+rank:
+  session:
+    ttl: 3600 # 초 단위, 운영 기본값
+
 springdoc:
   packages-to-scan: com.renzzle.backend
   default-consumes-media-type: application/json;charset=UTF-8

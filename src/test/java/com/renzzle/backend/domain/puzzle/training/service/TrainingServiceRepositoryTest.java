@@ -1,7 +1,7 @@
-package com.renzzle.backend.domain.puzzle.service;
+package com.renzzle.backend.domain.puzzle.training.service;
 
 import com.renzzle.backend.config.TestContainersConfig;
-import com.renzzle.backend.domain.puzzle.shared.domain.Difficulty;
+import com.renzzle.backend.domain.puzzle.training.domain.Difficulty;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.puzzle.training.api.request.CreateTrainingPackRequest;
 import com.renzzle.backend.domain.puzzle.training.api.request.PackTranslationRequest;

@@ -1,6 +1,6 @@
 package com.renzzle.backend.domain.puzzle.training.dao;
 
-import com.renzzle.backend.domain.puzzle.shared.domain.Difficulty;
+import com.renzzle.backend.domain.puzzle.training.domain.Difficulty;
 import com.renzzle.backend.domain.puzzle.training.domain.Pack;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -16,9 +16,9 @@ public interface PackRepository extends JpaRepository<Pack, Long> {
     @Transactional
     @Query(value = "UPDATE pack " +
             "SET puzzle_count = puzzle_count + 1 " +
-            "WHERE pack_id = :pack_id",
+            "WHERE pack_id = :packId",
             nativeQuery = true)
-    void increasePuzzleCount(@Param("pack_id") Long packId);
+    void increasePuzzleCount(@Param("packId") Long packId);
 
     List<Pack> findByDifficulty(Difficulty difficulty);
 }

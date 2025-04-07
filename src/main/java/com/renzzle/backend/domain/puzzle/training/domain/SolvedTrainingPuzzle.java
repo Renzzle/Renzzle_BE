@@ -7,6 +7,8 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
+import org.springframework.data.relational.core.sql.In;
+
 import java.time.Instant;
 
 @Entity
@@ -39,5 +41,9 @@ public class SolvedTrainingPuzzle {
     @CreationTimestamp
     @Column(name = "solved_at", updatable = false, nullable = false)
     private Instant solvedAt;
+
+    public void updateSolvedAtToNow(){
+        this.solvedAt = Instant.now();
+    }
 
 }

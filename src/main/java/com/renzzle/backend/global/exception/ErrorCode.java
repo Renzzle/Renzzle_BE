@@ -55,7 +55,15 @@ public enum ErrorCode {
     COMMUNITY_PUZZLE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "P403", "해당하는 커뮤니티 퍼즐에 대한 권한이 없습니다."),
 
     //Rank
-    SESSION_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "R5001", "세션 ID 생성에 실패하였습니다.")
+    INVALID_SESSION_TTL(HttpStatus.BAD_REQUEST, "R4000", "세션 TTL이 올바르지 않습니다."),
+    IS_NOT_STARTED(HttpStatus.BAD_REQUEST, "R4001", "잘못된 랭킹전 결과 호출입니다."),
+    EMPTY_SESSION_DATA(HttpStatus.NOT_FOUND, "R4040", "세션 데이터가 존재하지 않습니다."),
+    PUZZLE_NOT_FOUND(HttpStatus.NOT_FOUND, "R4041", "퍼즐이 존재하지 않습니다."),
+    SESSION_ALREADY_ENDED(HttpStatus.GONE, "R4100", "세션이 이미 만료되었습니다."),
+    SESSION_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "R5001", "세션 ID 생성에 실패하였습니다."),
+
+
+
     ;
 
     private final HttpStatus status;
