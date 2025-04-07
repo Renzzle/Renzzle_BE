@@ -1,6 +1,5 @@
 package com.renzzle.backend.domain.puzzle.community.domain;
 
-import com.renzzle.backend.domain.puzzle.training.domain.Difficulty;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.domain.Status;
@@ -11,7 +10,6 @@ import lombok.*;
 import org.hibernate.annotations.*;
 
 import java.time.Instant;
-import java.util.Objects;
 
 import static com.renzzle.backend.global.common.constant.TimeConstant.CONST_FUTURE_INSTANT;
 import static com.renzzle.backend.global.common.domain.Status.STATUS_IS_NOT_DELETED;
@@ -38,29 +36,38 @@ public class CommunityPuzzle {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "title", nullable = false, length = 31)
-    private String title;
-
     @Column(name = "board_status", nullable = false, length = 1023)
     private String boardStatus;
 
     @Column(name = "board_key", nullable = false)
     private String boardKey;
 
-    @Column(name = "depth", nullable = false)
-    private int depth;
+    @Column(name = "answer", nullable = false, length = 1023)
+    private String answer;
 
-    @Column(name = "like_count", nullable = false)
+    @Column(name = "depth", nullable = false)
+    private Integer depth;
+
+    @Column(name = "isVerified", nullable = false)
+    private Boolean isVerified;
+
+    @Column(name = "rating", nullable = false)
+    private Double rating;
+
     @Builder.Default
+    @Column(name = "like_count")
     private int likeCount = 0;
 
-    @Column(name = "solved_count", nullable = false)
     @Builder.Default
-    private int solvedCount = 0;
+    @Column(name = "dislike_count")
+    private int dislikeCount = 0;
 
-    @Column(name = "failed_count", nullable = false)
     @Builder.Default
-    private int failedCount = 0;
+    @Column(name = "view")
+    private int view = 0;
+
+    @Column(name = "description", length = 127)
+    private String description;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)
@@ -83,10 +90,6 @@ public class CommunityPuzzle {
     private UserEntity user;
 
     @ManyToOne
-    @JoinColumn(name = "difficulty", nullable = false)
-    private Difficulty difficulty;
-
-    @ManyToOne
     @JoinColumn(name = "win_color", nullable = false)
     private WinColor winColor;
 
@@ -98,36 +101,6 @@ public class CommunityPuzzle {
         if(deletedAt == null) {
             this.deletedAt = CONST_FUTURE_INSTANT;
         }
-    }
-
-    @PreRemove
-    public void onPreRemove() {
-        this.status = Status.getStatus(Status.StatusName.DELETED);
-        this.deletedAt = Instant.now();
-    }
-
-    public int addSolve() {
-        this.solvedCount++;
-        return this.solvedCount;
-    }
-
-    public int addFail() {
-        this.failedCount++;
-        return this.failedCount;
-    }
-
-    public int changeLike(boolean isIncrease) {
-        if(isIncrease) this.likeCount++;
-        else this.likeCount--;
-        return this.likeCount;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        CommunityPuzzle myObject = (CommunityPuzzle) o;
-        return Objects.equals(id, myObject.id);
     }
 
 }

@@ -7,11 +7,14 @@ import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.*;
-import org.apache.catalina.User;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.Clock;
 import java.time.Instant;
+
+import static com.renzzle.backend.global.common.constant.StringConstant.DELETED_USER;
 import static com.renzzle.backend.global.common.constant.TimeConstant.CONST_FUTURE_INSTANT;
 import static com.renzzle.backend.global.common.domain.Status.STATUS_IS_NOT_DELETED;
 
@@ -88,10 +91,11 @@ public class UserEntity {
         if(deletedAt == null) {
             this.deletedAt = CONST_FUTURE_INSTANT;
         }
-        // TODO: initialize device id
-        if(deviceId == null) {
-            this.deviceId = "";
-        }
+    }
+
+    public String getNickname() {
+        return status.equals(Status.getStatus(Status.StatusName.DELETED))
+                ? DELETED_USER : nickname;
     }
 
     public void purchase(int price){
