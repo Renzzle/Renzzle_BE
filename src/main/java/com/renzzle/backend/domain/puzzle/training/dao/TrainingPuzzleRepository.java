@@ -58,8 +58,8 @@ public interface TrainingPuzzleRepository extends JpaRepository<TrainingPuzzle, 
 
     @Query("SELECT p FROM TrainingPuzzle p " +
             "WHERE p.rating BETWEEN :minRating AND :maxRating " +
-            "AND p.id NOT IN (" +
-            "   SELECT lp.id FROM LatestRankPuzzle lp WHERE lp.user = :user" +
+            "AND p.boardStatus NOT IN (" +
+            "   SELECT lp.boardStatus FROM LatestRankPuzzle lp WHERE lp.user = :user" +
             ")")
     List<TrainingPuzzle> findAvailablePuzzlesForUser(
             @Param("minRating") double minRating,

@@ -30,7 +30,7 @@ public class RankController {
     @Operation(summary = "Send rank game puzzle result", description = "Send rank game puzzle result and get next puzzle info")
     @PostMapping("/game/result")
     public ResponseEntity<RankResultResponse> resultRankGame(@AuthenticationPrincipal UserDetailsImpl user,
-                                                               RankResultRequest request) {
+                                                             @Valid @RequestBody RankResultRequest request) {
         return ResponseEntity.ok(rankService.resultRankGame(user.getUser(), request));
     }
 

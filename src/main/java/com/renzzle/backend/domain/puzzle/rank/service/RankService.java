@@ -42,7 +42,9 @@ public class RankService {
     @Value("${rank.session.ttl}")
     private long sessionTTLSeconds;
 
-    public RankStartResponse startRankGame(UserEntity user) {
+    public RankStartResponse startRankGame(UserEntity userData) {
+        UserEntity user = userRepository.findById(userData.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
         Long userId = user.getId();
         String redisKey = String.valueOf(userId);
 
@@ -186,8 +188,8 @@ public class RankService {
                 .build();
     }
 
-    public RankEndResponse endRankGame(UserEntity user) {
-        String redisKey = String.valueOf( user.getId());
+    public RankEndResponse endRankGame(UserEntity userData) {
+        String redisKey = String.valueOf(userData.getId());
         RankSessionData session = redisTemplate.opsForValue().get(redisKey);
 
         if (session == null) {
@@ -200,11 +202,11 @@ public class RankService {
         redisTemplate.delete(redisKey);
 
         return RankEndResponse.builder()
-                .rating(user.getRating())
+                .rating(userData.getRating())
                 .build();
     }
 
-    private TrainingPuzzle getNextPuzzle(double originalMmr, double targetWinProbability, UserEntity user) {
+    TrainingPuzzle getNextPuzzle(double originalMmr, double targetWinProbability, UserEntity user) {
         // 사용자의 레이팅 & 기대 승률 을 통해 적합한 문제를 가져옴
         double desiredRating = ELOUtil.getProblemRatingForTargetWinProbability(originalMmr, targetWinProbability);
 
