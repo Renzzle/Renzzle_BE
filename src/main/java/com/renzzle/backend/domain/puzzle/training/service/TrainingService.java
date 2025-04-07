@@ -81,21 +81,22 @@ public class TrainingService {
     // service test, repo test
     @Transactional
     public void solveTrainingPuzzle(UserEntity user, Long puzzleId) {
-        Optional<SolvedTrainingPuzzle> existInfo
-                = solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId);
+        Optional<SolvedTrainingPuzzle> existInfo =
+                solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId);
 
-        // solve puzzle again
-        existInfo.ifPresent(SolvedTrainingPuzzle::updateSolvedAtToNow);
+        if (existInfo.isPresent()) {
+            existInfo.get().updateSolvedAtToNow();
+        } else {
+            TrainingPuzzle trainingPuzzle = trainingPuzzleRepository.findById(puzzleId)
+                    .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
 
-        TrainingPuzzle trainingPuzzle = trainingPuzzleRepository.findById(puzzleId).orElseThrow(
-                () -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE)
-        );
+            SolvedTrainingPuzzle solvedTrainingPuzzle = SolvedTrainingPuzzle.builder()
+                    .user(user)
+                    .puzzle(trainingPuzzle)
+                    .build();
 
-        SolvedTrainingPuzzle solvedTrainingPuzzle = SolvedTrainingPuzzle.builder()
-                .user(user)
-                .puzzle(trainingPuzzle)
-                .build();
-        solvedTrainingPuzzleRepository.save(solvedTrainingPuzzle);
+            solvedTrainingPuzzleRepository.save(solvedTrainingPuzzle);
+        }
     }
 
     // service test, repo test
@@ -258,7 +259,7 @@ public class TrainingService {
 
         return GetTrainingPuzzleAnswerResponse.builder()
                 .answer(puzzle.getAnswer())
-                .currency(user.getCurrency())
+                .currency(newUser.getCurrency())
                 .build();
     }
 

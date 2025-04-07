@@ -50,11 +50,6 @@ public interface TrainingPuzzleRepository extends JpaRepository<TrainingPuzzle, 
 
     List<TrainingPuzzle> findByPack_Id(Long packId);
 
-    @Query(value = "SELECT * FROM training_puzzle " +
-            "WHERE rating BETWEEN :minRating AND :maxRating ORDER BY RAND() LIMIT 1",
-            nativeQuery = true)
-    Optional<TrainingPuzzle> findRandomByRatingBetween(@Param("minRating") double minRating,
-                                                       @Param("maxRating") double maxRating);
 
     @Query("SELECT p FROM TrainingPuzzle p " +
             "WHERE p.rating BETWEEN :minRating AND :maxRating " +
