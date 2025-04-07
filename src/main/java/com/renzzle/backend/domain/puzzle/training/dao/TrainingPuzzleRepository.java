@@ -1,6 +1,7 @@
 package com.renzzle.backend.domain.puzzle.training.dao;
 
 import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
+import com.renzzle.backend.domain.user.domain.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -55,6 +56,14 @@ public interface TrainingPuzzleRepository extends JpaRepository<TrainingPuzzle, 
     Optional<TrainingPuzzle> findRandomByRatingBetween(@Param("minRating") double minRating,
                                                        @Param("maxRating") double maxRating);
 
-    TrainingPuzzle findFirstByRatingBetweenOrderByRatingAsc(double minRating, double maxRating);
-
+    @Query("SELECT p FROM TrainingPuzzle p " +
+            "WHERE p.rating BETWEEN :minRating AND :maxRating " +
+            "AND p.id NOT IN (" +
+            "   SELECT lp.id FROM LatestRankPuzzle lp WHERE lp.user = :user" +
+            ")")
+    List<TrainingPuzzle> findAvailablePuzzlesForUser(
+            @Param("minRating") double minRating,
+            @Param("maxRating") double maxRating,
+            @Param("user") UserEntity user
+    );
 }

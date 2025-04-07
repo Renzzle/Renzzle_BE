@@ -19,7 +19,7 @@ public class PuzzleSeeder {
     @Autowired
     private PackSeeder packSeeder;
 
-    public TrainingPuzzle seedPuzzle(
+    public void seedPuzzle(
             int trainingIndex,
             String boardStatus,
             String answer,
@@ -29,7 +29,7 @@ public class PuzzleSeeder {
     ) {
         Pack pack = packSeeder.seedPack("MIDDLE", 1, 0);
 
-        return trainingPuzzleRepository.save(
+        trainingPuzzleRepository.save(
                 TrainingPuzzle.builder()
                         .pack(pack)
                         .trainingIndex(trainingIndex)

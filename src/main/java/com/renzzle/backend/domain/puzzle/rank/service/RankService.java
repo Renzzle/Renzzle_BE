@@ -22,6 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static com.renzzle.backend.global.util.ELOUtil.TARGET_WIN_PROBABILITY;
@@ -47,7 +49,7 @@ public class RankService {
         double originalMmr = user.getMmr();
         double originalRating = user.getRating();
 
-        TrainingPuzzle puzzle = getNextPuzzle(originalMmr, TARGET_WIN_PROBABILITY);
+        TrainingPuzzle puzzle = getNextPuzzle(originalMmr, TARGET_WIN_PROBABILITY, user);
 
         LatestRankPuzzle latestPuzzle = LatestRankPuzzle.builder()
                 .user(user)
@@ -87,7 +89,10 @@ public class RankService {
     }
 
     @Transactional
-    public RankResultResponse resultRankGame(UserEntity user, RankResultRequest request) {
+    public RankResultResponse resultRankGame(UserEntity userData, RankResultRequest request) {
+
+        UserEntity user = userRepository.findById(userData.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
 
         String redisKey = String.valueOf( user.getId());
         RankSessionData session = redisTemplate.opsForValue().get(redisKey);
@@ -104,7 +109,6 @@ public class RankService {
         if (currentTTL == null || currentTTL <= 0) {
             throw new CustomException(ErrorCode.INVALID_SESSION_TTL);
         }
-//        log.info("남은 TTL: {}초", redisTemplate.getExpire(redisKey, TimeUnit.SECONDS));
 
         // 이전 문제 조회 및 풀이 여부 업데이트
         LatestRankPuzzle previousPuzzle = latestRankPuzzleRepository
@@ -146,7 +150,7 @@ public class RankService {
         }
 
         // 사용자의 레이팅 & 기대 승률 을 통해 적합한 문제를 가져옴
-        TrainingPuzzle puzzle = getNextPuzzle(userBeforeMmr, WinProbability);
+        TrainingPuzzle puzzle = getNextPuzzle(userBeforeMmr, WinProbability, user);
 
         double ratingPenalty = ELOUtil.calculateRatingDecrease(userBeforeRating, puzzle.getRating());
         double mmrPenalty = ELOUtil.calculateMMRDecrease(userBeforeMmr, puzzle.getRating());
@@ -200,17 +204,23 @@ public class RankService {
                 .build();
     }
 
-    private TrainingPuzzle getNextPuzzle(double originalMmr, double targetWinProbability) {
+    private TrainingPuzzle getNextPuzzle(double originalMmr, double targetWinProbability, UserEntity user) {
         // 사용자의 레이팅 & 기대 승률 을 통해 적합한 문제를 가져옴
-        double desiredProblemRating = ELOUtil.getProblemRatingForTargetWinProbability(originalMmr, targetWinProbability);
+        double desiredRating = ELOUtil.getProblemRatingForTargetWinProbability(originalMmr, targetWinProbability);
 
-        TrainingPuzzle puzzle = null;
         int tolerance = 10;
+        List<TrainingPuzzle> candidates = Collections.emptyList();
 
-        while (puzzle == null) {
-            puzzle = trainingPuzzleRepository.findFirstByRatingBetweenOrderByRatingAsc(desiredProblemRating - tolerance, desiredProblemRating + tolerance);
+        while (candidates.isEmpty()) {
+            double min = desiredRating - tolerance;
+            double max = desiredRating + tolerance;
+
+            candidates = trainingPuzzleRepository.findAvailablePuzzlesForUser(min, max, user);
             tolerance += 10;
         }
-        return puzzle;
+
+        // 랜덤하게 하나 선택
+        Collections.shuffle(candidates);
+        return candidates.get(0);
     }
 }
