@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,7 @@ public class TrainingService {
     private final PackTranslationRepository packTranslationRepository;
     private final UserPackRepository userPackRepository;
     private final UserRepository userRepository;
+    private final Clock clock;
 
     // service test, repo test
     @Transactional
@@ -85,7 +87,7 @@ public class TrainingService {
                 solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId);
 
         if (existInfo.isPresent()) {
-            existInfo.get().updateSolvedAtToNow();
+            existInfo.get().updateSolvedAtToNow(clock);
         } else {
             TrainingPuzzle trainingPuzzle = trainingPuzzleRepository.findById(puzzleId)
                     .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));

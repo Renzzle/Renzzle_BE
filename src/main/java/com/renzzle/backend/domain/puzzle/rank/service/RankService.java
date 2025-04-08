@@ -21,6 +21,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -38,6 +39,7 @@ public class RankService {
     private final TrainingPuzzleRepository trainingPuzzleRepository;
     private final UserRepository userRepository;
     private final LatestRankPuzzleRepository latestRankPuzzleRepository;
+    private final Clock clock;
 
     @Value("${rank.session.ttl}")
     private long sessionTTLSeconds;
@@ -58,7 +60,7 @@ public class RankService {
                 .boardStatus(puzzle.getBoardStatus())
                 .answer(puzzle.getAnswer())
                 .isSolved(false)
-                .assignedAt(Instant.now())
+                .assignedAt(clock.instant())
                 .winColor(puzzle.getWinColor())
                 .build();
 
@@ -167,7 +169,7 @@ public class RankService {
                 .boardStatus(puzzle.getBoardStatus())
                 .answer(puzzle.getAnswer())
                 .isSolved(false)
-                .assignedAt(Instant.now())
+                .assignedAt(clock.instant())
                 .winColor(puzzle.getWinColor())
                 .build();
 

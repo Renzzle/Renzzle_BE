@@ -1,14 +1,13 @@
 package com.renzzle.backend.domain.puzzle.training.domain;
 
-import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
-import org.springframework.data.relational.core.sql.In;
 
+import java.time.Clock;
 import java.time.Instant;
 
 @Entity
@@ -42,8 +41,8 @@ public class SolvedTrainingPuzzle {
     @Column(name = "solved_at", updatable = false, nullable = false)
     private Instant solvedAt;
 
-    public void updateSolvedAtToNow(){
-        this.solvedAt = Instant.now();
+    public void updateSolvedAtToNow(Clock clock) {
+        this.solvedAt = Instant.now(clock);
     }
 
 }

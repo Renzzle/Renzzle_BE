@@ -28,6 +28,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -62,6 +63,9 @@ public class TrainingServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private Clock clock;
 
     @InjectMocks
     private TrainingService trainingService;
@@ -309,7 +313,7 @@ public class TrainingServiceTest {
             trainingService.solveTrainingPuzzle(user, puzzleId);
 
             // then
-            verify(existingSolvedPuzzle, times(1)).updateSolvedAtToNow();
+            verify(existingSolvedPuzzle, times(1)).updateSolvedAtToNow(clock);
             verify(solvedTrainingPuzzleRepository, never()).save(any());
             verify(trainingPuzzleRepository, never()).findById(any());
         }

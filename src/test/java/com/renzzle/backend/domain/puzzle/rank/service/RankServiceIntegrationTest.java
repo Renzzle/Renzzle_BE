@@ -14,6 +14,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -22,6 +23,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
@@ -42,6 +44,9 @@ public class RankServiceIntegrationTest {
 
     @PersistenceContext
     private EntityManager em;
+
+    @Mock
+    private Clock clock;
 
 
     private UserEntity testUser;
@@ -111,18 +116,6 @@ public class RankServiceIntegrationTest {
         userRepository.flush();
         em.flush();
         em.clear();
-//        UserEntity refreshedUser = userRepository.findById(beforeUser.getId()).orElseThrow();
-
-//        double ratingAfterResult = refreshedUser.getRating();
-//        double mmrAfterResult = refreshedUser.getMmr();
-
-//        assertTrue(
-//                ratingAfterResult > ratingAfterStart,
-//                "정답 시 레이팅 증가해야 함 → 결과값: result=" + ratingAfterResult + ", start=" + ratingAfterStart +
-//                " 보드 상태 : result == " + sessionAfterResult.getBoardState() + " , start == " + sessionAfterStart.getBoardState()
-//                );
-//        assertTrue(mmrAfterResult > mmrAfterStart, "정답 시 MMR 증가");
-
 
         // end API 호출
         RankEndResponse endResponse = rankService.endRankGame(testUser);
