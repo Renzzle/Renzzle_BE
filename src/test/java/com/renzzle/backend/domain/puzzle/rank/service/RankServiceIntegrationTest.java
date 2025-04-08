@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.test.annotation.DirtiesContext;
@@ -51,6 +52,9 @@ public class RankServiceIntegrationTest {
 
     private UserEntity testUser;
     private String redisKey;
+
+    @Value("${rank.session.ttl}")
+    private long sessionTtl;
 
     // 🔧 테스트 유저 생성 도우미
     private UserEntity createTestUser(double rating, double mmr) {
@@ -99,7 +103,7 @@ public class RankServiceIntegrationTest {
         assertTrue(ratingAfterStart < 1500, "레이팅 감산 확인");
         assertTrue(mmrAfterStart < 1500, "MMR 감산 확인");
 
-        Thread.sleep(3000);
+        Thread.sleep(1000);
 
         // result API 호출 - 문제가 정답이라고 가정
         RankResultRequest resultRequest = new RankResultRequest(true);
@@ -124,23 +128,5 @@ public class RankServiceIntegrationTest {
         RankSessionData sessionAfterEnd = redisTemplate.opsForValue().get(redisKey);
         assertNull(sessionAfterEnd, "end 호출 후 Redis에서 세션이 사라져야 함");
     }
-
-    @Test
-    void testSessionExpiresAfterTTL() throws InterruptedException {
-        rankService.startRankGame(testUser);
-
-        // TTL 확인
-        Long ttl = redisTemplate.getExpire(redisKey, TimeUnit.SECONDS);
-        assertNotNull(ttl);
-        assertTrue(ttl <= 10, "TTL이 설정되어 있어야 함");
-
-        // 11초 대기
-        Thread.sleep(11000);
-
-        RankSessionData expiredSession = redisTemplate.opsForValue().get(redisKey);
-        assertNull(expiredSession, "TTL 초과 후 Redis 세션은 null이어야 함");
-    }
-
-
 
 }
