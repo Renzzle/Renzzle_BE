@@ -115,6 +115,7 @@ public class EmailService {
         emailRepository.save(result);
     }
 
+    @Transactional(readOnly = true)
     public ConfirmCodeResponse confirmCode(ConfirmCodeRequest request) {
         boolean isCorrect = verifyCode(request.email(), request.code());
         if(!isCorrect) throw new CustomException(ErrorCode.INVALID_EMAIL_AUTH_CODE);
@@ -127,7 +128,6 @@ public class EmailService {
                 .build();
     }
 
-    @Transactional(readOnly = true)
     private boolean verifyCode(String address, String code) {
         Optional<AuthEmailEntity> emailEntity = emailRepository.findById(address);
 
