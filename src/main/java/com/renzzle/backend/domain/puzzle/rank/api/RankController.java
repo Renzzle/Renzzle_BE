@@ -1,6 +1,7 @@
 package com.renzzle.backend.domain.puzzle.rank.api;
 
 import com.renzzle.backend.domain.puzzle.rank.api.request.RankResultRequest;
+import com.renzzle.backend.domain.puzzle.rank.api.response.RankArchive;
 import com.renzzle.backend.domain.puzzle.rank.api.response.RankEndResponse;
 import com.renzzle.backend.domain.puzzle.rank.api.response.RankResultResponse;
 import com.renzzle.backend.domain.puzzle.rank.api.response.RankStartResponse;
@@ -13,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/rank")
@@ -38,5 +41,11 @@ public class RankController {
     @PostMapping("/game/end")
     public ResponseEntity<RankEndResponse> endRankGame(@AuthenticationPrincipal UserDetailsImpl user) {
         return ResponseEntity.ok(rankService.endRankGame(user.getUser()));
+    }
+
+    @Operation(summary = "Get rank game archive", description = "Get user past rank game archive")
+    @GetMapping("/game/archive")
+    public ResponseEntity<List<RankArchive>> getRankGameArchive(@AuthenticationPrincipal UserDetailsImpl user) {
+        return ResponseEntity.ok(rankService.getRankArchive(user.getUser()));
     }
 }

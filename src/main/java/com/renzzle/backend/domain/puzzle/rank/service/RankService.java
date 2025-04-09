@@ -1,6 +1,7 @@
 package com.renzzle.backend.domain.puzzle.rank.service;
 
 import com.renzzle.backend.domain.puzzle.rank.api.request.RankResultRequest;
+import com.renzzle.backend.domain.puzzle.rank.api.response.RankArchive;
 import com.renzzle.backend.domain.puzzle.rank.api.response.RankEndResponse;
 import com.renzzle.backend.domain.puzzle.rank.api.response.RankResultResponse;
 import com.renzzle.backend.domain.puzzle.rank.api.response.RankStartResponse;
@@ -26,6 +27,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static com.renzzle.backend.global.util.ELOUtil.TARGET_WIN_PROBABILITY;
 import static com.renzzle.backend.global.util.ELOUtil.WIN_PROBABILITY_DELTA;
@@ -49,6 +51,11 @@ public class RankService {
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
         Long userId = user.getId();
         String redisKey = String.valueOf(userId);
+
+        List<LatestRankPuzzle> existingPuzzles = latestRankPuzzleRepository.findAllByUser(user);
+        if (!existingPuzzles.isEmpty()) {
+            latestRankPuzzleRepository.deleteAll(existingPuzzles);
+        }
 
         double originalMmr = user.getMmr();
         double originalRating = user.getRating();
@@ -98,14 +105,14 @@ public class RankService {
         UserEntity user = userRepository.findById(userData.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
 
-        String redisKey = String.valueOf( user.getId());
+        String redisKey = String.valueOf(user.getId());
         RankSessionData session = redisTemplate.opsForValue().get(redisKey);
 
-        if (session == null){
+        if (session == null) {
             throw new CustomException(ErrorCode.EMPTY_SESSION_DATA);
         }
 
-        if(!session.isStarted()){
+        if (!session.isStarted()) {
             throw new CustomException(ErrorCode.EMPTY_SESSION_DATA);
         }
 
@@ -226,5 +233,27 @@ public class RankService {
         // 랜덤하게 하나 선택
         Collections.shuffle(candidates);
         return candidates.get(0);
+    }
+
+    @Transactional
+    public List<RankArchive> getRankArchive(UserEntity userData) {
+
+        UserEntity user = userRepository.findById(userData.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
+
+        List<LatestRankPuzzle> puzzles = latestRankPuzzleRepository.findAllByUserOrderByAssignedAtAsc(user);
+
+        List<RankArchive> archives = puzzles.stream()
+                .map(puzzle -> RankArchive.builder()
+                        .boardStatus(puzzle.getBoardStatus())
+                        .answer(puzzle.getAnswer())
+                        .isSolved(puzzle.getIsSolved())
+                        .winColor(puzzle.getWinColor().getName())
+                        .build())
+                .collect(Collectors.toList());
+
+//        latestRankPuzzleRepository.deleteAll(puzzles);
+
+        return archives;
     }
 }
