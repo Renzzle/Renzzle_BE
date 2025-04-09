@@ -1,10 +1,7 @@
 package com.renzzle.backend.domain.puzzle.rank.service;
 
 import com.renzzle.backend.domain.puzzle.rank.api.request.RankResultRequest;
-import com.renzzle.backend.domain.puzzle.rank.api.response.RankArchive;
-import com.renzzle.backend.domain.puzzle.rank.api.response.RankEndResponse;
-import com.renzzle.backend.domain.puzzle.rank.api.response.RankResultResponse;
-import com.renzzle.backend.domain.puzzle.rank.api.response.RankStartResponse;
+import com.renzzle.backend.domain.puzzle.rank.api.response.*;
 import com.renzzle.backend.domain.puzzle.rank.dao.LatestRankPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.rank.domain.LatestRankPuzzle;
 import com.renzzle.backend.domain.puzzle.rank.domain.RankSessionData;
@@ -28,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.renzzle.backend.global.util.ELOUtil.TARGET_WIN_PROBABILITY;
 import static com.renzzle.backend.global.util.ELOUtil.WIN_PROBABILITY_DELTA;
@@ -252,8 +250,35 @@ public class RankService {
                         .build())
                 .collect(Collectors.toList());
 
-//        latestRankPuzzleRepository.deleteAll(puzzles);
-
         return archives;
+    }
+
+    @Transactional(readOnly = true)
+    public GetRankingResponse getRanking(UserEntity userData) {
+
+        List<UserEntity> topUsers = userRepository.findTop100ByOrderByRatingDesc();
+
+        List<UserRankInfo> top100 = IntStream.range(0, topUsers.size())
+                .mapToObj(i -> {
+                    UserEntity u = topUsers.get(i);
+                    return UserRankInfo.builder()
+                            .rank(i + 1)
+                            .nickname(u.getNickname())
+                            .rating(u.getRating())
+                            .build();
+                }).toList();
+
+        int myRank = userRepository.findMyRankByRating(userData.getRating());
+
+        UserRankInfo myRankInfo = UserRankInfo.builder()
+                .rank(myRank)
+                .nickname(userData.getNickname())
+                .rating(userData.getRating())
+                .build();
+
+        return GetRankingResponse.builder()
+                .top100(top100)
+                .myRank(myRankInfo)
+                .build();
     }
 }
