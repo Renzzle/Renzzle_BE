@@ -2,9 +2,9 @@ package com.renzzle.backend.global.init;
 
 import com.renzzle.backend.domain.auth.dao.AdminRepository;
 import com.renzzle.backend.domain.auth.domain.Admin;
-import com.renzzle.backend.domain.auth.service.AccountService;
 import com.renzzle.backend.domain.puzzle.training.domain.Difficulty;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
+import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.domain.Status;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 import static com.renzzle.backend.domain.auth.domain.Admin.ADMIN;
 
@@ -21,7 +22,7 @@ import static com.renzzle.backend.domain.auth.domain.Admin.ADMIN;
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
 
-    private final AccountService accountService;
+    private final UserRepository userRepository;
     private final AdminRepository adminRepository;
     private final JdbcTemplate jdbcTemplate;
 
@@ -33,20 +34,34 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         try {
-            jdbcTemplate.batchUpdate(
-                    getInsertEnumSql("status", Status.StatusName.class),
-                    getInsertEnumSql("difficulty", Difficulty.DifficultyName.class),
-                    getInsertEnumSql("win_color", WinColor.WinColorName.class)
-            );
-
-            if(!accountService.isDuplicateNickname(ADMIN)) {
-                String adminDeviceId = "admin_device127";
-                UserEntity user = accountService.createNewUser(adminEmail, adminPassword, ADMIN, adminDeviceId);
-                adminRepository.save(Admin.builder().user(user).build());
-            }
+            initializeDefaultValue();
+            addAdminAccount();
         } catch(DuplicateKeyException e) {
             log.warn("Data already exists");
         }
+    }
+
+    private void addAdminAccount() {
+        if(!userRepository.existsByNickname(ADMIN)) {
+            String adminDeviceId = "admin_device127";
+            String encodedPassword = new BCryptPasswordEncoder().encode(adminPassword);
+            UserEntity user = UserEntity.builder()
+                    .email(adminEmail)
+                    .password(encodedPassword)
+                    .nickname(ADMIN)
+                    .deviceId(adminDeviceId)
+                    .build();
+            UserEntity admin = userRepository.save(user);
+            adminRepository.save(Admin.builder().user(admin).build());
+        }
+    }
+
+    private void initializeDefaultValue() {
+        jdbcTemplate.batchUpdate(
+                getInsertEnumSql("status", Status.StatusName.class),
+                getInsertEnumSql("difficulty", Difficulty.DifficultyName.class),
+                getInsertEnumSql("win_color", WinColor.WinColorName.class)
+        );
     }
 
     private <E extends Enum<E>> String getInsertEnumSql(String tableName, Class<E> enumClass) {
