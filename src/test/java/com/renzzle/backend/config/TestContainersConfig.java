@@ -37,7 +37,6 @@ public class TestContainersConfig implements ApplicationContextInitializer<Confi
                     "spring.mail.password=" + "password",
                     "rank.session.ttl=" + "10",
                     "REDIS_PASSWORD=" + "376198"
-
             );
         } catch (Exception e) {
             throw new RuntimeException("TestContainers Failed: " + e.getMessage(), e);

@@ -3,24 +3,17 @@ package com.renzzle.backend.domain.auth.service;
 import com.renzzle.backend.domain.auth.api.request.LoginRequest;
 import com.renzzle.backend.domain.auth.api.request.SignupRequest;
 import com.renzzle.backend.domain.auth.api.response.LoginResponse;
-import com.renzzle.backend.domain.auth.dao.RefreshTokenRedisRepository;
-import com.renzzle.backend.domain.auth.domain.GrantType;
-import com.renzzle.backend.domain.auth.domain.RefreshTokenEntity;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
-import com.renzzle.backend.global.util.ApiUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.time.Duration;
-import java.time.Instant;
+
 import java.util.Optional;
-import static com.renzzle.backend.domain.auth.service.JwtProvider.ACCESS_TOKEN_VALID_MINUTE;
-import static com.renzzle.backend.domain.auth.service.JwtProvider.REFRESH_TOKEN_VALID_MINUTE;
 
 @Service
 @RequiredArgsConstructor
@@ -41,7 +34,7 @@ public class AccountService {
     }
 
     @Transactional(readOnly = true)
-    private boolean isDuplicateSignUp(String deviceId) {
+    public boolean isDuplicateSignUp(String deviceId) {
         return userRepository.existsByDeviceId(deviceId);
     }
 
