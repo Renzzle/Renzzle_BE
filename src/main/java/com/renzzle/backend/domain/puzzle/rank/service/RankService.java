@@ -16,13 +16,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -40,6 +41,7 @@ public class RankService {
     private final UserRepository userRepository;
     private final LatestRankPuzzleRepository latestRankPuzzleRepository;
     private final Clock clock;
+    private final RedisTemplate<String, Object> redisRankingTemplate;
 
     @Value("${rank.session.ttl}")
     private long sessionTTLSeconds;
@@ -256,22 +258,76 @@ public class RankService {
     @Transactional(readOnly = true)
     public GetRankingResponse getRanking(UserEntity userData) {
 
-        List<UserEntity> topUsers = userRepository.findTop100ByOrderByRatingDesc();
+        String rankingKey = "user:ranking";
 
-        List<UserRankInfo> top100 = IntStream.range(0, topUsers.size())
-                .mapToObj(i -> {
-                    UserEntity u = topUsers.get(i);
-                    return UserRankInfo.builder()
-                            .rank(i + 1)
-                            .nickname(u.getNickname())
-                            .rating(u.getRating())
-                            .build();
-                }).toList();
+        Set<ZSetOperations.TypedTuple<Object>> top100Set =
+                Optional.ofNullable(redisRankingTemplate.opsForZSet()
+                                .reverseRangeWithScores(rankingKey, 0, 99))
+                        .orElse(Collections.emptySet());
 
-        int myRank = userRepository.findMyRankByRating(userData.getRating());
+        List<UserRankInfo> top100 = new ArrayList<>();
+        int currentRank = 1;
+        int sameScoreCount = 1;
+        double lastScore = -1;
+        int rankCounter = 0;
+
+        for (ZSetOperations.TypedTuple<Object> tuple : top100Set) {
+            UserRankInfo info = (UserRankInfo) tuple.getValue();
+            double score = Objects.requireNonNull(info).rating();
+            rankCounter++;
+
+            if (Double.compare(score, lastScore) == 0) {
+                sameScoreCount++;
+            } else {
+                currentRank = rankCounter;
+                sameScoreCount = 1;
+                lastScore = score;
+            }
+
+            top100.add(UserRankInfo.builder()
+                    .rank(currentRank)
+                    .nickname(info.nickname())
+                    .rating(info.rating())
+                    .build());
+        }
+
+        // 내 정보 랭킹 계산
+        UserRankInfo myInfo = UserRankInfo.builder()
+                .rank(0)
+                .nickname(userData.getNickname())
+                .rating(userData.getRating())
+                .build();
+
+        Long myRankRaw = redisRankingTemplate.opsForZSet().reverseRank(rankingKey, myInfo);
+
+        int finalRank = -1;
+
+        if (myRankRaw != null) {
+            // 공동 순위 계산
+            Set<ZSetOperations.TypedTuple<Object>> allUsersSet = redisRankingTemplate.opsForZSet()
+                    .reverseRangeWithScores(rankingKey, 0, -1);
+
+            int tieAwareRank = 1;
+            double myRating = userData.getRating();
+
+            Set<Double> uniqueScores = Objects.requireNonNull(allUsersSet).stream()
+                    .map(ZSetOperations.TypedTuple::getScore)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+
+            for (Double score : uniqueScores) {
+                if (Double.compare(score, myRating) > 0) {
+                    tieAwareRank++;
+                } else if (Double.compare(score, myRating) == 0) {
+                    break;
+                }
+            }
+
+            finalRank = tieAwareRank;
+        }
 
         UserRankInfo myRankInfo = UserRankInfo.builder()
-                .rank(myRank)
+                .rank(finalRank)
                 .nickname(userData.getNickname())
                 .rating(userData.getRating())
                 .build();
@@ -281,4 +337,23 @@ public class RankService {
                 .myRank(myRankInfo)
                 .build();
     }
+
+    @Scheduled(fixedRate = 1000 * 60 * 60) // 60분마다 실행
+    public void updateRankingCache() {
+        String rankingKey = "user:ranking";
+
+        redisRankingTemplate.delete(rankingKey);
+
+        List<UserEntity> allUsers = userRepository.findAll();
+        for (UserEntity user : allUsers) {
+            UserRankInfo info = UserRankInfo.builder()
+                    .rank(0)
+                    .nickname(user.getNickname())
+                    .rating(user.getRating())
+                    .build();
+
+            redisRankingTemplate.opsForZSet().add(rankingKey, info, user.getRating());
+        }
+    }
+
 }
