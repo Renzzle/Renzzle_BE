@@ -315,41 +315,6 @@ public class RankService {
             }
         }
 
-//        // 내 정보 랭킹 계산
-//        UserRankInfo myInfo = UserRankInfo.builder()
-//                .rank(0)
-//                .nickname(userData.getNickname())
-//                .rating(userData.getRating())
-//                .build();
-//
-//        Long myRankRaw = redisRankingTemplate.opsForZSet().reverseRank(rankingKey, myInfo);
-//
-//        int finalRank = -1;
-//
-//        if (myRankRaw != null) {
-//            // 공동 순위 계산
-//            Set<ZSetOperations.TypedTuple<Object>> allUsersSet = redisRankingTemplate.opsForZSet()
-//                    .reverseRangeWithScores(rankingKey, 0, -1);
-//
-//            int tieAwareRank = 1;
-//            double myRating = userData.getRating();
-//
-//            Set<Double> uniqueScores = Objects.requireNonNull(allUsersSet).stream()
-//                    .map(ZSetOperations.TypedTuple::getScore)
-//                    .filter(Objects::nonNull)
-//                    .collect(Collectors.toCollection(LinkedHashSet::new));
-//
-//            for (Double score : uniqueScores) {
-//                if (Double.compare(score, myRating) > 0) {
-//                    tieAwareRank++;
-//                } else if (Double.compare(score, myRating) == 0) {
-//                    break;
-//                }
-//            }
-//
-//            finalRank = tieAwareRank;
-//        }
-
         UserRankInfo myRankInfo = UserRankInfo.builder()
                 .rank(myFinalRank)
                 .nickname(userData.getNickname())
