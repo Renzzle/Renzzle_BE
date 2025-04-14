@@ -41,13 +41,13 @@ public class AccountServiceTest {
     private LoginRequest validLoginRequest;
 
     @BeforeEach
-    void setup() {
+    public void setup() {
         validSignupRequest = new SignupRequest(email, password, nickname, authVerityToken, deviceId);
         validLoginRequest = new LoginRequest(email, password);
     }
 
     @Test
-    void signUp_ShouldCreateUserAndReturnTokens_WhenValid() {
+    public void signUp_ShouldCreateUserAndReturnTokens_WhenValid() {
         // given
         when(authService.verifyAuthVerityToken(authVerityToken, email)).thenReturn(true);
         when(userRepository.existsByEmail(email)).thenReturn(false);
@@ -65,7 +65,7 @@ public class AccountServiceTest {
     }
 
     @Test
-    void signUp_ShouldThrowException_WhenEmailAlreadyExists() {
+    public void signUp_ShouldThrowException_WhenEmailAlreadyExists() {
         when(authService.verifyAuthVerityToken(authVerityToken, email)).thenReturn(true);
         when(userRepository.existsByEmail(email)).thenReturn(true);
 
@@ -77,7 +77,7 @@ public class AccountServiceTest {
     }
 
     @Test
-    void signUp_ShouldThrowException_WhenInvalidAuthToken() {
+    public void signUp_ShouldThrowException_WhenInvalidAuthToken() {
         when(authService.verifyAuthVerityToken(authVerityToken, email)).thenReturn(false);
 
         CustomException ex = assertThrows(CustomException.class, () -> {
@@ -88,7 +88,7 @@ public class AccountServiceTest {
     }
 
     @Test
-    void login_ShouldReturnTokens_WhenCredentialsAreValid() {
+    public void login_ShouldReturnTokens_WhenCredentialsAreValid() {
         UserEntity user = UserEntity.builder()
                 .email(email)
                 .password(new BCryptPasswordEncoder().encode(password))
@@ -106,7 +106,7 @@ public class AccountServiceTest {
     }
 
     @Test
-    void login_ShouldThrowException_WhenEmailNotFound() {
+    public void login_ShouldThrowException_WhenEmailNotFound() {
         when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
 
         CustomException ex = assertThrows(CustomException.class, () -> {
@@ -117,7 +117,7 @@ public class AccountServiceTest {
     }
 
     @Test
-    void login_ShouldThrowException_WhenPasswordMismatch() {
+    public void login_ShouldThrowException_WhenPasswordMismatch() {
         UserEntity user = UserEntity.builder()
                 .email(email)
                 .password(new BCryptPasswordEncoder().encode("wrong-password"))
