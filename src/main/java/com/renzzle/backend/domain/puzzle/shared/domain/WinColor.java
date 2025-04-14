@@ -43,4 +43,10 @@ public class WinColor {
         this.name = winColorName;
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof WinColor) {
+            return this.name.equals(((WinColor) obj).name);
+        } else return false;
+    }
 }

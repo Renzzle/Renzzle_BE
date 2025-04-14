@@ -6,10 +6,7 @@ import lombok.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-import java.time.Clock;
 import java.time.Instant;
-
-import static com.renzzle.backend.global.common.constant.TimeConstant.CONST_FUTURE_INSTANT;
 
 @Entity
 @Getter
@@ -46,33 +43,33 @@ public class UserCommunityPuzzle {
     private Instant solvedAt;
 
     @Builder.Default
-    @Column(name = "like")
-    private boolean like = false;
+    @Column(name = "is_liked")
+    private boolean isLiked = false;
 
     @Builder.Default
-    @Column(name = "dislike")
-    private boolean dislike = false;
+    @Column(name = "is_disliked")
+    private boolean isDisliked = false;
 
     @Column(name = "liked_at")
     private Instant likedAt;
 
     public boolean toggleLike(Instant likedAt) {
-        like = !like;
-        if (like) {
-            dislike = false;
+        isLiked = !isLiked;
+        if (isLiked) {
+            isDisliked = false;
             this.likedAt = likedAt;
         } else {
             this.likedAt = null;
         }
-        return like;
+        return isLiked;
     }
 
     public boolean toggleDislike() {
-        dislike = !dislike;
-        if (dislike) {
-            like = false;
+        isDisliked = !isDisliked;
+        if (isDisliked) {
+            isLiked = false;
         }
-        return dislike;
+        return isDisliked;
     }
 
 }

@@ -14,7 +14,7 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
 
     @Query(value = "SELECT cp.* FROM community_puzzle cp " +
             "JOIN user_community_puzzle ucp ON ucp.community_id = cp.id " +
-            "WHERE ucp.user_id = :userId AND ucp.like = TRUE AND ucp.liked_at IS NOT NULL " +
+            "WHERE ucp.user_id = :userId AND ucp.is_liked = TRUE AND ucp.liked_at IS NOT NULL " +
             "AND (" +
             "   :cursorId IS NULL " +
             "   OR (ucp.liked_at, cp.id) < (SELECT ucp2.liked_at, cp2.id FROM user_community_puzzle ucp2 " +

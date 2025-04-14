@@ -25,7 +25,7 @@ public interface UserCommunityPuzzleRepository extends JpaRepository<UserCommuni
             ") THEN TRUE ELSE FALSE END")
     boolean checkIsSolvedPuzzle(@Param("userId") Long userId, @Param("puzzleId") Long puzzleId);
 
-    @Query("SELECT ucp.like AS like, ucp.dislike AS dislike " +
+    @Query("SELECT ucp.isLiked AS isLiked, ucp.isDisliked AS isDisliked " +
             "FROM UserCommunityPuzzle ucp " +
             "WHERE ucp.user.id = :userId AND ucp.puzzle.id = :puzzleId")
     Optional<LikeDislikeProjection> getMyLikeDislike(

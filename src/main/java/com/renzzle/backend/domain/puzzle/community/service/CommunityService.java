@@ -20,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.swing.text.html.Option;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
@@ -95,8 +94,8 @@ public class CommunityService {
 
         Optional<LikeDislikeProjection> result = userCommunityPuzzleRepository
                 .getMyLikeDislike(user.getId(), puzzleId);
-        Boolean myLike = result.map(LikeDislikeProjection::getLike).orElse(false);
-        Boolean myDislike = result.map(LikeDislikeProjection::getDislike).orElse(false);
+        Boolean myLike = result.map(LikeDislikeProjection::getIsLiked).orElse(false);
+        Boolean myDislike = result.map(LikeDislikeProjection::getIsDisliked).orElse(false);
 
         return GetSingleCommunityPuzzleResponse.builder()
                 .id(puzzle.getId())
@@ -164,7 +163,7 @@ public class CommunityService {
                 UserCommunityPuzzle.builder()
                         .user(user)
                         .puzzle(puzzle)
-                        .like(true)
+                        .isLiked(true)
                         .likedAt(clock.instant())
                         .build()
         );
@@ -186,7 +185,7 @@ public class CommunityService {
                 UserCommunityPuzzle.builder()
                         .user(user)
                         .puzzle(puzzle)
-                        .dislike(true)
+                        .isDisliked(true)
                         .build()
         );
 
