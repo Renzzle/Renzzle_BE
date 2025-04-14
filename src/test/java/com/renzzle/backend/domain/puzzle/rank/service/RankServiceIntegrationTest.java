@@ -5,11 +5,15 @@ import com.renzzle.backend.domain.puzzle.rank.api.request.RankResultRequest;
 import com.renzzle.backend.domain.puzzle.rank.api.response.RankEndResponse;
 import com.renzzle.backend.domain.puzzle.rank.api.response.RankResultResponse;
 import com.renzzle.backend.domain.puzzle.rank.api.response.RankStartResponse;
+import com.renzzle.backend.domain.puzzle.rank.domain.LatestRankPuzzle;
 import com.renzzle.backend.domain.puzzle.rank.domain.RankSessionData;
+import com.renzzle.backend.domain.puzzle.rank.support.TestUserFactory;
 import com.renzzle.backend.domain.puzzle.rank.util.PuzzleSeeder;
+import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.domain.Status;
+import com.renzzle.backend.global.util.ELOUtil;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,13 +46,10 @@ public class RankServiceIntegrationTest {
     @Autowired private UserRepository userRepository;
     @Autowired private RedisTemplate<String, RankSessionData> redisTemplate;
     @Autowired private PuzzleSeeder puzzleSeeder;
+    @Autowired private Clock clock;
 
     @PersistenceContext
     private EntityManager em;
-
-    @Mock
-    private Clock clock;
-
 
     private UserEntity testUser;
     private String redisKey;
@@ -56,35 +57,21 @@ public class RankServiceIntegrationTest {
     @Value("${rank.session.ttl}")
     private long sessionTtl;
 
-    // 🔧 테스트 유저 생성 도우미
-    private UserEntity createTestUser(double rating, double mmr) {
-        return userRepository.save(
-                UserEntity.builder()
-                        .email("test@example.com")
-                        .password("test1234")
-                        .nickname("tester")
-                        .rating(rating)
-                        .mmr(mmr)
-                        .deviceId("test-device")
-                        .lastAccessedAt(Instant.now())
-                        .deletedAt(CONST_FUTURE_INSTANT)
-                        .status(Status.getDefaultStatus())
-                        .build()
-        );
-    }
-
     @BeforeEach
     void setup() {
-        testUser = createTestUser(1500, 1500);
+//        testUser = createTestUser(1500, 1500);
+        testUser = userRepository.save(TestUserFactory.createTestUser("tester", 1500));
         userRepository.flush();
         em.flush();
         em.clear();
         redisKey = String.valueOf(testUser.getId());
 
-        puzzleSeeder.seedPuzzle(1, "a1a2a3a4", "a4a5", 1, 1600, "BLACK");
-        puzzleSeeder.seedPuzzle(2, "b1b2b3b4", "b4b5", 1, 1300, "WHITE");
-        puzzleSeeder.seedPuzzle(3, "c1c2c3c4", "c4c5", 1, 1000, "BLACK");
-        puzzleSeeder.seedPuzzle(4, "b1b2b3b4c2", "b4b5c1", 1, 1520, "WHITE");
+        puzzleSeeder.seedPuzzle(1, "a1a2", "a3",3,  1400, "BLACK");
+        puzzleSeeder.seedPuzzle(2, "b1b2", "b3", 3, 1450, "WHITE");
+        puzzleSeeder.seedPuzzle(3, "c1c2", "c3", 4, 1500, "BLACK");
+        puzzleSeeder.seedPuzzle(4, "d1d2", "d3", 5, 1550, "WHITE");
+        puzzleSeeder.seedPuzzle(5, "e1e2", "e3", 6, 1600, "BLACK");
+        puzzleSeeder.seedPuzzle(6, "a1a2a3", "a13",3,  1353, "BLACK");
 
     }
 
@@ -127,6 +114,44 @@ public class RankServiceIntegrationTest {
 
         RankSessionData sessionAfterEnd = redisTemplate.opsForValue().get(redisKey);
         assertNull(sessionAfterEnd, "end 호출 후 Redis에서 세션이 사라져야 함");
+    }
+
+    @Test
+    void getNextPuzzle_ShouldReturnCorrectPuzzleAndAvoidDuplicates() {
+
+        em.flush();
+        em.clear();
+
+        double targetWinProb = 0.7;
+        TrainingPuzzle firstPuzzle = rankService.getNextPuzzle(testUser.getMmr(), targetWinProb, testUser);
+
+        assertEquals(1353, firstPuzzle.getRating(), "첫 번째 문제는 1353이어야 함");
+
+        // 저장 → 중복 방지를 위해
+        LatestRankPuzzle solved = LatestRankPuzzle.builder()
+                .user(testUser)
+                .boardStatus(firstPuzzle.getBoardStatus())
+                .answer(firstPuzzle.getAnswer())
+                .isSolved(true)
+                .assignedAt(clock.instant())
+                .winColor(firstPuzzle.getWinColor())
+                .build();
+        em.persist(solved);
+
+        em.flush();
+        em.clear();
+
+        double newMmr = testUser.getMmr() + ELOUtil.calculateMMRIncrease(testUser.getMmr(), firstPuzzle.getRating());
+        testUser.updateMmrTo(newMmr);
+        userRepository.save(testUser);
+
+        em.flush();
+        em.clear();
+
+        TrainingPuzzle secondPuzzle = rankService.getNextPuzzle(testUser.getMmr(), targetWinProb - 0.05, testUser);
+
+        assertNotEquals(firstPuzzle.getId(), secondPuzzle.getId(), "같은 문제 다시 출제되면 안 됨");
+        assertEquals(1400, secondPuzzle.getRating(), "두 번째 문제는 1400이어야 함");
     }
 
 }

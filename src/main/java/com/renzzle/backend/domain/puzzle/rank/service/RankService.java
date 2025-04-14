@@ -267,7 +267,6 @@ public class RankService {
 
         List<UserRankInfo> top100 = new ArrayList<>();
         int currentRank = 1;
-        int sameScoreCount = 1;
         double lastScore = -1;
         int rankCounter = 0;
 
@@ -276,11 +275,8 @@ public class RankService {
             double score = Objects.requireNonNull(info).rating();
             rankCounter++;
 
-            if (Double.compare(score, lastScore) == 0) {
-                sameScoreCount++;
-            } else {
+            if (Double.compare(score, lastScore) != 0) {
                 currentRank = rankCounter;
-                sameScoreCount = 1;
                 lastScore = score;
             }
 
@@ -291,43 +287,71 @@ public class RankService {
                     .build());
         }
 
-        // 내 정보 랭킹 계산
-        UserRankInfo myInfo = UserRankInfo.builder()
-                .rank(0)
-                .nickname(userData.getNickname())
-                .rating(userData.getRating())
-                .build();
+        // 내 정보 랭킹 계산 (전체 사용자 기반 공동 순위)
+        Set<ZSetOperations.TypedTuple<Object>> allUsersSet =
+                Optional.ofNullable(redisRankingTemplate.opsForZSet()
+                                .reverseRangeWithScores(rankingKey, 0, -1))
+                        .orElse(Collections.emptySet());
 
-        Long myRankRaw = redisRankingTemplate.opsForZSet().reverseRank(rankingKey, myInfo);
+        int tieAwareRank = 1;
+        double myRating = userData.getRating();
+        lastScore = -1;
+        rankCounter = 0;
+        int myFinalRank = -1;
 
-        int finalRank = -1;
+        for (ZSetOperations.TypedTuple<Object> tuple : allUsersSet) {
+            Double score = tuple.getScore();
+            if (score == null) continue;
+            rankCounter++;
 
-        if (myRankRaw != null) {
-            // 공동 순위 계산
-            Set<ZSetOperations.TypedTuple<Object>> allUsersSet = redisRankingTemplate.opsForZSet()
-                    .reverseRangeWithScores(rankingKey, 0, -1);
-
-            int tieAwareRank = 1;
-            double myRating = userData.getRating();
-
-            Set<Double> uniqueScores = Objects.requireNonNull(allUsersSet).stream()
-                    .map(ZSetOperations.TypedTuple::getScore)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toCollection(LinkedHashSet::new));
-
-            for (Double score : uniqueScores) {
-                if (Double.compare(score, myRating) > 0) {
-                    tieAwareRank++;
-                } else if (Double.compare(score, myRating) == 0) {
-                    break;
-                }
+            if (Double.compare(score, lastScore) != 0) {
+                tieAwareRank = rankCounter;
+                lastScore = score;
             }
 
-            finalRank = tieAwareRank;
+            if (Double.compare(score, myRating) == 0) {
+                myFinalRank = tieAwareRank;
+                break;
+            }
         }
 
+//        // 내 정보 랭킹 계산
+//        UserRankInfo myInfo = UserRankInfo.builder()
+//                .rank(0)
+//                .nickname(userData.getNickname())
+//                .rating(userData.getRating())
+//                .build();
+//
+//        Long myRankRaw = redisRankingTemplate.opsForZSet().reverseRank(rankingKey, myInfo);
+//
+//        int finalRank = -1;
+//
+//        if (myRankRaw != null) {
+//            // 공동 순위 계산
+//            Set<ZSetOperations.TypedTuple<Object>> allUsersSet = redisRankingTemplate.opsForZSet()
+//                    .reverseRangeWithScores(rankingKey, 0, -1);
+//
+//            int tieAwareRank = 1;
+//            double myRating = userData.getRating();
+//
+//            Set<Double> uniqueScores = Objects.requireNonNull(allUsersSet).stream()
+//                    .map(ZSetOperations.TypedTuple::getScore)
+//                    .filter(Objects::nonNull)
+//                    .collect(Collectors.toCollection(LinkedHashSet::new));
+//
+//            for (Double score : uniqueScores) {
+//                if (Double.compare(score, myRating) > 0) {
+//                    tieAwareRank++;
+//                } else if (Double.compare(score, myRating) == 0) {
+//                    break;
+//                }
+//            }
+//
+//            finalRank = tieAwareRank;
+//        }
+
         UserRankInfo myRankInfo = UserRankInfo.builder()
-                .rank(finalRank)
+                .rank(myFinalRank)
                 .nickname(userData.getNickname())
                 .rating(userData.getRating())
                 .build();
