@@ -1,5 +1,6 @@
-package com.renzzle.backend.config;
+package com.renzzle.backend.support;
 
+import com.renzzle.backend.config.TestContainersConfig;
 import com.renzzle.backend.global.config.QueryDSLConfig;
 import com.renzzle.backend.global.init.DataInitializer;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;

@@ -1,6 +1,6 @@
 package com.renzzle.backend.domain.puzzle.community.dao;
 
-import com.renzzle.backend.config.DataJpaTestWithInitContainers;
+import com.renzzle.backend.support.DataJpaTestWithInitContainers;
 import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.user.dao.UserRepository;
@@ -272,7 +272,7 @@ public class CommunityPuzzleRepositoryTest {
         CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user)
                 .save(communityPuzzleRepository);
 
-        Instant deletedTime = Instant.now();
+        Instant deletedTime = Instant.parse("2025-04-15T12:00:00.000000Z");
 
         // When
         int updatedCount = communityPuzzleRepository.softDelete(puzzle.getId(), deletedTime);
