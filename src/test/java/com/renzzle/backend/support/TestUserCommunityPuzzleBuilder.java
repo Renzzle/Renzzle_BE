@@ -4,14 +4,18 @@ import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleReposi
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.community.domain.UserCommunityPuzzle;
 import com.renzzle.backend.domain.user.domain.UserEntity;
+import org.mockito.Mockito;
 
 import java.time.Instant;
 
 public class TestUserCommunityPuzzleBuilder {
 
+    private static Long idx = 0L;
+
     private final UserEntity user;
     private final CommunityPuzzle puzzle;
 
+    private Long id = null;
     private boolean isSolved = false;
     private Instant solvedAt = null;
     private boolean isLiked = false;
@@ -25,6 +29,11 @@ public class TestUserCommunityPuzzleBuilder {
 
     public static TestUserCommunityPuzzleBuilder builder(UserEntity user, CommunityPuzzle puzzle) {
         return new TestUserCommunityPuzzleBuilder(user, puzzle);
+    }
+
+    public TestUserCommunityPuzzleBuilder withId(Long id) {
+        this.id = id;
+        return this;
     }
 
     public TestUserCommunityPuzzleBuilder withSolved(boolean isSolved) {
@@ -65,7 +74,14 @@ public class TestUserCommunityPuzzleBuilder {
     }
 
     public UserCommunityPuzzle save(UserCommunityPuzzleRepository repository) {
-        return repository.save(build());
+        if (repository == null || Mockito.mockingDetails(repository).isMock()) {
+            id = (id == null) ? ++idx : id;
+            return build();
+        } else {
+            UserCommunityPuzzle ucp = repository.save(build());
+            idx = ucp.getId();
+            return ucp;
+        }
     }
 
 }
