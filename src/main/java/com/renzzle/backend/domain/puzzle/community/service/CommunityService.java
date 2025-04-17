@@ -20,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.swing.text.html.Option;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
@@ -65,7 +64,7 @@ public class CommunityService {
 
         List<GetCommunityPuzzlesResponse> response = new ArrayList<>();
         for (CommunityPuzzle puzzle : puzzleList) {
-            boolean isSolved = userCommunityPuzzleRepository.checkIsSolvedPuzzle(puzzle.getId(), user.getId());
+            boolean isSolved = userCommunityPuzzleRepository.checkIsSolvedPuzzle(user.getId(), puzzle.getId());
 
             response.add(
                     GetCommunityPuzzlesResponse.builder()
@@ -91,12 +90,12 @@ public class CommunityService {
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
 
-        boolean isSolved = userCommunityPuzzleRepository.checkIsSolvedPuzzle(puzzle.getId(), user.getId());
+        boolean isSolved = userCommunityPuzzleRepository.checkIsSolvedPuzzle(user.getId(), puzzle.getId());
 
         Optional<LikeDislikeProjection> result = userCommunityPuzzleRepository
                 .getMyLikeDislike(user.getId(), puzzleId);
-        Boolean myLike = result.map(LikeDislikeProjection::getLike).orElse(false);
-        Boolean myDislike = result.map(LikeDislikeProjection::getDislike).orElse(false);
+        Boolean myLike = result.map(LikeDislikeProjection::getIsLiked).orElse(false);
+        Boolean myDislike = result.map(LikeDislikeProjection::getIsDisliked).orElse(false);
 
         return GetSingleCommunityPuzzleResponse.builder()
                 .id(puzzle.getId())
@@ -164,7 +163,7 @@ public class CommunityService {
                 UserCommunityPuzzle.builder()
                         .user(user)
                         .puzzle(puzzle)
-                        .like(true)
+                        .isLiked(true)
                         .likedAt(clock.instant())
                         .build()
         );
@@ -186,7 +185,7 @@ public class CommunityService {
                 UserCommunityPuzzle.builder()
                         .user(user)
                         .puzzle(puzzle)
-                        .dislike(true)
+                        .isDisliked(true)
                         .build()
         );
 

@@ -14,7 +14,7 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
 
     @Query(value = "SELECT cp.* FROM community_puzzle cp " +
             "JOIN user_community_puzzle ucp ON ucp.community_id = cp.id " +
-            "WHERE ucp.user_id = :userId AND ucp.like = TRUE AND ucp.liked_at IS NOT NULL " +
+            "WHERE ucp.user_id = :userId AND ucp.is_liked = TRUE AND ucp.liked_at IS NOT NULL " +
             "AND (" +
             "   :cursorId IS NULL " +
             "   OR (ucp.liked_at, cp.id) < (SELECT ucp2.liked_at, cp2.id FROM user_community_puzzle ucp2 " +
@@ -30,13 +30,17 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
             "   :cursorId IS NULL " +
             "   OR (cp.created_at, cp.id) < (SELECT cp2.created_at, cp2.id FROM community_puzzle cp2 " +
             "                               WHERE cp2.id = :cursorId)" +
+            ") " +
             "ORDER BY cp.created_at DESC, cp.id DESC " +
             "LIMIT :size", nativeQuery = true)
     List<CommunityPuzzle> getUserPuzzles(@Param("userId") Long userId, @Param("cursorId") Long cursorId, @Param("size") int size);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE CommunityPuzzle cp SET cp.status = (SELECT s FROM Status s WHERE s.name = 'DELETED'), " +
             "cp.deletedAt = :deletedAt WHERE cp.id = :puzzleId")
     int softDelete(@Param("puzzleId") Long puzzleId, @Param("deletedAt") Instant deletedAt);
+
+    @Query(value = "SELECT * FROM community_puzzle WHERE id = :id", nativeQuery = true)
+    CommunityPuzzle findByIdIncludingDeleted(@Param("id") Long id);
 
 }

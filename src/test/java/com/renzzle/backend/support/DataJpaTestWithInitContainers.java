@@ -1,5 +1,7 @@
-package com.renzzle.backend.config;
+package com.renzzle.backend.support;
 
+import com.renzzle.backend.config.TestContainersConfig;
+import com.renzzle.backend.global.config.QueryDSLConfig;
 import com.renzzle.backend.global.init.DataInitializer;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
@@ -14,7 +16,7 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @DataJpaTest
-@Import(DataInitializer.class)
+@Import({DataInitializer.class, QueryDSLConfig.class})
 @ImportAutoConfiguration(JdbcTemplateAutoConfiguration.class)
 @ContextConfiguration(initializers = TestContainersConfig.class)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
