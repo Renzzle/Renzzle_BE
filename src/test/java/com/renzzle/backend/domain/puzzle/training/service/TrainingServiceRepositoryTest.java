@@ -12,6 +12,7 @@ import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.constant.ItemPrice;
 import com.renzzle.backend.global.common.constant.LanguageCode;
 import com.renzzle.backend.global.common.domain.Status;
+import com.renzzle.backend.support.DataJpaTestWithInitContainers;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -31,9 +32,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DataJpaTest
-@ContextConfiguration(initializers = TestContainersConfig.class)
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@DataJpaTestWithInitContainers
 public class TrainingServiceRepositoryTest {
 
     @Autowired
