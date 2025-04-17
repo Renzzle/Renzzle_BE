@@ -71,7 +71,7 @@ public class UserService {
 
         List<GetCommunityPuzzlesResponse> response = new ArrayList<>();
         for (CommunityPuzzle puzzle : puzzles) {
-            boolean isSolved = userCommunityPuzzleRepository.checkIsSolvedPuzzle(puzzle.getId(), user.getId());
+            boolean isSolved = userCommunityPuzzleRepository.checkIsSolvedPuzzle(user.getId(), puzzle.getId());
 
             response.add(
                     GetCommunityPuzzlesResponse.builder()
@@ -98,7 +98,7 @@ public class UserService {
 
         List<GetCommunityPuzzlesResponse> response = new ArrayList<>();
         for (CommunityPuzzle puzzle : puzzles) {
-            boolean isSolved = userCommunityPuzzleRepository.checkIsSolvedPuzzle(puzzle.getId(), user.getId());
+            boolean isSolved = userCommunityPuzzleRepository.checkIsSolvedPuzzle(user.getId(), puzzle.getId());
 
             response.add(
                     GetCommunityPuzzlesResponse.builder()

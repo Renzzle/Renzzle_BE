@@ -64,7 +64,7 @@ public class CommunityService {
 
         List<GetCommunityPuzzlesResponse> response = new ArrayList<>();
         for (CommunityPuzzle puzzle : puzzleList) {
-            boolean isSolved = userCommunityPuzzleRepository.checkIsSolvedPuzzle(puzzle.getId(), user.getId());
+            boolean isSolved = userCommunityPuzzleRepository.checkIsSolvedPuzzle(user.getId(), puzzle.getId());
 
             response.add(
                     GetCommunityPuzzlesResponse.builder()
@@ -90,7 +90,7 @@ public class CommunityService {
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
 
-        boolean isSolved = userCommunityPuzzleRepository.checkIsSolvedPuzzle(puzzle.getId(), user.getId());
+        boolean isSolved = userCommunityPuzzleRepository.checkIsSolvedPuzzle(user.getId(), puzzle.getId());
 
         Optional<LikeDislikeProjection> result = userCommunityPuzzleRepository
                 .getMyLikeDislike(user.getId(), puzzleId);
