@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -331,10 +332,12 @@ public class RankService {
     public void updateRankingCache() {
         String rankingKey = "user:ranking";
 
+        Instant oneMonthAgo = Instant.now(clock).minus(30, ChronoUnit.DAYS);
+        List<UserEntity> activeUsers = latestRankPuzzleRepository.findActiveUsersWithinPeriod(oneMonthAgo);
+
         redisRankingTemplate.delete(rankingKey);
 
-        List<UserEntity> allUsers = userRepository.findAll();
-        for (UserEntity user : allUsers) {
+        for (UserEntity user : activeUsers) {
             UserRankInfo info = UserRankInfo.builder()
                     .rank(0)
                     .nickname(user.getNickname())
@@ -344,5 +347,4 @@ public class RankService {
             redisRankingTemplate.opsForZSet().add(rankingKey, info, user.getRating());
         }
     }
-
 }
