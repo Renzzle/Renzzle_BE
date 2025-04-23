@@ -8,7 +8,6 @@ import com.renzzle.backend.domain.puzzle.rank.dao.LatestRankPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.rank.domain.LatestRankPuzzle;
 import com.renzzle.backend.domain.puzzle.rank.domain.RankSessionData;
 import com.renzzle.backend.domain.puzzle.rank.service.dto.NextPuzzleResult;
-import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.puzzle.training.dao.TrainingPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.user.dao.UserRepository;
@@ -31,7 +30,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static com.renzzle.backend.global.util.ELOUtil.TARGET_WIN_PROBABILITY;
 import static com.renzzle.backend.global.util.ELOUtil.WIN_PROBABILITY_DELTA;

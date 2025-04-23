@@ -1,6 +1,5 @@
 package com.renzzle.backend.domain.puzzle.rank.service;
 
-import com.renzzle.backend.config.DataJpaTestWithInitContainers;
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.rank.dao.LatestRankPuzzleRepository;
@@ -9,26 +8,20 @@ import com.renzzle.backend.domain.puzzle.rank.support.TestUserFactory;
 import com.renzzle.backend.domain.puzzle.rank.util.CommunityPuzzleSeeder;
 import com.renzzle.backend.domain.puzzle.rank.util.PackSeeder;
 import com.renzzle.backend.domain.puzzle.rank.util.TrainingPuzzleSeeder;
-import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
-import com.renzzle.backend.domain.puzzle.training.dao.PackRepository;
 import com.renzzle.backend.domain.puzzle.training.dao.TrainingPuzzleRepository;
-import com.renzzle.backend.domain.puzzle.training.domain.Pack;
 import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
-import com.renzzle.backend.global.common.domain.Status;
-import jakarta.persistence.EntityManager;
+import com.renzzle.backend.support.DataJpaTestWithInitContainers;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 
-import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static com.renzzle.backend.global.common.constant.TimeConstant.CONST_FUTURE_INSTANT;
 
 @DataJpaTestWithInitContainers
 @Import({TrainingPuzzleSeeder.class, CommunityPuzzleSeeder.class, PackSeeder.class})
