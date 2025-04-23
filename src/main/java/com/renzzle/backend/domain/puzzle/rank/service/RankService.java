@@ -217,9 +217,14 @@ public class RankService {
     }
 
     NextPuzzleResult getNextPuzzle(double originalMmr, double targetWinProbability, UserEntity user) {
-        // 사용자의 레이팅 & 기대 승률 을 통해 적합한 문제를 가져옴
+
+        /*
+            사용자의 레이팅 & 기대 승률 을 통해 적합한 문제를 가져옴
+            문제들을
+            windowSize 만큼 각 퍼즐에서 선정 후 이들을 섞은 후 이 중 하나의 문제를 선택하여 다음 문제로 사용
+        */
         double desiredRating = ELOUtil.getProblemRatingForTargetWinProbability(originalMmr, targetWinProbability);
-        int windowSize = 10;
+        int windowSize = 5;
 
         // 각 퍼즐 후보군 가져오기 (레이팅 기준 정렬)
         List<TrainingPuzzle> trainingPuzzles =
@@ -272,6 +277,11 @@ public class RankService {
     }
 
     private <T> List<T> pickNearByWindow(List<T> sorted, double targetRating, int windowSize) {
+        /*
+            각 퍼즐에서 windowSize 만큼의 문제들을 선택
+            단, 기준 문제의 레이팅에서 maxDiff 이상의 오차를 가진 문제는 선정하지 않음.
+            배열의 끝에 다다르면 그 쪽으로는 더 이상 진행하지 않음
+        */
         if (sorted.isEmpty()) return Collections.emptyList();
 
         double maxDiff = 200.0; // 레이팅 허용 오차
