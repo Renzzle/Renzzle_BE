@@ -17,8 +17,6 @@ public interface LatestRankPuzzleRepository extends JpaRepository<LatestRankPuzz
 
     List<LatestRankPuzzle> findAllByUser(UserEntity user);
 
-    @Query("SELECT DISTINCT l.user" +
-    " FROM LatestRankPuzzle l" +
-    " WHERE l.assignedAt >= :threshold")
+    @Query("SELECT DISTINCT l.user FROM LatestRankPuzzle l WHERE l.assignedAt >= :threshold")
     List<UserEntity> findActiveUsersWithinPeriod(@Param("threshold") Instant threshold);
 }

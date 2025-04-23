@@ -7,8 +7,11 @@ import com.renzzle.backend.domain.puzzle.rank.api.response.RankResultResponse;
 import com.renzzle.backend.domain.puzzle.rank.api.response.RankStartResponse;
 import com.renzzle.backend.domain.puzzle.rank.domain.LatestRankPuzzle;
 import com.renzzle.backend.domain.puzzle.rank.domain.RankSessionData;
+import com.renzzle.backend.domain.puzzle.rank.service.dto.NextPuzzleResult;
 import com.renzzle.backend.domain.puzzle.rank.support.TestUserFactory;
+import com.renzzle.backend.domain.puzzle.rank.util.CommunityPuzzleSeeder;
 import com.renzzle.backend.domain.puzzle.rank.util.PuzzleSeeder;
+import com.renzzle.backend.domain.puzzle.rank.util.TrainingPuzzleSeeder;
 import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
@@ -33,6 +36,7 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 import static com.renzzle.backend.global.common.constant.TimeConstant.CONST_FUTURE_INSTANT;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.validator.internal.util.Contracts.assertTrue;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -45,7 +49,8 @@ public class RankServiceIntegrationTest {
     @Autowired private RankService rankService;
     @Autowired private UserRepository userRepository;
     @Autowired private RedisTemplate<String, RankSessionData> redisTemplate;
-    @Autowired private PuzzleSeeder puzzleSeeder;
+    @Autowired private TrainingPuzzleSeeder trainingPuzzleSeeder;
+    @Autowired private CommunityPuzzleSeeder communityPuzzleSeeder;
     @Autowired private Clock clock;
 
     @PersistenceContext
@@ -59,20 +64,53 @@ public class RankServiceIntegrationTest {
 
     @BeforeEach
     void setup() {
-//        testUser = createTestUser(1500, 1500);
         testUser = userRepository.save(TestUserFactory.createTestUser("tester", 1500));
         userRepository.flush();
         em.flush();
         em.clear();
         redisKey = String.valueOf(testUser.getId());
 
-        puzzleSeeder.seedPuzzle(1, "a1a2", "a3",3,  1400, "BLACK");
-        puzzleSeeder.seedPuzzle(2, "b1b2", "b3", 3, 1450, "WHITE");
-        puzzleSeeder.seedPuzzle(3, "c1c2", "c3", 4, 1500, "BLACK");
-        puzzleSeeder.seedPuzzle(4, "d1d2", "d3", 5, 1550, "WHITE");
-        puzzleSeeder.seedPuzzle(5, "e1e2", "e3", 6, 1600, "BLACK");
-        puzzleSeeder.seedPuzzle(6, "a1a2a3", "a13",3,  1353, "BLACK");
+        trainingPuzzleSeeder.seedPuzzle(1, "a1a2", "a3", 3, 1400, "BLACK");
+        trainingPuzzleSeeder.seedPuzzle(2, "b1b2", "b3", 3, 1450, "WHITE");
 
+        communityPuzzleSeeder.seedPuzzle("c1c2", "c3", 4, 1500, "BLACK", testUser);
+        communityPuzzleSeeder.seedPuzzle("d1d2", "d3", 5, 1550, "WHITE", testUser);
+        communityPuzzleSeeder.seedPuzzle("e1e2", "e3", 6, 1600, "BLACK", testUser);
+        communityPuzzleSeeder.seedPuzzle("a1a2a3", "a13", 3, 1353, "BLACK", testUser);
+
+    }
+
+    @Test
+    void rankingFlow_WithTrainingAndCommunityPuzzles_ShouldCompleteSuccessfully() {
+        // Given - 사용자 및 Redis Key 설정
+        Long userId = testUser.getId();
+        String redisKey = String.valueOf(userId);
+
+        // startRankGame
+        RankStartResponse startResponse = rankService.startRankGame(testUser);
+
+        assertThat(startResponse.boardStatus()).isNotBlank();
+        assertThat(startResponse.winColor()).isNotBlank();
+
+        // resultRankGame
+        RankResultRequest resultRequest = new RankResultRequest(true);
+        RankResultResponse resultResponse = rankService.resultRankGame(testUser, resultRequest);
+
+        assertThat(resultResponse.boardStatus()).isNotBlank();
+        assertThat(resultResponse.winColor()).isNotBlank();
+
+        // 세션 상태 확인
+        RankSessionData session = redisTemplate.opsForValue().get(redisKey);
+        assertThat(session).isNotNull();
+        assertThat(session.isStarted()).isTrue();
+
+        // endRankGame
+        RankEndResponse endResponse = rankService.endRankGame(testUser);
+
+        assertThat(endResponse.rating()).isGreaterThanOrEqualTo(0.0);
+
+        // 세션 제거 확인
+        assertThat(redisTemplate.opsForValue().get(redisKey)).isNull();
     }
 
     @Test
@@ -123,9 +161,11 @@ public class RankServiceIntegrationTest {
         em.clear();
 
         double targetWinProb = 0.7;
-        TrainingPuzzle firstPuzzle = rankService.getNextPuzzle(testUser.getMmr(), targetWinProb, testUser);
 
-        assertEquals(1353, firstPuzzle.getRating(), "첫 번째 문제는 1353이어야 함");
+        NextPuzzleResult firstResult = rankService.getNextPuzzle(testUser.getMmr(), targetWinProb, testUser);
+        LatestRankPuzzle firstPuzzle = firstResult.latestPuzzle();
+
+        assertEquals(1353, (int) firstResult.rating(), "첫 번째 문제는 1353이어야 함");
 
         // 저장 → 중복 방지를 위해
         LatestRankPuzzle solved = LatestRankPuzzle.builder()
@@ -136,22 +176,23 @@ public class RankServiceIntegrationTest {
                 .assignedAt(clock.instant())
                 .winColor(firstPuzzle.getWinColor())
                 .build();
-        em.persist(solved);
 
+        em.persist(solved);
         em.flush();
         em.clear();
 
-        double newMmr = testUser.getMmr() + ELOUtil.calculateMMRIncrease(testUser.getMmr(), firstPuzzle.getRating());
+        double newMmr = testUser.getMmr() + ELOUtil.calculateMMRIncrease(testUser.getMmr(), firstResult.rating());
         testUser.updateMmrTo(newMmr);
         userRepository.save(testUser);
 
         em.flush();
         em.clear();
 
-        TrainingPuzzle secondPuzzle = rankService.getNextPuzzle(testUser.getMmr(), targetWinProb - 0.05, testUser);
+        NextPuzzleResult secondResult = rankService.getNextPuzzle(testUser.getMmr(), targetWinProb - 0.05, testUser);
+        LatestRankPuzzle secondPuzzle = secondResult.latestPuzzle();
 
         assertNotEquals(firstPuzzle.getId(), secondPuzzle.getId(), "같은 문제 다시 출제되면 안 됨");
-        assertEquals(1400, secondPuzzle.getRating(), "두 번째 문제는 1400이어야 함");
+        assertEquals(1400, (int) secondResult.rating(), "두 번째 문제는 1400이어야 함");
     }
 
 }

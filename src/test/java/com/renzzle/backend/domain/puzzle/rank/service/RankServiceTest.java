@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.puzzle.rank.service;
 
+import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.rank.api.request.RankResultRequest;
 import com.renzzle.backend.domain.puzzle.rank.api.response.*;
 import com.renzzle.backend.domain.puzzle.rank.dao.LatestRankPuzzleRepository;
@@ -28,6 +29,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -52,14 +54,18 @@ public class RankServiceTest {
     @Mock
     private TrainingPuzzleRepository trainingPuzzleRepository;
     @Mock
+    private CommunityPuzzleRepository communityPuzzleRepository;
+    @Mock
     private LatestRankPuzzleRepository latestRankPuzzleRepository;
     @Mock
     private Clock clock;
     @BeforeEach
     void setup() {
+        lenient().when(clock.instant()).thenReturn(Instant.parse("2025-01-01T00:00:00Z"));
         rankService = new RankService(
                 redisSessionTemplate,
                 trainingPuzzleRepository,
+                communityPuzzleRepository,
                 userRepository,
                 latestRankPuzzleRepository,
                 clock,
@@ -101,8 +107,12 @@ public class RankServiceTest {
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(latestRankPuzzleRepository.findAllByUser(user)).thenReturn(Collections.emptyList());
 
-        when(trainingPuzzleRepository.findAvailablePuzzlesForUser(anyDouble(), anyDouble(), eq(user)))
+        when(trainingPuzzleRepository.findAvailableTrainingPuzzlesSortedByRating(user))
                 .thenReturn(List.of(puzzle));
+        when(communityPuzzleRepository.findAvailableCommunityPuzzlesSortedByRating(user))
+                .thenReturn(Collections.emptyList());
+
+        when(redisSessionTemplate.opsForValue()).thenReturn(valueOperations);
         when(clock.instant()).thenReturn(Instant.parse("2025-01-01T00:00:00Z"));
         // When
         RankStartResponse response = rankService.startRankGame(user);
@@ -216,14 +226,7 @@ public class RankServiceTest {
         session.setLastProblemRating(1400);
         session.setTargetWinProbability(0.7);
 
-        TrainingPuzzle nextPuzzle = TrainingPuzzle.builder()
-                .boardStatus("nextBoard")
-                .answer("nextAnswer")
-                .depth(3)
-                .rating(1450)
-                .winColor(WinColor.getWinColor("BLACK"))
-                .build();
-
+        // 기존 문제(이전 라운드 문제)
         LatestRankPuzzle previous = LatestRankPuzzle.builder()
                 .user(user)
                 .boardStatus("a1a2")
@@ -233,18 +236,27 @@ public class RankServiceTest {
                 .winColor(WinColor.getWinColor("WHITE"))
                 .build();
 
+        // 다음 문제 후보 (TrainingPuzzle)
+        TrainingPuzzle candidatePuzzle = TrainingPuzzle.builder()
+                .boardStatus("nextBoard")
+                .answer("nextAnswer")
+                .depth(3)
+                .rating(1450)
+                .winColor(WinColor.getWinColor("BLACK"))
+                .build();
+
 
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(valueOperations.get("1")).thenReturn(session);
         when(redisSessionTemplate.getExpire("1", TimeUnit.SECONDS)).thenReturn(120L);
         when(latestRankPuzzleRepository.findTopByUserOrderByAssignedAtDesc(user)).thenReturn(Optional.of(previous));
-        when(trainingPuzzleRepository.findAvailablePuzzlesForUser(anyDouble(), anyDouble(), eq(user)))
-                .thenReturn(List.of(nextPuzzle));
+        when(trainingPuzzleRepository.findAvailableTrainingPuzzlesSortedByRating(user)).thenReturn(List.of(candidatePuzzle));
+        when(communityPuzzleRepository.findAvailableCommunityPuzzlesSortedByRating(user)).thenReturn(Collections.emptyList());
         when(clock.instant()).thenReturn(Instant.parse("2025-01-01T00:00:00Z"));
 
         RankResultRequest request = new RankResultRequest(true);
-        // When
         RankResultResponse response = rankService.resultRankGame(user, request);
+
         // Then
         assertThat(response.boardStatus()).isEqualTo("nextBoard");
         assertThat(response.winColor()).isEqualTo("BLACK");
@@ -401,9 +413,9 @@ public class RankServiceTest {
         // Given
         UserEntity user1 = TestUserFactory.createTestUser("u1", 1400);
         UserEntity user2 = TestUserFactory.createTestUser("u2", 1600);
-        List<UserEntity> allUsers = List.of(user1, user2);
+        List<UserEntity> activeUsers = List.of(user1, user2);
 
-        when(userRepository.findAll()).thenReturn(allUsers);
+        when(latestRankPuzzleRepository.findActiveUsersWithinPeriod(any())).thenReturn(activeUsers);
         when(redisRankingTemplate.opsForZSet()).thenReturn(zSetOperations);
 
         // When
@@ -411,12 +423,10 @@ public class RankServiceTest {
 
         // Then
         verify(redisRankingTemplate).delete("user:ranking");
-        verify(userRepository).findAll();
+        verify(latestRankPuzzleRepository).findActiveUsersWithinPeriod(any());
 
-        // ZSet 저장이 2번 일어났는지 확인
         verify(zSetOperations, times(2)).add(eq("user:ranking"), any(UserRankInfo.class), anyDouble());
 
-        // 실제 데이터 확인
         verify(zSetOperations).add(eq("user:ranking"),
                 argThat(info -> ((UserRankInfo) info).nickname().equals("u1")),
                 eq(1400.0));

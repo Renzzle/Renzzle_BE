@@ -5,6 +5,7 @@ import com.renzzle.backend.domain.puzzle.shared.util.BoardUtils;
 import com.renzzle.backend.domain.puzzle.training.dao.TrainingPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.training.domain.Pack;
 import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
+import com.renzzle.backend.domain.user.domain.UserEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -15,11 +16,12 @@ public class PuzzleSeeder {
 
     @Autowired
     private TrainingPuzzleRepository trainingPuzzleRepository;
-
+    @Autowired
+    private CommunityPuzzleSeeder communityPuzzleSeeder;
     @Autowired
     private PackSeeder packSeeder;
 
-    public void seedPuzzle(
+    public void seedTrainingPuzzle(
             int trainingIndex,
             String boardStatus,
             String answer,
@@ -41,5 +43,16 @@ public class PuzzleSeeder {
                         .winColor(WinColor.getWinColor(winColor))
                         .build()
         );
+    }
+
+    public void seedCommunityPuzzle(
+            String boardStatus,
+            String answer,
+            int depth,
+            double rating,
+            String winColor,
+            UserEntity author
+    ) {
+        communityPuzzleSeeder.seedPuzzle(boardStatus, answer, depth, rating, winColor, author);
     }
 }

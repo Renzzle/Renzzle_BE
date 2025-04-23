@@ -61,4 +61,11 @@ public interface TrainingPuzzleRepository extends JpaRepository<TrainingPuzzle, 
             @Param("maxRating") double maxRating,
             @Param("user") UserEntity user
     );
+
+    @Query("SELECT p FROM TrainingPuzzle p " +
+            "WHERE p.boardStatus NOT IN (" +
+            "    SELECT l.boardStatus FROM LatestRankPuzzle l WHERE l.user = :user" +
+            ") " +
+            "ORDER BY p.rating ASC")
+    List<TrainingPuzzle> findAvailableTrainingPuzzlesSortedByRating(@Param("user") UserEntity user);
 }

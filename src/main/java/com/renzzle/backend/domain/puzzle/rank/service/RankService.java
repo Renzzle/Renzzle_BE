@@ -1,10 +1,14 @@
 package com.renzzle.backend.domain.puzzle.rank.service;
 
+import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
+import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.rank.api.request.RankResultRequest;
 import com.renzzle.backend.domain.puzzle.rank.api.response.*;
 import com.renzzle.backend.domain.puzzle.rank.dao.LatestRankPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.rank.domain.LatestRankPuzzle;
 import com.renzzle.backend.domain.puzzle.rank.domain.RankSessionData;
+import com.renzzle.backend.domain.puzzle.rank.service.dto.NextPuzzleResult;
+import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.puzzle.training.dao.TrainingPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.user.dao.UserRepository;
@@ -39,6 +43,7 @@ public class RankService {
 
     private final RedisTemplate<String, RankSessionData> redisTemplate;
     private final TrainingPuzzleRepository trainingPuzzleRepository;
+    private final CommunityPuzzleRepository communityPuzzleRepository;
     private final UserRepository userRepository;
     private final LatestRankPuzzleRepository latestRankPuzzleRepository;
     private final Clock clock;
@@ -61,21 +66,14 @@ public class RankService {
         double originalMmr = user.getMmr();
         double originalRating = user.getRating();
 
-        TrainingPuzzle puzzle = getNextPuzzle(originalMmr, TARGET_WIN_PROBABILITY, user);
-
-        LatestRankPuzzle latestPuzzle = LatestRankPuzzle.builder()
-                .user(user)
-                .boardStatus(puzzle.getBoardStatus())
-                .answer(puzzle.getAnswer())
-                .isSolved(false)
-                .assignedAt(clock.instant())
-                .winColor(puzzle.getWinColor())
-                .build();
+        NextPuzzleResult puzzleResult = getNextPuzzle(originalMmr, TARGET_WIN_PROBABILITY, user);
+        LatestRankPuzzle latestPuzzle = puzzleResult.latestPuzzle();
+        double puzzleRating = puzzleResult.rating();
 
         latestRankPuzzleRepository.save(latestPuzzle);
 
-        double mmrPenalty = ELOUtil.calculateMMRDecrease(originalRating, puzzle.getRating());
-        double ratingPenalty = ELOUtil.calculateRatingDecrease(originalMmr, puzzle.getRating());
+        double mmrPenalty = ELOUtil.calculateMMRDecrease(originalRating, puzzleRating);
+        double ratingPenalty = ELOUtil.calculateRatingDecrease(originalMmr, puzzleRating);
 
         user.updateMmrTo(originalMmr + mmrPenalty);
         user.updateRatingTo(originalRating + ratingPenalty);
@@ -84,12 +82,12 @@ public class RankService {
         RankSessionData sessionData = new RankSessionData();
 
         sessionData.setUserId(userId);
-        sessionData.setBoardState(puzzle.getBoardStatus());
-        sessionData.setLastProblemRating(puzzle.getRating());
+        sessionData.setBoardState(latestPuzzle.getBoardStatus());
+        sessionData.setLastProblemRating(puzzleRating);
         sessionData.setMmrBeforePenalty(originalMmr);
         sessionData.setRatingBeforePenalty(originalRating);
         sessionData.setTargetWinProbability(TARGET_WIN_PROBABILITY);
-        sessionData.setWinnerColor(puzzle.getWinColor().getName());
+        sessionData.setWinnerColor(latestPuzzle.getWinColor().getName());
         sessionData.setStarted(true);
 
         redisTemplate.opsForValue().set(redisKey, sessionData, sessionTTLSeconds, TimeUnit.SECONDS);
@@ -162,10 +160,12 @@ public class RankService {
         }
 
         // 사용자의 레이팅 & 기대 승률 을 통해 적합한 문제를 가져옴
-        TrainingPuzzle puzzle = getNextPuzzle(userBeforeMmr, WinProbability, user);
+        NextPuzzleResult puzzleResult = getNextPuzzle(userBeforeMmr, WinProbability, user);
+        LatestRankPuzzle latestPuzzle = puzzleResult.latestPuzzle();
+        double puzzleRating = puzzleResult.rating();
 
-        double ratingPenalty = ELOUtil.calculateRatingDecrease(userBeforeRating, puzzle.getRating());
-        double mmrPenalty = ELOUtil.calculateMMRDecrease(userBeforeMmr, puzzle.getRating());
+        double ratingPenalty = ELOUtil.calculateRatingDecrease(userBeforeRating, puzzleRating);
+        double mmrPenalty = ELOUtil.calculateMMRDecrease(userBeforeMmr, puzzleRating);
 
         user.updateMmrTo(userBeforeMmr + mmrPenalty);
         user.updateRatingTo(userBeforeRating + ratingPenalty);
@@ -174,18 +174,18 @@ public class RankService {
 
         LatestRankPuzzle nextPuzzle = LatestRankPuzzle.builder()
                 .user(user)
-                .boardStatus(puzzle.getBoardStatus())
-                .answer(puzzle.getAnswer())
+                .boardStatus(latestPuzzle.getBoardStatus())
+                .answer(latestPuzzle.getAnswer())
                 .isSolved(false)
                 .assignedAt(clock.instant())
-                .winColor(puzzle.getWinColor())
+                .winColor(latestPuzzle.getWinColor())
                 .build();
 
         latestRankPuzzleRepository.save(nextPuzzle);
 
-        session.setBoardState(puzzle.getBoardStatus());
-        session.setLastProblemRating(puzzle.getRating());
-        session.setWinnerColor(puzzle.getWinColor().getName());
+        session.setBoardState(latestPuzzle.getBoardStatus());
+        session.setLastProblemRating(puzzleRating);
+        session.setWinnerColor(latestPuzzle.getWinColor().getName());
         session.setMmrBeforePenalty(userBeforeMmr);
         session.setRatingBeforePenalty(userBeforeRating);
         session.setTargetWinProbability(WinProbability);
@@ -193,8 +193,8 @@ public class RankService {
         redisTemplate.opsForValue().set(redisKey, session, currentTTL, TimeUnit.SECONDS);
 
         return RankResultResponse.builder()
-                .boardStatus(puzzle.getBoardStatus())
-                .winColor(puzzle.getWinColor().getName())
+                .boardStatus(latestPuzzle.getBoardStatus())
+                .winColor(latestPuzzle.getWinColor().getName())
                 .build();
     }
 
@@ -216,24 +216,115 @@ public class RankService {
                 .build();
     }
 
-    TrainingPuzzle getNextPuzzle(double originalMmr, double targetWinProbability, UserEntity user) {
+    NextPuzzleResult getNextPuzzle(double originalMmr, double targetWinProbability, UserEntity user) {
         // 사용자의 레이팅 & 기대 승률 을 통해 적합한 문제를 가져옴
         double desiredRating = ELOUtil.getProblemRatingForTargetWinProbability(originalMmr, targetWinProbability);
+        int windowSize = 10;
 
-        int tolerance = 10;
-        List<TrainingPuzzle> candidates = Collections.emptyList();
+        // 각 퍼즐 후보군 가져오기 (레이팅 기준 정렬)
+        List<TrainingPuzzle> trainingPuzzles =
+                trainingPuzzleRepository.findAvailableTrainingPuzzlesSortedByRating(user);
+        List<CommunityPuzzle> communityPuzzles =
+                communityPuzzleRepository.findAvailableCommunityPuzzlesSortedByRating(user);
 
-        while (candidates.isEmpty()) {
-            double min = desiredRating - tolerance;
-            double max = desiredRating + tolerance;
+        // 슬라이싱 유틸
+        List<TrainingPuzzle> selectedTrainings = pickNearByWindow(trainingPuzzles, desiredRating, windowSize);
+        List<CommunityPuzzle> selectedCommunities = pickNearByWindow(communityPuzzles, desiredRating, windowSize);
 
-            candidates = trainingPuzzleRepository.findAvailablePuzzlesForUser(min, max, user);
-            tolerance += 10;
+        List<Object> allCandidates = new ArrayList<>();
+        allCandidates.addAll(selectedTrainings);
+        allCandidates.addAll(selectedCommunities);
+
+        if (allCandidates.isEmpty()) {
+            throw new CustomException(ErrorCode.CANNOT_FIND_PUZZLE);
         }
 
-        // 랜덤하게 하나 선택
-        Collections.shuffle(candidates);
-        return candidates.get(0);
+        Collections.shuffle(allCandidates);
+
+        Object selected = allCandidates.get(0);
+
+        if (selected instanceof TrainingPuzzle puzzle) {
+            LatestRankPuzzle latest = LatestRankPuzzle.builder()
+                    .user(user)
+                    .boardStatus(puzzle.getBoardStatus())
+                    .answer(puzzle.getAnswer())
+                    .isSolved(false)
+                    .assignedAt(clock.instant())
+                    .winColor(puzzle.getWinColor())
+                    .build();
+
+            return new NextPuzzleResult(latest, puzzle.getRating());
+        }
+
+        if (selected instanceof CommunityPuzzle puzzle) {
+            LatestRankPuzzle latest = LatestRankPuzzle.builder()
+                    .user(user)
+                    .boardStatus(puzzle.getBoardStatus())
+                    .answer(puzzle.getAnswer())
+                    .isSolved(false)
+                    .assignedAt(clock.instant())
+                    .winColor(puzzle.getWinColor())
+                    .build();
+
+            return new NextPuzzleResult(latest, puzzle.getRating());
+        }
+        throw new CustomException(ErrorCode.INVALID_PUZZLE_TYPE);
+    }
+
+    private <T> List<T> pickNearByWindow(List<T> sorted, double targetRating, int windowSize) {
+        if (sorted.isEmpty()) return Collections.emptyList();
+
+        double maxDiff = 200.0; // 레이팅 허용 오차
+
+        // 가장 가까운 퍼즐 위치 탐색
+        int centerIndex = 0;
+        double closest = Double.MAX_VALUE;
+        for (int i = 0; i < sorted.size(); i++) {
+            double rating = getRating(sorted.get(i));
+            double diff = Math.abs(rating - targetRating);
+            if (diff < closest) {
+                closest = diff;
+                centerIndex = i;
+            }
+        }
+
+        List<T> result = new ArrayList<>();
+        int left = centerIndex, right = centerIndex + 1;
+
+        while (result.size() < windowSize && (left >= 0 || right < sorted.size())) {
+            boolean picked = false;
+
+            if (left >= 0) {
+                double ratingLeft = getRating(sorted.get(left));
+                if (Math.abs(ratingLeft - targetRating) <= maxDiff) {
+                    result.add(sorted.get(left));
+                    picked = true;
+                }
+                left--;
+            }
+
+            if (result.size() >= windowSize) break;
+
+            if (right < sorted.size()) {
+                double ratingRight = getRating(sorted.get(right));
+                if (Math.abs(ratingRight - targetRating) <= maxDiff) {
+                    result.add(sorted.get(right));
+                    picked = true;
+                }
+                right++;
+            }
+
+            if (!picked) break; // 양쪽 다 더 이상 유효 후보가 없음
+        }
+
+        return result;
+    }
+
+    // 퍼즐 rating 추출 유틸
+    private double getRating(Object obj) {
+        if (obj instanceof TrainingPuzzle tp) return tp.getRating();
+        if (obj instanceof CommunityPuzzle cp) return cp.getRating();
+        return 0.0;
     }
 
     @Transactional
