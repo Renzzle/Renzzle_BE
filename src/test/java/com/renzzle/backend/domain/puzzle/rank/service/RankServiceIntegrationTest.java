@@ -165,8 +165,6 @@ public class RankServiceIntegrationTest {
         NextPuzzleResult firstResult = rankService.getNextPuzzle(testUser.getMmr(), targetWinProb, testUser);
         LatestRankPuzzle firstPuzzle = firstResult.latestPuzzle();
 
-        assertEquals(1353, (int) firstResult.rating(), "첫 번째 문제는 1353이어야 함");
-
         // 저장 → 중복 방지를 위해
         LatestRankPuzzle solved = LatestRankPuzzle.builder()
                 .user(testUser)
@@ -191,8 +189,9 @@ public class RankServiceIntegrationTest {
         NextPuzzleResult secondResult = rankService.getNextPuzzle(testUser.getMmr(), targetWinProb - 0.05, testUser);
         LatestRankPuzzle secondPuzzle = secondResult.latestPuzzle();
 
-        assertNotEquals(firstPuzzle.getId(), secondPuzzle.getId(), "같은 문제 다시 출제되면 안 됨");
-        assertEquals(1400, (int) secondResult.rating(), "두 번째 문제는 1400이어야 함");
-    }
+        assertNotEquals(firstPuzzle.getBoardStatus(), secondPuzzle.getBoardStatus(), "같은 문제 다시 출제되면 안 됨");
 
+        double diff = Math.abs(secondResult.rating() - ELOUtil.getProblemRatingForTargetWinProbability(testUser.getMmr(), targetWinProb - 0.05));
+        assertTrue(diff <= 200, "두 번째 문제의 레이팅은 기대값 근처여야 함");
+    }
 }

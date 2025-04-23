@@ -2,8 +2,8 @@ package com.renzzle.backend.domain.puzzle.rank.dao;
 
 import com.renzzle.backend.domain.puzzle.rank.domain.LatestRankPuzzle;
 import com.renzzle.backend.domain.user.domain.UserEntity;
-import io.lettuce.core.dynamic.annotation.Param;
-import org.springframework.data.jdbc.repository.query.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.Instant;

@@ -7,6 +7,7 @@ import com.renzzle.backend.domain.puzzle.rank.dao.LatestRankPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.rank.domain.LatestRankPuzzle;
 import com.renzzle.backend.domain.puzzle.rank.support.TestUserFactory;
 import com.renzzle.backend.domain.puzzle.rank.util.CommunityPuzzleSeeder;
+import com.renzzle.backend.domain.puzzle.rank.util.PackSeeder;
 import com.renzzle.backend.domain.puzzle.rank.util.TrainingPuzzleSeeder;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.puzzle.training.dao.PackRepository;
@@ -30,8 +31,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static com.renzzle.backend.global.common.constant.TimeConstant.CONST_FUTURE_INSTANT;
 
 @DataJpaTestWithInitContainers
-@Import({TrainingPuzzleSeeder.class, CommunityPuzzleSeeder.class})
+@Import({TrainingPuzzleSeeder.class, CommunityPuzzleSeeder.class, PackSeeder.class})
 public class RankRepositoryTest {
+
     @Autowired
     private TrainingPuzzleSeeder trainingPuzzleSeeder;
 
@@ -49,13 +51,10 @@ public class RankRepositoryTest {
     @Autowired
     private LatestRankPuzzleRepository latestRankPuzzleRepository;
 
-    @Autowired
-    private PackRepository packRepository;
-
-    @Autowired
-    private EntityManager em;
-    @Autowired
-    private Clock clock;
+//    @Autowired
+//    private EntityManager em;
+//    @Autowired
+//    private Clock clock;
 
     @Test
     void saveLatestRankPuzzle_WithTrainingPuzzle_ShouldPersistCorrectly() {
