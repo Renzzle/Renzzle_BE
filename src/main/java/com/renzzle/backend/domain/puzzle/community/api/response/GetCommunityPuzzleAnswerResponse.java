@@ -5,5 +5,5 @@ import lombok.Builder;
 @Builder
 public record GetCommunityPuzzleAnswerResponse(
         String answer,
-        int currency
+        int price
 ) { }

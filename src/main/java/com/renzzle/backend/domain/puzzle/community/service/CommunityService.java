@@ -125,7 +125,7 @@ public class CommunityService {
 
         return GetCommunityPuzzleAnswerResponse.builder()
                 .answer(puzzle.getAnswer())
-                .currency(user.getCurrency())
+                .price(HINT.getPrice())
                 .build();
     }
 

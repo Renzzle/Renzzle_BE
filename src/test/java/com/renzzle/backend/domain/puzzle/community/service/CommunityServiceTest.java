@@ -148,7 +148,7 @@ public class CommunityServiceTest {
 
         // Then
         assertThat(result.answer()).isEqualTo("e5");
-        assertThat(result.currency()).isEqualTo(user.getCurrency());
+        assertThat(result.price()).isEqualTo(HINT.getPrice());
     }
 
     @Test
