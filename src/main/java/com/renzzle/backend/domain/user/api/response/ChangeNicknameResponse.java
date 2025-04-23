@@ -4,5 +4,5 @@ import lombok.Builder;
 
 @Builder
 public record ChangeNicknameResponse(
-        int currency
+        int price
 ) { }

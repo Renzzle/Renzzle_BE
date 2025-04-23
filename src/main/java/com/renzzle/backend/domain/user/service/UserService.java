@@ -9,6 +9,7 @@ import com.renzzle.backend.domain.user.api.response.GetUserLikedPuzzlesResponse;
 import com.renzzle.backend.domain.user.api.response.UserResponse;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
+import com.renzzle.backend.global.common.constant.ItemPrice;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
@@ -61,7 +62,7 @@ public class UserService {
 
         persistedUser.get().changeNickname(nickname);
         return ChangeNicknameResponse.builder()
-                .currency(persistedUser.get().getCurrency())
+                .price(ItemPrice.CHANGE_NICKNAME.getPrice())
                 .build();
     }
 
@@ -71,7 +72,7 @@ public class UserService {
 
         List<GetCommunityPuzzlesResponse> response = new ArrayList<>();
         for (CommunityPuzzle puzzle : puzzles) {
-            boolean isSolved = userCommunityPuzzleRepository.checkIsSolvedPuzzle(puzzle.getId(), user.getId());
+            boolean isSolved = userCommunityPuzzleRepository.checkIsSolvedPuzzle(user.getId(), puzzle.getId());
 
             response.add(
                     GetCommunityPuzzlesResponse.builder()
@@ -98,7 +99,7 @@ public class UserService {
 
         List<GetCommunityPuzzlesResponse> response = new ArrayList<>();
         for (CommunityPuzzle puzzle : puzzles) {
-            boolean isSolved = userCommunityPuzzleRepository.checkIsSolvedPuzzle(puzzle.getId(), user.getId());
+            boolean isSolved = userCommunityPuzzleRepository.checkIsSolvedPuzzle(user.getId(), puzzle.getId());
 
             response.add(
                     GetCommunityPuzzlesResponse.builder()
