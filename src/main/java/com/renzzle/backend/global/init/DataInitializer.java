@@ -36,6 +36,16 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) {
         initializeDefaultValue();
         addAdminAccount();
+        initializeSystemInfo();
+    }
+
+    private void initializeSystemInfo() {
+        try {
+            jdbcTemplate.batchUpdate("INSERT IGNORE INTO system_info (id, version, system_check)\n" +
+                    "VALUES (1, '1.0.0', false);");
+        } catch (DuplicateKeyException e) {
+            log.warn("System info already exists");
+        }
     }
 
     private void addAdminAccount() {
