@@ -49,10 +49,14 @@ public enum ErrorCode {
     CANNOT_FIND_TRAINING_PUZZLE(HttpStatus.NOT_FOUND, "P4041", "해당하는 레슨 퍼즐을 찾을 수 없습니다."),
     NO_SUCH_TRAINING_PACK(HttpStatus.NOT_FOUND, "P4042", "해당하는 팩 정보를 찾을 수 없습니다."),
     NO_SUCH_TRAINING_PACKS(HttpStatus.NOT_FOUND, "P4043", "해당하는 난이도의 팩 정보를 찾을 수 없습니다."),
+
     CANNOT_FIND_PUZZLE(HttpStatus.NOT_FOUND, "P4044", "해당하는 퍼즐을 찾을 수 없습니다."),
+    NO_SUCH_PACK_TRANSLATION(HttpStatus.NOT_FOUND, "P4044", "해당하는 팩의 번역 정보를 찾을 수 없습니다."),
+    NO_USER_PROGRESS_FOR_PACK(HttpStatus.NOT_FOUND, "P4045", "사용자가 해당 훈련 팩을 푼 기록이 없습니다."),
     ALREADY_SOLVED_PUZZLE(HttpStatus.BAD_REQUEST, "P4000", "이미 풀이를 완료한 퍼즐입니다."),
     ALREADY_EXISTING_TRANSLATION(HttpStatus.BAD_REQUEST, "P4001", "이미 해당 언어의 번역본이 존재합니다."),
-    COMMUNITY_PUZZLE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "P403", "해당하는 커뮤니티 퍼즐에 대한 권한이 없습니다."),
+    COMMUNITY_PUZZLE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "P4030", "해당하는 커뮤니티 퍼즐에 대한 권한이 없습니다."),
+
 
     //Rank
     INVALID_SESSION_TTL(HttpStatus.BAD_REQUEST, "R4000", "세션 TTL이 올바르지 않습니다."),
@@ -64,7 +68,8 @@ public enum ErrorCode {
     INVALID_PUZZLE_TYPE(HttpStatus.BAD_REQUEST, "R4000", "올바르지 않은 퍼즐 타입입니다."),
 
     //content
-    TREND_PUZZLE_DUPLICATED(HttpStatus.CONFLICT, "C4000-", "트렌드 퍼즐이 중복되었습니다.")
+    TREND_PUZZLE_DUPLICATED(HttpStatus.CONFLICT, "C4000-", "트렌드 퍼즐이 중복되었습니다."),
+
 
 
 
