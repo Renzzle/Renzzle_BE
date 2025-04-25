@@ -1,6 +1,7 @@
 package com.renzzle.backend.domain.puzzle.content.api;
 
 import com.renzzle.backend.domain.puzzle.content.api.request.GetRecommendRequest;
+import com.renzzle.backend.domain.puzzle.content.api.response.GetTrendPuzzlesResponse;
 import com.renzzle.backend.domain.puzzle.content.api.response.getRecommendPackResponse;
 import com.renzzle.backend.domain.puzzle.content.service.ContentService;
 import com.renzzle.backend.global.common.response.ApiResponse;
@@ -26,9 +27,14 @@ public class ContentController {
     public ApiResponse<getRecommendPackResponse> getRecommendPack(
             @Valid @RequestBody GetRecommendRequest request,
             @AuthenticationPrincipal UserDetailsImpl user
-    ){
+    ) {
         getRecommendPackResponse response = contentService.getRecommendedPack(request, user.getUser());
         return ApiUtils.success(response);
     }
 
+    @Operation(summary = "Get Trend Puzzles", description = "Get 5 Trend Puzzles")
+    @GetMapping("/trend")
+    public ApiResponse<GetTrendPuzzlesResponse> getTrendPuzzles(){
+        return ApiUtils.success(contentService.getTrendCommunityPuzzles());
+    }
 }
