@@ -44,29 +44,32 @@ public class ContentService {
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACKS));
 
         Pack pack = recentSolved.getPuzzle().getPack();
+        if (pack == null) {
+            throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK);
+        }
 
         // 번역 정보 조회
         PackTranslation translation = packTranslationRepository
                 .findByPack_IdAndLanguageCode(pack.getId(), request.lang().name())
-                .orElse(null);
+                .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_PACK_TRANSLATION));
 
         // 유저의 pack 진행 정보 조회
         UserPack userPack = userPackRepository
                 .findByUserIdAndPackId(userId, pack.getId())
-                .orElse(null);
+                .orElseThrow(() -> new CustomException(ErrorCode.NO_USER_PROGRESS_FOR_PACK));
 
-        boolean locked = (userPack == null);
+//        boolean locked = (userPack == null);
         int solvedCount = (userPack != null) ? userPack.getSolved_count() : 0;
 
         return getRecommendPackResponse.builder()
                 .id(pack.getId())
-                .title(translation != null ? translation.getTitle() : null)
-                .author(translation != null ? translation.getAuthor() : null)
-                .description(translation != null ? translation.getDescription() : null)
+                .title(translation.getTitle())
+                .author(translation.getAuthor())
+                .description(translation.getDescription())
                 .price(pack.getPrice())
                 .totalPuzzleCount(pack.getPuzzleCount())
                 .solvedPuzzleCount(solvedCount)
-                .locked(locked)
+                .locked(false)  //  userPack 은 항상 not null
                 .build();
     }
 
