@@ -61,7 +61,10 @@ public enum ErrorCode {
     PUZZLE_NOT_FOUND(HttpStatus.NOT_FOUND, "R4041", "퍼즐이 존재하지 않습니다."),
     SESSION_ALREADY_ENDED(HttpStatus.GONE, "R4100", "세션이 이미 만료되었습니다."),
     SESSION_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "R5001", "세션 ID 생성에 실패하였습니다."),
-    INVALID_PUZZLE_TYPE(HttpStatus.BAD_REQUEST, "R4000", "올바르지 않은 퍼즐 타입입니다.")
+    INVALID_PUZZLE_TYPE(HttpStatus.BAD_REQUEST, "R4000", "올바르지 않은 퍼즐 타입입니다."),
+
+    //content
+    TREND_PUZZLE_DUPLICATED(HttpStatus.CONFLICT, "C4000-", "트렌드 퍼즐이 중복되었습니다.")
 
 
 
