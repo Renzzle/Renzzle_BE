@@ -8,6 +8,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.Arrays;
+
 @Entity
 @Table(name = "lang_code")
 @Getter
@@ -28,6 +30,20 @@ public class LangCode {
 
     public static LangCode getLangCode(LangCodeName langCodeName) {
         return new LangCode(langCodeName.name());
+    }
+
+    public static LangCode getLangCode(String langCodeName) {
+        LangCode langCode = new LangCode();
+
+        LangCode.LangCodeName[] langCodeNames = LangCode.LangCodeName.values();
+        boolean isValid = Arrays.stream(langCodeNames)
+                .anyMatch(lc -> lc.name().equals(langCodeName));
+        if (!isValid)
+            throw new IllegalArgumentException("Invalid lang code name: " + langCodeName);
+
+        langCode.code = langCodeName;
+
+        return langCode;
     }
 
 }
