@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface PackRepository extends JpaRepository<Pack, Long> {
 
@@ -21,4 +22,6 @@ public interface PackRepository extends JpaRepository<Pack, Long> {
     void increasePuzzleCount(@Param("packId") Long packId);
 
     List<Pack> findByDifficulty(Difficulty difficulty);
+
+    Optional<Pack> findFirstByOrderByIdAsc();
 }
