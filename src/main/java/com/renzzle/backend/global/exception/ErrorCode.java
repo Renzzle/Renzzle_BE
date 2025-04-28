@@ -39,7 +39,6 @@ public enum ErrorCode {
     // User
     CANNOT_LOAD_USER_INFO(HttpStatus.NOT_FOUND, "U4040", "사용자 정보를 불러올 수 없습니다."),
     LEVEL_NOT_FOUND(HttpStatus.NOT_FOUND, "U4041", "해당 레벨을 찾을 수 없습니다."),
-//    CANNOT_FIND_PUZZLE(HttpStatus.NOT_FOUND, "U4042", "해당하는 사용자 퍼즐을 찾을 수 없습니다."),
     CANNOT_FIND_USER(HttpStatus.BAD_REQUEST, "U4000", "사용자를 찾을 수 없습니다."),
     INVALID_SUBSCRIPTION_REQUEST(HttpStatus.BAD_REQUEST, "U4001", "올바르지 않은 구독자 정보입니다."),
     INSUFFICIENT_CURRENCY(HttpStatus.BAD_REQUEST, "U4002", "재화가 부족합니다."),
@@ -48,9 +47,9 @@ public enum ErrorCode {
     // Puzzle
     CANNOT_FIND_COMMUNITY_PUZZLE(HttpStatus.NOT_FOUND, "P4040", "해당하는 커뮤니티 퍼즐을 찾을 수 없습니다."),
     CANNOT_FIND_TRAINING_PUZZLE(HttpStatus.NOT_FOUND, "P4041", "해당하는 레슨 퍼즐을 찾을 수 없습니다."),
-    CANNOT_FIND_PUZZLE(HttpStatus.NOT_FOUND, "P4041", "해당하는 퍼즐을 찾을 수 없습니다."),
     NO_SUCH_TRAINING_PACK(HttpStatus.NOT_FOUND, "P4042", "해당하는 팩 정보를 찾을 수 없습니다."),
     NO_SUCH_TRAINING_PACKS(HttpStatus.NOT_FOUND, "P4043", "해당하는 난이도의 팩 정보를 찾을 수 없습니다."),
+    CANNOT_FIND_PUZZLE(HttpStatus.NOT_FOUND, "P4044", "해당하는 퍼즐을 찾을 수 없습니다."),
     ALREADY_SOLVED_PUZZLE(HttpStatus.BAD_REQUEST, "P4000", "이미 풀이를 완료한 퍼즐입니다."),
     ALREADY_EXISTING_TRANSLATION(HttpStatus.BAD_REQUEST, "P4001", "이미 해당 언어의 번역본이 존재합니다."),
     COMMUNITY_PUZZLE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "P403", "해당하는 커뮤니티 퍼즐에 대한 권한이 없습니다."),
