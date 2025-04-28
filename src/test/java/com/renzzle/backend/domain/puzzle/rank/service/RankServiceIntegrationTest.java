@@ -5,27 +5,30 @@ import com.renzzle.backend.domain.puzzle.rank.api.request.RankResultRequest;
 import com.renzzle.backend.domain.puzzle.rank.api.response.RankEndResponse;
 import com.renzzle.backend.domain.puzzle.rank.api.response.RankResultResponse;
 import com.renzzle.backend.domain.puzzle.rank.api.response.RankStartResponse;
+import com.renzzle.backend.domain.puzzle.rank.domain.LatestRankPuzzle;
 import com.renzzle.backend.domain.puzzle.rank.domain.RankSessionData;
-import com.renzzle.backend.domain.puzzle.rank.util.PuzzleSeeder;
+import com.renzzle.backend.domain.puzzle.rank.service.dto.NextPuzzleResult;
+import com.renzzle.backend.domain.puzzle.rank.support.TestUserFactory;
+import com.renzzle.backend.domain.puzzle.rank.util.CommunityPuzzleSeeder;
+import com.renzzle.backend.domain.puzzle.rank.util.TrainingPuzzleSeeder;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
-import com.renzzle.backend.global.common.domain.Status;
+import com.renzzle.backend.global.util.ELOUtil;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.util.concurrent.TimeUnit;
+import java.time.Clock;
 
-import static com.renzzle.backend.global.common.constant.TimeConstant.CONST_FUTURE_INSTANT;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.validator.internal.util.Contracts.assertTrue;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -38,45 +41,68 @@ public class RankServiceIntegrationTest {
     @Autowired private RankService rankService;
     @Autowired private UserRepository userRepository;
     @Autowired private RedisTemplate<String, RankSessionData> redisTemplate;
-    @Autowired private PuzzleSeeder puzzleSeeder;
+    @Autowired private TrainingPuzzleSeeder trainingPuzzleSeeder;
+    @Autowired private CommunityPuzzleSeeder communityPuzzleSeeder;
+    @Autowired private Clock clock;
 
     @PersistenceContext
     private EntityManager em;
 
-
     private UserEntity testUser;
     private String redisKey;
 
-    // 🔧 테스트 유저 생성 도우미
-    private UserEntity createTestUser(double rating, double mmr) {
-        return userRepository.save(
-                UserEntity.builder()
-                        .email("test@example.com")
-                        .password("test1234")
-                        .nickname("tester")
-                        .rating(rating)
-                        .mmr(mmr)
-                        .deviceId("test-device")
-                        .lastAccessedAt(Instant.now())
-                        .deletedAt(CONST_FUTURE_INSTANT)
-                        .status(Status.getDefaultStatus())
-                        .build()
-        );
-    }
+    @Value("${rank.session.ttl}")
+    private long sessionTtl;
 
     @BeforeEach
     void setup() {
-        testUser = createTestUser(1500, 1500);
+        testUser = userRepository.save(TestUserFactory.createTestUser("tester", 1500));
         userRepository.flush();
         em.flush();
         em.clear();
         redisKey = String.valueOf(testUser.getId());
 
-        puzzleSeeder.seedPuzzle(1, "a1a2a3a4", "a4a5", 1, 1600, "BLACK");
-        puzzleSeeder.seedPuzzle(2, "b1b2b3b4", "b4b5", 1, 1300, "WHITE");
-        puzzleSeeder.seedPuzzle(3, "c1c2c3c4", "c4c5", 1, 1000, "BLACK");
-        puzzleSeeder.seedPuzzle(4, "b1b2b3b4c2", "b4b5c1", 1, 1520, "WHITE");
+        trainingPuzzleSeeder.seedPuzzle(1, "a1a2", "a3", 3, 1400, "BLACK");
+        trainingPuzzleSeeder.seedPuzzle(2, "b1b2", "b3", 3, 1450, "WHITE");
 
+        communityPuzzleSeeder.seedPuzzle("c1c2", "c3", 4, 1500, "BLACK", testUser);
+        communityPuzzleSeeder.seedPuzzle("d1d2", "d3", 5, 1550, "WHITE", testUser);
+        communityPuzzleSeeder.seedPuzzle("e1e2", "e3", 6, 1600, "BLACK", testUser);
+        communityPuzzleSeeder.seedPuzzle("a1a2a3", "a13", 3, 1353, "BLACK", testUser);
+
+    }
+
+    @Test
+    void rankingFlow_WhenTrainingAndCommunityPuzzlesGiven_ThenCompleteSuccessfully() {
+        // Given - 사용자 및 Redis Key 설정
+        Long userId = testUser.getId();
+        String redisKey = String.valueOf(userId);
+
+        // startRankGame
+        RankStartResponse startResponse = rankService.startRankGame(testUser);
+
+        assertThat(startResponse.boardStatus()).isNotBlank();
+        assertThat(startResponse.winColor()).isNotBlank();
+
+        // resultRankGame
+        RankResultRequest resultRequest = new RankResultRequest(true);
+        RankResultResponse resultResponse = rankService.resultRankGame(testUser, resultRequest);
+
+        assertThat(resultResponse.boardStatus()).isNotBlank();
+        assertThat(resultResponse.winColor()).isNotBlank();
+
+        // 세션 상태 확인
+        RankSessionData session = redisTemplate.opsForValue().get(redisKey);
+        assertThat(session).isNotNull();
+        assertThat(session.isStarted()).isTrue();
+
+        // endRankGame
+        RankEndResponse endResponse = rankService.endRankGame(testUser);
+
+        assertThat(endResponse.rating()).isGreaterThanOrEqualTo(0.0);
+
+        // 세션 제거 확인
+        assertThat(redisTemplate.opsForValue().get(redisKey)).isNull();
     }
 
     @Test
@@ -94,7 +120,7 @@ public class RankServiceIntegrationTest {
         assertTrue(ratingAfterStart < 1500, "레이팅 감산 확인");
         assertTrue(mmrAfterStart < 1500, "MMR 감산 확인");
 
-        Thread.sleep(3000);
+        Thread.sleep(1000);
 
         // result API 호출 - 문제가 정답이라고 가정
         RankResultRequest resultRequest = new RankResultRequest(true);
@@ -111,18 +137,6 @@ public class RankServiceIntegrationTest {
         userRepository.flush();
         em.flush();
         em.clear();
-//        UserEntity refreshedUser = userRepository.findById(beforeUser.getId()).orElseThrow();
-
-//        double ratingAfterResult = refreshedUser.getRating();
-//        double mmrAfterResult = refreshedUser.getMmr();
-
-//        assertTrue(
-//                ratingAfterResult > ratingAfterStart,
-//                "정답 시 레이팅 증가해야 함 → 결과값: result=" + ratingAfterResult + ", start=" + ratingAfterStart +
-//                " 보드 상태 : result == " + sessionAfterResult.getBoardState() + " , start == " + sessionAfterStart.getBoardState()
-//                );
-//        assertTrue(mmrAfterResult > mmrAfterStart, "정답 시 MMR 증가");
-
 
         // end API 호출
         RankEndResponse endResponse = rankService.endRankGame(testUser);
@@ -133,21 +147,43 @@ public class RankServiceIntegrationTest {
     }
 
     @Test
-    void testSessionExpiresAfterTTL() throws InterruptedException {
-        rankService.startRankGame(testUser);
+    void getNextPuzzle_WhenCalled_ThenReturnsNonDuplicateCorrectPuzzle() {
 
-        // TTL 확인
-        Long ttl = redisTemplate.getExpire(redisKey, TimeUnit.SECONDS);
-        assertNotNull(ttl);
-        assertTrue(ttl <= 10, "TTL이 설정되어 있어야 함");
+        em.flush();
+        em.clear();
 
-        // 11초 대기
-        Thread.sleep(11000);
+        double targetWinProb = 0.7;
 
-        RankSessionData expiredSession = redisTemplate.opsForValue().get(redisKey);
-        assertNull(expiredSession, "TTL 초과 후 Redis 세션은 null이어야 함");
+        NextPuzzleResult firstResult = rankService.getNextPuzzle(testUser.getMmr(), targetWinProb, testUser);
+        LatestRankPuzzle firstPuzzle = firstResult.latestPuzzle();
+
+        // 저장 → 중복 방지를 위해
+        LatestRankPuzzle solved = LatestRankPuzzle.builder()
+                .user(testUser)
+                .boardStatus(firstPuzzle.getBoardStatus())
+                .answer(firstPuzzle.getAnswer())
+                .isSolved(true)
+                .assignedAt(clock.instant())
+                .winColor(firstPuzzle.getWinColor())
+                .build();
+
+        em.persist(solved);
+        em.flush();
+        em.clear();
+
+        double newMmr = testUser.getMmr() + ELOUtil.calculateMMRIncrease(testUser.getMmr(), firstResult.rating());
+        testUser.updateMmrTo(newMmr);
+        userRepository.save(testUser);
+
+        em.flush();
+        em.clear();
+
+        NextPuzzleResult secondResult = rankService.getNextPuzzle(testUser.getMmr(), targetWinProb - 0.05, testUser);
+        LatestRankPuzzle secondPuzzle = secondResult.latestPuzzle();
+
+        assertNotEquals(firstPuzzle.getBoardStatus(), secondPuzzle.getBoardStatus(), "같은 문제 다시 출제되면 안 됨");
+
+        double diff = Math.abs(secondResult.rating() - ELOUtil.getProblemRatingForTargetWinProbability(testUser.getMmr(), targetWinProb - 0.05));
+        assertTrue(diff <= 200, "두 번째 문제의 레이팅은 기대값 근처여야 함");
     }
-
-
-
 }

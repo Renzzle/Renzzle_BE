@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<UserEntity, Long> {
@@ -23,5 +24,12 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     @Query("UPDATE UserEntity u SET u.status = (SELECT s FROM Status s WHERE s.name = 'DELETED'), " +
             "u.deletedAt = :deletedAt WHERE u.id = :userId")
     int softDelete(@Param("userId") Long userId, @Param("deletedAt") Instant deletedAt);
+
+    //Ranking
+    List<UserEntity> findTop100ByOrderByRatingDesc();
+
+    @Query("SELECT COUNT(u) + 1 FROM UserEntity u WHERE u.rating > :myRating")
+    int findMyRankByRating(@Param("myRating") double myRating);
+
 
 }
