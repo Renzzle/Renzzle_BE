@@ -25,11 +25,16 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
             "u.deletedAt = :deletedAt WHERE u.id = :userId")
     int softDelete(@Param("userId") Long userId, @Param("deletedAt") Instant deletedAt);
 
-    //Ranking
-    List<UserEntity> findTop100ByOrderByRatingDesc();
 
-    @Query("SELECT COUNT(u) + 1 FROM UserEntity u WHERE u.rating > :myRating")
-    int findMyRankByRating(@Param("myRating") double myRating);
+    @Modifying
+    @Query("UPDATE UserEntity u SET u.currency = u.currency + :amount WHERE u.id = :userId")
+    void addUserCurrency(@Param("userId") Long userId, @Param("amount") int amount);
 
+    @Query("SELECT CASE WHEN (u.lastAccessedAt < CURRENT_DATE) THEN true ELSE false END FROM UserEntity u WHERE u.id = :userId")
+    Boolean isLastAccessBeforeToday(@Param("userId") Long userId);
+
+    @Modifying
+    @Query("UPDATE UserEntity u SET u.lastAccessedAt = :lastAccessedAt WHERE u.id = :userId")
+    void updateLastAccessedAt(@Param("userId") Long userId, @Param("lastAccessedAt") Instant lastAccessedAt);
 
 }

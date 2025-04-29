@@ -11,6 +11,8 @@ import com.renzzle.backend.domain.notice.dao.SystemInfoRepository;
 import com.renzzle.backend.domain.notice.domain.Announcement;
 import com.renzzle.backend.domain.notice.domain.Notice;
 import com.renzzle.backend.domain.notice.domain.SystemInfo;
+import com.renzzle.backend.domain.notice.util.NoticeTextBuilderUtil;
+import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.domain.LangCode;
 import com.renzzle.backend.global.exception.CustomException;
@@ -31,6 +33,7 @@ public class NoticeService {
     private final NoticeRepository noticeRepository;
     private final AnnouncementRepository announcementRepository;
     private final SystemInfoRepository systemInfoRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public GetPersonalNoticeResponse getPersonalNotice(GetPersonalNoticeRequest request, UserEntity user) {
@@ -54,6 +57,7 @@ public class NoticeService {
 
         // Get notices context
         ArrayList<NoticeContext> contexts = new ArrayList<>();
+
         // 1. Personal message
         List<Notice> notices = noticeRepository.findAllByUser(user);
         for (Notice notice : notices) {
@@ -65,8 +69,17 @@ public class NoticeService {
         noticeRepository.deleteAllByUser(user);
 
         // 2. Attendance price
+        if (userRepository.isLastAccessBeforeToday(user.getId())) {
+            int price = 200;
+            userRepository.addUserCurrency(user.getId(), price);
+            contexts.add(NoticeContext.builder()
+                    .context(NoticeTextBuilderUtil.buildAttendanceMessage(LangCode.getLangCode(request.langCode()), price))
+                    .build()
+            );
+        }
+        userRepository.updateLastAccessedAt(user.getId(), clock.instant());
 
-        // 3. Badge price
+        // 3. Title notification
 
         return GetPersonalNoticeResponse.builder()
                 .description("context")

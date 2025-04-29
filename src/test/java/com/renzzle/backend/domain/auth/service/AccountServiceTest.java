@@ -113,22 +113,6 @@ public class AccountServiceTest {
     }
 
     @Test
-    public void login_WhenValidRequest_ThenUpdateUserLastAccessedAt() {
-        UserEntity user = TestUserEntityBuilder.builder()
-                .withPassword(new BCryptPasswordEncoder().encode(password))
-                .save(null);
-
-        Instant fixedTime = Instant.MAX;
-        when(clock.instant()).thenReturn(fixedTime);
-        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
-        when(authService.createAuthTokens(1L)).thenReturn(mock(LoginResponse.class));
-
-        accountService.login(validLoginRequest);
-
-        assertEquals(user.getLastAccessedAt(), fixedTime);
-    }
-
-    @Test
     public void login_ShouldThrowException_WhenEmailNotFound() {
         when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
 

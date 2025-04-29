@@ -20,7 +20,6 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class AccountService {
 
-    private final Clock clock;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final AuthService authService;
@@ -83,8 +82,6 @@ public class AccountService {
 
         if(!passwordEncoder.matches(request.password(), user.get().getPassword()))
             throw new CustomException(ErrorCode.INVALID_PASSWORD);
-
-        user.get().updateLastAccessedAt(clock.instant());
 
         long userId = user.get().getId();
 
