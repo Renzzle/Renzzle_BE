@@ -7,6 +7,7 @@ import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
+import com.renzzle.backend.support.TestUserEntityBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +15,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -23,6 +28,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class AccountServiceTest {
 
+    @Mock
+    private Clock clock;
     @Mock
     private UserRepository userRepository;
     @Mock
@@ -103,6 +110,22 @@ public class AccountServiceTest {
         LoginResponse response = accountService.login(validLoginRequest);
 
         assertNotNull(response);
+    }
+
+    @Test
+    public void login_WhenValidRequest_ThenUpdateUserLastAccessedAt() {
+        UserEntity user = TestUserEntityBuilder.builder()
+                .withPassword(new BCryptPasswordEncoder().encode(password))
+                .save(null);
+
+        Instant fixedTime = Instant.MAX;
+        when(clock.instant()).thenReturn(fixedTime);
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        when(authService.createAuthTokens(1L)).thenReturn(mock(LoginResponse.class));
+
+        accountService.login(validLoginRequest);
+
+        assertEquals(user.getLastAccessedAt(), fixedTime);
     }
 
     @Test
