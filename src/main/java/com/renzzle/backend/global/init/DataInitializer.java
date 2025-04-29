@@ -5,6 +5,7 @@ import com.renzzle.backend.domain.auth.domain.Admin;
 import com.renzzle.backend.domain.puzzle.training.domain.Difficulty;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.user.dao.UserRepository;
+import com.renzzle.backend.domain.user.domain.Title;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.domain.LangCode;
 import com.renzzle.backend.global.common.domain.Status;
@@ -72,6 +73,7 @@ public class DataInitializer implements CommandLineRunner {
         tryInsertEnumSql("difficulty", Difficulty.DifficultyName.class);
         tryInsertEnumSql("win_color", WinColor.WinColorName.class);
         tryInsertEnumSql("lang_code", LangCode.LangCodeName.class);
+        tryInsertEnumSql("title", Title.TitleType.class);
     }
 
     private <E extends Enum<E>> void tryInsertEnumSql(String tableName, Class<E> enumClass) {

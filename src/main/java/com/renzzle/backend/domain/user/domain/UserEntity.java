@@ -79,15 +79,22 @@ public class UserEntity {
     @JoinColumn(name = "status", nullable = false)
     private Status status;
 
+    @ManyToOne
+    @JoinColumn(name = "title", nullable = false)
+    private Title title;
+
     @PrePersist
     public void onPrePersist() {
-        if(status == null) {
+        if (status == null) {
             this.status = Status.getDefaultStatus();
         }
-        if(lastAccessedAt == null) {
+        if (title == null) {
+            this.title = Title.getDefaultTitle();
+        }
+        if (lastAccessedAt == null) {
             this.lastAccessedAt = Instant.now();
         }
-        if(deletedAt == null) {
+        if (deletedAt == null) {
             this.deletedAt = CONST_FUTURE_INSTANT;
         }
     }
@@ -98,7 +105,7 @@ public class UserEntity {
     }
 
     public void purchase(int price){
-        if(this.currency < price)
+        if (this.currency < price)
             throw new CustomException(ErrorCode.INSUFFICIENT_CURRENCY);
 
         this.currency -= price;
