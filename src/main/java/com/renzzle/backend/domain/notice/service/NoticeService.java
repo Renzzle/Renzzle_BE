@@ -12,7 +12,7 @@ import com.renzzle.backend.domain.notice.domain.Announcement;
 import com.renzzle.backend.domain.notice.domain.Notice;
 import com.renzzle.backend.domain.notice.domain.SystemInfo;
 import com.renzzle.backend.domain.notice.util.NoticeTextBuilderUtil;
-import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
+
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.Title;
 import com.renzzle.backend.domain.user.domain.UserEntity;

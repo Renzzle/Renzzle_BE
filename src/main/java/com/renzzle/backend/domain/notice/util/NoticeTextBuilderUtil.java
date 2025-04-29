@@ -2,7 +2,6 @@ package com.renzzle.backend.domain.notice.util;
 
 import com.renzzle.backend.domain.user.domain.Title;
 import com.renzzle.backend.global.common.domain.LangCode;
-
 import java.util.Objects;
 
 public class NoticeTextBuilderUtil {
