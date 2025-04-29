@@ -13,12 +13,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class AccountService {
 
+    private final Clock clock;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final AuthService authService;
@@ -74,20 +76,19 @@ public class AccountService {
 
     @Transactional
     public LoginResponse login(LoginRequest request) {
-        long userId = verifyLoginInfo(request.email(), request.password());
-        return authService.createAuthTokens(userId);
-    }
-
-    private Long verifyLoginInfo(String email, String password) {
-        Optional<UserEntity> user = userRepository.findByEmail(email);
+        Optional<UserEntity> user = userRepository.findByEmail(request.email());
 
         if(user.isEmpty())
             throw new CustomException(ErrorCode.INVALID_EMAIL);
 
-        if(!passwordEncoder.matches(password, user.get().getPassword()))
+        if(!passwordEncoder.matches(request.password(), user.get().getPassword()))
             throw new CustomException(ErrorCode.INVALID_PASSWORD);
 
-        return user.get().getId();
+        user.get().updateLastAccessedAt(clock.instant());
+
+        long userId = user.get().getId();
+
+        return authService.createAuthTokens(userId);
     }
 
 }
