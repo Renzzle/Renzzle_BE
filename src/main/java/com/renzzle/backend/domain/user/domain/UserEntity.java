@@ -105,10 +105,6 @@ public class UserEntity {
                 ? DELETED_USER : nickname;
     }
 
-    public void updateLastAccessedAt(Instant lastAccessedAt) {
-        this.lastAccessedAt = lastAccessedAt;
-    }
-
     public void purchase(int price){
         if (this.currency < price)
             throw new CustomException(ErrorCode.INSUFFICIENT_CURRENCY);
