@@ -13,7 +13,7 @@ import com.renzzle.backend.domain.puzzle.rank.util.CommunityPuzzleSeeder;
 import com.renzzle.backend.domain.puzzle.rank.util.TrainingPuzzleSeeder;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
-import com.renzzle.backend.global.util.ELOUtil;
+import com.renzzle.backend.domain.puzzle.shared.util.ELOUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -171,7 +171,7 @@ public class RankServiceIntegrationTest {
         em.flush();
         em.clear();
 
-        double newMmr = testUser.getMmr() + ELOUtil.calculateMMRIncrease(testUser.getMmr(), firstResult.rating());
+        double newMmr = testUser.getMmr() + ELOUtils.calculateMMRIncrease(testUser.getMmr(), firstResult.rating());
         testUser.updateMmrTo(newMmr);
         userRepository.save(testUser);
 
@@ -183,7 +183,7 @@ public class RankServiceIntegrationTest {
 
         assertNotEquals(firstPuzzle.getBoardStatus(), secondPuzzle.getBoardStatus(), "같은 문제 다시 출제되면 안 됨");
 
-        double diff = Math.abs(secondResult.rating() - ELOUtil.getProblemRatingForTargetWinProbability(testUser.getMmr(), targetWinProb - 0.05));
+        double diff = Math.abs(secondResult.rating() - ELOUtils.getProblemRatingForTargetWinProbability(testUser.getMmr(), targetWinProb - 0.05));
         assertTrue(diff <= 200, "두 번째 문제의 레이팅은 기대값 근처여야 함");
     }
 }
