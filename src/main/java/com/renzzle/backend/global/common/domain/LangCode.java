@@ -18,14 +18,14 @@ public class LangCode {
 
     @Id
     @Column(length = 15)
-    private String code;
+    private String name;
 
     public enum LangCodeName {
         EN, KO
     }
 
     private LangCode(String code) {
-        this.code = code;
+        this.name = code;
     }
 
     public static LangCode getLangCode(LangCodeName langCodeName) {
@@ -41,7 +41,7 @@ public class LangCode {
         if (!isValid)
             throw new IllegalArgumentException("Invalid lang code name: " + langCodeName);
 
-        langCode.code = langCodeName;
+        langCode.name = langCodeName;
 
         return langCode;
     }
