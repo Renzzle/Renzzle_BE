@@ -55,6 +55,10 @@ public class CommunityPuzzle {
     private Double rating;
 
     @Builder.Default
+    @Column(name = "solved_count")
+    private int solvedCount = 0;
+
+    @Builder.Default
     @Column(name = "like_count")
     private int likeCount = 0;
 
