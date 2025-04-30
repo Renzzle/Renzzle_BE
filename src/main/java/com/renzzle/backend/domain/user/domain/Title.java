@@ -19,10 +19,10 @@ public class Title {
 
     @Id
     @Column(length = 31)
-    private String type;
+    private String name;
 
     private Title(String type) {
-        this.type = type;
+        this.name = type;
     }
 
     public enum TitleType {
@@ -49,9 +49,9 @@ public class Title {
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof Title) {
-            return Objects.equals(this.type, ((Title) obj).type);
+            return Objects.equals(this.name, ((Title) obj).name);
         } else if (obj instanceof TitleType) {
-            return Objects.equals(this.type, ((TitleType) obj).name());
+            return Objects.equals(this.name, ((TitleType) obj).name());
         } else {
             return false;
         }
