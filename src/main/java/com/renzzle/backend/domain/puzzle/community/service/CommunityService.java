@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static com.renzzle.backend.global.common.constant.DoubleConstant.DEFAULT_PUZZLE_RATING;
 import static com.renzzle.backend.global.common.constant.ItemPrice.HINT;
 
 @Service
@@ -45,7 +46,7 @@ public class CommunityService {
                 .boardKey(boardKey)
                 .answer(request.answer())
                 .depth(request.depth())
-                .rating(request.depth() * 200.0) // TODO: rating formula
+                .rating(request.depth() * DEFAULT_PUZZLE_RATING) // TODO: rating formula
                 .description(request.description())
                 .user(user)
                 .winColor(WinColor.getWinColor(request.winColor()))
