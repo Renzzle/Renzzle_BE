@@ -14,17 +14,4 @@ public record YearWeek(int year, int week) {
         return new YearWeek(year, week);
     }
 
-    public YearWeek minusWeeks(int n) {
-        LocalDate ref = LocalDate.ofYearDay(this.year, 1).with(WeekFields.ISO.weekOfYear(), this.week);
-        LocalDate minus = ref.minusWeeks(n);
-        return from(minus);
-    }
-
-    public boolean isBefore(YearWeek other) {
-        return this.year < other.year || (this.year == other.year && this.week < other.week);
-    }
-
-    public String toDatabaseKey() {
-        return String.format("%d%02d", year, week);
-    }
 }
