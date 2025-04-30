@@ -30,7 +30,7 @@ public class NoticeController {
             @ModelAttribute GetPersonalNoticeRequest request,
             @AuthenticationPrincipal UserDetailsImpl user
     ) {
-        return ApiUtils.success(null);
+        return ApiUtils.success(noticeService.getPersonalNotice(request, user.getUser()));
     }
 
     @Operation(summary = "Get public notice", description = "Get list of public notices that not expired")
