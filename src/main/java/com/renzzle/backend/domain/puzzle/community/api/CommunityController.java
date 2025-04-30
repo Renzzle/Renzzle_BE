@@ -38,7 +38,7 @@ public class CommunityController {
     @Operation(summary = "Get community puzzle data", description = "Return community puzzle list")
     @GetMapping("/puzzle")
     public ApiResponse<List<GetCommunityPuzzlesResponse>> getCommunityPuzzles(
-            @ModelAttribute GetCommunityPuzzleRequest request,
+            @Valid @ModelAttribute GetCommunityPuzzleRequest request,
             @AuthenticationPrincipal UserDetailsImpl user
     ) {
         return ApiUtils.success(communityService.getCommunityPuzzleList(request, user.getUser()));
