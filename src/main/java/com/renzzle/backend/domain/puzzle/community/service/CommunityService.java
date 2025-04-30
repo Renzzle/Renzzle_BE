@@ -138,6 +138,8 @@ public class CommunityService {
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
 
+        puzzle.increaseSolvedCount();
+
         int updatedRows = userCommunityPuzzleRepository.solvePuzzle(user.getId(), puzzleId, clock.instant());
         if (updatedRows == 1) {
             return;

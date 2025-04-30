@@ -106,4 +106,8 @@ public class CommunityPuzzle {
             this.deletedAt = CONST_FUTURE_INSTANT;
         }
     }
+
+    public void increaseSolvedCount() {
+        this.solvedCount++;
+    }
 }
