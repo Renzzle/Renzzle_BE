@@ -73,7 +73,7 @@ public class RankServiceIntegrationTest {
     }
 
     @Test
-    void rankingFlow_WithTrainingAndCommunityPuzzles_ShouldCompleteSuccessfully() {
+    void rankingFlow_WhenTrainingAndCommunityPuzzlesGiven_ThenCompleteSuccessfully() {
         // Given - 사용자 및 Redis Key 설정
         Long userId = testUser.getId();
         String redisKey = String.valueOf(userId);
@@ -147,7 +147,7 @@ public class RankServiceIntegrationTest {
     }
 
     @Test
-    void getNextPuzzle_ShouldReturnCorrectPuzzleAndAvoidDuplicates() {
+    void getNextPuzzle_WhenCalled_ThenReturnsNonDuplicateCorrectPuzzle() {
 
         em.flush();
         em.clear();

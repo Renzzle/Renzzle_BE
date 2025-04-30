@@ -44,13 +44,8 @@ public class RankRepositoryTest {
     @Autowired
     private LatestRankPuzzleRepository latestRankPuzzleRepository;
 
-//    @Autowired
-//    private EntityManager em;
-//    @Autowired
-//    private Clock clock;
-
     @Test
-    void saveLatestRankPuzzle_WithTrainingPuzzle_ShouldPersistCorrectly() {
+    void saveLatestRankPuzzle_WhenTrainingPuzzleGiven_ThenSaveSuccessfully() {
         // 사용자 생성
         UserEntity user = userRepository.save(TestUserFactory.createTestUser("seeder-user", 1500));
 
@@ -77,7 +72,7 @@ public class RankRepositoryTest {
     }
 
     @Test
-    void saveLatestRankPuzzle_WithCommunityPuzzle_ShouldPersistCorrectly() {
+    void saveLatestRankPuzzle_WhenCommunityPuzzleIsGiven_ThenSaveSuccessfully() {
         // Given
         UserEntity user = userRepository.save(TestUserFactory.createTestUser("author", 1500));
 
