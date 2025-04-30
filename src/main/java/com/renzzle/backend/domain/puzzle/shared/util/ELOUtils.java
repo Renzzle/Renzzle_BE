@@ -1,6 +1,6 @@
-package com.renzzle.backend.global.util;
+package com.renzzle.backend.domain.puzzle.shared.util;
 
-public class ELOUtil {
+public class ELOUtils {
 
     private static final double K_MMR = 20.0;
     private static final double K_RATING = 10.0;
@@ -29,25 +29,21 @@ public class ELOUtil {
         return userRating + Math.round(ratingOffset);
     }
 
-    // 양수 반환
     public static double calculateMMRIncrease(double userMMR, double problemRating) {
         double expected = expectedWinProbability(userMMR, problemRating);
         return Math.round(K_MMR * (1 - expected) * getRewardMultiplier(userMMR));
     }
 
-    // 양수 반환
     public static double calculateRatingIncrease(double userRating, double problemRating) {
         double expected = expectedWinProbability(userRating, problemRating);
         return Math.round(K_RATING * (1 - expected) * getRewardMultiplier(userRating));
     }
 
-    // 음수 반환
     public static double calculateMMRDecrease(double userMMR, double problemRating) {
         double expected = expectedWinProbability(userMMR, problemRating);
         return Math.round(-K_MMR * (1 - expected) * getPenaltyMultiplier(userMMR));
     }
 
-    // 음수 반환
     public static double calculateRatingDecrease(double userRating, double problemRating) {
         double expected = expectedWinProbability(userRating, problemRating);
         return Math.round(-K_RATING * (1 - expected) * getPenaltyMultiplier(userRating));

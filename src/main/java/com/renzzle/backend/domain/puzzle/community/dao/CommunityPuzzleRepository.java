@@ -2,6 +2,8 @@ package com.renzzle.backend.domain.puzzle.community.dao;
 
 import com.renzzle.backend.domain.puzzle.community.dao.query.CommunityPuzzleQueryRepository;
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
+import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
+import com.renzzle.backend.domain.user.domain.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -40,7 +42,18 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
             "cp.deletedAt = :deletedAt WHERE cp.id = :puzzleId")
     int softDelete(@Param("puzzleId") Long puzzleId, @Param("deletedAt") Instant deletedAt);
 
+    @Query("SELECT c FROM CommunityPuzzle c WHERE c.rating BETWEEN :min AND :max AND c.isVerified = true AND c.user <> :user")
+    List<CommunityPuzzle> findAvailablePuzzlesForUser(@Param("min") double min, @Param("max") double max, @Param("user") UserEntity user);
+
+    @Query("SELECT p FROM CommunityPuzzle p " +
+            "WHERE p.boardStatus NOT IN (" +
+            "    SELECT l.boardStatus FROM LatestRankPuzzle l WHERE l.user = :user" +
+            ") " +
+            "ORDER BY p.rating ASC")
+    List<CommunityPuzzle> findAvailableCommunityPuzzlesSortedByRating(@Param("user") UserEntity user);
+
     @Query(value = "SELECT * FROM community_puzzle WHERE id = :id", nativeQuery = true)
     CommunityPuzzle findByIdIncludingDeleted(@Param("id") Long id);
+
 
 }

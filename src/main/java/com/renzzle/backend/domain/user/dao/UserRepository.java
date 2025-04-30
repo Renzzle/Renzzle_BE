@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<UserEntity, Long> {
@@ -77,5 +78,11 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
             @Param("minRating") double minRating,
             @Param("minSolverCount") int minSolverCount
     );
+
+    //Ranking
+    List<UserEntity> findTop100ByOrderByRatingDesc();
+
+    @Query("SELECT COUNT(u) + 1 FROM UserEntity u WHERE u.rating > :myRating")
+    int findMyRankByRating(@Param("myRating") double myRating);
 
 }

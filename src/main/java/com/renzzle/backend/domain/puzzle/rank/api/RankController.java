@@ -1,18 +1,18 @@
 package com.renzzle.backend.domain.puzzle.rank.api;
 
 import com.renzzle.backend.domain.puzzle.rank.api.request.RankResultRequest;
-import com.renzzle.backend.domain.puzzle.rank.api.response.RankEndResponse;
-import com.renzzle.backend.domain.puzzle.rank.api.response.RankResultResponse;
-import com.renzzle.backend.domain.puzzle.rank.api.response.RankStartResponse;
-import com.renzzle.backend.domain.puzzle.rank.domain.RankSessionData;
+import com.renzzle.backend.domain.puzzle.rank.api.response.*;
 import com.renzzle.backend.domain.puzzle.rank.service.RankService;
+import com.renzzle.backend.global.common.response.ApiResponse;
 import com.renzzle.backend.global.security.UserDetailsImpl;
+import com.renzzle.backend.global.util.ApiUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/rank")
@@ -23,20 +23,32 @@ public class RankController {
 
     @Operation(summary = "Start rank game", description = "Start rank game for 5 minutes")
     @PostMapping("/game/start")
-    public ResponseEntity<RankStartResponse> startRankGame(@AuthenticationPrincipal UserDetailsImpl user) {
-        return ResponseEntity.ok(rankService.startRankGame(user.getUser()));
+    public ApiResponse<RankStartResponse> startRankGame(@AuthenticationPrincipal UserDetailsImpl user) {
+        return ApiUtils.success(rankService.startRankGame(user.getUser()));
     }
 
     @Operation(summary = "Send rank game puzzle result", description = "Send rank game puzzle result and get next puzzle info")
     @PostMapping("/game/result")
-    public ResponseEntity<RankResultResponse> resultRankGame(@AuthenticationPrincipal UserDetailsImpl user,
+    public ApiResponse<RankResultResponse> resultRankGame(@AuthenticationPrincipal UserDetailsImpl user,
                                                              @Valid @RequestBody RankResultRequest request) {
-        return ResponseEntity.ok(rankService.resultRankGame(user.getUser(), request));
+        return ApiUtils.success(rankService.resultRankGame(user.getUser(), request));
     }
 
     @Operation(summary = "Start rank game", description = "Start rank game for 5 minutes")
     @PostMapping("/game/end")
-    public ResponseEntity<RankEndResponse> endRankGame(@AuthenticationPrincipal UserDetailsImpl user) {
-        return ResponseEntity.ok(rankService.endRankGame(user.getUser()));
+    public ApiResponse<RankEndResponse> endRankGame(@AuthenticationPrincipal UserDetailsImpl user) {
+        return ApiUtils.success(rankService.endRankGame(user.getUser()));
+    }
+
+    @Operation(summary = "Get rank game archive", description = "Get user past rank game archive")
+    @GetMapping("/game/archive")
+    public ApiResponse<List<RankArchive>> getRankGameArchive(@AuthenticationPrincipal UserDetailsImpl user) {
+        return ApiUtils.success(rankService.getRankArchive(user.getUser()));
+    }
+
+    @Operation(summary = "get rating ranking", description = "get TOP 100 rating ranking and user ranking")
+    @GetMapping("rating")
+    public ApiResponse<GetRankingResponse> getRanking(@AuthenticationPrincipal UserDetailsImpl user) {
+        return ApiUtils.success(rankService.getRanking(user.getUser()));
     }
 }

@@ -1,11 +1,11 @@
 package com.renzzle.backend.domain.puzzle.training.service;
 
-import com.renzzle.backend.domain.puzzle.training.domain.Difficulty;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
+import com.renzzle.backend.domain.puzzle.shared.util.BoardUtils;
+import com.renzzle.backend.domain.puzzle.training.api.request.*;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleAnswerResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleResponse;
-import com.renzzle.backend.domain.puzzle.training.api.request.*;
 import com.renzzle.backend.domain.puzzle.training.dao.*;
 import com.renzzle.backend.domain.puzzle.training.domain.*;
 import com.renzzle.backend.domain.user.dao.UserRepository;
@@ -13,16 +13,18 @@ import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.constant.ItemPrice;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
-import com.renzzle.backend.domain.puzzle.shared.util.BoardUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static com.renzzle.backend.global.common.constant.DoubleConstant.DEFAULT_TRAINING_PUZZLE_RATING;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +36,7 @@ public class TrainingService {
     private final PackTranslationRepository packTranslationRepository;
     private final UserPackRepository userPackRepository;
     private final UserRepository userRepository;
+    private final Clock clock;
 
     // service test, repo test
     @Transactional
@@ -49,7 +52,7 @@ public class TrainingService {
         Pack pack = packRepository.findById(request.packId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
-        double rating = request.depth() * 200;  // TODO: ELO 값 정해진 후 재정의 필요 !
+        double rating = request.depth() * DEFAULT_TRAINING_PUZZLE_RATING;
 
         // increase puzzle_count
         packRepository.increasePuzzleCount(request.packId());
@@ -85,7 +88,7 @@ public class TrainingService {
                 solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId);
 
         if (existInfo.isPresent()) {
-            existInfo.get().updateSolvedAtToNow();
+            existInfo.get().updateSolvedAtToNow(clock);
         } else {
             TrainingPuzzle trainingPuzzle = trainingPuzzleRepository.findById(puzzleId)
                     .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
