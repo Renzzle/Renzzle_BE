@@ -13,6 +13,7 @@ import com.renzzle.backend.global.security.UserDetailsImpl;
 import com.renzzle.backend.global.util.ApiUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -45,7 +46,7 @@ public class UserController {
     @Operation(summary = "Change user nickname", description = "Change nickname & Return remaining currency")
     @PatchMapping("/nickname")
     public ApiResponse<ChangeNicknameResponse> changeNickname(@AuthenticationPrincipal UserDetailsImpl userDetails,
-                                                              @RequestBody ChangeNicknameRequest request) {
+                                                              @Valid @RequestBody ChangeNicknameRequest request) {
         return ApiUtils.success(userService.changeNickname(userDetails.getUser(), request.nickname()));
     }
 
