@@ -5,7 +5,9 @@ import com.renzzle.backend.domain.auth.domain.Admin;
 import com.renzzle.backend.domain.puzzle.training.domain.Difficulty;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.user.dao.UserRepository;
+import com.renzzle.backend.domain.user.domain.Title;
 import com.renzzle.backend.domain.user.domain.UserEntity;
+import com.renzzle.backend.global.common.domain.LangCode;
 import com.renzzle.backend.global.common.domain.Status;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,38 +35,48 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        initializeDefaultValue();
+        addAdminAccount();
+        initializeSystemInfo();
+    }
+
+    private void initializeSystemInfo() {
         try {
-            initializeDefaultValue();
-            addAdminAccount();
-        } catch(DuplicateKeyException e) {
-            log.warn("Data already exists");
+            jdbcTemplate.batchUpdate("INSERT IGNORE INTO system_info (id, version, system_check)\n" +
+                    "VALUES (1, '1.0.0', false);");
+        } catch (DuplicateKeyException e) {
+            log.warn("System info already exists");
         }
     }
 
     private void addAdminAccount() {
-        if(!userRepository.existsByNickname(ADMIN)) {
-            String adminDeviceId = "admin_device127";
-            String encodedPassword = new BCryptPasswordEncoder().encode(adminPassword);
-            UserEntity user = UserEntity.builder()
-                    .email(adminEmail)
-                    .password(encodedPassword)
-                    .nickname(ADMIN)
-                    .deviceId(adminDeviceId)
-                    .build();
-            UserEntity admin = userRepository.save(user);
-            adminRepository.save(Admin.builder().user(admin).build());
+        try {
+            if(!userRepository.existsByNickname(ADMIN)) {
+                String adminDeviceId = "admin_device127";
+                String encodedPassword = new BCryptPasswordEncoder().encode(adminPassword);
+                UserEntity user = UserEntity.builder()
+                        .email(adminEmail)
+                        .password(encodedPassword)
+                        .nickname(ADMIN)
+                        .deviceId(adminDeviceId)
+                        .build();
+                UserEntity admin = userRepository.save(user);
+                adminRepository.save(Admin.builder().user(admin).build());
+            }
+        } catch (DuplicateKeyException e) {
+            log.warn("Admin already exists");
         }
     }
 
     private void initializeDefaultValue() {
-        jdbcTemplate.batchUpdate(
-                getInsertEnumSql("status", Status.StatusName.class),
-                getInsertEnumSql("difficulty", Difficulty.DifficultyName.class),
-                getInsertEnumSql("win_color", WinColor.WinColorName.class)
-        );
+        tryInsertEnumSql("status", Status.StatusName.class);
+        tryInsertEnumSql("difficulty", Difficulty.DifficultyName.class);
+        tryInsertEnumSql("win_color", WinColor.WinColorName.class);
+        tryInsertEnumSql("lang_code", LangCode.LangCodeName.class);
+        tryInsertEnumSql("title", Title.TitleType.class);
     }
 
-    private <E extends Enum<E>> String getInsertEnumSql(String tableName, Class<E> enumClass) {
+    private <E extends Enum<E>> void tryInsertEnumSql(String tableName, Class<E> enumClass) {
         StringBuilder sqlBuilder = new StringBuilder("INSERT IGNORE INTO ");
         sqlBuilder.append(tableName).append(" (name) VALUES ");
 
@@ -76,7 +88,11 @@ public class DataInitializer implements CommandLineRunner {
             }
         }
 
-        return sqlBuilder.toString();
+        try {
+            jdbcTemplate.batchUpdate(sqlBuilder.toString());
+        } catch (DuplicateKeyException e) {
+            log.warn("{} already exists", tableName);
+        }
     }
 
 }
