@@ -14,7 +14,7 @@ import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
-import com.renzzle.backend.global.util.ELOUtil;
+import com.renzzle.backend.domain.puzzle.shared.util.ELOUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,8 +31,8 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static com.renzzle.backend.global.util.ELOUtil.TARGET_WIN_PROBABILITY;
-import static com.renzzle.backend.global.util.ELOUtil.WIN_PROBABILITY_DELTA;
+import static com.renzzle.backend.domain.puzzle.shared.util.ELOUtils.TARGET_WIN_PROBABILITY;
+import static com.renzzle.backend.domain.puzzle.shared.util.ELOUtils.WIN_PROBABILITY_DELTA;
 
 @Service
 @RequiredArgsConstructor
@@ -70,8 +70,8 @@ public class RankService {
 
         latestRankPuzzleRepository.save(latestPuzzle);
 
-        double mmrPenalty = ELOUtil.calculateMMRDecrease(originalRating, puzzleRating);
-        double ratingPenalty = ELOUtil.calculateRatingDecrease(originalMmr, puzzleRating);
+        double mmrPenalty = ELOUtils.calculateMMRDecrease(originalRating, puzzleRating);
+        double ratingPenalty = ELOUtils.calculateRatingDecrease(originalMmr, puzzleRating);
 
         user.updateMmrTo(originalMmr + mmrPenalty);
         user.updateRatingTo(originalRating + ratingPenalty);
@@ -137,8 +137,8 @@ public class RankService {
         if (request.isSolved()) {
             WinProbability += WIN_PROBABILITY_DELTA;
 
-            double mmrIncrease = ELOUtil.calculateMMRIncrease(userBeforeMmr, lastProblemRating);
-            double ratingIncrease = ELOUtil.calculateRatingIncrease(userBeforeRating, lastProblemRating);
+            double mmrIncrease = ELOUtils.calculateMMRIncrease(userBeforeMmr, lastProblemRating);
+            double ratingIncrease = ELOUtils.calculateRatingIncrease(userBeforeRating, lastProblemRating);
 
             user.updateMmrTo(userBeforeMmr + mmrIncrease);
             user.updateRatingTo(userBeforeRating + ratingIncrease);
@@ -147,8 +147,8 @@ public class RankService {
             userBeforeRating = userBeforeRating + ratingIncrease;
         } else {
             WinProbability -= WIN_PROBABILITY_DELTA;
-            double mmrDecrease = ELOUtil.calculateMMRDecrease(userBeforeMmr, lastProblemRating);
-            double ratingDecrease = ELOUtil.calculateRatingDecrease(userBeforeRating, lastProblemRating);
+            double mmrDecrease = ELOUtils.calculateMMRDecrease(userBeforeMmr, lastProblemRating);
+            double ratingDecrease = ELOUtils.calculateRatingDecrease(userBeforeRating, lastProblemRating);
 
             user.updateMmrTo(userBeforeMmr + mmrDecrease);
             user.updateRatingTo(userBeforeRating + ratingDecrease);
@@ -162,8 +162,8 @@ public class RankService {
         LatestRankPuzzle latestPuzzle = puzzleResult.latestPuzzle();
         double puzzleRating = puzzleResult.rating();
 
-        double ratingPenalty = ELOUtil.calculateRatingDecrease(userBeforeRating, puzzleRating);
-        double mmrPenalty = ELOUtil.calculateMMRDecrease(userBeforeMmr, puzzleRating);
+        double ratingPenalty = ELOUtils.calculateRatingDecrease(userBeforeRating, puzzleRating);
+        double mmrPenalty = ELOUtils.calculateMMRDecrease(userBeforeMmr, puzzleRating);
 
         user.updateMmrTo(userBeforeMmr + mmrPenalty);
         user.updateRatingTo(userBeforeRating + ratingPenalty);
@@ -221,7 +221,7 @@ public class RankService {
             문제들을
             windowSize 만큼 각 퍼즐에서 선정 후 이들을 섞은 후 이 중 하나의 문제를 선택하여 다음 문제로 사용
         */
-        double desiredRating = ELOUtil.getProblemRatingForTargetWinProbability(originalMmr, targetWinProbability);
+        double desiredRating = ELOUtils.getProblemRatingForTargetWinProbability(originalMmr, targetWinProbability);
         int windowSize = 5;
 
         // 각 퍼즐 후보군 가져오기 (레이팅 기준 정렬)
