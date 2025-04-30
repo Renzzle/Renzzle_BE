@@ -10,6 +10,8 @@ public record GetCommunityPuzzlesResponse(
         String authorName,
         int depth,
         String winColor,
+        int solvedCount,
+        int views,
         int likeCount,
         String createdAt,
         boolean isSolved,
