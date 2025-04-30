@@ -6,6 +6,7 @@ import com.renzzle.backend.domain.puzzle.content.api.request.GetRecommendRequest
 import com.renzzle.backend.domain.puzzle.content.api.response.GetTrendPuzzlesResponse;
 import com.renzzle.backend.domain.puzzle.content.api.response.getRecommendPackResponse;
 import com.renzzle.backend.domain.puzzle.content.api.response.getTrendPuzzleResponse;
+import com.renzzle.backend.domain.puzzle.training.dao.PackRepository;
 import com.renzzle.backend.domain.puzzle.training.dao.PackTranslationRepository;
 import com.renzzle.backend.domain.puzzle.training.dao.SolvedTrainingPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.training.dao.UserPackRepository;
@@ -34,14 +35,22 @@ public class ContentService {
     private final CommunityPuzzleRepository communityPuzzleRepository;
     private final PackTranslationRepository packTranslationRepository;
     private final UserPackRepository userPackRepository;
+    private final PackRepository packRepository;
     private final Clock clock;
     public getRecommendPackResponse getRecommendedPack(GetRecommendRequest request, UserEntity user) {
         Long userId = user.getId();
 
         // 가장 최근에 푼 퍼즐 하나 조회
-        SolvedTrainingPuzzle recentSolved = solvedTrainingPuzzleRepository
-                .findTopByUserOrderBySolvedAtDesc(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACKS));
+        Optional<SolvedTrainingPuzzle> recentSolvedOpt = solvedTrainingPuzzleRepository
+                .findTopByUserOrderBySolvedAtDesc(userId);
+
+        if (recentSolvedOpt.isEmpty()) {
+            // 퍼즐을 푼 적이 없는 신규 사용자 -> 기본 추천 제공
+            return createDefaultRecommendedPack(request);
+        }
+
+        // 퍼즐을 푼 기록이 있는 경우
+        SolvedTrainingPuzzle recentSolved = recentSolvedOpt.get();
 
         Pack pack = recentSolved.getPuzzle().getPack();
         if (pack == null) {
@@ -70,6 +79,29 @@ public class ContentService {
                 .totalPuzzleCount(pack.getPuzzleCount())
                 .solvedPuzzleCount(solvedCount)
                 .locked(false)  //  userPack 은 항상 not null
+                .build();
+    }
+
+    private getRecommendPackResponse createDefaultRecommendedPack(GetRecommendRequest request) {
+        // 1. 가장 id가 낮은 Pack 조회
+        Pack pack = packRepository.findFirstByOrderByIdAsc()
+                .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
+
+        // 2. 번역 정보 조회
+        PackTranslation translation = packTranslationRepository
+                .findByPack_IdAndLanguageCode(pack.getId(), request.lang().name())
+                .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_PACK_TRANSLATION));
+
+        // 3. 결과 반환
+        return getRecommendPackResponse.builder()
+                .id(pack.getId())
+                .title(translation.getTitle())
+                .author(translation.getAuthor())
+                .description(translation.getDescription())
+                .price(pack.getPrice())
+                .totalPuzzleCount(pack.getPuzzleCount())
+                .solvedPuzzleCount(0) // 아직 아무 문제도 풀지 않았으니까
+                .locked(false)        // 기본 추천이므로 잠금 아님
                 .build();
     }
 
