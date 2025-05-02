@@ -25,5 +25,5 @@ public record AddTrainingPuzzleRequest(
 
         @NotEmpty(message = "승리 색상 정보가 없습니다")
         @ValidEnum(enumClass = WinColor.WinColorName.class, message = "잘못된 WinColor 타입입니다")
-        WinColor winColor
+        String winColor
 ) { }

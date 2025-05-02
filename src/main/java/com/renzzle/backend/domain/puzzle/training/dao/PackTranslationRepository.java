@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface PackTranslationRepository extends JpaRepository<PackTranslation, Long> {
-    List<PackTranslation> findAllByPack_IdInAndLanguageCode(List<Long> packIds, String languageCode);
+    List<PackTranslation> findAllByPack_IdInAndLangCode(List<Long> packIds, String languageCode);
 
-    boolean existsByPackAndLanguageCode(Pack pack, String languageCode);
+    boolean existsByPackAndLangCode(Pack pack, String languageCode);
 }

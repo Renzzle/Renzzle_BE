@@ -11,6 +11,7 @@ import com.renzzle.backend.domain.puzzle.training.domain.*;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.constant.ItemPrice;
+import com.renzzle.backend.global.common.domain.LangCode;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -64,7 +65,7 @@ public class TrainingService {
                 .boardKey(boardKey)
                 .depth(request.depth())
                 .rating(rating)
-                .winColor(WinColor.getWinColor(request.winColor().getName()))
+                .winColor(WinColor.getWinColor(request.winColor()))
                 .build();
 
         return trainingPuzzleRepository.save(puzzle);
@@ -145,7 +146,7 @@ public class TrainingService {
         List<PackTranslation> translations = request.info().stream()
                 .map(info -> PackTranslation.builder()
                         .pack(savedPack)
-                        .languageCode(info.langCode().name())
+                        .langCode(LangCode.getLangCode(info.langCode()))
                         .title(info.title())
                         .author(info.author())
                         .description(info.description())
@@ -163,7 +164,7 @@ public class TrainingService {
         Pack pack = packRepository.findById(request.packId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
-        boolean exists = packTranslationRepository.existsByPackAndLanguageCode(pack, request.langCode().name());
+        boolean exists = packTranslationRepository.existsByPackAndLangCode(pack, request.langCode());
 
         if (exists) {
             throw new CustomException(ErrorCode.ALREADY_EXISTING_TRANSLATION);
@@ -171,7 +172,7 @@ public class TrainingService {
 
         PackTranslation translation = PackTranslation.builder()
                 .pack(pack)
-                .languageCode(request.langCode().name())
+                .langCode(LangCode.getLangCode(request.langCode()))
                 .title(request.title())
                 .author(request.author())
                 .description(request.description())
@@ -191,7 +192,7 @@ public class TrainingService {
 
         List<Long> packIds = packs.stream().map(Pack::getId).collect(Collectors.toList());
         List<PackTranslation> translations = packTranslationRepository
-                .findAllByPack_IdInAndLanguageCode(packIds, request.lang().name());
+                .findAllByPack_IdInAndLangCode(packIds, request.lang());
 
         Long userId = user.getId();
 
@@ -258,7 +259,6 @@ public class TrainingService {
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
 
         newUser.purchase(ItemPrice.HINT.getPrice());
-//        userRepository.save(newUser);
 
         return GetTrainingPuzzleAnswerResponse.builder()
                 .answer(puzzle.getAnswer())
