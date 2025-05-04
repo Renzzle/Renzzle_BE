@@ -164,7 +164,7 @@ public class TrainingService {
         Pack pack = packRepository.findById(request.packId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
-        boolean exists = packTranslationRepository.existsByPackAndLangCode(pack, request.langCode());
+        boolean exists = packTranslationRepository.existsByPackAndLangCode(pack, LangCode.getLangCode(request.langCode()));
 
         if (exists) {
             throw new CustomException(ErrorCode.ALREADY_EXISTING_TRANSLATION);
@@ -192,7 +192,7 @@ public class TrainingService {
 
         List<Long> packIds = packs.stream().map(Pack::getId).collect(Collectors.toList());
         List<PackTranslation> translations = packTranslationRepository
-                .findAllByPack_IdInAndLangCode(packIds, request.lang());
+                .findAllByPack_IdInAndLangCode(packIds, LangCode.getLangCode(request.lang()));
 
         Long userId = user.getId();
 

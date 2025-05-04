@@ -137,7 +137,10 @@ public class TrainingServiceTest {
             );
 
             when(packRepository.findById(packId)).thenReturn(Optional.of(pack));
-            when(packTranslationRepository.existsByPackAndLangCode(pack, request.langCode())).thenReturn(false);
+            when(packTranslationRepository.existsByPackAndLangCode(
+                    eq(pack),
+                    argThat(langCode -> langCode != null && langCode.getName().equals("EN"))
+            )).thenReturn(false);
 
             // when
             trainingService.addTranslation(request);
@@ -150,7 +153,7 @@ public class TrainingServiceTest {
 
             PackTranslation savedTranslation = captor.getValue();
             assertEquals(pack, savedTranslation.getPack());
-            assertEquals(LangCode.getLangCode(request.langCode()), savedTranslation.getLangCode());
+            assertEquals(request.langCode(), savedTranslation.getLangCode().getName());
             assertEquals(request.title(), savedTranslation.getTitle());
             assertEquals(request.author(), savedTranslation.getAuthor());
             assertEquals(request.description(), savedTranslation.getDescription());
@@ -163,7 +166,7 @@ public class TrainingServiceTest {
             Long packId = 1L;
             String boardStatus = "a1a2a3a4";
             Integer depth = 3;
-            String winColorStr = "white";
+            String winColorStr = "WHITE";
             AddTrainingPuzzleRequest request = new AddTrainingPuzzleRequest(
                     packId,
                     null,
@@ -391,13 +394,18 @@ public class TrainingServiceTest {
             // PackTranslation 생성 (연결된 pack의 ID 1)
             PackTranslation translation = PackTranslation.builder()
                     .pack(pack)
-                    .langCode(LangCode.getLangCode(LanguageCode.en.name()))
+                    .langCode(LangCode.getLangCode("EN"))
                     .title("Title")
                     .author("Author")
                     .description("Description")
                     .build();
-            when(packTranslationRepository.findAllByPack_IdInAndLangCode(List.of(1L), LanguageCode.en.name()))
-                    .thenReturn(Collections.singletonList(translation));
+
+            LangCode langCode = LangCode.getLangCode("EN");
+
+            when(packTranslationRepository.findAllByPack_IdInAndLangCode(
+                    eq(List.of(1L)),
+                    argThat(arg -> arg.getName().equals("EN"))
+            )).thenReturn(List.of(translation));
 
             // userPackRepository: 사용자가 해당 pack에 대한 기록이 없으므로, 빈 리스트 반환 (locked = true, solvedCount = 0)
             when(userPackRepository.findAllByUserIdAndPackIdIn(100L, List.of(1L)))
@@ -506,6 +514,7 @@ public class TrainingServiceTest {
             // given
             Long packId = 1L;
             Pack pack = Pack.builder().id(packId).build();
+            LangCode langCode = LangCode.getLangCode("EN");
             TranslationRequest request = new TranslationRequest(
                     packId,
                     "EN",
@@ -515,7 +524,8 @@ public class TrainingServiceTest {
             );
 
             when(packRepository.findById(packId)).thenReturn(Optional.of(pack));
-            when(packTranslationRepository.existsByPackAndLangCode(pack, request.langCode())).thenReturn(true);
+            when(packTranslationRepository.existsByPackAndLangCode(eq(pack), argThat(arg -> arg.getName().equals("EN"))))
+                    .thenReturn(true);
 
             // when
             CustomException exception = assertThrows(CustomException.class, () -> trainingService.addTranslation(request));
@@ -554,7 +564,7 @@ public class TrainingServiceTest {
             Long packId = 1L;
             String boardStatus = "a1a2a3a4";
             Integer depth = 3;
-            String winColorStr = "white";
+            String winColorStr = "WHITE";
 
             AddTrainingPuzzleRequest request = new AddTrainingPuzzleRequest(
                     packId,

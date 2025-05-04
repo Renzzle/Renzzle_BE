@@ -299,8 +299,8 @@ public class TrainingServiceRepositoryTest {
         entityManager.persist(difficulty);
 
         List<PackTranslationRequest> translations = Arrays.asList(
-                new PackTranslationRequest(LangCode.getLangCode("EN"), "초보용 1", "재윤", "설명1"),
-                new PackTranslationRequest(LanguageCode.en, "For Beginner 1", "JaeYun", "Description1")
+                new PackTranslationRequest("EN", "초보용 1", "재윤", "설명1"),
+                new PackTranslationRequest("EN", "For Beginner 1", "JaeYun", "Description1")
         );
         CreateTrainingPackRequest request = new CreateTrainingPackRequest(translations, 1000, "LOW");
 
@@ -364,7 +364,7 @@ public class TrainingServiceRepositoryTest {
         // PackTranslation 생성 및 저장 (언어 코드 "EN")
         PackTranslation translation = PackTranslation.builder()
                 .pack(savedPack)
-                .langCode(LangCode.getLangCode(LanguageCode.en.name()))
+                .langCode(LangCode.getLangCode("EN"))
                 .title("Test Title")
                 .author("Test Author")
                 .description("Test Description")
@@ -374,7 +374,7 @@ public class TrainingServiceRepositoryTest {
         // when
         List<Pack> packs = packRepository.findByDifficulty(difficulty);
         List<Long> packIds = packs.stream().map(Pack::getId).collect(Collectors.toList());
-        List<PackTranslation> translations = packTranslationRepository.findAllByPack_IdInAndLangCode(packIds, LanguageCode.en.name());
+        List<PackTranslation> translations = packTranslationRepository.findAllByPack_IdInAndLangCode(packIds, LangCode.getLangCode("EN"));
 
         // then
         assertThat(packs).hasSize(1);
@@ -400,13 +400,13 @@ public class TrainingServiceRepositoryTest {
                 .puzzleCount(0)
                 .build();
         Pack savedPack = packRepository.save(pack);
-        boolean existsBefore = packTranslationRepository.existsByPackAndLangCode(savedPack, LanguageCode.en.name());
+        boolean existsBefore = packTranslationRepository.existsByPackAndLangCode(savedPack, LangCode.getLangCode("EN"));
         assertThat(existsBefore).isFalse();
 
         // when
         PackTranslation translation = PackTranslation.builder()
                 .pack(savedPack)
-                .langCode(LangCode.getLangCode(LanguageCode.en.name()))
+                .langCode(LangCode.getLangCode("EN"))
                 .title("Test Title")
                 .author("Test Author")
                 .description("Test Description")
@@ -418,7 +418,7 @@ public class TrainingServiceRepositoryTest {
         assertThat(translations).hasSize(1);
         PackTranslation retrieved = translations.get(0);
         assertThat(retrieved.getPack().getId()).isEqualTo(savedPack.getId());
-        assertThat(retrieved.getLangCode()).isEqualTo(LanguageCode.en.name());
+        assertThat(retrieved.getLangCode().getName()).isEqualTo("EN");
         assertThat(retrieved.getTitle()).isEqualTo("Test Title");
         assertThat(retrieved.getAuthor()).isEqualTo("Test Author");
         assertThat(retrieved.getDescription()).isEqualTo("Test Description");
