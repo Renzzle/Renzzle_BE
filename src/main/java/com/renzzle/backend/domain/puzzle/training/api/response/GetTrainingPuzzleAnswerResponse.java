@@ -5,6 +5,6 @@ import lombok.Builder;
 @Builder
 public record GetTrainingPuzzleAnswerResponse(
         String answer,
-        int currency
+        int price
 ) {
 }
