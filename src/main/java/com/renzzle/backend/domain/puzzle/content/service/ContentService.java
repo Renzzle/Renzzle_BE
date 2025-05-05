@@ -1,11 +1,12 @@
 package com.renzzle.backend.domain.puzzle.content.service;
 
+import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlesResponse;
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
+import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.content.api.request.GetRecommendRequest;
 import com.renzzle.backend.domain.puzzle.content.api.response.GetTrendPuzzlesResponse;
 import com.renzzle.backend.domain.puzzle.content.api.response.getRecommendPackResponse;
-import com.renzzle.backend.domain.puzzle.content.api.response.getTrendPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.training.dao.PackRepository;
 import com.renzzle.backend.domain.puzzle.training.dao.PackTranslationRepository;
 import com.renzzle.backend.domain.puzzle.training.dao.SolvedTrainingPuzzleRepository;
@@ -36,6 +37,7 @@ public class ContentService {
     private final PackTranslationRepository packTranslationRepository;
     private final UserPackRepository userPackRepository;
     private final PackRepository packRepository;
+    private final UserCommunityPuzzleRepository userCommunityPuzzleRepository;
     private final Clock clock;
     public getRecommendPackResponse getRecommendedPack(GetRecommendRequest request, UserEntity user) {
         Long userId = user.getId();
@@ -105,9 +107,9 @@ public class ContentService {
                 .build();
     }
 
-    public GetTrendPuzzlesResponse getTrendCommunityPuzzles() {
+    public GetTrendPuzzlesResponse getTrendCommunityPuzzles(UserEntity user) {
         Set<Long> selectedIds = new HashSet<>();
-        List<getTrendPuzzleResponse> result = new ArrayList<>();
+        List<GetCommunityPuzzlesResponse> result = new ArrayList<>();
 
         Instant instant = clock.instant();
 
@@ -122,7 +124,7 @@ public class ContentService {
                 .sorted(trendComparator())
                 .toList();
 
-        selectTrendPuzzles(sortedRecent, result, selectedIds);
+        selectTrendPuzzles(sortedRecent, result, selectedIds, user);
 
         //부족 시 → 최근 1주일 이전 퍼즐 중 최신 30개
         if (result.size() < 5) {
@@ -134,7 +136,7 @@ public class ContentService {
                     .sorted(trendComparator())
                     .toList();
 
-            selectTrendPuzzles(sortedBackup, result, selectedIds);
+            selectTrendPuzzles(sortedBackup, result, selectedIds, user);
         }
 
         return new GetTrendPuzzlesResponse(result);
@@ -142,8 +144,9 @@ public class ContentService {
 
     private void selectTrendPuzzles(
             List<CommunityPuzzle> puzzles,
-            List<getTrendPuzzleResponse> result,
-            Set<Long> selectedIds
+            List<GetCommunityPuzzlesResponse> result,
+            Set<Long> selectedIds,
+            UserEntity user
     ) {
         for (CommunityPuzzle p : puzzles) {
             if (result.size() >= 5) break;
@@ -153,19 +156,26 @@ public class ContentService {
                 throw new CustomException(ErrorCode.TREND_PUZZLE_DUPLICATED);
             }
 
-            result.add(convertToResponse(p));
+            result.add(convertToResponse(p, user));
         }
     }
 
-    private getTrendPuzzleResponse convertToResponse(CommunityPuzzle puzzle) {
-        return getTrendPuzzleResponse.builder()
+    private GetCommunityPuzzlesResponse convertToResponse(CommunityPuzzle puzzle, UserEntity user) {
+
+        boolean isSolved = userCommunityPuzzleRepository.checkIsSolvedPuzzle(user.getId(), puzzle.getId());
+
+        return GetCommunityPuzzlesResponse.builder()
                 .id(puzzle.getId())
                 .boardStatus(puzzle.getBoardStatus())
                 .authorId(puzzle.getUser().getId())
                 .authorName(puzzle.getUser().getNickname())
                 .depth(puzzle.getDepth())
                 .winColor(puzzle.getWinColor().getName())
+                .solvedCount(puzzle.getSolvedCount())
+                .views(puzzle.getView())
                 .likeCount(puzzle.getLikeCount())
+                .createdAt(puzzle.getCreatedAt().toString())
+                .isSolved(isSolved)
                 .isVerified(puzzle.getIsVerified())
                 .build();
     }
