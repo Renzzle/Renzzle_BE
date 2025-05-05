@@ -4,6 +4,7 @@ import lombok.Builder;
 
 @Builder
 public record RankEndResponse(
-        double rating
+        double rating,
+        int reward
 ) {
 }

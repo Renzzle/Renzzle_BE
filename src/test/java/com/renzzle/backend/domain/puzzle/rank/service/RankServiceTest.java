@@ -307,10 +307,16 @@ public class RankServiceTest {
         session.setStarted(true);
 
         when(valueOperations.get("3")).thenReturn(session);
+        when(latestRankPuzzleRepository.findAllByUser(user))
+                .thenReturn(List.of(
+                        LatestRankPuzzle.builder().isSolved(true).build(),
+                        LatestRankPuzzle.builder().isSolved(true).build()
+                ));
         // When
         RankEndResponse response = rankService.endRankGame(user);
         // Then
         assertThat(response.rating()).isEqualTo(1600);
+        assertThat(response.reward()).isEqualTo(40);
         verify(redisSessionTemplate).delete("3");
     }
 
