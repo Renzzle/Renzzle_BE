@@ -34,7 +34,9 @@ public class ContentController {
 
     @Operation(summary = "Get Trend Puzzles", description = "Get 5 Trend Puzzles")
     @GetMapping("/trend")
-    public ApiResponse<GetTrendPuzzlesResponse> getTrendPuzzles(){
-        return ApiUtils.success(contentService.getTrendCommunityPuzzles());
+    public ApiResponse<GetTrendPuzzlesResponse> getTrendPuzzles(
+            @AuthenticationPrincipal UserDetailsImpl user
+    ){
+        return ApiUtils.success(contentService.getTrendCommunityPuzzles(user.getUser()));
     }
 }
