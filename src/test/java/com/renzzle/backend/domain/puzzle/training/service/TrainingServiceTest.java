@@ -343,7 +343,7 @@ public class TrainingServiceTest {
                     .winColor(winColor)
                     .build();
             List<TrainingPuzzle> puzzles = Collections.singletonList(puzzle);
-            when(trainingPuzzleRepository.findByPack_Id(packId)).thenReturn(puzzles);
+            when(trainingPuzzleRepository.findByPack_IdOrderByTrainingIndexDesc(packId)).thenReturn(puzzles);
 
             // solvedTrainingPuzzleRepository.existsByUserAndPuzzle(user, puzzle) 가 false라고 가정
             when(solvedTrainingPuzzleRepository.existsByUserAndPuzzle(user, puzzle)).thenReturn(false);
@@ -651,7 +651,7 @@ public class TrainingServiceTest {
                     .status(Status.getDefaultStatus())
                     .build();
 
-            when(trainingPuzzleRepository.findByPack_Id(packId)).thenReturn(Collections.emptyList());
+            when(trainingPuzzleRepository.findByPack_IdOrderByTrainingIndexDesc(packId)).thenReturn(Collections.emptyList());
 
             // when & then
             CustomException exception = assertThrows(CustomException.class, () ->
