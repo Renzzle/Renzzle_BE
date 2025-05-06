@@ -86,7 +86,7 @@ public class TrainingServiceRepositoryTest {
     @Test
     @DisplayName("TrainingPuzzle 저장 및 조회: 유효한 Pack과 TrainingPuzzle을 저장 후 정상 조회")
     @Transactional
-    public void testCreateTrainingPuzzle() {
+    public void increaseIndexesFrom_WhenCalled_ThenIncrementsAllFollowingIndexes() {
         // given
         Difficulty difficulty = Difficulty.getDifficulty("LOW");
         entityManager.persist(difficulty);
@@ -101,30 +101,28 @@ public class TrainingServiceRepositoryTest {
                 .build();
         Pack savedPack = packRepository.save(pack);
 
-        TrainingPuzzle existingPuzzle = TrainingPuzzle.builder()
-                .pack(savedPack)
-                .trainingIndex(0)
-                .boardStatus("existingStatus")
-                .boardKey("existingKey")
-                .answer("existing answer")
-                .depth(3)
-                .rating(600.0)
-                .winColor(winColor)
-                .build();
-        TrainingPuzzle savedExistingPuzzle = trainingPuzzleRepository.save(existingPuzzle);
+        TrainingPuzzle p1 = TrainingPuzzle.builder().pack(pack).trainingIndex(0)
+                .boardStatus("s1").boardKey("k1").answer("a1").depth(1).rating(100).winColor(winColor).build();
+        TrainingPuzzle p2 = TrainingPuzzle.builder().pack(pack).trainingIndex(1)
+                .boardStatus("s2").boardKey("k2").answer("a2").depth(1).rating(100).winColor(winColor).build();
+
+        trainingPuzzleRepository.saveAll(List.of(p1, p2));
 
         // when
-        trainingPuzzleRepository.increaseIndexesFrom(savedPack.getId(), 0);
-
+        trainingPuzzleRepository.increaseIndexesFrom(pack.getId(), 0);
         entityManager.flush();
         entityManager.clear();
 
-        // then
-        Optional<TrainingPuzzle> updatedPuzzleOpt = trainingPuzzleRepository.findById(savedExistingPuzzle.getId());
-        assertThat(updatedPuzzleOpt).isPresent();
-        TrainingPuzzle updatedPuzzle = updatedPuzzleOpt.get();
-        assertThat(updatedPuzzle.getTrainingIndex()).isEqualTo(1);
 
+        // then
+        Optional<TrainingPuzzle> updatedP1 = trainingPuzzleRepository.findById(p1.getId());
+        Optional<TrainingPuzzle> updatedP2 = trainingPuzzleRepository.findById(p2.getId());
+
+        assertThat(updatedP1).isPresent();
+        assertThat(updatedP2).isPresent();
+
+        assertThat(updatedP1.get().getTrainingIndex()).isEqualTo(1);
+        assertThat(updatedP2.get().getTrainingIndex()).isEqualTo(2);
     }
 
     @Test
