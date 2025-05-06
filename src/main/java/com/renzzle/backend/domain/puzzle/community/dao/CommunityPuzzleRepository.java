@@ -55,5 +55,15 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
     @Query(value = "SELECT * FROM community_puzzle WHERE id = :id", nativeQuery = true)
     CommunityPuzzle findByIdIncludingDeleted(@Param("id") Long id);
 
+    @Query("SELECT cp FROM CommunityPuzzle cp " +
+            "JOIN FETCH cp.user u " +
+            "JOIN FETCH cp.winColor wc " +
+            "WHERE FUNCTION('YEARWEEK', cp.createdAt) = :yearWeek")
+    List<CommunityPuzzle> findByYearWeek(@Param("yearWeek") String yearWeek);
+
+    List<CommunityPuzzle> findByCreatedAtAfter(Instant after);  // 1주일 내 퍼즐
+
+    List<CommunityPuzzle> findTop30ByCreatedAtBeforeOrderByCreatedAtDesc(Instant before);  // 최신 30개
+
 
 }

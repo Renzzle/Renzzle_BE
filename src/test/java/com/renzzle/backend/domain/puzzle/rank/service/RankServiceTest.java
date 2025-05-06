@@ -207,7 +207,7 @@ public class RankServiceTest {
 
         CustomException ex = assertThrows(CustomException.class, () -> rankService.resultRankGame(user, request));
         // Then
-        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.PUZZLE_NOT_FOUND);
+        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.CANNOT_FIND_RANK_PUZZLE);
     }
 
     @Test

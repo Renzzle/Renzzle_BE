@@ -27,4 +27,11 @@ public interface SolvedTrainingPuzzleRepository extends JpaRepository<SolvedTrai
     int countSolvedLesson(@Param("userId") Long userId,
                           @Param("chapter") int chapter);
 
+    @Query("SELECT s FROM SolvedTrainingPuzzle s " +
+            "JOIN FETCH s.puzzle p " +
+            "JOIN FETCH p.pack pack " +
+            "WHERE s.user.id = :userId " +
+            "ORDER BY s.solvedAt DESC")
+    Optional<SolvedTrainingPuzzle> findTopByUserOrderBySolvedAtDesc(@Param("userId") Long userId);
+
 }

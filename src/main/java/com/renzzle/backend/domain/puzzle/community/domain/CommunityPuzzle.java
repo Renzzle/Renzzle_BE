@@ -110,5 +110,4 @@ public class CommunityPuzzle {
     public void increaseSolvedCount() {
         this.solvedCount++;
     }
-
 }
