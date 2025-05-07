@@ -1,0 +1,9 @@
+package com.renzzle.backend.domain.puzzle.training.api.response;
+
+import lombok.Builder;
+
+@Builder
+public record GetPackPurchaseResponse(
+        int price
+) {
+}

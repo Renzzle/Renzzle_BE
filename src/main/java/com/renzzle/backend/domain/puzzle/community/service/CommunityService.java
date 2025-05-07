@@ -124,6 +124,8 @@ public class CommunityService {
 
         persistedUser.purchase(HINT.getPrice());
 
+        solveCommunityPuzzle(puzzleId, user);
+
         return GetCommunityPuzzleAnswerResponse.builder()
                 .answer(puzzle.getAnswer())
                 .price(HINT.getPrice())

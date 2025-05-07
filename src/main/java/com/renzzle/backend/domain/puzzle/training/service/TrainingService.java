@@ -1,6 +1,7 @@
 package com.renzzle.backend.domain.puzzle.training.service;
 
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
+import com.renzzle.backend.domain.puzzle.training.api.response.GetPackPurchaseResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleAnswerResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleResponse;
@@ -232,7 +233,7 @@ public class TrainingService {
 
     // service test, repo test
     @Transactional(readOnly = true)
-    public Integer purchaseTrainingPack(UserEntity user, PurchaseTrainingPackRequest request) {
+    public GetPackPurchaseResponse purchaseTrainingPack(UserEntity user, PurchaseTrainingPackRequest request) {
         Pack pack = packRepository.findById(request.packId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
@@ -247,7 +248,9 @@ public class TrainingService {
                 .build();
 
         userPackRepository.save(userPack);
-        return user.getCurrency();
+        return GetPackPurchaseResponse.builder()
+                .price(pack.getPrice())
+                .build();
     }
 
     @Transactional(readOnly = true)
@@ -259,10 +262,11 @@ public class TrainingService {
 
         newUser.purchase(ItemPrice.HINT.getPrice());
 
+        solveTrainingPuzzle(user, puzzle.getId());
+
         return GetTrainingPuzzleAnswerResponse.builder()
                 .answer(puzzle.getAnswer())
-                .price(newUser.getCurrency())
+                .price(ItemPrice.HINT.getPrice())
                 .build();
     }
-
 }

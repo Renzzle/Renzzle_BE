@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.puzzle.training.service;
 
+import com.renzzle.backend.domain.puzzle.training.api.response.GetPackPurchaseResponse;
 import com.renzzle.backend.domain.puzzle.training.domain.Difficulty;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackResponse;
@@ -448,10 +449,10 @@ public class TrainingServiceTest {
             when(userRepository.save(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             // when
-            Integer remainingCurrency = trainingService.purchaseTrainingPack(user, request);
+            GetPackPurchaseResponse getPackPurchaseResponse = trainingService.purchaseTrainingPack(user, request);
 
             // then
-            assertThat(remainingCurrency).isEqualTo(1000);
+            assertThat(getPackPurchaseResponse).isEqualTo(1000);
             verify(packRepository, times(1)).findById(1L);
             verify(userRepository, times(1)).save(user);
             verify(userPackRepository, times(1)).save(any());
@@ -493,7 +494,7 @@ public class TrainingServiceTest {
 
             // then
             assertThat(response.answer()).isEqualTo("Correct Answer");
-            assertThat(response.currency()).isEqualTo(500 - hintPrice);
+            assertThat(response.price()).isEqualTo(hintPrice);
         }
     }
 

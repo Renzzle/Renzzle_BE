@@ -1,9 +1,6 @@
 package com.renzzle.backend.domain.puzzle.training.api;
 
-import com.renzzle.backend.domain.puzzle.training.api.response.GetPackResponse;
-import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleAnswerResponse;
-import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleResponse;
-import com.renzzle.backend.domain.puzzle.training.api.response.SolveTrainingPuzzleResponse;
+import com.renzzle.backend.domain.puzzle.training.api.response.*;
 import com.renzzle.backend.domain.puzzle.training.domain.Pack;
 import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.puzzle.training.api.request.*;
@@ -109,14 +106,14 @@ public class TrainingController {
     // 0315
     @Operation(summary = "Purchase Training Pack", description = "Purchase Training Pack")
     @PostMapping("/pack/purchase")
-    public ApiResponse<Integer> PurchaseTrainingPack(
+    public ApiResponse<GetPackPurchaseResponse> PurchaseTrainingPack(
             @Valid @RequestBody PurchaseTrainingPackRequest request,
             @AuthenticationPrincipal UserDetailsImpl user
     ){
 
-        Integer currency = trainingService.purchaseTrainingPack(user.getUser(), request);
+        GetPackPurchaseResponse response = trainingService.purchaseTrainingPack(user.getUser(), request);
 
-        return ApiUtils.success(currency);
+        return ApiUtils.success(response);
     }
     // 0315
     @Operation(summary = "Purchase Training Puzzle Answer", description = "Purchase Training Puzzle Answer")
