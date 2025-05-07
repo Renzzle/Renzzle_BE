@@ -1,7 +1,7 @@
 package com.renzzle.backend.domain.puzzle.training.domain;
 
 
-import com.renzzle.backend.domain.puzzle.training.domain.Pack;
+import com.renzzle.backend.global.common.domain.LangCode;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.OnDelete;
@@ -23,8 +23,10 @@ public class PackTranslation {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Pack pack;
 
-    @Column(name = "language_code", nullable = false, length = 15)
-    private String languageCode;
+    @ManyToOne
+    @JoinColumn(name = "lang_code", nullable = false)
+    @OnDelete(action = OnDeleteAction.NO_ACTION)
+    private LangCode langCode;
 
     @Column(name = "title", nullable = false, length = 225)
     private String title;
@@ -36,4 +38,3 @@ public class PackTranslation {
     private String description;
 
 }
-

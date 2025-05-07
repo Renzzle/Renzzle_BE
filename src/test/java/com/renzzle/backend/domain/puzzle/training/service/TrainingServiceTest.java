@@ -16,6 +16,7 @@ import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.constant.ItemPrice;
 import com.renzzle.backend.global.common.constant.LanguageCode;
+import com.renzzle.backend.global.common.domain.LangCode;
 import com.renzzle.backend.global.common.domain.Status;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
@@ -79,8 +80,8 @@ public class TrainingServiceTest {
         public void testCreatePack() {
             // given
             List<PackTranslationRequest> translationRequests = Arrays.asList(
-                    new PackTranslationRequest(LanguageCode.ko, "초보용 1", "강상민", "처음 퍼즐을 푸는..."),
-                    new PackTranslationRequest(LanguageCode.en, "For Beginner 1", "Kang Sang-Min", "First time to solve...")
+                    new PackTranslationRequest("KO", "초보용 1", "강상민", "처음 퍼즐을 푸는..."),
+                    new PackTranslationRequest("EN", "For Beginner 1", "Kang Sang-Min", "First time to solve...")
             );
             CreateTrainingPackRequest request = new CreateTrainingPackRequest(translationRequests, 1000, "LOW");
 
@@ -96,7 +97,7 @@ public class TrainingServiceTest {
             List<PackTranslation> expectedTranslations = request.info().stream()
                     .map(info -> PackTranslation.builder()
                             .pack(savedPack)
-                            .languageCode(info.langCode().name())
+                            .langCode(LangCode.getLangCode(info.langCode()))
                             .title(info.title())
                             .author(info.author())
                             .description(info.description())
@@ -129,14 +130,17 @@ public class TrainingServiceTest {
 
             TranslationRequest request = new TranslationRequest(
                     packId,
-                    LanguageCode.en,
+                    "EN",
                     "For Beginner 1",
                     "Kang Sang-Min",
                     "First time to solve..."
             );
 
             when(packRepository.findById(packId)).thenReturn(Optional.of(pack));
-            when(packTranslationRepository.existsByPackAndLanguageCode(pack, request.langCode().name())).thenReturn(false);
+            when(packTranslationRepository.existsByPackAndLangCode(
+                    eq(pack),
+                    argThat(langCode -> langCode != null && langCode.getName().equals("EN"))
+            )).thenReturn(false);
 
             // when
             trainingService.addTranslation(request);
@@ -149,7 +153,7 @@ public class TrainingServiceTest {
 
             PackTranslation savedTranslation = captor.getValue();
             assertEquals(pack, savedTranslation.getPack());
-            assertEquals(request.langCode().name(), savedTranslation.getLanguageCode());
+            assertEquals(request.langCode(), savedTranslation.getLangCode().getName());
             assertEquals(request.title(), savedTranslation.getTitle());
             assertEquals(request.author(), savedTranslation.getAuthor());
             assertEquals(request.description(), savedTranslation.getDescription());
@@ -162,8 +166,7 @@ public class TrainingServiceTest {
             Long packId = 1L;
             String boardStatus = "a1a2a3a4";
             Integer depth = 3;
-            WinColor winColorStr = WinColor.getWinColor("WHITE"); // WinColor의 유효한 값이라고 가정
-
+            String winColorStr = "WHITE";
             AddTrainingPuzzleRequest request = new AddTrainingPuzzleRequest(
                     packId,
                     null,
@@ -197,7 +200,7 @@ public class TrainingServiceTest {
                     .boardKey("generatedKey")
                     .depth(depth)
                     .rating(depth * 200) // TODO: RatingUtils로 레이팅 계산식 관리
-                    .winColor(winColorStr)
+                    .winColor(WinColor.getWinColor(winColorStr))
                     .build();
 
             when(trainingPuzzleRepository.save(any(TrainingPuzzle.class))).thenReturn(savedPuzzle);
@@ -391,13 +394,18 @@ public class TrainingServiceTest {
             // PackTranslation 생성 (연결된 pack의 ID 1)
             PackTranslation translation = PackTranslation.builder()
                     .pack(pack)
-                    .languageCode(LanguageCode.en.name())
+                    .langCode(LangCode.getLangCode("EN"))
                     .title("Title")
                     .author("Author")
                     .description("Description")
                     .build();
-            when(packTranslationRepository.findAllByPack_IdInAndLanguageCode(List.of(1L), LanguageCode.en.name()))
-                    .thenReturn(Collections.singletonList(translation));
+
+            LangCode langCode = LangCode.getLangCode("EN");
+
+            when(packTranslationRepository.findAllByPack_IdInAndLangCode(
+                    eq(List.of(1L)),
+                    argThat(arg -> arg.getName().equals("EN"))
+            )).thenReturn(List.of(translation));
 
             // userPackRepository: 사용자가 해당 pack에 대한 기록이 없으므로, 빈 리스트 반환 (locked = true, solvedCount = 0)
             when(userPackRepository.findAllByUserIdAndPackIdIn(100L, List.of(1L)))
@@ -506,16 +514,18 @@ public class TrainingServiceTest {
             // given
             Long packId = 1L;
             Pack pack = Pack.builder().id(packId).build();
+            LangCode langCode = LangCode.getLangCode("EN");
             TranslationRequest request = new TranslationRequest(
                     packId,
-                    LanguageCode.en,
+                    "EN",
                     "For Beginner 1",
                     "Kang Sang-Min",
                     "First time to solve..."
             );
 
             when(packRepository.findById(packId)).thenReturn(Optional.of(pack));
-            when(packTranslationRepository.existsByPackAndLanguageCode(pack, request.langCode().name())).thenReturn(true);
+            when(packTranslationRepository.existsByPackAndLangCode(eq(pack), argThat(arg -> arg.getName().equals("EN"))))
+                    .thenReturn(true);
 
             // when
             CustomException exception = assertThrows(CustomException.class, () -> trainingService.addTranslation(request));
@@ -532,7 +542,7 @@ public class TrainingServiceTest {
             Long packId = 1L;
             TranslationRequest request = new TranslationRequest(
                     packId,
-                    LanguageCode.en,
+                    "EN",
                     "For Beginner 1",
                     "tintin",
                     "First time to solve..."
@@ -554,7 +564,7 @@ public class TrainingServiceTest {
             Long packId = 1L;
             String boardStatus = "a1a2a3a4";
             Integer depth = 3;
-            WinColor winColorStr = WinColor.getWinColor("WHITE");
+            String winColorStr = "WHITE";
 
             AddTrainingPuzzleRequest request = new AddTrainingPuzzleRequest(
                     packId,
