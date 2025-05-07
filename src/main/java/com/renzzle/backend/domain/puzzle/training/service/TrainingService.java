@@ -6,6 +6,7 @@ import com.renzzle.backend.domain.puzzle.training.api.response.GetPackResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleAnswerResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.training.api.request.*;
+import com.renzzle.backend.domain.puzzle.training.api.response.SolveTrainingPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.training.dao.*;
 import com.renzzle.backend.domain.puzzle.training.domain.*;
 import com.renzzle.backend.domain.user.dao.UserRepository;
@@ -26,6 +27,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.renzzle.backend.global.common.constant.DoubleConstant.DEFAULT_PUZZLE_RATING;
+import static com.renzzle.backend.global.common.constant.ItemPrice.*;
 
 @Service
 @RequiredArgsConstructor
@@ -84,23 +86,39 @@ public class TrainingService {
 
     // service test, repo test
     @Transactional
-    public void solveTrainingPuzzle(UserEntity user, Long puzzleId) {
+    public SolveTrainingPuzzleResponse solveTrainingPuzzle(UserEntity user, Long puzzleId) {
         Optional<SolvedTrainingPuzzle> existInfo =
                 solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId);
 
         if (existInfo.isPresent()) {
             existInfo.get().updateSolvedAtToNow(clock);
-        } else {
-            TrainingPuzzle trainingPuzzle = trainingPuzzleRepository.findById(puzzleId)
-                    .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
-
-            SolvedTrainingPuzzle solvedTrainingPuzzle = SolvedTrainingPuzzle.builder()
-                    .user(user)
-                    .puzzle(trainingPuzzle)
-                    .build();
-
-            solvedTrainingPuzzleRepository.save(solvedTrainingPuzzle);
+            return SolveTrainingPuzzleResponse.builder()
+                    .reward(0)
+                    .build(); // ✅ 이미 풀었다면 리워드 없음
         }
+
+        TrainingPuzzle trainingPuzzle = trainingPuzzleRepository.findById(puzzleId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
+
+        // 처음 푼 퍼즐이면 저장 및 난이도에 따른 보상 계산
+        SolvedTrainingPuzzle solvedTrainingPuzzle = SolvedTrainingPuzzle.builder()
+                .user(user)
+                .puzzle(trainingPuzzle)
+                .build();
+        solvedTrainingPuzzleRepository.save(solvedTrainingPuzzle);
+
+        // 난이도 → 보상 매핑
+        Difficulty difficulty = trainingPuzzle.getPack().getDifficulty();
+        int reward = switch (difficulty.getName()) {
+            case "LOW" -> TRAINING_LOW_REWARD.getPrice();
+            case "MIDDLE" -> TRAINING_MIDDLE_REWARD.getPrice();
+            case "HIGH" -> TRAINING_HIGH_REWARD.getPrice();
+            default -> 0;
+        };
+
+        return SolveTrainingPuzzleResponse.builder()
+                .reward(reward)
+                .build();
     }
 
     // service test, repo test

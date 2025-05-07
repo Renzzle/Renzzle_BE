@@ -55,6 +55,10 @@ public class CommunityPuzzle {
     private Double rating;
 
     @Builder.Default
+    @Column(name = "solved_count")
+    private int solvedCount = 0;
+
+    @Builder.Default
     @Column(name = "like_count")
     private int likeCount = 0;
 
@@ -102,4 +106,9 @@ public class CommunityPuzzle {
             this.deletedAt = CONST_FUTURE_INSTANT;
         }
     }
+
+    public void increaseSolvedCount() {
+        this.solvedCount++;
+    }
+
 }

@@ -49,4 +49,5 @@ public class WinColor {
             return this.name.equals(((WinColor) obj).name);
         } else return false;
     }
+
 }

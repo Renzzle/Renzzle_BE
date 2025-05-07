@@ -75,6 +75,8 @@ public class CommunityService {
                             .authorName(puzzle.getUser().getNickname())
                             .depth(puzzle.getDepth())
                             .winColor(puzzle.getWinColor().getName())
+                            .solvedCount(puzzle.getSolvedCount())
+                            .views(puzzle.getView())
                             .likeCount(puzzle.getLikeCount())
                             .createdAt(puzzle.getCreatedAt().toString())
                             .isSolved(isSolved)
@@ -105,6 +107,8 @@ public class CommunityService {
                 .authorName(puzzle.getUser().getNickname())
                 .depth(puzzle.getDepth())
                 .winColor(puzzle.getWinColor().getName())
+                .solvedCount(puzzle.getSolvedCount())
+                .views(puzzle.getView())
                 .likeCount(puzzle.getLikeCount())
                 .createdAt(puzzle.getCreatedAt().toString())
                 .isSolved(isSolved)
@@ -136,6 +140,8 @@ public class CommunityService {
     public void solveCommunityPuzzle(Long puzzleId, UserEntity user) {
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
+
+        puzzle.increaseSolvedCount();
 
         int updatedRows = userCommunityPuzzleRepository.solvePuzzle(user.getId(), puzzleId, clock.instant());
         if (updatedRows == 1) {
