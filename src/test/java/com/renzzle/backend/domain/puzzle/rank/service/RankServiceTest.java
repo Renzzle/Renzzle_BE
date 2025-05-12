@@ -1,6 +1,7 @@
 package com.renzzle.backend.domain.puzzle.rank.service;
 
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
+import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.rank.api.request.RankResultRequest;
 import com.renzzle.backend.domain.puzzle.rank.api.response.*;
 import com.renzzle.backend.domain.puzzle.rank.dao.LatestRankPuzzleRepository;
@@ -12,11 +13,14 @@ import com.renzzle.backend.domain.puzzle.training.dao.TrainingPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
+import com.renzzle.backend.global.common.domain.Status;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
+import com.renzzle.backend.support.TestUserEntityBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.DefaultTypedTuple;
@@ -55,6 +59,8 @@ public class RankServiceTest {
     @Mock
     private LatestRankPuzzleRepository latestRankPuzzleRepository;
     @Mock
+    private UserCommunityPuzzleRepository userCommunityPuzzleRepository;
+    @Mock
     private Clock clock;
     @BeforeEach
     void setup() {
@@ -65,6 +71,7 @@ public class RankServiceTest {
                 communityPuzzleRepository,
                 userRepository,
                 latestRankPuzzleRepository,
+                userCommunityPuzzleRepository,
                 clock,
                 redisRankingTemplate
         );
@@ -380,9 +387,9 @@ public class RankServiceTest {
         // Given
         UserEntity user = TestUserFactory.createTestUser("me", 1300.0);
 
-        UserRankInfo info1 = UserRankInfo.builder().nickname("user1").rating(1500).rank(0).build();
-        UserRankInfo info2 = UserRankInfo.builder().nickname("user2").rating(1500).rank(0).build();
-        UserRankInfo myInfo = UserRankInfo.builder().nickname("me").rating(1300).rank(0).build();
+        UserRatingRankInfo info1 = UserRatingRankInfo.builder().nickname("user1").rating(1500).rank(0).build();
+        UserRatingRankInfo info2 = UserRatingRankInfo.builder().nickname("user2").rating(1500).rank(0).build();
+        UserRatingRankInfo myInfo = UserRatingRankInfo.builder().nickname("me").rating(1300).rank(0).build();
 
         Set<ZSetOperations.TypedTuple<Object>> zset = new LinkedHashSet<>();
         zset.add(new DefaultTypedTuple<>(info1, 1500.0));
@@ -394,14 +401,14 @@ public class RankServiceTest {
         when(redisRankingTemplate.opsForZSet()).thenReturn(zSetOperations);
 
         // When
-        GetRankingResponse response = rankService.getRanking(user);
+        GetRatingRankingResponse response = rankService.getRatingRanking(user);
 
         // Then
         assertThat(response.top100()).hasSize(3);
         assertThat(response.top100().get(0).rank()).isEqualTo(1);
         assertThat(response.top100().get(1).rank()).isEqualTo(1);
         assertThat(response.top100().get(2).rank()).isEqualTo(3);
-        assertThat(response.myRank().rank()).isEqualTo(3);
+        assertThat(response.myRatingRank().rank()).isEqualTo(3);
     }
 
     // updateRankingCache test
@@ -422,13 +429,144 @@ public class RankServiceTest {
         verify(redisRankingTemplate).delete("user:ranking");
         verify(latestRankPuzzleRepository).findActiveUsersWithinPeriod(any());
 
-        verify(zSetOperations, times(2)).add(eq("user:ranking"), any(UserRankInfo.class), anyDouble());
+        verify(zSetOperations, times(2)).add(eq("user:ranking"), any(UserRatingRankInfo.class), anyDouble());
 
         verify(zSetOperations).add(eq("user:ranking"),
-                argThat(info -> ((UserRankInfo) info).nickname().equals("u1")),
+                argThat(info -> ((UserRatingRankInfo) info).nickname().equals("u1")),
                 eq(1400.0));
         verify(zSetOperations).add(eq("user:ranking"),
-                argThat(info -> ((UserRankInfo) info).nickname().equals("u2")),
+                argThat(info -> ((UserRatingRankInfo) info).nickname().equals("u2")),
                 eq(1600.0));
+    }
+    @Test
+    void getPuzzlerRanking_WhenUsersHaveSameScore_ThenAssignsSameRank() {
+        // Given
+        UserEntity me = TestUserFactory.createTestUser("me", 0.0);
+
+        UserPuzzlerRankInfo info1 = UserPuzzlerRankInfo.builder().nickname("user1").score(1500).rank(0).build();
+        UserPuzzlerRankInfo info2 = UserPuzzlerRankInfo.builder().nickname("user2").score(1500).rank(0).build();
+        UserPuzzlerRankInfo myInfo = UserPuzzlerRankInfo.builder().nickname("me").score(1300).rank(0).build();
+
+        Set<ZSetOperations.TypedTuple<Object>> zset = new LinkedHashSet<>();
+        zset.add(new DefaultTypedTuple<>(info1, 1500.0));
+        zset.add(new DefaultTypedTuple<>(info2, 1500.0));
+        zset.add(new DefaultTypedTuple<>(myInfo, 1300.0));
+
+        when(redisRankingTemplate.opsForZSet()).thenReturn(zSetOperations);
+        when(zSetOperations.reverseRangeWithScores("user:puzzler:ranking", 0, 99)).thenReturn(zset);
+        when(zSetOperations.reverseRangeWithScores("user:puzzler:ranking", 0, -1)).thenReturn(zset);
+
+        // When
+        GetPuzzlerRankingResponse response = rankService.getPuzzlerRanking(me);
+
+        // Then
+        assertThat(response.top100()).hasSize(3);
+        assertThat(response.top100().get(0).rank()).isEqualTo(1);
+        assertThat(response.top100().get(1).rank()).isEqualTo(1);
+        assertThat(response.top100().get(2).rank()).isEqualTo(3);
+        assertThat(response.myPuzzlerRank().rank()).isEqualTo(3);
+        assertThat(response.myPuzzlerRank().nickname()).isEqualTo("me");
+    }
+
+    @Test
+    void updateRankingCache_WhenActivePuzzlerUsersExist_ThenStoreTheirScoreInRedis() {
+        // Given
+        UserEntity u1 = TestUserEntityBuilder.builder()
+                .withId(1L)
+                .withStatus(Status.getDefaultStatus())
+                .withNickname("user1")
+                .build();
+
+        UserEntity u2 = TestUserEntityBuilder.builder()
+                .withId(2L)
+                .withStatus(Status.getDefaultStatus())
+                .withNickname("user2")
+                .build();
+
+        List<UserEntity> creators = List.of(u1);
+        List<UserEntity> solvers = List.of(u2);
+
+        when(communityPuzzleRepository.findUsersWhoCreatedPuzzlesSince(any())).thenReturn(creators);
+        when(userCommunityPuzzleRepository.findUsersWhoSolvedPuzzlesSince(any())).thenReturn(solvers);
+
+        // 사용자 활동 점수 계산을 위한 모킹
+        when(communityPuzzleRepository.countByAuthor(anyLong())).thenReturn(1L); // 출제 수
+        when(communityPuzzleRepository.sumLikesByUser(anyLong())).thenReturn(10);
+        when(communityPuzzleRepository.sumDislikesByUser(anyLong())).thenReturn(2);
+        when(userCommunityPuzzleRepository.countSolvedByUser(anyLong())).thenReturn(3L); // 푼 문제 수
+
+        when(redisRankingTemplate.opsForZSet()).thenReturn(zSetOperations);
+
+        // When
+        rankService.updateRankingCache();
+
+        // Then
+        verify(redisRankingTemplate).delete("user:puzzler:ranking");
+
+        verify(zSetOperations, times(2)).add(eq("user:puzzler:ranking"), any(UserPuzzlerRankInfo.class), anyDouble());
+
+        verify(zSetOperations).add(eq("user:puzzler:ranking"),
+                argThat(info -> ((UserPuzzlerRankInfo) info).nickname().equals("user1")), anyDouble());
+
+        verify(zSetOperations).add(eq("user:puzzler:ranking"),
+                argThat(info -> ((UserPuzzlerRankInfo) info).nickname().equals("user2")), anyDouble());
+    }
+
+
+
+    @Test
+    void updateRankingCache_WhenUserActivityVaries_ThenHigherScoreUserRanksAbove() {
+        // Given
+        UserEntity user1 = TestUserEntityBuilder.builder()
+                .withId(1L)
+                .withStatus(Status.getDefaultStatus())
+                .withNickname("user1")
+                .build();
+
+        UserEntity user2 = TestUserEntityBuilder.builder()
+                .withId(2L)
+                .withStatus(Status.getDefaultStatus())
+                .withNickname("user2")
+                .build();
+
+        // user1은 출제 2, 풀이 1
+        // user2는 출제 2, 풀이 0
+        List<UserEntity> creators = List.of(user1, user2);
+        List<UserEntity> solvers = List.of(user1); // user1만 푼 문제 있음
+
+        when(communityPuzzleRepository.findUsersWhoCreatedPuzzlesSince(any())).thenReturn(creators);
+        when(userCommunityPuzzleRepository.findUsersWhoSolvedPuzzlesSince(any())).thenReturn(solvers);
+
+        // 활동 지표 설정
+        when(communityPuzzleRepository.countByAuthor(1L)).thenReturn(2L);
+        when(communityPuzzleRepository.countByAuthor(2L)).thenReturn(2L);
+
+        when(userCommunityPuzzleRepository.countSolvedByUser(1L)).thenReturn(1L);
+        when(userCommunityPuzzleRepository.countSolvedByUser(2L)).thenReturn(0L);
+
+        when(communityPuzzleRepository.sumLikesByUser(1L)).thenReturn(10);
+        when(communityPuzzleRepository.sumDislikesByUser(1L)).thenReturn(3);
+
+        when(communityPuzzleRepository.sumLikesByUser(2L)).thenReturn(10);
+        when(communityPuzzleRepository.sumDislikesByUser(2L)).thenReturn(3);
+
+        when(redisRankingTemplate.opsForZSet()).thenReturn(zSetOperations);
+
+        // When
+        rankService.updateRankingCache();
+
+        // Then
+        ArgumentCaptor<UserPuzzlerRankInfo> captor = ArgumentCaptor.forClass(UserPuzzlerRankInfo.class);
+
+        verify(zSetOperations, times(2)).add(eq("user:puzzler:ranking"), captor.capture(), anyDouble());
+
+        List<UserPuzzlerRankInfo> captured = captor.getAllValues();
+
+        // 점수가 높은 user1이 먼저 들어와야 한다 (높은 점수 먼저 저장 = reverseRangeWithScores 시 상위 노출)
+        UserPuzzlerRankInfo first = captured.get(0);
+        UserPuzzlerRankInfo second = captured.get(1);
+
+        assertThat(first.nickname()).isEqualTo("user1");
+        assertThat(second.nickname()).isEqualTo("user2");
     }
 }
