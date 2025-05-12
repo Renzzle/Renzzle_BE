@@ -417,7 +417,7 @@ public class TrainingServiceTest {
         }
 
         @Test
-        @DisplayName("testPurchaseTrainingPack: 충분한 잔액을 가진 사용자가 팩 구매 시, 잔액이 차감되어 반환")
+        @DisplayName("testPurchaseTrainingPack: 충분한 잔액을 가진 사용자가 팩 구매 시, 팩 금액 반환")
         public void testPurchaseTrainingPack() {
             // given
             // 사용자 초기 잔액 2000
@@ -449,21 +449,29 @@ public class TrainingServiceTest {
             GetPackPurchaseResponse getPackPurchaseResponse = trainingService.purchaseTrainingPack(user, request);
 
             // then
-            assertThat(getPackPurchaseResponse).isEqualTo(1000);
+            assertThat(getPackPurchaseResponse.price()).isEqualTo(1000);
             verify(packRepository, times(1)).findById(1L);
             verify(userRepository, times(1)).save(user);
             verify(userPackRepository, times(1)).save(any());
         }
 
         @Test
-        @DisplayName("testPurchaseTrainingPuzzleAnswer: 정상 구매 시, 퍼즐 정답과 업데이트된 사용자 잔액을 반환")
+        @DisplayName("testPurchaseTrainingPuzzleAnswer: 정상 구매 시, 퍼즐 정답과 퍼즐 정답보기 금액 반환")
         public void testPurchaseTrainingPuzzleAnswer() {
             // given
+            Pack pack = Pack.builder()
+                    .id(1L)
+                    .puzzleCount(10)
+                    .price(1000)
+                    .difficulty(Difficulty.getDifficulty("LOW"))
+                    .build();
+
             Long puzzleId = 1L;
             int hintPrice = ItemPrice.HINT.getPrice();
             TrainingPuzzle puzzle = TrainingPuzzle.builder()
                     .id(puzzleId)
                     .answer("Correct Answer")
+                    .pack(pack)
                     .build();
             when(trainingPuzzleRepository.findById(eq(puzzleId)))
                     .thenReturn(Optional.of(puzzle));
