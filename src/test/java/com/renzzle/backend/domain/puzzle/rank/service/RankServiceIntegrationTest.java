@@ -11,6 +11,7 @@ import com.renzzle.backend.domain.puzzle.rank.service.dto.NextPuzzleResult;
 import com.renzzle.backend.domain.puzzle.rank.support.TestUserFactory;
 import com.renzzle.backend.domain.puzzle.rank.util.CommunityPuzzleSeeder;
 import com.renzzle.backend.domain.puzzle.rank.util.TrainingPuzzleSeeder;
+import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.domain.puzzle.shared.util.ELOUtils;
@@ -144,6 +145,44 @@ public class RankServiceIntegrationTest {
 
         RankSessionData sessionAfterEnd = redisTemplate.opsForValue().get(redisKey);
         assertNull(sessionAfterEnd, "end 호출 후 Redis에서 세션이 사라져야 함");
+    }
+
+    @Test
+    void endRankGame_WhenSolvedPuzzlesExist_ThenReturnCorrectReward() {
+        // Given
+        LatestRankPuzzle solved1 = LatestRankPuzzle.builder()
+                .user(testUser)
+                .boardStatus("p1")
+                .answer("a1")
+                .winColor(WinColor.getWinColor("BLACK"))
+                .isSolved(true)
+                .assignedAt(clock.instant())
+                .build();
+
+        LatestRankPuzzle solved2 = LatestRankPuzzle.builder()
+                .user(testUser)
+                .boardStatus("p2")
+                .answer("a2")
+                .winColor(WinColor.getWinColor("WHITE"))
+                .isSolved(true)
+                .assignedAt(clock.instant())
+                .build();
+
+        em.persist(solved1);
+        em.persist(solved2);
+        em.flush();
+        em.clear();
+
+        RankSessionData session = new RankSessionData();
+        session.setStarted(true);
+        redisTemplate.opsForValue().set(redisKey, session);
+
+        // When
+        RankEndResponse response = rankService.endRankGame(testUser);
+
+        // Then
+        assertThat(response.rating()).isEqualTo(testUser.getRating());
+        assertThat(response.reward()).isEqualTo(40); // 2개 정답 * 20
     }
 
     @Test

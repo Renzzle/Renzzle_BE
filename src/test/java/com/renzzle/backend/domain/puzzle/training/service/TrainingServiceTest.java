@@ -1,17 +1,10 @@
 package com.renzzle.backend.domain.puzzle.training.service;
 
-import com.renzzle.backend.domain.puzzle.training.domain.Difficulty;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
-import com.renzzle.backend.domain.puzzle.training.api.response.GetPackResponse;
-import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleAnswerResponse;
-import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.training.api.request.*;
+import com.renzzle.backend.domain.puzzle.training.api.response.*;
 import com.renzzle.backend.domain.puzzle.training.dao.*;
-import com.renzzle.backend.domain.puzzle.training.domain.Pack;
-import com.renzzle.backend.domain.puzzle.training.domain.PackTranslation;
-import com.renzzle.backend.domain.puzzle.training.domain.SolvedTrainingPuzzle;
-import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
-import com.renzzle.backend.domain.puzzle.training.service.TrainingService;
+import com.renzzle.backend.domain.puzzle.training.domain.*;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.constant.ItemPrice;
@@ -67,6 +60,8 @@ public class TrainingServiceTest {
 
     @Mock
     private Clock clock;
+
+    private final Instant fixedNow = Instant.parse("2025-01-01T00:00:00Z");
 
     @InjectMocks
     private TrainingService trainingService;
@@ -262,34 +257,36 @@ public class TrainingServiceTest {
                     .status(Status.getDefaultStatus())
                     .build();
 
+            Pack pack = Pack.builder()
+                    .id(1L)
+                    .difficulty(Difficulty.getDifficulty("LOW"))
+                    .price(0)
+                    .puzzleCount(10)
+                    .build();
+
             TrainingPuzzle trainingPuzzle = TrainingPuzzle.builder()
                     .id(puzzleId)
+                    .pack(pack)
                     .build();
 
             // 기존에 풀이 기록이 없음을 가정
             when(solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId))
                     .thenReturn(Optional.empty());
-            // 퍼즐이 존재함을 가정
+
+            // 퍼즐 조회 성공
             when(trainingPuzzleRepository.findById(puzzleId))
                     .thenReturn(Optional.of(trainingPuzzle));
-            // 저장 시 어떤 객체가 반환되든 상관 없으므로 모킹
-            SolvedTrainingPuzzle savedSolvedPuzzle = SolvedTrainingPuzzle.builder()
-                    .user(user)
-                    .puzzle(trainingPuzzle)
-                    .build();
+
+            // 저장 결과 더미 설정
             when(solvedTrainingPuzzleRepository.save(any(SolvedTrainingPuzzle.class)))
-                    .thenReturn(savedSolvedPuzzle);
+                    .thenAnswer(invocation -> invocation.getArgument(0));
 
             // when
-            trainingService.solveTrainingPuzzle(user, puzzleId);
+            SolveTrainingPuzzleResponse response = trainingService.solveTrainingPuzzle(user, puzzleId);
 
             // then
-            verify(solvedTrainingPuzzleRepository, times(1))
-                    .findByUserIdAndPuzzleId(user.getId(), puzzleId);
-            verify(trainingPuzzleRepository, times(1))
-                    .findById(puzzleId);
-            verify(solvedTrainingPuzzleRepository, times(1))
-                    .save(any(SolvedTrainingPuzzle.class));
+            verify(solvedTrainingPuzzleRepository).save(any(SolvedTrainingPuzzle.class));
+            assertThat(response.reward()).isEqualTo(20); // ItemPrice.TRAINING_LOW_REWARD.getPrice()
         }
 
         @DisplayName("testSolveLessonPuzzle_AlreadySolved: 이미 풀이한 퍼즐의 경우 solvedAt을 갱신")
@@ -303,8 +300,8 @@ public class TrainingServiceTest {
                     .password("password")
                     .nickname("testUser")
                     .deviceId("dummy-device")
-                    .lastAccessedAt(Instant.now())
-                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt은 미래 시점으로 설정 (예시)
+                    .lastAccessedAt(fixedNow)
+                    .deletedAt(fixedNow.plus(1, ChronoUnit.DAYS))  // deletedAt은 미래 시점으로 설정 (예시)
                     .status(Status.getDefaultStatus())
                     .build();
 
@@ -313,9 +310,10 @@ public class TrainingServiceTest {
                     .thenReturn(Optional.of(existingSolvedPuzzle));
 
             // when
-            trainingService.solveTrainingPuzzle(user, puzzleId);
+            SolveTrainingPuzzleResponse response = trainingService.solveTrainingPuzzle(user, puzzleId);
 
             // then
+            assertThat(response.reward()).isEqualTo(0);
             verify(existingSolvedPuzzle, times(1)).updateSolvedAtToNow(clock);
             verify(solvedTrainingPuzzleRepository, never()).save(any());
             verify(trainingPuzzleRepository, never()).findById(any());
@@ -427,7 +425,7 @@ public class TrainingServiceTest {
         }
 
         @Test
-        @DisplayName("testPurchaseTrainingPack: 충분한 잔액을 가진 사용자가 팩 구매 시, 잔액이 차감되어 반환")
+        @DisplayName("testPurchaseTrainingPack: 충분한 잔액을 가진 사용자가 팩 구매 시, 팩 금액 반환")
         public void testPurchaseTrainingPack() {
             // given
             // 사용자 초기 잔액 2000
@@ -456,24 +454,32 @@ public class TrainingServiceTest {
             when(userRepository.save(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             // when
-            Integer remainingCurrency = trainingService.purchaseTrainingPack(user, request);
+            GetPackPurchaseResponse getPackPurchaseResponse = trainingService.purchaseTrainingPack(user, request);
 
             // then
-            assertThat(remainingCurrency).isEqualTo(1000);
+            assertThat(getPackPurchaseResponse.price()).isEqualTo(1000);
             verify(packRepository, times(1)).findById(1L);
             verify(userRepository, times(1)).save(user);
             verify(userPackRepository, times(1)).save(any());
         }
 
         @Test
-        @DisplayName("testPurchaseTrainingPuzzleAnswer: 정상 구매 시, 퍼즐 정답과 업데이트된 사용자 잔액을 반환")
+        @DisplayName("testPurchaseTrainingPuzzleAnswer: 정상 구매 시, 퍼즐 정답과 퍼즐 정답보기 금액 반환")
         public void testPurchaseTrainingPuzzleAnswer() {
             // given
+            Pack pack = Pack.builder()
+                    .id(1L)
+                    .puzzleCount(10)
+                    .price(1000)
+                    .difficulty(Difficulty.getDifficulty("LOW"))
+                    .build();
+
             Long puzzleId = 1L;
             int hintPrice = ItemPrice.HINT.getPrice();
             TrainingPuzzle puzzle = TrainingPuzzle.builder()
                     .id(puzzleId)
                     .answer("Correct Answer")
+                    .pack(pack)
                     .build();
             when(trainingPuzzleRepository.findById(eq(puzzleId)))
                     .thenReturn(Optional.of(puzzle));
@@ -501,7 +507,7 @@ public class TrainingServiceTest {
 
             // then
             assertThat(response.answer()).isEqualTo("Correct Answer");
-            assertThat(response.currency()).isEqualTo(500 - hintPrice);
+            assertThat(response.price()).isEqualTo(hintPrice);
         }
     }
 
