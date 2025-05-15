@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 
 import static com.renzzle.backend.domain.puzzle.shared.util.ELOUtils.TARGET_WIN_PROBABILITY;
 import static com.renzzle.backend.domain.puzzle.shared.util.ELOUtils.WIN_PROBABILITY_DELTA;
+import static com.renzzle.backend.global.common.constant.ItemPrice.RANK_REWARD;
 
 @Service
 @RequiredArgsConstructor
@@ -214,8 +215,16 @@ public class RankService {
 
         redisTemplate.delete(redisKey);
 
+        List<LatestRankPuzzle> solvedPuzzles = latestRankPuzzleRepository.findAllByUser(userData).stream()
+                .filter(LatestRankPuzzle::getIsSolved)
+                .toList();
+
+        int solvedCount = solvedPuzzles.size();
+        int reward = solvedCount * RANK_REWARD.getPrice();
+
         return RankEndResponse.builder()
                 .rating(userData.getRating())
+                .reward(reward)
                 .build();
     }
 
@@ -348,7 +357,7 @@ public class RankService {
 
         List<LatestRankPuzzle> puzzles = latestRankPuzzleRepository.findAllByUserOrderByAssignedAtAsc(user);
 
-        List<RankArchive> archives = puzzles.stream()
+        return puzzles.stream()
                 .map(puzzle -> RankArchive.builder()
                         .boardStatus(puzzle.getBoardStatus())
                         .answer(puzzle.getAnswer())
@@ -356,8 +365,6 @@ public class RankService {
                         .winColor(puzzle.getWinColor().getName())
                         .build())
                 .collect(Collectors.toList());
-
-        return archives;
     }
 
     @Transactional(readOnly = true)
