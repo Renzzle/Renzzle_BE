@@ -15,7 +15,7 @@ import com.renzzle.backend.domain.puzzle.training.dao.SolvedTrainingPuzzleReposi
 import com.renzzle.backend.domain.puzzle.training.dao.UserPackRepository;
 import com.renzzle.backend.domain.puzzle.training.domain.*;
 import com.renzzle.backend.domain.user.domain.UserEntity;
-import com.renzzle.backend.global.common.constant.LanguageCode;
+import com.renzzle.backend.global.common.domain.LangCode;
 import com.renzzle.backend.global.common.domain.Status;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
@@ -31,7 +31,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -105,7 +104,7 @@ public class ContentServiceTest {
 
         PackTranslation translation = PackTranslation.builder()
                 .pack(pack)
-                .languageCode(LanguageCode.en.name())
+                .langCode(LangCode.getLangCode("EN"))
                 .title("Default Title")
                 .author("Default Author")
                 .description("Default Description")
@@ -119,13 +118,13 @@ public class ContentServiceTest {
 
         when(solvedTrainingPuzzleRepository.findTopByUserOrderBySolvedAtDesc(user.getId()))
                 .thenReturn(Optional.of(solvedTrainingPuzzle));
-        when(packTranslationRepository.findByPack_IdAndLanguageCode(eq(pack.getId()), anyString()))
+        when(packTranslationRepository.findByPackAndLangCode(eq(pack), any()))
                 .thenReturn(Optional.of(translation));
         when(userPackRepository.findByUserIdAndPackId(eq(user.getId()), eq(pack.getId())))
                 .thenReturn(Optional.of(userPack));
 
         // When
-        getRecommendPackResponse response = contentService.getRecommendedPack(new GetRecommendRequest("MIDDLE", LanguageCode.en), user);
+        getRecommendPackResponse response = contentService.getRecommendedPack(new GetRecommendRequest("MIDDLE", "EN"), user);
 
         // Then
         assertThat(response.id()).isEqualTo(pack.getId());
@@ -143,7 +142,7 @@ public class ContentServiceTest {
 
         PackTranslation translation = PackTranslation.builder()
                 .pack(pack)
-                .languageCode(LanguageCode.en.name())
+                .langCode(LangCode.getLangCode("EN"))
                 .title("Default Title")
                 .author("Default Author")
                 .description("Default Description")
@@ -154,11 +153,11 @@ public class ContentServiceTest {
 
         when(packRepository.findFirstByOrderByIdAsc())
                 .thenReturn(Optional.of(pack));
-        when(packTranslationRepository.findByPack_IdAndLanguageCode(eq(pack.getId()), anyString()))
+        when(packTranslationRepository.findByPackAndLangCode(eq(pack), any()))
                 .thenReturn(Optional.of(translation));
 
         // When
-        getRecommendPackResponse response = contentService.getRecommendedPack(new GetRecommendRequest("MIDDLE", LanguageCode.en), user);
+        getRecommendPackResponse response = contentService.getRecommendedPack(new GetRecommendRequest("MIDDLE", "EN"), user);
 
         // Then
         assertThat(response.id()).isEqualTo(pack.getId());
@@ -177,7 +176,7 @@ public class ContentServiceTest {
                 .thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> contentService.getRecommendedPack(new GetRecommendRequest("LOW", LanguageCode.en), user))
+        assertThatThrownBy(() -> contentService.getRecommendedPack(new GetRecommendRequest("LOW", "EN"), user))
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining(ErrorCode.NO_SUCH_TRAINING_PACK.getMessage());
     }
@@ -195,11 +194,11 @@ public class ContentServiceTest {
         when(packRepository.findFirstByOrderByIdAsc())
                 .thenReturn(Optional.of(pack));
 
-        when(packTranslationRepository.findByPack_IdAndLanguageCode(eq(pack.getId()), anyString()))
+        when(packTranslationRepository.findByPackAndLangCode(eq(pack), any()))
                 .thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> contentService.getRecommendedPack(new GetRecommendRequest("MIDDLE", LanguageCode.en), user))
+        assertThatThrownBy(() -> contentService.getRecommendedPack(new GetRecommendRequest("MIDDLE", "EN"), user))
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining(ErrorCode.NO_SUCH_PACK_TRANSLATION.getMessage());
     }
@@ -229,7 +228,7 @@ public class ContentServiceTest {
 
         PackTranslation translation = PackTranslation.builder()
                 .pack(pack)
-                .languageCode(LanguageCode.en.name())
+                .langCode(LangCode.getLangCode("EN"))
                 .title("Default Title")
                 .author("Default Author")
                 .description("Default Description")
@@ -237,13 +236,13 @@ public class ContentServiceTest {
 
         when(solvedTrainingPuzzleRepository.findTopByUserOrderBySolvedAtDesc(user.getId()))
                 .thenReturn(Optional.of(solvedTrainingPuzzle));
-        when(packTranslationRepository.findByPack_IdAndLanguageCode(eq(pack.getId()), anyString()))
+        when(packTranslationRepository.findByPackAndLangCode(eq(pack), any()))
                 .thenReturn(Optional.of(translation));
         when(userPackRepository.findByUserIdAndPackId(eq(user.getId()), eq(pack.getId())))
                 .thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> contentService.getRecommendedPack(new GetRecommendRequest("LOW", LanguageCode.en), user))
+        assertThatThrownBy(() -> contentService.getRecommendedPack(new GetRecommendRequest("LOW", "EN"), user))
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining(ErrorCode.NO_USER_PROGRESS_FOR_PACK.getMessage());
     }

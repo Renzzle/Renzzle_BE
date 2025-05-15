@@ -1,18 +1,21 @@
 package com.renzzle.backend.domain.puzzle.training.service;
 
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
-import com.renzzle.backend.domain.puzzle.shared.util.BoardUtils;
-import com.renzzle.backend.domain.puzzle.training.api.request.*;
+import com.renzzle.backend.domain.puzzle.training.api.response.GetPackPurchaseResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleAnswerResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleResponse;
+import com.renzzle.backend.domain.puzzle.training.api.request.*;
+import com.renzzle.backend.domain.puzzle.training.api.response.SolveTrainingPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.training.dao.*;
 import com.renzzle.backend.domain.puzzle.training.domain.*;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.constant.ItemPrice;
+import com.renzzle.backend.global.common.domain.LangCode;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
+import com.renzzle.backend.domain.puzzle.shared.util.BoardUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +27,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static com.renzzle.backend.global.common.constant.DoubleConstant.DEFAULT_TRAINING_PUZZLE_RATING;
+import static com.renzzle.backend.global.common.constant.DoubleConstant.DEFAULT_PUZZLE_RATING;
+import static com.renzzle.backend.global.common.constant.ItemPrice.*;
 
 @Service
 @RequiredArgsConstructor
@@ -52,7 +56,7 @@ public class TrainingService {
         Pack pack = packRepository.findById(request.packId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
-        double rating = request.depth() * DEFAULT_TRAINING_PUZZLE_RATING;
+        double rating = request.depth() * DEFAULT_PUZZLE_RATING;
 
         // increase puzzle_count
         packRepository.increasePuzzleCount(request.packId());
@@ -64,7 +68,7 @@ public class TrainingService {
                 .boardKey(boardKey)
                 .depth(request.depth())
                 .rating(rating)
-                .winColor(WinColor.getWinColor(request.winColor().getName()))
+                .winColor(WinColor.getWinColor(request.winColor()))
                 .build();
 
         return trainingPuzzleRepository.save(puzzle);
@@ -83,23 +87,39 @@ public class TrainingService {
 
     // service test, repo test
     @Transactional
-    public void solveTrainingPuzzle(UserEntity user, Long puzzleId) {
+    public SolveTrainingPuzzleResponse solveTrainingPuzzle(UserEntity user, Long puzzleId) {
         Optional<SolvedTrainingPuzzle> existInfo =
                 solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId);
 
         if (existInfo.isPresent()) {
             existInfo.get().updateSolvedAtToNow(clock);
-        } else {
-            TrainingPuzzle trainingPuzzle = trainingPuzzleRepository.findById(puzzleId)
-                    .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
-
-            SolvedTrainingPuzzle solvedTrainingPuzzle = SolvedTrainingPuzzle.builder()
-                    .user(user)
-                    .puzzle(trainingPuzzle)
-                    .build();
-
-            solvedTrainingPuzzleRepository.save(solvedTrainingPuzzle);
+            return SolveTrainingPuzzleResponse.builder()
+                    .reward(0)
+                    .build(); // ✅ 이미 풀었다면 리워드 없음
         }
+
+        TrainingPuzzle trainingPuzzle = trainingPuzzleRepository.findById(puzzleId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
+
+        // 처음 푼 퍼즐이면 저장 및 난이도에 따른 보상 계산
+        SolvedTrainingPuzzle solvedTrainingPuzzle = SolvedTrainingPuzzle.builder()
+                .user(user)
+                .puzzle(trainingPuzzle)
+                .build();
+        solvedTrainingPuzzleRepository.save(solvedTrainingPuzzle);
+
+        // 난이도 → 보상 매핑
+        Difficulty difficulty = trainingPuzzle.getPack().getDifficulty();
+        int reward = switch (difficulty.getName()) {
+            case "LOW" -> TRAINING_LOW_REWARD.getPrice();
+            case "MIDDLE" -> TRAINING_MIDDLE_REWARD.getPrice();
+            case "HIGH" -> TRAINING_HIGH_REWARD.getPrice();
+            default -> 0;
+        };
+
+        return SolveTrainingPuzzleResponse.builder()
+                .reward(reward)
+                .build();
     }
 
     // service test, repo test
@@ -146,7 +166,7 @@ public class TrainingService {
         List<PackTranslation> translations = request.info().stream()
                 .map(info -> PackTranslation.builder()
                         .pack(savedPack)
-                        .languageCode(info.langCode().name())
+                        .langCode(LangCode.getLangCode(info.langCode()))
                         .title(info.title())
                         .author(info.author())
                         .description(info.description())
@@ -164,7 +184,7 @@ public class TrainingService {
         Pack pack = packRepository.findById(request.packId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
-        boolean exists = packTranslationRepository.existsByPackAndLanguageCode(pack, request.langCode().name());
+        boolean exists = packTranslationRepository.existsByPackAndLangCode(pack, LangCode.getLangCode(request.langCode()));
 
         if (exists) {
             throw new CustomException(ErrorCode.ALREADY_EXISTING_TRANSLATION);
@@ -172,7 +192,7 @@ public class TrainingService {
 
         PackTranslation translation = PackTranslation.builder()
                 .pack(pack)
-                .languageCode(request.langCode().name())
+                .langCode(LangCode.getLangCode(request.langCode()))
                 .title(request.title())
                 .author(request.author())
                 .description(request.description())
@@ -192,7 +212,7 @@ public class TrainingService {
 
         List<Long> packIds = packs.stream().map(Pack::getId).collect(Collectors.toList());
         List<PackTranslation> translations = packTranslationRepository
-                .findAllByPack_IdInAndLanguageCode(packIds, request.lang().name());
+                .findAllByPack_IdInAndLangCode(packIds, LangCode.getLangCode(request.lang()));
 
         Long userId = user.getId();
 
@@ -233,7 +253,7 @@ public class TrainingService {
 
     // service test, repo test
     @Transactional(readOnly = true)
-    public Integer purchaseTrainingPack(UserEntity user, PurchaseTrainingPackRequest request) {
+    public GetPackPurchaseResponse purchaseTrainingPack(UserEntity user, PurchaseTrainingPackRequest request) {
         Pack pack = packRepository.findById(request.packId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
@@ -248,7 +268,9 @@ public class TrainingService {
                 .build();
 
         userPackRepository.save(userPack);
-        return user.getCurrency();
+        return GetPackPurchaseResponse.builder()
+                .price(pack.getPrice())
+                .build();
     }
 
     @Transactional(readOnly = true)
@@ -259,12 +281,12 @@ public class TrainingService {
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
 
         newUser.purchase(ItemPrice.HINT.getPrice());
-//        userRepository.save(newUser);
+
+        solveTrainingPuzzle(user, puzzle.getId());
 
         return GetTrainingPuzzleAnswerResponse.builder()
                 .answer(puzzle.getAnswer())
-                .currency(newUser.getCurrency())
+                .price(ItemPrice.HINT.getPrice())
                 .build();
     }
-
 }

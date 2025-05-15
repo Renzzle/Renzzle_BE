@@ -11,6 +11,7 @@ import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.constant.ItemPrice;
 import com.renzzle.backend.global.common.constant.LanguageCode;
+import com.renzzle.backend.global.common.domain.LangCode;
 import com.renzzle.backend.global.common.domain.Status;
 import com.renzzle.backend.support.DataJpaTestWithInitContainers;
 import jakarta.persistence.EntityManager;
@@ -18,10 +19,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -272,6 +269,12 @@ public class TrainingServiceRepositoryTest {
         // Given
         Difficulty difficulty = Difficulty.getDifficulty("LOW");
 
+        List<PackTranslationRequest> translations = Arrays.asList(
+                new PackTranslationRequest("EN", "초보용 1", "재윤", "설명1"),
+                new PackTranslationRequest("EN", "For Beginner 1", "JaeYun", "Description1")
+        );
+        CreateTrainingPackRequest request = new CreateTrainingPackRequest(translations, 1000, "LOW");
+
         Pack pack = Pack.builder()
                 .price(1000)
                 .difficulty(difficulty)
@@ -279,24 +282,16 @@ public class TrainingServiceRepositoryTest {
                 .build();
         Pack savedPack = packRepository.save(pack);
 
-        PackTranslation ko = PackTranslation.builder()
-                .pack(savedPack)
-                .languageCode(LanguageCode.ko.name())
-                .title("초보용 1")
-                .author("재윤")
-                .description("설명1")
-                .build();
-
-        PackTranslation en = PackTranslation.builder()
-                .pack(savedPack)
-                .languageCode(LanguageCode.en.name())
-                .title("For Beginner 1")
-                .author("JaeYun")
-                .description("Description1")
-                .build();
-
-        // When
-        packTranslationRepository.saveAll(List.of(ko, en));
+        List<PackTranslation> packTranslations = request.info().stream()
+                .map(info -> PackTranslation.builder()
+                        .pack(savedPack)
+                        .langCode(LangCode.getLangCode(info.langCode()))
+                        .title(info.title())
+                        .author(info.author())
+                        .description(info.description())
+                        .build())
+                .collect(Collectors.toList());
+        packTranslationRepository.saveAll(packTranslations);
 
         // Then
         List<PackTranslation> found = packTranslationRepository.findAll().stream()
@@ -304,8 +299,8 @@ public class TrainingServiceRepositoryTest {
                 .toList();
 
         assertThat(found).hasSize(2);
-        assertThat(found).extracting("languageCode")
-                .containsExactlyInAnyOrder(LanguageCode.ko.name(), LanguageCode.en.name());
+        assertThat(found).extracting(pt -> pt.getLangCode().getName())
+                .containsExactlyInAnyOrder("EN", "EN");
     }
 
     @Test
@@ -325,7 +320,7 @@ public class TrainingServiceRepositoryTest {
         // PackTranslation 생성 및 저장 (언어 코드 "EN")
         PackTranslation translation = PackTranslation.builder()
                 .pack(savedPack)
-                .languageCode(LanguageCode.en.name())
+                .langCode(LangCode.getLangCode("EN"))
                 .title("Test Title")
                 .author("Test Author")
                 .description("Test Description")
@@ -335,7 +330,7 @@ public class TrainingServiceRepositoryTest {
         // When
         List<Pack> packs = packRepository.findByDifficulty(difficulty);
         List<Long> packIds = packs.stream().map(Pack::getId).collect(Collectors.toList());
-        List<PackTranslation> translations = packTranslationRepository.findAllByPack_IdInAndLanguageCode(packIds, LanguageCode.en.name());
+        List<PackTranslation> translations = packTranslationRepository.findAllByPack_IdInAndLangCode(packIds, LangCode.getLangCode("EN"));
 
         // Then
         assertThat(packs).hasSize(1);
@@ -360,13 +355,13 @@ public class TrainingServiceRepositoryTest {
                 .puzzleCount(0)
                 .build();
         Pack savedPack = packRepository.save(pack);
-        boolean existsBefore = packTranslationRepository.existsByPackAndLanguageCode(savedPack, LanguageCode.en.name());
+        boolean existsBefore = packTranslationRepository.existsByPackAndLangCode(savedPack, LangCode.getLangCode("EN"));
         assertThat(existsBefore).isFalse();
 
         // When
         PackTranslation translation = PackTranslation.builder()
                 .pack(savedPack)
-                .languageCode(LanguageCode.en.name())
+                .langCode(LangCode.getLangCode("EN"))
                 .title("Test Title")
                 .author("Test Author")
                 .description("Test Description")
@@ -378,7 +373,7 @@ public class TrainingServiceRepositoryTest {
         assertThat(translations).hasSize(1);
         PackTranslation retrieved = translations.get(0);
         assertThat(retrieved.getPack().getId()).isEqualTo(savedPack.getId());
-        assertThat(retrieved.getLanguageCode()).isEqualTo(LanguageCode.en.name());
+        assertThat(retrieved.getLangCode().getName()).isEqualTo("EN");
         assertThat(retrieved.getTitle()).isEqualTo("Test Title");
         assertThat(retrieved.getAuthor()).isEqualTo("Test Author");
         assertThat(retrieved.getDescription()).isEqualTo("Test Description");
