@@ -55,6 +55,9 @@ public enum ErrorCode {
     CANNOT_FIND_TRAINING_PUZZLE(HttpStatus.NOT_FOUND, "P4041", "해당하는 레슨 퍼즐을 찾을 수 없습니다."),
     NO_SUCH_TRAINING_PACK(HttpStatus.NOT_FOUND, "P4042", "해당하는 팩 정보를 찾을 수 없습니다."),
     NO_SUCH_TRAINING_PACKS(HttpStatus.NOT_FOUND, "P4043", "해당하는 난이도의 팩 정보를 찾을 수 없습니다."),
+
+
+    CANNOT_FIND_PUZZLE(HttpStatus.NOT_FOUND, "P4044", "해당하는 퍼즐을 찾을 수 없습니다."),
     NO_SUCH_PACK_TRANSLATION(HttpStatus.NOT_FOUND, "P4044", "해당하는 팩의 번역 정보를 찾을 수 없습니다."),
     NO_USER_PROGRESS_FOR_PACK(HttpStatus.NOT_FOUND, "P4045", "사용자가 해당 팩을 푼 기록이 없습니다."),
     CANNOT_FIND_RANK_PUZZLE(HttpStatus.NOT_FOUND, "P4046", "해당하는 랭크 퍼즐을 찾을 수 없습니다."),
