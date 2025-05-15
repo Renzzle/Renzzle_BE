@@ -127,7 +127,7 @@ public class RankService {
         // 이전 문제 조회 및 풀이 여부 업데이트
         LatestRankPuzzle previousPuzzle = latestRankPuzzleRepository
                 .findTopByUserOrderByAssignedAtDesc(user)
-                .orElseThrow(() -> new CustomException(ErrorCode.PUZZLE_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.LATEST_PUZZLE_NOT_FOUND));
 
         previousPuzzle.solvedUpdate(request.isSolved());
 
@@ -253,7 +253,7 @@ public class RankService {
         allCandidates.addAll(selectedCommunities);
 
         if (allCandidates.isEmpty()) {
-            throw new CustomException(ErrorCode.CANNOT_FIND_PUZZLE);
+            throw new CustomException(ErrorCode.CANNOT_FIND_RANK_PUZZLE);
         }
 
         Collections.shuffle(allCandidates);
@@ -285,7 +285,7 @@ public class RankService {
 
             return new NextPuzzleResult(latest, puzzle.getRating());
         }
-        throw new CustomException(ErrorCode.INVALID_PUZZLE_TYPE);
+        throw new CustomException(ErrorCode.INVALID_RANK_PUZZLE_TYPE);
     }
 
     private <T> List<T> pickNearByWindow(List<T> sorted, double targetRating, int windowSize) {

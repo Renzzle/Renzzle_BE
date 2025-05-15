@@ -45,25 +45,27 @@ public enum ErrorCode {
     UNAUTHORIZED_ACTION(HttpStatus.UNAUTHORIZED, "U401", "유효하지 않은 사용자입니다."),
 
     // Puzzle
+    ALREADY_SOLVED_PUZZLE(HttpStatus.BAD_REQUEST, "P4000", "이미 풀이를 완료한 퍼즐입니다."),
+    ALREADY_EXISTING_TRANSLATION(HttpStatus.BAD_REQUEST, "P4001", "이미 해당 언어의 번역본이 존재합니다."),
+    INVALID_SESSION_TTL(HttpStatus.BAD_REQUEST, "P4002", "세션 TTL 이 올바르지 않습니다."),
+    IS_NOT_STARTED(HttpStatus.BAD_REQUEST, "P4003", "잘못된 랭킹전 결과 호출입니다."),
+    INVALID_RANK_PUZZLE_TYPE(HttpStatus.BAD_REQUEST, "R4004", "올바르지 않은 랭크 퍼즐 타입입니다."),
+    COMMUNITY_PUZZLE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "P4030", "해당하는 커뮤니티 퍼즐에 대한 권한이 없습니다."),
     CANNOT_FIND_COMMUNITY_PUZZLE(HttpStatus.NOT_FOUND, "P4040", "해당하는 커뮤니티 퍼즐을 찾을 수 없습니다."),
     CANNOT_FIND_TRAINING_PUZZLE(HttpStatus.NOT_FOUND, "P4041", "해당하는 레슨 퍼즐을 찾을 수 없습니다."),
     NO_SUCH_TRAINING_PACK(HttpStatus.NOT_FOUND, "P4042", "해당하는 팩 정보를 찾을 수 없습니다."),
     NO_SUCH_TRAINING_PACKS(HttpStatus.NOT_FOUND, "P4043", "해당하는 난이도의 팩 정보를 찾을 수 없습니다."),
+
+
     CANNOT_FIND_PUZZLE(HttpStatus.NOT_FOUND, "P4044", "해당하는 퍼즐을 찾을 수 없습니다."),
-    ALREADY_SOLVED_PUZZLE(HttpStatus.BAD_REQUEST, "P4000", "이미 풀이를 완료한 퍼즐입니다."),
-    ALREADY_EXISTING_TRANSLATION(HttpStatus.BAD_REQUEST, "P4001", "이미 해당 언어의 번역본이 존재합니다."),
-    COMMUNITY_PUZZLE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "P403", "해당하는 커뮤니티 퍼즐에 대한 권한이 없습니다."),
-
-    //Rank
-    INVALID_SESSION_TTL(HttpStatus.BAD_REQUEST, "R4000", "세션 TTL이 올바르지 않습니다."),
-    IS_NOT_STARTED(HttpStatus.BAD_REQUEST, "R4001", "잘못된 랭킹전 결과 호출입니다."),
-    EMPTY_SESSION_DATA(HttpStatus.NOT_FOUND, "R4040", "세션 데이터가 존재하지 않습니다."),
-    PUZZLE_NOT_FOUND(HttpStatus.NOT_FOUND, "R4041", "퍼즐이 존재하지 않습니다."),
-    SESSION_ALREADY_ENDED(HttpStatus.GONE, "R4100", "세션이 이미 만료되었습니다."),
-    SESSION_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "R5001", "세션 ID 생성에 실패하였습니다."),
-    INVALID_PUZZLE_TYPE(HttpStatus.BAD_REQUEST, "R4000", "올바르지 않은 퍼즐 타입입니다.")
-
-
+    NO_SUCH_PACK_TRANSLATION(HttpStatus.NOT_FOUND, "P4044", "해당하는 팩의 번역 정보를 찾을 수 없습니다."),
+    NO_USER_PROGRESS_FOR_PACK(HttpStatus.NOT_FOUND, "P4045", "사용자가 해당 팩을 푼 기록이 없습니다."),
+    CANNOT_FIND_RANK_PUZZLE(HttpStatus.NOT_FOUND, "P4046", "해당하는 랭크 퍼즐을 찾을 수 없습니다."),
+    EMPTY_SESSION_DATA(HttpStatus.NOT_FOUND, "P4047", "세션 데이터가 존재하지 않습니다."),
+    LATEST_PUZZLE_NOT_FOUND(HttpStatus.NOT_FOUND, "P4048", "이전 랭크 퍼즐이 존재하지 않습니다."),
+    TREND_PUZZLE_DUPLICATED(HttpStatus.CONFLICT, "P4090", "트렌드 퍼즐이 중복되었습니다."),
+    SESSION_ALREADY_ENDED(HttpStatus.GONE, "P4100", "세션이 이미 만료되었습니다."),
+    SESSION_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "P5000", "세션 ID 생성에 실패하였습니다."),
 
     ;
 
