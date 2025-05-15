@@ -2,12 +2,14 @@ package com.renzzle.backend.domain.puzzle.community.dao;
 
 import com.renzzle.backend.domain.puzzle.community.dao.projection.LikeDislikeProjection;
 import com.renzzle.backend.domain.puzzle.community.domain.UserCommunityPuzzle;
+import com.renzzle.backend.domain.user.domain.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 public interface UserCommunityPuzzleRepository extends JpaRepository<UserCommunityPuzzle, Long> {
@@ -34,5 +36,11 @@ public interface UserCommunityPuzzleRepository extends JpaRepository<UserCommuni
     @Query("UPDATE UserCommunityPuzzle ucp SET ucp.isSolved = TRUE, ucp.solvedAt = :solvedAt " +
             "WHERE ucp.user.id = :userId AND ucp.puzzle.id = :puzzleId")
     int solvePuzzle(@Param("userId") Long userId, @Param("puzzleId") Long puzzleId, @Param("solvedAt") Instant solvedAt);
+
+    @Query("SELECT DISTINCT ucp.user FROM UserCommunityPuzzle ucp WHERE ucp.solvedAt >= :since")
+    List<UserEntity> findUsersWhoSolvedPuzzlesSince(@Param("since") Instant since);
+
+    @Query("SELECT COUNT(ucp) FROM UserCommunityPuzzle ucp WHERE ucp.user.id = :userId AND ucp.isSolved = true")
+    long countSolvedByUser(@Param("userId") Long userId);
 
 }
