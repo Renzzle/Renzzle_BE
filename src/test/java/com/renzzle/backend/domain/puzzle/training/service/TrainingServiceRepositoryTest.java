@@ -56,17 +56,9 @@ public class TrainingServiceRepositoryTest {
     @BeforeEach
     public void clearDatabase() {
         userRepository.deleteAll();
-        entityManager.createNativeQuery("DELETE FROM difficulty").executeUpdate();
-        entityManager.createNativeQuery("DELETE FROM status").executeUpdate();
-        entityManager.createNativeQuery("DELETE FROM win_color").executeUpdate();
-        entityManager.clear();
     }
 
     private UserEntity persistTestUser() {
-
-        Status defaultStatus = Status.getDefaultStatus();
-        entityManager.persist(defaultStatus);
-
         UserEntity user = UserEntity.builder()
                 .email("testuser@example.com")
                 .password("password")
@@ -83,13 +75,10 @@ public class TrainingServiceRepositoryTest {
     @Test
     @DisplayName("TrainingPuzzle 저장 및 조회: 유효한 Pack과 TrainingPuzzle을 저장 후 정상 조회")
     @Transactional
-    public void testCreateTrainingPuzzle() {
-        // given
+    public void increaseIndexesFrom_WhenCalled_ThenIncrementsAllFollowingIndexes() {
+        // Given
         Difficulty difficulty = Difficulty.getDifficulty("LOW");
-        entityManager.persist(difficulty);
-
         WinColor winColor = WinColor.getWinColor("WHITE");
-        entityManager.persist(winColor);
 
         Pack pack = Pack.builder()
                 .price(1000)
@@ -98,43 +87,36 @@ public class TrainingServiceRepositoryTest {
                 .build();
         Pack savedPack = packRepository.save(pack);
 
-        TrainingPuzzle existingPuzzle = TrainingPuzzle.builder()
-                .pack(savedPack)
-                .trainingIndex(0)
-                .boardStatus("existingStatus")
-                .boardKey("existingKey")
-                .answer("existing answer")
-                .depth(3)
-                .rating(600.0)
-                .winColor(winColor)
-                .build();
-        TrainingPuzzle savedExistingPuzzle = trainingPuzzleRepository.save(existingPuzzle);
+        TrainingPuzzle p1 = TrainingPuzzle.builder().pack(pack).trainingIndex(0)
+                .boardStatus("s1").boardKey("k1").answer("a1").depth(1).rating(100).winColor(winColor).build();
+        TrainingPuzzle p2 = TrainingPuzzle.builder().pack(pack).trainingIndex(1)
+                .boardStatus("s2").boardKey("k2").answer("a2").depth(1).rating(100).winColor(winColor).build();
 
-        // when
-        trainingPuzzleRepository.increaseIndexesFrom(savedPack.getId(), 0);
+        trainingPuzzleRepository.saveAll(List.of(p1, p2));
 
+        // When
+        trainingPuzzleRepository.increaseIndexesFrom(pack.getId(), 0);
         entityManager.flush();
         entityManager.clear();
+        // Then
+        Optional<TrainingPuzzle> updatedP1 = trainingPuzzleRepository.findById(p1.getId());
+        Optional<TrainingPuzzle> updatedP2 = trainingPuzzleRepository.findById(p2.getId());
 
-        // then
-        Optional<TrainingPuzzle> updatedPuzzleOpt = trainingPuzzleRepository.findById(savedExistingPuzzle.getId());
-        assertThat(updatedPuzzleOpt).isPresent();
-        TrainingPuzzle updatedPuzzle = updatedPuzzleOpt.get();
-        assertThat(updatedPuzzle.getTrainingIndex()).isEqualTo(1);
+        assertThat(updatedP1).isPresent();
+        assertThat(updatedP2).isPresent();
 
+        assertThat(updatedP1.get().getTrainingIndex()).isEqualTo(1);
+        assertThat(updatedP2.get().getTrainingIndex()).isEqualTo(2);
     }
 
     @Test
     @DisplayName("testDeleteAndDecreaseIndexes: 존재하는 퍼즐 삭제 후, 후속 퍼즐의 trainingIndex가 감소된다.")
     @Transactional
-    public void testDeleteAndDecreaseIndexes() {
-        // given
+    public void decreaseIndexesFrom_WhenCalled_ThenDecrementsIndexesGreaterThanTarget() {
+        // Given
         Difficulty difficulty = Difficulty.getDifficulty("LOW");
-        entityManager.persist(difficulty);
-
         WinColor winColor = WinColor.getWinColor("WHITE");
-        entityManager.persist(winColor);
-
+        
         Pack pack = Pack.builder()
                 .price(1000)
                 .difficulty(difficulty)
@@ -168,13 +150,13 @@ public class TrainingServiceRepositoryTest {
         TrainingPuzzle savedPuzzle2 = trainingPuzzleRepository.save(puzzle2);
 
 
-        // when
+        // When
         trainingPuzzleRepository.deleteById(savedPuzzle1.getId());
         trainingPuzzleRepository.decreaseIndexesFrom(savedPuzzle1.getTrainingIndex());
         entityManager.flush();
         entityManager.clear();
 
-        // then
+        // Then
         Optional<TrainingPuzzle> deletedPuzzle = trainingPuzzleRepository.findById(savedPuzzle1.getId());
 
         assertThat(deletedPuzzle).isNotPresent();
@@ -190,13 +172,10 @@ public class TrainingServiceRepositoryTest {
     @Test
     @DisplayName("testSaveAndFindSolvedTrainingPuzzle: SolvedTrainingPuzzle 저장 후, findByUserIdAndPuzzleId로 조회")
     @Transactional
-    public void testSolveTrainingPuzzle() {
-        // given
+    public void findByPackId_WhenPackExists_ThenReturnsAllAssociatedPuzzles() {
+        // Given
         Difficulty difficulty = Difficulty.getDifficulty("LOW");
-        entityManager.persist(difficulty);
-
         WinColor winColor = WinColor.getWinColor("WHITE");
-        entityManager.persist(winColor);
 
         Pack pack = Pack.builder()
                 .price(1000)
@@ -225,10 +204,10 @@ public class TrainingServiceRepositoryTest {
                 .build();
         solvedTrainingPuzzleRepository.save(solved);
 
-        // when
+        // When
         Optional<SolvedTrainingPuzzle> found = solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), savedPuzzle.getId());
 
-        // then
+        // Then
         assertThat(found).isPresent();
         assertThat(found.get().getUser().getId()).isEqualTo(user.getId());
         assertThat(found.get().getPuzzle().getId()).isEqualTo(savedPuzzle.getId());
@@ -237,13 +216,10 @@ public class TrainingServiceRepositoryTest {
     @Test
     @DisplayName("GetTrainingPuzzleList: 특정 Pack의 TrainingPuzzle 목록이 정상적으로 조회된다.")
     @Transactional
-    public void testGetTrainingPuzzleList() {
-        // given
+    public void findByChapterAndIndex_WhenExists_ThenReturnsPuzzle() {
+        // Given
         Difficulty difficulty = Difficulty.getDifficulty("LOW");
-        entityManager.persist(difficulty);
-
         WinColor winColor = WinColor.getWinColor("WHITE");
-        entityManager.persist(winColor);
 
         Pack pack = Pack.builder()
                 .price(1000)
@@ -277,22 +253,21 @@ public class TrainingServiceRepositoryTest {
         trainingPuzzleRepository.save(puzzle1);
         trainingPuzzleRepository.save(puzzle2);
 
-        // when
-        List<TrainingPuzzle> puzzles = trainingPuzzleRepository.findByPack_Id(savedPack.getId());
+        // When
+        List<TrainingPuzzle> puzzles = trainingPuzzleRepository.findByPack_IdOrderByTrainingIndexDesc(savedPack.getId());
 
-        // then
+        // Then
         assertThat(puzzles).isNotEmpty();
         assertThat(puzzles).hasSize(2);
         assertThat(puzzles.get(0).getBoardStatus()).isIn("status1", "status2");
     }
 
     @Test
-    @DisplayName("createPack: 유효한 요청으로 Pack과 PackTranslation이 정상 저장되고 조회")
+    @DisplayName("PackTranslation들이 정상 저장되고 조회")
     @Transactional
-    public void testCreatePack() {
-        // given
+    public void saveTranslations_WhenTranslationsLinkedToPack_ThenAllAreSaved() {
+        // Given
         Difficulty difficulty = Difficulty.getDifficulty("LOW");
-        entityManager.persist(difficulty);
 
         List<PackTranslationRequest> translations = Arrays.asList(
                 new PackTranslationRequest("EN", "초보용 1", "재윤", "설명1"),
@@ -301,12 +276,10 @@ public class TrainingServiceRepositoryTest {
         CreateTrainingPackRequest request = new CreateTrainingPackRequest(translations, 1000, "LOW");
 
         Pack pack = Pack.builder()
-                .price(request.price())
-                .difficulty(Difficulty.getDifficulty(request.difficulty()))
+                .price(1000)
+                .difficulty(difficulty)
                 .puzzleCount(0)
                 .build();
-
-        // when
         Pack savedPack = packRepository.save(pack);
 
         List<PackTranslation> packTranslations = request.info().stream()
@@ -320,35 +293,22 @@ public class TrainingServiceRepositoryTest {
                 .collect(Collectors.toList());
         packTranslationRepository.saveAll(packTranslations);
 
-        // then
-        Optional<Pack> retrievedPackOpt = packRepository.findById(savedPack.getId());
-        assertThat(retrievedPackOpt).isPresent();
-        Pack retrievedPack = retrievedPackOpt.get();
-        assertThat(retrievedPack.getPrice()).isEqualTo(1000);
-        assertThat(retrievedPack.getDifficulty().getName()).isEqualTo("LOW");
+        // Then
+        List<PackTranslation> found = packTranslationRepository.findAll().stream()
+                .filter(pt -> pt.getPack().getId().equals(savedPack.getId()))
+                .toList();
 
-        // 번역은 해당 Pack에 연관된 데이터여야 함 (연관관계 기준으로 조회하거나 전체 조회 후 필터링)
-        // packId가 일치하는지 확인
-        List<PackTranslation> retrievedTranslations = packTranslationRepository.findAll().stream()
-                .filter(pt -> pt.getPack().getId().equals(retrievedPack.getId()))
-                .collect(Collectors.toList());
-        assertThat(retrievedTranslations).hasSize(2);
-        retrievedTranslations.forEach(pt ->
-                assertThat(pt.getPack().getId()).isEqualTo(retrievedPack.getId())
-        );
+        assertThat(found).hasSize(2);
+        assertThat(found).extracting(pt -> pt.getLangCode().getName())
+                .containsExactlyInAnyOrder("EN", "EN");
     }
 
     @Test
     @DisplayName("getTrainingPackList : findByDifficulty, findAllByPack_IdInAndLanguageCode, findAllByUserIdAndPackIdIn 메소드 확인")
     @Transactional
-    public void testGetTrainingPackList() {
-        // given
+    public void GetTrainingPackList_WhenGetDifficulty_ThenReturnPackList() {
+        // Given
         Difficulty difficulty = Difficulty.getDifficulty("LOW");
-        entityManager.persist(difficulty);
-
-        WinColor winColor = WinColor.getWinColor("WHITE");
-        entityManager.persist(winColor);
-
         // Pack 생성 및 저장
         Pack pack = Pack.builder()
                 .price(1000)
@@ -367,12 +327,12 @@ public class TrainingServiceRepositoryTest {
                 .build();
         packTranslationRepository.save(translation);
 
-        // when
+        // When
         List<Pack> packs = packRepository.findByDifficulty(difficulty);
         List<Long> packIds = packs.stream().map(Pack::getId).collect(Collectors.toList());
         List<PackTranslation> translations = packTranslationRepository.findAllByPack_IdInAndLangCode(packIds, LangCode.getLangCode("EN"));
 
-        // then
+        // Then
         assertThat(packs).hasSize(1);
         assertThat(packs.get(0).getId()).isEqualTo(savedPack.getId());
         assertThat(translations).hasSize(1);
@@ -385,10 +345,9 @@ public class TrainingServiceRepositoryTest {
     @Test
     @DisplayName("testAddTranslation: 유효한 Pack에 대해 번역을 추가 시 저장")
     @Transactional
-    public void testAddTranslation() {
-        // given
+    public void AddTranslation_WhenPackExist_ThenReturnPack() {
+        // Given
         Difficulty difficulty = Difficulty.getDifficulty("LOW");
-        entityManager.persist(difficulty);
 
         Pack pack = Pack.builder()
                 .price(1000)
@@ -399,7 +358,7 @@ public class TrainingServiceRepositoryTest {
         boolean existsBefore = packTranslationRepository.existsByPackAndLangCode(savedPack, LangCode.getLangCode("EN"));
         assertThat(existsBefore).isFalse();
 
-        // when
+        // When
         PackTranslation translation = PackTranslation.builder()
                 .pack(savedPack)
                 .langCode(LangCode.getLangCode("EN"))
@@ -409,7 +368,7 @@ public class TrainingServiceRepositoryTest {
                 .build();
         packTranslationRepository.save(translation);
 
-        // then
+        // Then
         List<PackTranslation> translations = packTranslationRepository.findAll();
         assertThat(translations).hasSize(1);
         PackTranslation retrieved = translations.get(0);
@@ -423,13 +382,13 @@ public class TrainingServiceRepositoryTest {
     @Test
     @DisplayName("testPurchaseTrainingPack: 사용자의 잔액 차감 및 UserPack 저장")
     @Transactional
-    public void testPurchaseTrainingPack() {
-        // given
+    public void PurchaseTrainingPack() {
+        // Given
         Difficulty difficulty = Difficulty.getDifficulty("LOW");
-        entityManager.persist(difficulty);
+//        entityManager.persist(difficulty);
 
         Status defaultStatus = Status.getDefaultStatus();
-        entityManager.persist(defaultStatus);
+//        entityManager.persist(defaultStatus);
 
         Pack pack = Pack.builder()
                 .price(1000)
@@ -451,7 +410,7 @@ public class TrainingServiceRepositoryTest {
 
         user = userRepository.save(user);
 
-        // when
+        // When
         user.purchase(savedPack.getPrice());
         user = userRepository.save(user);
 
@@ -464,7 +423,7 @@ public class TrainingServiceRepositoryTest {
 
         UserEntity updatedUser = userRepository.findById(user.getId()).orElseThrow();
 
-        // then
+        // Then
         assertThat(updatedUser.getCurrency()).isEqualTo(1000);
 
         List<UserPack> userPacks = userPackRepository.findAllByUserIdAndPackIdIn(updatedUser.getId(),
@@ -476,13 +435,13 @@ public class TrainingServiceRepositoryTest {
     @Test
     @DisplayName("testPurchaseTrainingPuzzleAnswer: 사용자의 잔액이 정상 차감되고, 구매 후 결과를 조회할 수 있다")
     @Transactional
-    public void testPurchaseTrainingPuzzleAnswer() {
-        // given
+    public void PurchaseTrainingPuzzleAnswer_WhenEnoughCurrent_ThenReturnRemainCurrent() {
+        // Given
         Difficulty difficulty = Difficulty.getDifficulty("LOW");
-        entityManager.persist(difficulty);
+//        entityManager.persist(difficulty);
 
         Status defaultStatus = Status.getDefaultStatus();
-        entityManager.persist(defaultStatus);
+//        entityManager.persist(defaultStatus);
 
         Pack pack = Pack.builder()
                 .price(1000)
@@ -503,11 +462,11 @@ public class TrainingServiceRepositoryTest {
                 .build();
         user = userRepository.save(user);
 
-        // when
+        // When
         user.purchase(ItemPrice.HINT.getPrice());
         user = userRepository.save(user);
 
-        // then
+        // Then
         UserEntity updatedUser = userRepository.findById(user.getId()).orElseThrow();
         assertThat(updatedUser.getCurrency()).isEqualTo(500 - ItemPrice.HINT.getPrice());
     }

@@ -129,7 +129,8 @@ public class TrainingService {
             throw new CustomException(ErrorCode.VALIDATION_ERROR);
         }
 
-        List<TrainingPuzzle> trainingPuzzles = trainingPuzzleRepository.findByPack_Id(packId);
+        //TODO : training index 순서대로 반환할 수 있도록
+        List<TrainingPuzzle> trainingPuzzles = trainingPuzzleRepository.findByPack_IdOrderByTrainingIndexDesc(packId);
 
         if(trainingPuzzles.isEmpty()) {
             throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK);

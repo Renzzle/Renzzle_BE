@@ -48,7 +48,7 @@ public interface TrainingPuzzleRepository extends JpaRepository<TrainingPuzzle, 
     int countAllTrainingByChapter(@Param("chapter") int chapter);
 
 
-    List<TrainingPuzzle> findByPack_Id(Long packId);
+    List<TrainingPuzzle> findByPack_IdOrderByTrainingIndexDesc(Long packId);
 
 
     @Query("SELECT p FROM TrainingPuzzle p " +
