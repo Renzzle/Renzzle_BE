@@ -16,6 +16,7 @@ import com.renzzle.backend.domain.puzzle.training.domain.PackTranslation;
 import com.renzzle.backend.domain.puzzle.training.domain.SolvedTrainingPuzzle;
 import com.renzzle.backend.domain.puzzle.training.domain.UserPack;
 import com.renzzle.backend.domain.user.domain.UserEntity;
+import com.renzzle.backend.global.common.domain.LangCode;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -61,7 +62,7 @@ public class ContentService {
 
         // 번역 정보 조회
         PackTranslation translation = packTranslationRepository
-                .findByPack_IdAndLanguageCode(pack.getId(), request.lang().name())
+                .findByPackAndLangCode(pack, LangCode.getLangCode(request.langCode()))
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_PACK_TRANSLATION));
 
         // 유저의 pack 진행 정보 조회
@@ -91,7 +92,7 @@ public class ContentService {
 
         // 2. 번역 정보 조회
         PackTranslation translation = packTranslationRepository
-                .findByPack_IdAndLanguageCode(pack.getId(), request.lang().name())
+                .findByPackAndLangCode(pack, LangCode.getLangCode(request.langCode()))
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_PACK_TRANSLATION));
 
         // 3. 결과 반환

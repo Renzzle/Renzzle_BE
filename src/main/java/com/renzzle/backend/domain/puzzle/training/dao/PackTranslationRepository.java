@@ -11,9 +11,7 @@ import java.util.Optional;
 public interface PackTranslationRepository extends JpaRepository<PackTranslation, Long> {
     List<PackTranslation> findAllByPack_IdInAndLangCode(List<Long> packIds, LangCode languageCode);
 
-//    boolean existsByPackAndLanguageCode(Pack pack, String languageCode);
-
-    Optional<PackTranslation> findByPack_IdAndLanguageCode(Long id, String name);
+    Optional<PackTranslation> findByPackAndLangCode(Pack pack, LangCode langCode);
 
     boolean existsByPackAndLangCode(Pack pack, LangCode languageCode);
 
