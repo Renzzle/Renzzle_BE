@@ -45,16 +45,17 @@ public class TrainingService {
     // service test, repo test
     @Transactional
     public TrainingPuzzle createTrainingPuzzle(AddTrainingPuzzleRequest request) {
-        String boardKey = BoardUtils.makeBoardKey(request.boardStatus());
-
-        int index = trainingPuzzleRepository.findTopIndex(request.packId()) + 1;
-        if(request.puzzleIndex() != null && index > request.puzzleIndex()) {
-            index = request.puzzleIndex();
-            trainingPuzzleRepository.increaseIndexesFrom(request.packId(), index);
-        }
 
         Pack pack = packRepository.findById(request.packId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
+
+        String boardKey = BoardUtils.makeBoardKey(request.boardStatus());
+
+        int index = trainingPuzzleRepository.findTopIndex(request.packId()) + 1;
+        if(index > request.puzzleIndex()) {
+            index = request.puzzleIndex();
+            trainingPuzzleRepository.increaseIndexesFrom(request.packId(), index);
+        }
 
         double rating = request.depth() * DEFAULT_PUZZLE_RATING;
 
