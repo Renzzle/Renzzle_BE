@@ -191,6 +191,7 @@ public class TrainingServiceTest {
                     .id(100L)
                     .pack(pack)
                     .trainingIndex(6)
+                    .answer("a1a2a3a4")
                     .boardStatus(boardStatus)
                     .boardKey("generatedKey")
                     .depth(depth)
@@ -206,7 +207,7 @@ public class TrainingServiceTest {
             // then
             assertNotNull(result);
             assertEquals(100L, result.getId());
-
+            assertEquals("a1a2a3a4", result.getAnswer());
             assertEquals(6, result.getTrainingIndex());
             assertEquals(boardStatus, result.getBoardStatus());
             assertEquals("generatedKey", result.getBoardKey());
