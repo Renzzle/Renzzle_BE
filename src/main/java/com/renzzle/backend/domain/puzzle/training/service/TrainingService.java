@@ -95,7 +95,7 @@ public class TrainingService {
             existInfo.get().updateSolvedAtToNow(clock);
             return SolveTrainingPuzzleResponse.builder()
                     .reward(0)
-                    .build(); // ✅ 이미 풀었다면 리워드 없음
+                    .build();
         }
 
         TrainingPuzzle trainingPuzzle = trainingPuzzleRepository.findById(puzzleId)
@@ -252,7 +252,7 @@ public class TrainingService {
     }
 
     // service test, repo test
-    @Transactional(readOnly = true)
+    @Transactional
     public GetPackPurchaseResponse purchaseTrainingPack(UserEntity user, PurchaseTrainingPackRequest request) {
         Pack pack = packRepository.findById(request.packId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
@@ -273,7 +273,7 @@ public class TrainingService {
                 .build();
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public GetTrainingPuzzleAnswerResponse purchaseTrainingPuzzleAnswer(UserEntity user, PurchaseTrainingPuzzleAnswerRequest request) {
         UserEntity newUser = userRepository.findById(user.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
