@@ -164,7 +164,7 @@ public class TrainingServiceTest {
             String winColorStr = "WHITE";
             AddTrainingPuzzleRequest request = new AddTrainingPuzzleRequest(
                     packId,
-                    null,
+                    6,
                     boardStatus,
                     "a1a2a3a4",
                     depth,

@@ -11,6 +11,7 @@ public record AddTrainingPuzzleRequest(
         @NotNull(message = "팩 정보가 없습니다")
         Long packId,
 
+        @NotNull
         Integer puzzleIndex,
 
         @NotEmpty(message = "보드 정보가 없습니다")

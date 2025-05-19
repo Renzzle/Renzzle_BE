@@ -45,16 +45,17 @@ public class TrainingService {
     // service test, repo test
     @Transactional
     public TrainingPuzzle createTrainingPuzzle(AddTrainingPuzzleRequest request) {
-        String boardKey = BoardUtils.makeBoardKey(request.boardStatus());
-
-        int index = trainingPuzzleRepository.findTopIndex(request.packId()) + 1;
-        if(request.puzzleIndex() != null && index > request.puzzleIndex()) {
-            index = request.puzzleIndex();
-            trainingPuzzleRepository.increaseIndexesFrom(request.packId(), index);
-        }
 
         Pack pack = packRepository.findById(request.packId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
+
+        String boardKey = BoardUtils.makeBoardKey(request.boardStatus());
+
+        int index = trainingPuzzleRepository.findTopIndex(request.packId()) + 1;
+        if(index > request.puzzleIndex()) {
+            index = request.puzzleIndex();
+            trainingPuzzleRepository.increaseIndexesFrom(request.packId(), index);
+        }
 
         double rating = request.depth() * DEFAULT_PUZZLE_RATING;
 
@@ -95,7 +96,7 @@ public class TrainingService {
             existInfo.get().updateSolvedAtToNow(clock);
             return SolveTrainingPuzzleResponse.builder()
                     .reward(0)
-                    .build(); // ✅ 이미 풀었다면 리워드 없음
+                    .build();
         }
 
         TrainingPuzzle trainingPuzzle = trainingPuzzleRepository.findById(puzzleId)
@@ -252,7 +253,7 @@ public class TrainingService {
     }
 
     // service test, repo test
-    @Transactional(readOnly = true)
+    @Transactional
     public GetPackPurchaseResponse purchaseTrainingPack(UserEntity user, PurchaseTrainingPackRequest request) {
         Pack pack = packRepository.findById(request.packId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
@@ -273,7 +274,7 @@ public class TrainingService {
                 .build();
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public GetTrainingPuzzleAnswerResponse purchaseTrainingPuzzleAnswer(UserEntity user, PurchaseTrainingPuzzleAnswerRequest request) {
         UserEntity newUser = userRepository.findById(user.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));

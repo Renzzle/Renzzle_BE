@@ -4,10 +4,11 @@ import com.renzzle.backend.global.common.constant.LanguageCode;
 import com.renzzle.backend.global.common.domain.LangCode;
 import com.renzzle.backend.global.validation.ValidEnum;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 public record TranslationRequest(
 
-        @NotBlank(message = "packId는 필수입니다")
+        @NotNull(message = "packId는 필수입니다")
         Long packId,
 
         @ValidEnum(enumClass = LangCode.LangCodeName.class, message = "잘못된 lang 형식입니다")
