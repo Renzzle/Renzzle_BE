@@ -65,6 +65,7 @@ public class TrainingService {
         TrainingPuzzle puzzle = TrainingPuzzle.builder()
                 .pack(pack)
                 .trainingIndex(index)
+                .answer(request.answer())
                 .boardStatus(request.boardStatus())
                 .boardKey(boardKey)
                 .depth(request.depth())
