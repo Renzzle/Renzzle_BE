@@ -93,8 +93,8 @@ public class TrainingController {
     //미완료
     @Operation(summary = "Get Training Packs", description = "Get Training Packs")
     @GetMapping("/pack")
-    public ApiResponse<List<GetPackResponse>> getTrainigPack(
-            @Valid @RequestBody GetTrainingPackRequest request,
+    public ApiResponse<List<GetPackResponse>> getTrainingPack(
+            @Valid @ModelAttribute GetTrainingPackRequest request,
             @AuthenticationPrincipal UserDetailsImpl user
     ){
 
