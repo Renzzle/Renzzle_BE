@@ -106,11 +106,12 @@ public class TrainingService {
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
 
         // 처음 푼 퍼즐이면 저장 및 난이도에 따른 보상 계산
-        SolvedTrainingPuzzle solvedTrainingPuzzle = SolvedTrainingPuzzle.builder()
+        solvedTrainingPuzzleRepository.save(SolvedTrainingPuzzle.builder()
                 .user(user)
                 .puzzle(trainingPuzzle)
-                .build();
-        solvedTrainingPuzzleRepository.save(solvedTrainingPuzzle);
+                .build());
+
+        userPackRepository.increaseSolvedCount(user.getId(), trainingPuzzle.getPack().getId());
 
         // 난이도 → 보상 매핑
         Difficulty difficulty = trainingPuzzle.getPack().getDifficulty();
@@ -234,10 +235,9 @@ public class TrainingService {
         for (Pack pack : packs) {
             PackTranslation translation = translationMap.get(pack.getId());
             UserPack up = userPackMap.get(pack.getId());
-
             // locked 여부, solvedPuzzleCount 계산
             boolean locked = (up == null);
-            int solvedCount = (up != null) ? up.getSolved_count() : 0;
+            int solvedCount = (up != null) ? up.getSolvedCount() : 0;
 
             GetPackResponse dto = new GetPackResponse(
                     pack.getId(),
@@ -268,7 +268,7 @@ public class TrainingService {
         UserPack userPack = UserPack.builder()
                 .user(user)
                 .pack(pack)
-                .solved_count(0)
+                .solvedCount(0)
                 .build();
 
         userPackRepository.save(userPack);

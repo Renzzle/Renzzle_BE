@@ -258,8 +258,10 @@ public class TrainingServiceTest {
         public void testSolveLessonPuzzle() {
             // given
             Long puzzleId = 1L;
+            Long userId = 100L;
+            Long packId = 1L;
             UserEntity user = UserEntity.builder()
-                    .id(100L)
+                    .id(userId)
                     .email("test@example.com")
                     .password("password")
                     .nickname("testUser")
@@ -270,7 +272,7 @@ public class TrainingServiceTest {
                     .build();
 
             Pack pack = Pack.builder()
-                    .id(1L)
+                    .id(packId)
                     .difficulty(Difficulty.getDifficulty("LOW"))
                     .price(0)
                     .puzzleCount(10)
@@ -298,6 +300,8 @@ public class TrainingServiceTest {
 
             // then
             verify(solvedTrainingPuzzleRepository).save(any(SolvedTrainingPuzzle.class));
+            verify(userPackRepository).increaseSolvedCount(userId, packId);
+
             assertThat(response.reward()).isEqualTo(20); // ItemPrice.TRAINING_LOW_REWARD.getPrice()
         }
 
@@ -389,7 +393,7 @@ public class TrainingServiceTest {
                     .status(Status.getDefaultStatus())
                     .build();
 
-            GetTrainingPackRequest request = new GetTrainingPackRequest(Difficulty.getDifficulty("LOW").getName(), null); // lang 기본값 EN
+            GetTrainingPackRequest request = new GetTrainingPackRequest(Difficulty.getDifficulty("LOW").getName(), "EN"); // lang 기본값 EN
 
             // Pack 생성 (예: ID 1, price 1000, puzzleCount 10)
             Pack pack = Pack.builder()

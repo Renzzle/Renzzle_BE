@@ -10,10 +10,4 @@ public record GetTrainingPackRequest(
 
         @ValidEnum(enumClass = LangCode.LangCodeName.class, message = "잘못된 lang 형식입니다")
         String lang
-) {
-    public GetTrainingPackRequest {
-        if (lang == null || lang.isBlank()) {
-            lang = "EN";
-        }
-    }
-}
+) { }

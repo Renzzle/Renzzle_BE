@@ -71,7 +71,7 @@ public class ContentService {
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_USER_PROGRESS_FOR_PACK));
 
 //        boolean locked = (userPack == null);
-        int solvedCount = (userPack != null) ? userPack.getSolved_count() : 0;
+        int solvedCount = (userPack != null) ? userPack.getSolvedCount() : 0;
 
         return getRecommendPackResponse.builder()
                 .id(pack.getId())

@@ -417,7 +417,7 @@ public class TrainingServiceRepositoryTest {
         UserPack userPack = UserPack.builder()
                 .user(user)
                 .pack(savedPack)
-                .solved_count(0)
+                .solvedCount(0)
                 .build();
         userPackRepository.save(userPack);
 
@@ -429,7 +429,7 @@ public class TrainingServiceRepositoryTest {
         List<UserPack> userPacks = userPackRepository.findAllByUserIdAndPackIdIn(updatedUser.getId(),
                 List.of(savedPack.getId()));
         assertThat(userPacks).hasSize(1);
-        assertThat(userPacks.get(0).getSolved_count()).isEqualTo(0);
+        assertThat(userPacks.get(0).getSolvedCount()).isEqualTo(0);
     }
 
     @Test
