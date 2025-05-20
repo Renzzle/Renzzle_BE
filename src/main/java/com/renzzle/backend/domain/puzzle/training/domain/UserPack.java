@@ -30,5 +30,5 @@ public class UserPack {
     private Pack pack;
 
     @Column(name = "solved_count", nullable = false)
-    private int solved_count;
+    private int solvedCount;
 }

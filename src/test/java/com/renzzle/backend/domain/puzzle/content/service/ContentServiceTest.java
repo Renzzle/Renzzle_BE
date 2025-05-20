@@ -113,7 +113,7 @@ public class ContentServiceTest {
         UserPack userPack = UserPack.builder()
                 .user(user)
                 .pack(pack)
-                .solved_count(5)
+                .solvedCount(5)
                 .build();
 
         when(solvedTrainingPuzzleRepository.findTopByUserOrderBySolvedAtDesc(user.getId()))
