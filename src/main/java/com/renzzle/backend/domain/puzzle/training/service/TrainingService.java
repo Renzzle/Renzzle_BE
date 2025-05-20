@@ -85,6 +85,8 @@ public class TrainingService {
 
         trainingPuzzleRepository.deleteById(puzzleId);
         trainingPuzzleRepository.decreaseIndexesFrom(puzzle.get().getTrainingIndex());
+
+        packRepository.decreasePuzzleCount(puzzle.get().getPack().getId());
     }
 
     // service test, repo test
@@ -132,7 +134,7 @@ public class TrainingService {
         }
 
         //TODO : training index 순서대로 반환할 수 있도록
-        List<TrainingPuzzle> trainingPuzzles = trainingPuzzleRepository.findByPack_IdOrderByTrainingIndexDesc(packId);
+        List<TrainingPuzzle> trainingPuzzles = trainingPuzzleRepository.findByPack_IdOrderByTrainingIndex(packId);
 
         if(trainingPuzzles.isEmpty()) {
             throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK);

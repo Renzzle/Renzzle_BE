@@ -21,6 +21,14 @@ public interface PackRepository extends JpaRepository<Pack, Long> {
             nativeQuery = true)
     void increasePuzzleCount(@Param("packId") Long packId);
 
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE pack " +
+            "SET puzzle_count = puzzle_count - 1 " +
+            "WHERE id = :packId",
+            nativeQuery = true)
+    void decreasePuzzleCount(@Param("packId") Long packId);
+
     List<Pack> findByDifficulty(Difficulty difficulty);
 
     Optional<Pack> findFirstByOrderByIdAsc();

@@ -226,9 +226,19 @@ public class TrainingServiceTest {
             // given
             Long puzzleId = 1L;
             int trainingIndex = 5;
+            Long packId = 10L;
+
+            Pack pack = Pack.builder()
+                    .id(packId)
+                    .puzzleCount(3)
+                    .price(1000)
+                    .difficulty(Difficulty.getDifficulty("LOW"))
+                    .build();
+
             TrainingPuzzle puzzle = TrainingPuzzle.builder()
                     .id(puzzleId)
                     .trainingIndex(trainingIndex)
+                    .pack(pack)
                     .build();
 
             when(trainingPuzzleRepository.findById(puzzleId)).thenReturn(Optional.of(puzzle));
@@ -240,6 +250,7 @@ public class TrainingServiceTest {
             verify(trainingPuzzleRepository, times(1)).findById(puzzleId);
             verify(trainingPuzzleRepository, times(1)).deleteById(puzzleId);
             verify(trainingPuzzleRepository, times(1)).decreaseIndexesFrom(trainingIndex);
+            verify(packRepository, times(1)).decreasePuzzleCount(packId);
         }
 
         @DisplayName("SolveLessonPuzzle: 주어진 user와 puzzleId에 대해 최초 풀이라면 solvedTrainingPuzzle이 저장")
@@ -345,7 +356,7 @@ public class TrainingServiceTest {
                     .winColor(winColor)
                     .build();
             List<TrainingPuzzle> puzzles = Collections.singletonList(puzzle);
-            when(trainingPuzzleRepository.findByPack_IdOrderByTrainingIndexDesc(packId)).thenReturn(puzzles);
+            when(trainingPuzzleRepository.findByPack_IdOrderByTrainingIndex(packId)).thenReturn(puzzles);
 
             // solvedTrainingPuzzleRepository.existsByUserAndPuzzle(user, puzzle) 가 false라고 가정
             when(solvedTrainingPuzzleRepository.existsByUserAndPuzzle(user, puzzle)).thenReturn(false);
@@ -668,7 +679,7 @@ public class TrainingServiceTest {
                     .status(Status.getDefaultStatus())
                     .build();
 
-            when(trainingPuzzleRepository.findByPack_IdOrderByTrainingIndexDesc(packId)).thenReturn(Collections.emptyList());
+            when(trainingPuzzleRepository.findByPack_IdOrderByTrainingIndex(packId)).thenReturn(Collections.emptyList());
 
             // when & then
             CustomException exception = assertThrows(CustomException.class, () ->
