@@ -243,7 +243,9 @@ public class TrainingServiceTest {
                     .pack(pack)
                     .build();
 
-            UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
+            UserEntity user = TestUserEntityBuilder.builder()
+                    .withId(1L)
+                    .save(userRepository);
 
             SolvedTrainingPuzzle solved = SolvedTrainingPuzzle.builder()
                     .id(999L)
