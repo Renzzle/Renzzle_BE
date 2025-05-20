@@ -254,7 +254,7 @@ public class TrainingServiceRepositoryTest {
         trainingPuzzleRepository.save(puzzle2);
 
         // When
-        List<TrainingPuzzle> puzzles = trainingPuzzleRepository.findByPack_IdOrderByTrainingIndexDesc(savedPack.getId());
+        List<TrainingPuzzle> puzzles = trainingPuzzleRepository.findByPack_IdOrderByTrainingIndex(savedPack.getId());
 
         // Then
         assertThat(puzzles).isNotEmpty();
