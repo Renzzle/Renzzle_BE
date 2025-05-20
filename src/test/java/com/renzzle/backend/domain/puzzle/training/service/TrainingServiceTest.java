@@ -13,6 +13,7 @@ import com.renzzle.backend.global.common.domain.LangCode;
 import com.renzzle.backend.global.common.domain.Status;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
+import com.renzzle.backend.support.TestUserEntityBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -227,6 +228,7 @@ public class TrainingServiceTest {
             Long puzzleId = 1L;
             int trainingIndex = 5;
             Long packId = 10L;
+            Long userId = 1L;
 
             Pack pack = Pack.builder()
                     .id(packId)
@@ -241,7 +243,17 @@ public class TrainingServiceTest {
                     .pack(pack)
                     .build();
 
+            UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
+
+            SolvedTrainingPuzzle solved = SolvedTrainingPuzzle.builder()
+                    .id(999L)
+                    .user(user)
+                    .puzzle(puzzle)
+                    .solvedAt(Instant.now())
+                    .build();
+
             when(trainingPuzzleRepository.findById(puzzleId)).thenReturn(Optional.of(puzzle));
+            when(solvedTrainingPuzzleRepository.findAllByPuzzleId(puzzleId)).thenReturn(List.of(solved));
 
             // when
             trainingService.deleteTrainingPuzzle(puzzleId);
@@ -251,6 +263,7 @@ public class TrainingServiceTest {
             verify(trainingPuzzleRepository, times(1)).deleteById(puzzleId);
             verify(trainingPuzzleRepository, times(1)).decreaseIndexesFrom(trainingIndex);
             verify(packRepository, times(1)).decreasePuzzleCount(packId);
+            verify(userPackRepository, times(1)).decreaseSolvedCount(userId, packId);
         }
 
         @DisplayName("SolveLessonPuzzle: 주어진 user와 puzzleId에 대해 최초 풀이라면 solvedTrainingPuzzle이 저장")

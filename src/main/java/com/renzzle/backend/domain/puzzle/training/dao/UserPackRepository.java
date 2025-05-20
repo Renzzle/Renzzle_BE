@@ -20,4 +20,10 @@ public interface UserPackRepository extends JpaRepository<UserPack, Long> {
     @Transactional
     @Query("UPDATE UserPack u SET u.solvedCount = u.solvedCount + 1 WHERE u.user.id = :userId AND u.pack.id = :packId")
     void increaseSolvedCount(@Param("userId") Long userId, @Param("packId") Long packId);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE UserPack u SET u.solvedCount = u.solvedCount - 1 " +
+            "WHERE u.user.id = :userId AND u.pack.id = :packId AND u.solvedCount > 0")
+    void decreaseSolvedCount(@Param("userId") Long userId, @Param("packId") Long packId);
 }

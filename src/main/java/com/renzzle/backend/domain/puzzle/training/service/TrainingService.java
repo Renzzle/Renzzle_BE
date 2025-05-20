@@ -83,6 +83,15 @@ public class TrainingService {
         if(puzzle.isEmpty())
             throw new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE);
 
+        Pack pack = puzzle.get().getPack();
+
+        List<SolvedTrainingPuzzle> solvedRecords = solvedTrainingPuzzleRepository.findAllByPuzzleId(puzzleId);
+
+        for (SolvedTrainingPuzzle solved : solvedRecords) {
+            Long userId = solved.getUser().getId();
+            userPackRepository.decreaseSolvedCount(userId, pack.getId());
+        }
+
         trainingPuzzleRepository.deleteById(puzzleId);
         trainingPuzzleRepository.decreaseIndexesFrom(puzzle.get().getTrainingIndex());
 
