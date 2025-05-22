@@ -25,6 +25,7 @@ public class TestCommunityPuzzleBuilder {
     private Integer depth = 1;
     private Boolean isVerified = true;
     private Double rating = 1000.0;
+    private int solvedCount = 0;
     private int likeCount = 0;
     private int dislikeCount = 0;
     private int view = 0;
@@ -75,6 +76,11 @@ public class TestCommunityPuzzleBuilder {
 
     public TestCommunityPuzzleBuilder withRating(Double rating) {
         this.rating = rating;
+        return this;
+    }
+
+    public TestCommunityPuzzleBuilder withSolvedCount(int solvedCount) {
+        this.solvedCount = solvedCount;
         return this;
     }
 
@@ -132,6 +138,7 @@ public class TestCommunityPuzzleBuilder {
                 .depth(depth)
                 .isVerified(isVerified)
                 .rating(rating)
+                .solvedCount(solvedCount)
                 .likeCount(likeCount)
                 .dislikeCount(dislikeCount)
                 .view(view)

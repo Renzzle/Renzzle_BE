@@ -55,5 +55,4 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
     @Query(value = "SELECT * FROM community_puzzle WHERE id = :id", nativeQuery = true)
     CommunityPuzzle findByIdIncludingDeleted(@Param("id") Long id);
 
-
 }
