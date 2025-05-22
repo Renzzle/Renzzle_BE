@@ -48,7 +48,7 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
     @Query("SELECT p FROM CommunityPuzzle p " +
             "WHERE p.boardStatus NOT IN (" +
             "    SELECT l.boardStatus FROM LatestRankPuzzle l WHERE l.user = :user" +
-            ") " +
+            ") AND p.isVerified = true " +
             "ORDER BY p.rating ASC")
     List<CommunityPuzzle> findAvailableCommunityPuzzlesSortedByRating(@Param("user") UserEntity user);
 
