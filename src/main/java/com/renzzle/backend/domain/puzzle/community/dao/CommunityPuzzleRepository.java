@@ -55,4 +55,20 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
     @Query(value = "SELECT * FROM community_puzzle WHERE id = :id", nativeQuery = true)
     CommunityPuzzle findByIdIncludingDeleted(@Param("id") Long id);
 
+    List<CommunityPuzzle> findByCreatedAtAfter(Instant after);
+
+    List<CommunityPuzzle> findTop30ByCreatedAtBeforeOrderByCreatedAtDesc(Instant before);
+
+    @Query("SELECT COUNT(p) FROM CommunityPuzzle p WHERE p.user.id = :userId")
+    long countByAuthor(@Param("userId") Long userId);
+
+    @Query("SELECT COALESCE(SUM(p.likeCount), 0) FROM CommunityPuzzle p WHERE p.user.id = :userId")
+    int sumLikesByUser(@Param("userId") Long userId);
+
+    @Query("SELECT COALESCE(SUM(p.dislikeCount), 0) FROM CommunityPuzzle p WHERE p.user.id = :userId")
+    int sumDislikesByUser(@Param("userId") Long userId);
+
+    @Query("SELECT DISTINCT p.user FROM CommunityPuzzle p WHERE p.createdAt >= :since")
+    List<UserEntity> findUsersWhoCreatedPuzzlesSince(@Param("since") Instant since);
+
 }

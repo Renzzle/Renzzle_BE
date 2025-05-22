@@ -11,12 +11,14 @@ public record AddTrainingPuzzleRequest(
         @NotNull(message = "팩 정보가 없습니다")
         Long packId,
 
+        @NotNull
         Integer puzzleIndex,
 
         @NotEmpty(message = "보드 정보가 없습니다")
         @ValidBoardString
         String boardStatus,
 
+        @NotEmpty(message = "정답은 존재해야 합니다.")
         @Size(max = 1023, message = "정답은 1023자 이하로 작성해야 합니다")
         String answer,
 

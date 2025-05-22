@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface PackRepository extends JpaRepository<Pack, Long> {
 
@@ -16,9 +17,19 @@ public interface PackRepository extends JpaRepository<Pack, Long> {
     @Transactional
     @Query(value = "UPDATE pack " +
             "SET puzzle_count = puzzle_count + 1 " +
-            "WHERE pack_id = :packId",
+            "WHERE id = :packId",
             nativeQuery = true)
     void increasePuzzleCount(@Param("packId") Long packId);
 
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE pack " +
+            "SET puzzle_count = puzzle_count - 1 " +
+            "WHERE id = :packId",
+            nativeQuery = true)
+    void decreasePuzzleCount(@Param("packId") Long packId);
+
     List<Pack> findByDifficulty(Difficulty difficulty);
+
+    Optional<Pack> findFirstByOrderByIdAsc();
 }

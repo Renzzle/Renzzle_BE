@@ -45,16 +45,17 @@ public class TrainingService {
     // service test, repo test
     @Transactional
     public TrainingPuzzle createTrainingPuzzle(AddTrainingPuzzleRequest request) {
-        String boardKey = BoardUtils.makeBoardKey(request.boardStatus());
-
-        int index = trainingPuzzleRepository.findTopIndex(request.packId()) + 1;
-        if(request.puzzleIndex() != null && index > request.puzzleIndex()) {
-            index = request.puzzleIndex();
-            trainingPuzzleRepository.increaseIndexesFrom(request.packId(), index);
-        }
 
         Pack pack = packRepository.findById(request.packId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
+
+        String boardKey = BoardUtils.makeBoardKey(request.boardStatus());
+
+        int index = trainingPuzzleRepository.findTopIndex(request.packId()) + 1;
+        if(index > request.puzzleIndex()) {
+            index = request.puzzleIndex();
+            trainingPuzzleRepository.increaseIndexesFrom(request.packId(), index);
+        }
 
         double rating = request.depth() * DEFAULT_PUZZLE_RATING;
 
@@ -64,6 +65,7 @@ public class TrainingService {
         TrainingPuzzle puzzle = TrainingPuzzle.builder()
                 .pack(pack)
                 .trainingIndex(index)
+                .answer(request.answer())
                 .boardStatus(request.boardStatus())
                 .boardKey(boardKey)
                 .depth(request.depth())
@@ -81,8 +83,19 @@ public class TrainingService {
         if(puzzle.isEmpty())
             throw new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE);
 
+        Pack pack = puzzle.get().getPack();
+
+        List<SolvedTrainingPuzzle> solvedRecords = solvedTrainingPuzzleRepository.findAllByPuzzleId(puzzleId);
+
+        for (SolvedTrainingPuzzle solved : solvedRecords) {
+            Long userId = solved.getUser().getId();
+            userPackRepository.decreaseSolvedCount(userId, pack.getId());
+        }
+
         trainingPuzzleRepository.deleteById(puzzleId);
         trainingPuzzleRepository.decreaseIndexesFrom(puzzle.get().getTrainingIndex());
+
+        packRepository.decreasePuzzleCount(puzzle.get().getPack().getId());
     }
 
     // service test, repo test
@@ -95,18 +108,19 @@ public class TrainingService {
             existInfo.get().updateSolvedAtToNow(clock);
             return SolveTrainingPuzzleResponse.builder()
                     .reward(0)
-                    .build(); // ✅ 이미 풀었다면 리워드 없음
+                    .build();
         }
 
         TrainingPuzzle trainingPuzzle = trainingPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
 
         // 처음 푼 퍼즐이면 저장 및 난이도에 따른 보상 계산
-        SolvedTrainingPuzzle solvedTrainingPuzzle = SolvedTrainingPuzzle.builder()
+        solvedTrainingPuzzleRepository.save(SolvedTrainingPuzzle.builder()
                 .user(user)
                 .puzzle(trainingPuzzle)
-                .build();
-        solvedTrainingPuzzleRepository.save(solvedTrainingPuzzle);
+                .build());
+
+        userPackRepository.increaseSolvedCount(user.getId(), trainingPuzzle.getPack().getId());
 
         // 난이도 → 보상 매핑
         Difficulty difficulty = trainingPuzzle.getPack().getDifficulty();
@@ -129,7 +143,8 @@ public class TrainingService {
             throw new CustomException(ErrorCode.VALIDATION_ERROR);
         }
 
-        List<TrainingPuzzle> trainingPuzzles = trainingPuzzleRepository.findByPack_Id(packId);
+        //TODO : training index 순서대로 반환할 수 있도록
+        List<TrainingPuzzle> trainingPuzzles = trainingPuzzleRepository.findByPack_IdOrderByTrainingIndex(packId);
 
         if(trainingPuzzles.isEmpty()) {
             throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK);
@@ -229,10 +244,9 @@ public class TrainingService {
         for (Pack pack : packs) {
             PackTranslation translation = translationMap.get(pack.getId());
             UserPack up = userPackMap.get(pack.getId());
-
             // locked 여부, solvedPuzzleCount 계산
             boolean locked = (up == null);
-            int solvedCount = (up != null) ? up.getSolved_count() : 0;
+            int solvedCount = (up != null) ? up.getSolvedCount() : 0;
 
             GetPackResponse dto = new GetPackResponse(
                     pack.getId(),
@@ -251,7 +265,7 @@ public class TrainingService {
     }
 
     // service test, repo test
-    @Transactional(readOnly = true)
+    @Transactional
     public GetPackPurchaseResponse purchaseTrainingPack(UserEntity user, PurchaseTrainingPackRequest request) {
         Pack pack = packRepository.findById(request.packId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
@@ -263,7 +277,7 @@ public class TrainingService {
         UserPack userPack = UserPack.builder()
                 .user(user)
                 .pack(pack)
-                .solved_count(0)
+                .solvedCount(0)
                 .build();
 
         userPackRepository.save(userPack);
@@ -272,7 +286,7 @@ public class TrainingService {
                 .build();
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public GetTrainingPuzzleAnswerResponse purchaseTrainingPuzzleAnswer(UserEntity user, PurchaseTrainingPuzzleAnswerRequest request) {
         UserEntity newUser = userRepository.findById(user.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));

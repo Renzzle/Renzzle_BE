@@ -13,6 +13,7 @@ import com.renzzle.backend.global.common.domain.LangCode;
 import com.renzzle.backend.global.common.domain.Status;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
+import com.renzzle.backend.support.TestUserEntityBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -164,7 +165,7 @@ public class TrainingServiceTest {
             String winColorStr = "WHITE";
             AddTrainingPuzzleRequest request = new AddTrainingPuzzleRequest(
                     packId,
-                    null,
+                    6,
                     boardStatus,
                     "a1a2a3a4",
                     depth,
@@ -191,6 +192,7 @@ public class TrainingServiceTest {
                     .id(100L)
                     .pack(pack)
                     .trainingIndex(6)
+                    .answer("a1a2a3a4")
                     .boardStatus(boardStatus)
                     .boardKey("generatedKey")
                     .depth(depth)
@@ -206,7 +208,7 @@ public class TrainingServiceTest {
             // then
             assertNotNull(result);
             assertEquals(100L, result.getId());
-
+            assertEquals("a1a2a3a4", result.getAnswer());
             assertEquals(6, result.getTrainingIndex());
             assertEquals(boardStatus, result.getBoardStatus());
             assertEquals("generatedKey", result.getBoardKey());
@@ -225,12 +227,35 @@ public class TrainingServiceTest {
             // given
             Long puzzleId = 1L;
             int trainingIndex = 5;
+            Long packId = 10L;
+            Long userId = 1L;
+
+            Pack pack = Pack.builder()
+                    .id(packId)
+                    .puzzleCount(3)
+                    .price(1000)
+                    .difficulty(Difficulty.getDifficulty("LOW"))
+                    .build();
+
             TrainingPuzzle puzzle = TrainingPuzzle.builder()
                     .id(puzzleId)
                     .trainingIndex(trainingIndex)
+                    .pack(pack)
+                    .build();
+
+            UserEntity user = TestUserEntityBuilder.builder()
+                    .withId(1L)
+                    .save(userRepository);
+
+            SolvedTrainingPuzzle solved = SolvedTrainingPuzzle.builder()
+                    .id(999L)
+                    .user(user)
+                    .puzzle(puzzle)
+                    .solvedAt(Instant.now())
                     .build();
 
             when(trainingPuzzleRepository.findById(puzzleId)).thenReturn(Optional.of(puzzle));
+            when(solvedTrainingPuzzleRepository.findAllByPuzzleId(puzzleId)).thenReturn(List.of(solved));
 
             // when
             trainingService.deleteTrainingPuzzle(puzzleId);
@@ -239,6 +264,8 @@ public class TrainingServiceTest {
             verify(trainingPuzzleRepository, times(1)).findById(puzzleId);
             verify(trainingPuzzleRepository, times(1)).deleteById(puzzleId);
             verify(trainingPuzzleRepository, times(1)).decreaseIndexesFrom(trainingIndex);
+            verify(packRepository, times(1)).decreasePuzzleCount(packId);
+            verify(userPackRepository, times(1)).decreaseSolvedCount(userId, packId);
         }
 
         @DisplayName("SolveLessonPuzzle: 주어진 user와 puzzleId에 대해 최초 풀이라면 solvedTrainingPuzzle이 저장")
@@ -246,8 +273,10 @@ public class TrainingServiceTest {
         public void testSolveLessonPuzzle() {
             // given
             Long puzzleId = 1L;
+            Long userId = 100L;
+            Long packId = 1L;
             UserEntity user = UserEntity.builder()
-                    .id(100L)
+                    .id(userId)
                     .email("test@example.com")
                     .password("password")
                     .nickname("testUser")
@@ -258,7 +287,7 @@ public class TrainingServiceTest {
                     .build();
 
             Pack pack = Pack.builder()
-                    .id(1L)
+                    .id(packId)
                     .difficulty(Difficulty.getDifficulty("LOW"))
                     .price(0)
                     .puzzleCount(10)
@@ -286,6 +315,8 @@ public class TrainingServiceTest {
 
             // then
             verify(solvedTrainingPuzzleRepository).save(any(SolvedTrainingPuzzle.class));
+            verify(userPackRepository).increaseSolvedCount(userId, packId);
+
             assertThat(response.reward()).isEqualTo(20); // ItemPrice.TRAINING_LOW_REWARD.getPrice()
         }
 
@@ -344,7 +375,7 @@ public class TrainingServiceTest {
                     .winColor(winColor)
                     .build();
             List<TrainingPuzzle> puzzles = Collections.singletonList(puzzle);
-            when(trainingPuzzleRepository.findByPack_Id(packId)).thenReturn(puzzles);
+            when(trainingPuzzleRepository.findByPack_IdOrderByTrainingIndex(packId)).thenReturn(puzzles);
 
             // solvedTrainingPuzzleRepository.existsByUserAndPuzzle(user, puzzle) 가 false라고 가정
             when(solvedTrainingPuzzleRepository.existsByUserAndPuzzle(user, puzzle)).thenReturn(false);
@@ -377,7 +408,7 @@ public class TrainingServiceTest {
                     .status(Status.getDefaultStatus())
                     .build();
 
-            GetTrainingPackRequest request = new GetTrainingPackRequest(Difficulty.getDifficulty("LOW").getName(), null); // lang 기본값 EN
+            GetTrainingPackRequest request = new GetTrainingPackRequest(Difficulty.getDifficulty("LOW").getName(), "EN"); // lang 기본값 EN
 
             // Pack 생성 (예: ID 1, price 1000, puzzleCount 10)
             Pack pack = Pack.builder()
@@ -667,7 +698,7 @@ public class TrainingServiceTest {
                     .status(Status.getDefaultStatus())
                     .build();
 
-            when(trainingPuzzleRepository.findByPack_Id(packId)).thenReturn(Collections.emptyList());
+            when(trainingPuzzleRepository.findByPack_IdOrderByTrainingIndex(packId)).thenReturn(Collections.emptyList());
 
             // when & then
             CustomException exception = assertThrows(CustomException.class, () ->

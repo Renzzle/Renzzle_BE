@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface SolvedTrainingPuzzleRepository extends JpaRepository<SolvedTrainingPuzzle, Long> {
@@ -26,5 +27,15 @@ public interface SolvedTrainingPuzzleRepository extends JpaRepository<SolvedTrai
             nativeQuery = true)
     int countSolvedLesson(@Param("userId") Long userId,
                           @Param("chapter") int chapter);
+
+    @Query("SELECT s FROM SolvedTrainingPuzzle s " +
+            "JOIN FETCH s.puzzle p " +
+            "JOIN FETCH p.pack pack " +
+            "WHERE s.user.id = :userId " +
+            "ORDER BY s.solvedAt DESC")
+    Optional<SolvedTrainingPuzzle> findTopByUserOrderBySolvedAtDesc(@Param("userId") Long userId);
+
+    List<SolvedTrainingPuzzle> findAllByPuzzleId(Long puzzleId);
+
 
 }

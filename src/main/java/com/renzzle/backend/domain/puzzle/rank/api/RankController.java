@@ -48,7 +48,13 @@ public class RankController {
 
     @Operation(summary = "get rating ranking", description = "get TOP 100 rating ranking and user ranking")
     @GetMapping("rating")
-    public ApiResponse<GetRankingResponse> getRanking(@AuthenticationPrincipal UserDetailsImpl user) {
-        return ApiUtils.success(rankService.getRanking(user.getUser()));
+    public ApiResponse<GetRatingRankingResponse> getRatingRanking(@AuthenticationPrincipal UserDetailsImpl user) {
+        return ApiUtils.success(rankService.getRatingRanking(user.getUser()));
+    }
+
+    @Operation(summary = "get community puzzler ranking", description = "get TOP 100 community puzzler ranking and user community puzzler ranking")
+    @GetMapping("community")
+    public ApiResponse<GetPuzzlerRankingResponse> getPuzzlerRanking(@AuthenticationPrincipal UserDetailsImpl user) {
+        return ApiUtils.success(rankService.getPuzzlerRanking(user.getUser()));
     }
 }

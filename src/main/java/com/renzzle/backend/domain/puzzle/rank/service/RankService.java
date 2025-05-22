@@ -1,6 +1,7 @@
 package com.renzzle.backend.domain.puzzle.rank.service;
 
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
+import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.rank.api.request.RankResultRequest;
 import com.renzzle.backend.domain.puzzle.rank.api.response.*;
@@ -29,6 +30,9 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.renzzle.backend.domain.puzzle.shared.util.ELOUtils.TARGET_WIN_PROBABILITY;
@@ -45,6 +49,7 @@ public class RankService {
     private final CommunityPuzzleRepository communityPuzzleRepository;
     private final UserRepository userRepository;
     private final LatestRankPuzzleRepository latestRankPuzzleRepository;
+    private final UserCommunityPuzzleRepository userCommunityPuzzleRepository;
     private final Clock clock;
     private final RedisTemplate<String, Object> redisRankingTemplate;
 
@@ -122,7 +127,7 @@ public class RankService {
         // 이전 문제 조회 및 풀이 여부 업데이트
         LatestRankPuzzle previousPuzzle = latestRankPuzzleRepository
                 .findTopByUserOrderByAssignedAtDesc(user)
-                .orElseThrow(() -> new CustomException(ErrorCode.PUZZLE_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.LATEST_PUZZLE_NOT_FOUND));
 
         previousPuzzle.solvedUpdate(request.isSolved());
 
@@ -248,7 +253,7 @@ public class RankService {
         allCandidates.addAll(selectedCommunities);
 
         if (allCandidates.isEmpty()) {
-            throw new CustomException(ErrorCode.CANNOT_FIND_PUZZLE);
+            throw new CustomException(ErrorCode.CANNOT_FIND_RANK_PUZZLE);
         }
 
         Collections.shuffle(allCandidates);
@@ -280,7 +285,7 @@ public class RankService {
 
             return new NextPuzzleResult(latest, puzzle.getRating());
         }
-        throw new CustomException(ErrorCode.INVALID_PUZZLE_TYPE);
+        throw new CustomException(ErrorCode.INVALID_RANK_PUZZLE_TYPE);
     }
 
     private <T> List<T> pickNearByWindow(List<T> sorted, double targetRating, int windowSize) {
@@ -363,23 +368,99 @@ public class RankService {
     }
 
     @Transactional(readOnly = true)
-    public GetRankingResponse getRanking(UserEntity userData) {
+    public GetRatingRankingResponse getRatingRanking(UserEntity userData) {
+        String key = "user:ranking";
 
-        String rankingKey = "user:ranking";
+        List<UserRatingRankInfo> top100 = extractTopRankedUsers(
+                key,
+                UserRatingRankInfo::rating,
+                UserRatingRankInfo::nickname,
+                (rank, info) -> UserRatingRankInfo.builder()
+                        .rank(rank)
+                        .nickname(info.nickname())
+                        .rating(info.rating())
+                        .build()
+        );
 
-        Set<ZSetOperations.TypedTuple<Object>> top100Set =
+        int myRank = findMyRank(
+                key,
+                info -> info.nickname().equals(userData.getNickname()),
+                UserRatingRankInfo::rating
+        );
+
+        UserRatingRankInfo myInfo = UserRatingRankInfo.builder()
+                .rank(myRank)
+                .nickname(userData.getNickname())
+                .rating(userData.getRating())
+                .build();
+
+        return GetRatingRankingResponse.builder()
+                .top100(top100)
+                .myRatingRank(myInfo)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public GetPuzzlerRankingResponse getPuzzlerRanking(UserEntity user) {
+        String key = "user:puzzler:ranking";
+
+        List<UserPuzzlerRankInfo> top100 = extractTopRankedUsers(
+                key,
+                UserPuzzlerRankInfo::score,
+                UserPuzzlerRankInfo::nickname,
+                (rank, info) -> UserPuzzlerRankInfo.builder()
+                        .rank(rank)
+                        .nickname(info.nickname())
+                        .score(info.score())
+                        .build()
+        );
+
+        int myRank = findMyRank(
+                key,
+                info -> info.nickname().equals(user.getNickname()),
+                UserPuzzlerRankInfo::score
+        );
+
+        // 내 점수는 Redis에서 가져올 수 없을 수 있으므로 따로 계산 or 0 처리
+        double myScore = top100.stream()
+                .filter(i -> i.nickname().equals(user.getNickname()))
+                .findFirst()
+                .map(UserPuzzlerRankInfo::score)
+                .orElse(0.0);
+
+        UserPuzzlerRankInfo myInfo = UserPuzzlerRankInfo.builder()
+                .rank(myRank)
+                .nickname(user.getNickname())
+                .score(myScore)
+                .build();
+
+        return GetPuzzlerRankingResponse.builder()
+                .top100(top100)
+                .myPuzzlerRank(myInfo)
+                .build();
+    }
+
+
+    @SuppressWarnings("unchecked")
+    private <T, R> List<R> extractTopRankedUsers(
+            String key,
+            Function<T, Double> scoreExtractor,
+            Function<T, String> nicknameExtractor,
+            BiFunction<Integer, T, R> builder
+    ) {
+        Set<ZSetOperations.TypedTuple<Object>> rawSet =
                 Optional.ofNullable(redisRankingTemplate.opsForZSet()
-                                .reverseRangeWithScores(rankingKey, 0, 99))
+                                .reverseRangeWithScores(key, 0, 99))
                         .orElse(Collections.emptySet());
 
-        List<UserRankInfo> top100 = new ArrayList<>();
+        List<R> result = new ArrayList<>();
         int currentRank = 1;
         double lastScore = -1;
         int rankCounter = 0;
 
-        for (ZSetOperations.TypedTuple<Object> tuple : top100Set) {
-            UserRankInfo info = (UserRankInfo) tuple.getValue();
-            double score = Objects.requireNonNull(info).rating();
+        for (ZSetOperations.TypedTuple<Object> tuple : rawSet) {
+            T obj = (T) tuple.getValue();
+            double score = scoreExtractor.apply(obj);
             rankCounter++;
 
             if (Double.compare(score, lastScore) != 0) {
@@ -387,28 +468,30 @@ public class RankService {
                 lastScore = score;
             }
 
-            top100.add(UserRankInfo.builder()
-                    .rank(currentRank)
-                    .nickname(info.nickname())
-                    .rating(info.rating())
-                    .build());
+            result.add(builder.apply(currentRank, obj));
         }
 
-        // 내 정보 랭킹 계산 (전체 사용자 기반 공동 순위)
-        Set<ZSetOperations.TypedTuple<Object>> allUsersSet =
+        return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> int findMyRank(
+            String key,
+            Predicate<T> isMyself,
+            Function<T, Double> scoreExtractor
+    ) {
+        Set<ZSetOperations.TypedTuple<Object>> fullSet =
                 Optional.ofNullable(redisRankingTemplate.opsForZSet()
-                                .reverseRangeWithScores(rankingKey, 0, -1))
+                                .reverseRangeWithScores(key, 0, -1))
                         .orElse(Collections.emptySet());
 
         int tieAwareRank = 1;
-        double myRating = userData.getRating();
-        lastScore = -1;
-        rankCounter = 0;
-        int myFinalRank = -1;
+        double lastScore = -1;
+        int rankCounter = 0;
 
-        for (ZSetOperations.TypedTuple<Object> tuple : allUsersSet) {
-            Double score = tuple.getScore();
-            if (score == null) continue;
+        for (ZSetOperations.TypedTuple<Object> tuple : fullSet) {
+            T obj = (T) tuple.getValue();
+            double score = scoreExtractor.apply(obj);
             rankCounter++;
 
             if (Double.compare(score, lastScore) != 0) {
@@ -416,41 +499,58 @@ public class RankService {
                 lastScore = score;
             }
 
-            if (Double.compare(score, myRating) == 0) {
-                myFinalRank = tieAwareRank;
-                break;
+            if (isMyself.test(obj)) {
+                return tieAwareRank;
             }
         }
 
-        UserRankInfo myRankInfo = UserRankInfo.builder()
-                .rank(myFinalRank)
-                .nickname(userData.getNickname())
-                .rating(userData.getRating())
-                .build();
-
-        return GetRankingResponse.builder()
-                .top100(top100)
-                .myRank(myRankInfo)
-                .build();
+        return -1;
     }
 
     @Scheduled(fixedRate = 1000 * 60 * 60) // 60분마다 실행
     public void updateRankingCache() {
         String rankingKey = "user:ranking";
+        String puzzlerRankingKey = "user:puzzler:ranking";
 
         Instant oneMonthAgo = Instant.now(clock).minus(30, ChronoUnit.DAYS);
-        List<UserEntity> activeUsers = latestRankPuzzleRepository.findActiveUsersWithinPeriod(oneMonthAgo);
+        List<UserEntity> activeRatingUsers = latestRankPuzzleRepository.findActiveUsersWithinPeriod(oneMonthAgo);
 
         redisRankingTemplate.delete(rankingKey);
 
-        for (UserEntity user : activeUsers) {
-            UserRankInfo info = UserRankInfo.builder()
+        for (UserEntity user : activeRatingUsers) {
+            UserRatingRankInfo info = UserRatingRankInfo.builder()
                     .rank(0)
                     .nickname(user.getNickname())
                     .rating(user.getRating())
                     .build();
 
             redisRankingTemplate.opsForZSet().add(rankingKey, info, user.getRating());
+        }
+        List<UserEntity> creators = communityPuzzleRepository.findUsersWhoCreatedPuzzlesSince(oneMonthAgo);
+        List<UserEntity> solvers = userCommunityPuzzleRepository.findUsersWhoSolvedPuzzlesSince(oneMonthAgo);
+
+        Set<UserEntity> activePuzzlerUsers = new HashSet<>();
+        activePuzzlerUsers.addAll(creators);
+        activePuzzlerUsers.addAll(solvers);
+
+        redisRankingTemplate.delete(puzzlerRankingKey);
+
+        for (UserEntity user : activePuzzlerUsers) {
+            long a = userCommunityPuzzleRepository.countSolvedByUser(user.getId());
+            long b = communityPuzzleRepository.countByAuthor(user.getId());
+            int likes = communityPuzzleRepository.sumLikesByUser(user.getId());
+            int dislikes = communityPuzzleRepository.sumDislikesByUser(user.getId());
+            int c = Math.max(0, likes - dislikes);
+
+            double score = Math.log(a * Math.pow(b, 2) * Math.pow(c, 3) + 1) * 100;
+
+            UserPuzzlerRankInfo info = UserPuzzlerRankInfo.builder()
+                    .rank(0)
+                    .nickname(user.getNickname())
+                    .score(score)
+                    .build();
+
+            redisRankingTemplate.opsForZSet().add(puzzlerRankingKey, info, score);
         }
     }
 }

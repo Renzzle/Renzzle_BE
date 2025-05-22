@@ -9,7 +9,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<UserEntity, Long> {
@@ -69,9 +68,21 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     }
 
     List<UserEntity> findTop100ByOrderByRatingDesc();
+           
+    //Ranking
+    @Query("SELECT CASE WHEN (u.lastAccessedAt < CURRENT_DATE) THEN true ELSE false END FROM UserEntity u WHERE u.id = :userId")
+    Boolean isLastAccessBeforeToday(@Param("userId") Long userId);
 
-    @Query("SELECT COUNT(u) + 1 FROM UserEntity u WHERE u.rating > :myRating")
-    int findMyRankByRating(@Param("myRating") double myRating);
+    @Modifying
+    @Query("UPDATE UserEntity u SET u.lastAccessedAt = :lastAccessedAt WHERE u.id = :userId")
+    void updateLastAccessedAt(@Param("userId") Long userId, @Param("lastAccessedAt") Instant lastAccessedAt);
+
+    @Query("SELECT u.title FROM UserEntity u WHERE u.id = :userId")
+    Optional<Title> getUserTitle(@Param("userId") Long userId);
+
+    @Modifying
+    @Query("UPDATE UserEntity u SET u.title = :title WHERE u.id = :userId")
+    void updateUserTitle(@Param("userId") Long userId, @Param("title") Title title);
 
     @Query(value = "SELECT * FROM user WHERE id = :id", nativeQuery = true)
     UserEntity findByIdIncludingDeleted(@Param("id") Long id);
