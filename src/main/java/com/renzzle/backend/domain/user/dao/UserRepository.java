@@ -1,6 +1,5 @@
 package com.renzzle.backend.domain.user.dao;
 
-import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.user.domain.Title;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<UserEntity, Long> {
@@ -29,20 +29,6 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     @Modifying(clearAutomatically = true)
     @Query("UPDATE UserEntity u SET u.currency = u.currency + :amount WHERE u.id = :userId")
     void addUserCurrency(@Param("userId") Long userId, @Param("amount") int amount);
-
-    @Query("SELECT CASE WHEN (u.lastAccessedAt < CURRENT_DATE) THEN true ELSE false END FROM UserEntity u WHERE u.id = :userId")
-    Boolean isLastAccessBeforeToday(@Param("userId") Long userId);
-
-    @Modifying(clearAutomatically = true)
-    @Query("UPDATE UserEntity u SET u.lastAccessedAt = :lastAccessedAt WHERE u.id = :userId")
-    void updateLastAccessedAt(@Param("userId") Long userId, @Param("lastAccessedAt") Instant lastAccessedAt);
-
-    @Query("SELECT u.title FROM UserEntity u WHERE u.id = :userId")
-    Optional<Title> getUserTitle(@Param("userId") Long userId);
-
-    @Modifying(clearAutomatically = true)
-    @Query("UPDATE UserEntity u SET u.title = :title WHERE u.id = :userId")
-    void updateUserTitle(@Param("userId") Long userId, @Param("title") Title title);
 
     @Query(value = """
     SELECT (
@@ -73,14 +59,14 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     @Query("SELECT CASE WHEN (u.lastAccessedAt < CURRENT_DATE) THEN true ELSE false END FROM UserEntity u WHERE u.id = :userId")
     Boolean isLastAccessBeforeToday(@Param("userId") Long userId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE UserEntity u SET u.lastAccessedAt = :lastAccessedAt WHERE u.id = :userId")
     void updateLastAccessedAt(@Param("userId") Long userId, @Param("lastAccessedAt") Instant lastAccessedAt);
 
     @Query("SELECT u.title FROM UserEntity u WHERE u.id = :userId")
     Optional<Title> getUserTitle(@Param("userId") Long userId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE UserEntity u SET u.title = :title WHERE u.id = :userId")
     void updateUserTitle(@Param("userId") Long userId, @Param("title") Title title);
 
