@@ -230,6 +230,9 @@ public class RankService {
 
     NextPuzzleResult getNextPuzzle(double originalMmr, double targetWinProbability, UserEntity user) {
 
+        log.info("originalMmr: {}", originalMmr);
+        log.info("targetWinProbability: {}", targetWinProbability);
+
         /*
             사용자의 레이팅 & 기대 승률 을 통해 적합한 문제를 가져옴
             문제들을
@@ -241,6 +244,7 @@ public class RankService {
         // 각 퍼즐 후보군 가져오기 (레이팅 기준 정렬)
         List<TrainingPuzzle> trainingPuzzles =
                 trainingPuzzleRepository.findAvailableTrainingPuzzlesSortedByRating(user);
+        log.info("Available training puzzles count: {}", trainingPuzzles.size());
         List<CommunityPuzzle> communityPuzzles =
                 communityPuzzleRepository.findAvailableCommunityPuzzlesSortedByRating(user);
 
@@ -250,6 +254,7 @@ public class RankService {
 
         List<Object> allCandidates = new ArrayList<>();
         allCandidates.addAll(selectedTrainings);
+//        log.info();
         allCandidates.addAll(selectedCommunities);
 
         if (allCandidates.isEmpty()) {
