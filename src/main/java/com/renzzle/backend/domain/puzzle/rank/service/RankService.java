@@ -141,7 +141,7 @@ public class RankService {
         배수 적용 하여 mmr % rating 값 조정 및 변수 값 업데이트
          */
         if (request.isSolved()) {
-            WinProbability += WIN_PROBABILITY_DELTA;
+            WinProbability -= WIN_PROBABILITY_DELTA;
 
             double mmrIncrease = ELOUtils.calculateMMRIncrease(userBeforeMmr, lastProblemRating);
             double ratingIncrease = ELOUtils.calculateRatingIncrease(userBeforeRating, lastProblemRating);
@@ -152,7 +152,7 @@ public class RankService {
             userBeforeMmr = userBeforeMmr + mmrIncrease;
             userBeforeRating = userBeforeRating + ratingIncrease;
         } else {
-            WinProbability -= WIN_PROBABILITY_DELTA;
+            WinProbability += WIN_PROBABILITY_DELTA;
             double mmrDecrease = ELOUtils.calculateMMRDecrease(userBeforeMmr, lastProblemRating);
             double ratingDecrease = ELOUtils.calculateRatingDecrease(userBeforeRating, lastProblemRating);
 
@@ -229,10 +229,6 @@ public class RankService {
     }
 
     NextPuzzleResult getNextPuzzle(double originalMmr, double targetWinProbability, UserEntity user) {
-
-        log.info("originalMmr: {}", originalMmr);
-        log.info("targetWinProbability: {}", targetWinProbability);
-
         /*
             사용자의 레이팅 & 기대 승률 을 통해 적합한 문제를 가져옴
             문제들을
@@ -244,7 +240,6 @@ public class RankService {
         // 각 퍼즐 후보군 가져오기 (레이팅 기준 정렬)
         List<TrainingPuzzle> trainingPuzzles =
                 trainingPuzzleRepository.findAvailableTrainingPuzzlesSortedByRating(user);
-        log.info("Available training puzzles count: {}", trainingPuzzles.size());
         List<CommunityPuzzle> communityPuzzles =
                 communityPuzzleRepository.findAvailableCommunityPuzzlesSortedByRating(user);
 
