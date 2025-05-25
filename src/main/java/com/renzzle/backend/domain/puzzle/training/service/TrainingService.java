@@ -225,8 +225,18 @@ public class TrainingService {
         }
 
         List<Long> packIds = packs.stream().map(Pack::getId).collect(Collectors.toList());
-        List<PackTranslation> translations = packTranslationRepository
-                .findAllByPack_IdInAndLangCode(packIds, LangCode.getLangCode(request.lang()));
+        LangCode requestedLangCode = LangCode.getLangCode(request.lang());
+        LangCode defaultLangCode = LangCode.getLangCode(LangCode.LangCodeName.EN);
+
+        List<PackTranslation> requestedTranslations =
+                packTranslationRepository.findAllByPack_IdInAndLangCode(packIds, requestedLangCode);
+        List<PackTranslation> defaultTranslations =
+                packTranslationRepository.findAllByPack_IdInAndLangCode(packIds, defaultLangCode);
+
+        Map<Long, PackTranslation> requestedMap = requestedTranslations.stream()
+                .collect(Collectors.toMap(t -> t.getPack().getId(), t -> t));
+        Map<Long, PackTranslation> defaultMap = defaultTranslations.stream()
+                .collect(Collectors.toMap(t -> t.getPack().getId(), t -> t));
 
         Long userId = user.getId();
 
@@ -234,17 +244,12 @@ public class TrainingService {
         Map<Long, UserPack> userPackMap = userPacks.stream()
                 .collect(Collectors.toMap(up -> up.getPack().getId(), up -> up));
 
-        Map<Long, PackTranslation> translationMap = translations.stream()
-                .collect(Collectors.toMap(
-                        t -> t.getPack().getId(),  // key: packId
-                        t -> t                     // value: PackTranslation 객체
-                ));
-
         List<GetPackResponse> result = new ArrayList<>();
         for (Pack pack : packs) {
-            PackTranslation translation = translationMap.get(pack.getId());
+            PackTranslation translation =
+                    requestedMap.getOrDefault(pack.getId(), defaultMap.get(pack.getId()));
+
             UserPack up = userPackMap.get(pack.getId());
-            // locked 여부, solvedPuzzleCount 계산
             boolean locked = (up == null);
             int solvedCount = (up != null) ? up.getSolvedCount() : 0;
 

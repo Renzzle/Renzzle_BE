@@ -124,7 +124,7 @@ public class ContentServiceTest {
                 .thenReturn(Optional.of(userPack));
 
         // When
-        getRecommendPackResponse response = contentService.getRecommendedPack(new GetRecommendRequest("MIDDLE", "EN"), user);
+        getRecommendPackResponse response = contentService.getRecommendedPack(new GetRecommendRequest("EN"), user);
 
         // Then
         assertThat(response.id()).isEqualTo(pack.getId());
@@ -157,7 +157,7 @@ public class ContentServiceTest {
                 .thenReturn(Optional.of(translation));
 
         // When
-        getRecommendPackResponse response = contentService.getRecommendedPack(new GetRecommendRequest("MIDDLE", "EN"), user);
+        getRecommendPackResponse response = contentService.getRecommendedPack(new GetRecommendRequest("EN"), user);
 
         // Then
         assertThat(response.id()).isEqualTo(pack.getId());
@@ -176,7 +176,7 @@ public class ContentServiceTest {
                 .thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> contentService.getRecommendedPack(new GetRecommendRequest("LOW", "EN"), user))
+        assertThatThrownBy(() -> contentService.getRecommendedPack(new GetRecommendRequest("EN"), user))
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining(ErrorCode.NO_SUCH_TRAINING_PACK.getMessage());
     }
@@ -198,7 +198,7 @@ public class ContentServiceTest {
                 .thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> contentService.getRecommendedPack(new GetRecommendRequest("MIDDLE", "EN"), user))
+        assertThatThrownBy(() -> contentService.getRecommendedPack(new GetRecommendRequest("EN"), user))
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining(ErrorCode.NO_SUCH_PACK_TRANSLATION.getMessage());
     }
@@ -242,7 +242,7 @@ public class ContentServiceTest {
                 .thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> contentService.getRecommendedPack(new GetRecommendRequest("LOW", "EN"), user))
+        assertThatThrownBy(() -> contentService.getRecommendedPack(new GetRecommendRequest("EN"), user))
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining(ErrorCode.NO_USER_PROGRESS_FOR_PACK.getMessage());
     }
