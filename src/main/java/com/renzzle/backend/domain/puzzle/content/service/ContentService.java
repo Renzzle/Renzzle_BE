@@ -27,7 +27,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +40,7 @@ public class ContentService {
     private final UserCommunityPuzzleRepository userCommunityPuzzleRepository;
     private final Clock clock;
     public getRecommendPackResponse getRecommendedPack(GetRecommendRequest request, UserEntity user) {
+
         Long userId = user.getId();
 
         // 가장 최근에 푼 퍼즐 하나 조회
@@ -54,23 +54,27 @@ public class ContentService {
 
         // 퍼즐을 푼 기록이 있는 경우
         SolvedTrainingPuzzle recentSolved = recentSolvedOpt.get();
-
         Pack pack = recentSolved.getPuzzle().getPack();
+
         if (pack == null) {
             throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK);
         }
 
         // 번역 정보 조회
-        PackTranslation translation = packTranslationRepository
-                .findByPackAndLangCode(pack, LangCode.getLangCode(request.langCode()))
-                .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_PACK_TRANSLATION));
+        LangCode requestedLang = LangCode.getLangCode(request.langCode());
+        LangCode defaultLang = LangCode.getLangCode(LangCode.LangCodeName.EN);
+
+        PackTranslation translation = packTranslationRepository.findByPackAndLangCode(pack, requestedLang)
+                .orElseGet(() ->
+                        packTranslationRepository.findByPackAndLangCode(pack, defaultLang)
+                                .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_PACK_TRANSLATION))
+                );
 
         // 유저의 pack 진행 정보 조회
         UserPack userPack = userPackRepository
                 .findByUserIdAndPackId(userId, pack.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_USER_PROGRESS_FOR_PACK));
 
-//        boolean locked = (userPack == null);
         int solvedCount = (userPack != null) ? userPack.getSolvedCount() : 0;
 
         return getRecommendPackResponse.builder()
@@ -81,21 +85,26 @@ public class ContentService {
                 .price(pack.getPrice())
                 .totalPuzzleCount(pack.getPuzzleCount())
                 .solvedPuzzleCount(solvedCount)
-                .locked(false)  //  userPack 은 항상 not null
+                .locked(false)
                 .build();
     }
 
     private getRecommendPackResponse createDefaultRecommendedPack(GetRecommendRequest request) {
-        // 1. 가장 id가 낮은 Pack 조회
+        // 가장 id가 낮은 Pack 조회
         Pack pack = packRepository.findFirstByOrderByIdAsc()
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
-        // 2. 번역 정보 조회
-        PackTranslation translation = packTranslationRepository
-                .findByPackAndLangCode(pack, LangCode.getLangCode(request.langCode()))
-                .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_PACK_TRANSLATION));
+        LangCode requestedLang = LangCode.getLangCode(request.langCode());
+        LangCode defaultLang = LangCode.getLangCode(LangCode.LangCodeName.EN);
 
-        // 3. 결과 반환
+        // 번역 정보 조회
+        PackTranslation translation = packTranslationRepository.findByPackAndLangCode(pack, requestedLang)
+                .orElseGet(() ->
+                        packTranslationRepository.findByPackAndLangCode(pack, defaultLang)
+                                .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_PACK_TRANSLATION))
+                );
+
+        // 결과 반환
         return getRecommendPackResponse.builder()
                 .id(pack.getId())
                 .title(translation.getTitle())
