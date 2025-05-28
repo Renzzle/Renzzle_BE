@@ -9,13 +9,13 @@ import com.renzzle.backend.domain.puzzle.rank.dao.LatestRankPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.rank.domain.LatestRankPuzzle;
 import com.renzzle.backend.domain.puzzle.rank.domain.RankSessionData;
 import com.renzzle.backend.domain.puzzle.rank.service.dto.NextPuzzleResult;
+import com.renzzle.backend.domain.puzzle.shared.util.ELOUtils;
 import com.renzzle.backend.domain.puzzle.training.dao.TrainingPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
-import com.renzzle.backend.domain.puzzle.shared.util.ELOUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -542,7 +542,8 @@ public class RankService {
             int dislikes = communityPuzzleRepository.sumDislikesByUser(user.getId());
             int c = Math.max(0, likes - dislikes);
 
-            double score = Math.log(a * Math.pow(b, 2) * Math.pow(c, 3) + 1) * 100;
+            double score = Math.log((a + 1) * Math.pow(b + 1, 2) * Math.pow(c + 1, 3) + 1) * 100;
+            score = Math.floor(score);
 
             UserPuzzlerRankInfo info = UserPuzzlerRankInfo.builder()
                     .rank(0)
