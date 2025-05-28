@@ -374,7 +374,6 @@ public class RankService {
         List<UserRatingRankInfo> top100 = extractTopRankedUsers(
                 key,
                 UserRatingRankInfo::rating,
-                UserRatingRankInfo::nickname,
                 (rank, info) -> UserRatingRankInfo.builder()
                         .rank(rank)
                         .nickname(info.nickname())
@@ -407,7 +406,6 @@ public class RankService {
         List<UserPuzzlerRankInfo> top100 = extractTopRankedUsers(
                 key,
                 UserPuzzlerRankInfo::score,
-                UserPuzzlerRankInfo::nickname,
                 (rank, info) -> UserPuzzlerRankInfo.builder()
                         .rank(rank)
                         .nickname(info.nickname())
@@ -445,7 +443,6 @@ public class RankService {
     private <T, R> List<R> extractTopRankedUsers(
             String key,
             Function<T, Double> scoreExtractor,
-            Function<T, String> nicknameExtractor,
             BiFunction<Integer, T, R> builder
     ) {
         Set<ZSetOperations.TypedTuple<Object>> rawSet =
