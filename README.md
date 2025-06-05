@@ -1,5 +1,5 @@
 # Renzzle: 오목 퍼즐 플랫폼
-<img width="1440" alt="Image" src="https://github.com/user-attachments/assets/cd843621-ad45-47ad-8e9a-1f3f33543dca" />
+<img width="1440" alt="Image" src="https://github.com/user-attachments/assets/cd843621-ad45-47ad-8e9a-1f3f33543dca" style="width: 60%;"/>
 
 ## 프로젝트 소개
 
