@@ -42,6 +42,7 @@ public class SecurityConfig {
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/api/auth/duplicate/**"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/login"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/signup"),
+                AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/reissueToken"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/swagger-ui/**"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/v3/api-docs/**")
         );
