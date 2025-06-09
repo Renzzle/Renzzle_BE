@@ -73,8 +73,8 @@ public class AuthController {
 
     @Operation(summary = "Reissue authentication tokens", description = "Issue authentication tokens for server access")
     @PostMapping("/reissueToken")
-    public ApiResponse<LoginResponse> reissueToken(@AuthenticationPrincipal UserDetailsImpl userDetails, @RequestBody ReissueTokenRequest request) {
-        return ApiUtils.success(authService.reissueToken(userDetails.getUser(), request));
+    public ApiResponse<LoginResponse> reissueToken(@RequestBody ReissueTokenRequest request) {
+        return ApiUtils.success(authService.reissueToken(request));
     }
 
 }
