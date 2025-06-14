@@ -9,6 +9,7 @@ import com.renzzle.backend.global.common.domain.Status;
 import com.renzzle.backend.support.TestCommunityPuzzleBuilder;
 import com.renzzle.backend.support.TestUserCommunityPuzzleBuilder;
 import com.renzzle.backend.support.TestUserEntityBuilder;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -21,6 +22,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTestWithInitContainers
 public class CommunityPuzzleRepositoryTest {
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Autowired
     private UserRepository userRepository;
@@ -276,6 +280,8 @@ public class CommunityPuzzleRepositoryTest {
 
         // When
         int updatedCount = communityPuzzleRepository.softDelete(puzzle.getId(), deletedTime);
+        entityManager.flush();
+        entityManager.clear();
 
         // Then
         CommunityPuzzle deletedPuzzle = communityPuzzleRepository.findByIdIncludingDeleted(puzzle.getId());

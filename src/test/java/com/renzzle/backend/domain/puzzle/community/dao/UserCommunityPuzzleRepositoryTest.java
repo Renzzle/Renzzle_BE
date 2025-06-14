@@ -9,6 +9,7 @@ import com.renzzle.backend.support.DataJpaTestWithInitContainers;
 import com.renzzle.backend.support.TestCommunityPuzzleBuilder;
 import com.renzzle.backend.support.TestUserCommunityPuzzleBuilder;
 import com.renzzle.backend.support.TestUserEntityBuilder;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -20,6 +21,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTestWithInitContainers
 public class UserCommunityPuzzleRepositoryTest {
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Autowired
     private UserRepository userRepository;
@@ -92,6 +96,8 @@ public class UserCommunityPuzzleRepositoryTest {
 
         // When
         int updatedCount = userCommunityPuzzleRepository.solvePuzzle(user.getId(), puzzle.getId(), fixedTime);
+        entityManager.flush();
+        entityManager.clear();
 
         // Then
         UserCommunityPuzzle updated = userCommunityPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzle.getId()).orElseThrow();

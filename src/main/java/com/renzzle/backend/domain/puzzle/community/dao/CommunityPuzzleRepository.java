@@ -16,7 +16,7 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
 
     @Query(value = "SELECT cp.* FROM community_puzzle cp " +
             "JOIN user_community_puzzle ucp ON ucp.community_id = cp.id " +
-            "WHERE ucp.user_id = :userId AND ucp.is_liked = TRUE AND ucp.liked_at IS NOT NULL " +
+            "WHERE cp.status != 'DELETED' AND ucp.user_id = :userId AND ucp.is_liked = TRUE AND ucp.liked_at IS NOT NULL " +
             "AND (" +
             "   :cursorId IS NULL " +
             "   OR (ucp.liked_at, cp.id) < (SELECT ucp2.liked_at, cp2.id FROM user_community_puzzle ucp2 " +
@@ -27,7 +27,7 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
     List<CommunityPuzzle> getUserLikedPuzzles(@Param("userId") Long userId, @Param("cursorId") Long cursorId, @Param("size") int size);
 
     @Query(value = "SELECT cp.* FROM community_puzzle cp " +
-            "WHERE cp.author_id = :userId " +
+            "WHERE cp.status != 'DELETED' AND cp.author_id = :userId " +
             "AND (" +
             "   :cursorId IS NULL " +
             "   OR (cp.created_at, cp.id) < (SELECT cp2.created_at, cp2.id FROM community_puzzle cp2 " +
@@ -37,7 +37,7 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
             "LIMIT :size", nativeQuery = true)
     List<CommunityPuzzle> getUserPuzzles(@Param("userId") Long userId, @Param("cursorId") Long cursorId, @Param("size") int size);
 
-    @Modifying(clearAutomatically = true)
+    @Modifying
     @Query("UPDATE CommunityPuzzle cp SET cp.status = (SELECT s FROM Status s WHERE s.name = 'DELETED'), " +
             "cp.deletedAt = :deletedAt WHERE cp.id = :puzzleId")
     int softDelete(@Param("puzzleId") Long puzzleId, @Param("deletedAt") Instant deletedAt);

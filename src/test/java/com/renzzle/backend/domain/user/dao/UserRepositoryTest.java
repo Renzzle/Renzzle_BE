@@ -7,6 +7,7 @@ import com.renzzle.backend.global.common.domain.Status;
 import com.renzzle.backend.support.DataJpaTestWithInitContainers;
 import com.renzzle.backend.support.TestCommunityPuzzleBuilder;
 import com.renzzle.backend.support.TestUserEntityBuilder;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -20,10 +21,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class UserRepositoryTest {
 
     @Autowired
-    UserRepository userRepository;
+    private EntityManager entityManager;
 
     @Autowired
-    CommunityPuzzleRepository communityPuzzleRepository;
+    private UserRepository userRepository;
+
+    @Autowired
+    private CommunityPuzzleRepository communityPuzzleRepository;
 
     @Test
     void existsByEmail_WhenEmailExists_ThenReturnTrue() {
@@ -75,6 +79,8 @@ public class UserRepositoryTest {
         Instant deletedAt = Instant.parse("2025-04-15T12:00:00.000000Z");
 
         userRepository.softDelete(user.getId(), deletedAt);
+        entityManager.flush();
+        entityManager.clear();
         UserEntity deletedUser = userRepository.findByIdIncludingDeleted(user.getId());
 
         assertThat(deletedUser.getStatus().getName()).isEqualTo(Status.StatusName.DELETED.name());
@@ -86,6 +92,8 @@ public class UserRepositoryTest {
         var user = TestUserEntityBuilder.builder().withCurrency(100).save(userRepository);
 
         userRepository.addUserCurrency(user.getId(), 50);
+        entityManager.flush();
+        entityManager.clear();
         UserEntity updatedUser = userRepository.findById(user.getId()).orElseThrow();
 
         assertThat(updatedUser.getCurrency()).isEqualTo(150);
@@ -107,6 +115,8 @@ public class UserRepositoryTest {
         Instant now = Instant.parse("2025-04-15T12:00:00.000000Z");
 
         userRepository.updateLastAccessedAt(user.getId(), now);
+        entityManager.flush();
+        entityManager.clear();
         UserEntity updatedUser = userRepository.findById(user.getId()).orElseThrow();
 
         assertThat(updatedUser.getLastAccessedAt()).isEqualTo(now);
@@ -128,6 +138,8 @@ public class UserRepositoryTest {
         Title newTitle = Title.getTitle(Title.TitleType.MASTER);
 
         userRepository.updateUserTitle(user.getId(), newTitle);
+        entityManager.flush();
+        entityManager.clear();
         UserEntity updated = userRepository.findById(user.getId()).orElseThrow();
 
         assertThat(updated.getTitle()).isEqualTo(newTitle);

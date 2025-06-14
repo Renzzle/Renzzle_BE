@@ -32,7 +32,7 @@ public interface UserCommunityPuzzleRepository extends JpaRepository<UserCommuni
             @Param("userId") Long userId,
             @Param("puzzleId") Long puzzleId);
 
-    @Modifying(clearAutomatically = true)
+    @Modifying
     @Query("UPDATE UserCommunityPuzzle ucp SET ucp.isSolved = TRUE, ucp.solvedAt = :solvedAt " +
             "WHERE ucp.user.id = :userId AND ucp.puzzle.id = :puzzleId")
     int solvePuzzle(@Param("userId") Long userId, @Param("puzzleId") Long puzzleId, @Param("solvedAt") Instant solvedAt);
