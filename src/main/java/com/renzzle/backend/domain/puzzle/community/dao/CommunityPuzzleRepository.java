@@ -37,7 +37,7 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
             "LIMIT :size", nativeQuery = true)
     List<CommunityPuzzle> getUserPuzzles(@Param("userId") Long userId, @Param("cursorId") Long cursorId, @Param("size") int size);
 
-    @Modifying(clearAutomatically = true)
+    @Modifying
     @Query("UPDATE CommunityPuzzle cp SET cp.status = (SELECT s FROM Status s WHERE s.name = 'DELETED'), " +
             "cp.deletedAt = :deletedAt WHERE cp.id = :puzzleId")
     int softDelete(@Param("puzzleId") Long puzzleId, @Param("deletedAt") Instant deletedAt);
