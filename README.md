@@ -37,7 +37,7 @@ Renzzle은 오목 초보자부터 전문가까지 누구나 즐기며 실력을 
 | **Language** | Java | `17` |
 | **Framework** | Spring Boot | `3.3.2` |
 | **Database** | MySQL / Redis | `8.0` / `6.2` |
-| **Testing** | JUnit / Testcontainers | `5.10.2` / `1.19.7` |
+| **Testing** | JUnit / Testcontainers | `5.10.2` / `1.20.4` |
 | **Build Tool** | Gradle | `8.8` |
 
 </div>
