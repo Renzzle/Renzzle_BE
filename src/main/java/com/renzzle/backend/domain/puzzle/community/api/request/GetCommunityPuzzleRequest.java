@@ -14,10 +14,10 @@ public record GetCommunityPuzzleRequest(
         @Max(value = 100, message = "size는 최대 100이어야 합니다")
         Integer size,
 
-        @ValidEnum(enumClass = SortOption.class, nullable = false, message = "잘못된 sort 형식입니다")
+        @ValidEnum(enumClass = SortOption.class, nullable = true, message = "잘못된 sort 형식입니다")
         String sort,
 
-        @ValidEnum(enumClass = WinColor.WinColorName.class, nullable = false, message = "잘못된 stone 형식입니다")
+        @ValidEnum(enumClass = WinColor.WinColorName.class, nullable = true, message = "잘못된 stone 형식입니다")
         String stone,
 
         Boolean auth,
