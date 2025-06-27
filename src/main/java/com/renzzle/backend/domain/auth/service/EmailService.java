@@ -31,34 +31,10 @@ public class EmailService {
     public static final int EMAIL_VERIFICATION_LIMIT = 5;
 
     private final Clock clock;
-    private final JavaMailSender javaMailSender;
-    private final SpringTemplateEngine templateEngine;
     private final EmailRedisRepository emailRepository;
     private final AccountService accountService;
     private final AuthService authService;
-
-    @Value("${spring.mail.username}")
-    private String senderEmail;
-
-    @Transactional
-    public AuthEmailResponse sendCode(AuthEmailRequest request) {
-        if(accountService.isDuplicatedEmail(request.email())) {
-            throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
-        }
-
-        int count = getRequestCount(request.email());
-        if(count >= EMAIL_VERIFICATION_LIMIT) {
-            throw new CustomException(ErrorCode.EXCEED_EMAIL_AUTH_REQUEST);
-        }
-
-        String code = sendAuthEmail(request.email());
-        saveConfirmCode(request.email(), code, count);
-
-        return AuthEmailResponse
-                .builder()
-                .requestCount(count + 1)
-                .build();
-    }
+    private final EmailSender emailSender;
 
     private String generateRandomCode() {
         Random random = new Random();
@@ -72,27 +48,26 @@ public class EmailService {
         return code.toString();
     }
 
-    private String sendAuthEmail(String address) {
-        MimeMessage message = javaMailSender.createMimeMessage();
-        String code = generateRandomCode();
-
-        try {
-            message.setFrom(senderEmail);
-            message.setRecipients(MimeMessage.RecipientType.TO, address);
-            message.setSubject("[Renzzle] Email Verification");
-
-            Context context = new Context();
-            context.setVariable("verificationCode", code);
-            String htmlContent = templateEngine.process("verification_email", context);
-
-            message.setText(htmlContent, "UTF-8", "html");
-        } catch (MessagingException e) {
-            throw new RuntimeException(e);
+    @Transactional
+    public AuthEmailResponse sendCode(AuthEmailRequest request) {
+        if(accountService.isDuplicatedEmail(request.email())) {
+            throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
         }
 
-        javaMailSender.send(message);
+        int count = getRequestCount(request.email());
+        if(count >= EMAIL_VERIFICATION_LIMIT) {
+            throw new CustomException(ErrorCode.EXCEED_EMAIL_AUTH_REQUEST);
+        }
 
-        return code;
+        String code = generateRandomCode();
+        emailSender.sendAuthEmail(request.email(), code);
+
+        saveConfirmCode(request.email(), code, count);
+
+        return AuthEmailResponse
+                .builder()
+                .requestCount(count + 1)
+                .build();
     }
 
     private int getRequestCount(String address) {
