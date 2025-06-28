@@ -38,9 +38,7 @@ public class EmailServiceTest {
     @Mock
     Clock clock;
     @Mock
-    private JavaMailSender javaMailSender;
-    @Mock
-    private SpringTemplateEngine templateEngine;
+    private EmailSender emailSender;
     @Mock
     private EmailRedisRepository emailRepository;
     @Mock
@@ -65,26 +63,13 @@ public class EmailServiceTest {
         when(accountService.isDuplicatedEmail(request.email())).thenReturn(false);
         when(emailRepository.findById(request.email())).thenReturn(Optional.empty());
 
-        MimeMessage mimeMessage = new MimeMessage(Session.getDefaultInstance(new Properties()));
-        when(javaMailSender.createMimeMessage()).thenReturn(mimeMessage);
-        when(templateEngine.process(eq("verification_email"), any(Context.class))).thenAnswer(
-                invocation -> {
-                    Context context = invocation.getArgument(1);
-                    return context.getVariable("verificationCode");
-                }
-        );
-
         // when
         AuthEmailResponse response = emailService.sendCode(request);
 
         // then
         assertThat(response).isNotNull();
         assertThat(response.requestCount()).isEqualTo(1);
-        assertThat(mimeMessage.getAllRecipients()[0].toString()).isEqualTo("test@example.com");
-        assertThat(mimeMessage.getSubject()).isEqualTo("[Renzzle] Email Verification");
-        String emailContent = (String) mimeMessage.getContent();
-        assertThat(emailContent).matches(".*\\b\\d{6}\\b.*"); // assert six-digit string
-        verify(javaMailSender, times(1)).send(any(MimeMessage.class));
+        verify(emailSender, times(1)).sendAuthEmail(any(String.class), any(String.class));
     }
 
     @Test
