@@ -222,6 +222,13 @@ public class RankService {
         int solvedCount = solvedPuzzles.size();
         int reward = solvedCount * RANK_REWARD.getPrice();
 
+        UserEntity user = userRepository.findById(userData.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
+
+        user.getReward(reward);
+        userRepository.save(user);
+
+
         return RankEndResponse.builder()
                 .rating(userData.getRating())
                 .reward(reward)
