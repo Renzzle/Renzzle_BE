@@ -290,56 +290,31 @@ public class RankService {
 
     private <T> List<T> pickNearByWindow(List<T> sorted, double targetRating, int windowSize) {
         /*
-            각 퍼즐에서 windowSize 만큼의 문제들을 선택
-            단, 기준 문제의 레이팅에서 maxDiff 이상의 오차를 가진 문제는 선정하지 않음.
-            배열의 끝에 다다르면 그 쪽으로는 더 이상 진행하지 않음
+            1. 레이팅 오차 200 미만의 문제들 중에서 windowSize만큼 선택(가능하면)
+            2. 만약 200 미만의 문제가 windowSize만큼 없다면, 레이팅 오차 제한 없이 가장 가까운 문제들을 windowSize만큼 선택
         */
         if (sorted.isEmpty()) return Collections.emptyList();
 
-        double maxDiff = 200.0; // 레이팅 허용 오차
+        double maxDiff = 200.0;
 
-        // 가장 가까운 퍼즐 위치 탐색
-        int centerIndex = 0;
-        double closest = Double.MAX_VALUE;
-        for (int i = 0; i < sorted.size(); i++) {
-            double rating = getRating(sorted.get(i));
-            double diff = Math.abs(rating - targetRating);
-            if (diff < closest) {
-                closest = diff;
-                centerIndex = i;
+        // 1차: 200 미만 오차 내에서 windowSize만큼 선택
+        List<T> within200 = new ArrayList<>();
+        for (T item : sorted) {
+            double rating = getRating(item);
+            if (Math.abs(rating - targetRating) < maxDiff) {
+                within200.add(item);
             }
         }
-
-        List<T> result = new ArrayList<>();
-        int left = centerIndex, right = centerIndex + 1;
-
-        while (result.size() < windowSize && (left >= 0 || right < sorted.size())) {
-            boolean picked = false;
-
-            if (left >= 0) {
-                double ratingLeft = getRating(sorted.get(left));
-                if (Math.abs(ratingLeft - targetRating) <= maxDiff) {
-                    result.add(sorted.get(left));
-                    picked = true;
-                }
-                left--;
-            }
-
-            if (result.size() >= windowSize) break;
-
-            if (right < sorted.size()) {
-                double ratingRight = getRating(sorted.get(right));
-                if (Math.abs(ratingRight - targetRating) <= maxDiff) {
-                    result.add(sorted.get(right));
-                    picked = true;
-                }
-                right++;
-            }
-
-            if (!picked) break; // 양쪽 다 더 이상 유효 후보가 없음
+        within200.sort(Comparator.comparingDouble(o -> Math.abs(getRating(o) - targetRating)));
+        if (within200.size() >= windowSize) {
+            return within200.subList(0, windowSize);
         }
 
-        return result;
+        // 2차: 제한 없이 가까운 순서대로 windowSize만큼 선택
+        List<T> sortedByClosest = new ArrayList<>(sorted);
+        sortedByClosest.sort(Comparator.comparingDouble(o -> Math.abs(getRating(o) - targetRating)));
+        int limit = Math.min(windowSize, sortedByClosest.size());
+        return sortedByClosest.subList(0, limit);
     }
 
     // 퍼즐 rating 추출 유틸
