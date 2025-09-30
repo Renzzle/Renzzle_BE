@@ -105,6 +105,7 @@ public class CommunityService {
                 .boardStatus(puzzle.getBoardStatus())
                 .authorId(puzzle.getUser().getId())
                 .authorName(puzzle.getUser().getNickname())
+                .description(puzzle.getDescription())
                 .depth(puzzle.getDepth())
                 .winColor(puzzle.getWinColor().getName())
                 .solvedCount(puzzle.getSolvedCount())
