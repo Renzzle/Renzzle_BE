@@ -52,7 +52,7 @@ public class TrainingController {
             @PathVariable("puzzleId") Long puzzleId,
             @AuthenticationPrincipal UserDetailsImpl user) {
 
-        SolveTrainingPuzzleResponse response = trainingService.solveTrainingPuzzle(user.getUser(), puzzleId);
+        SolveTrainingPuzzleResponse response = trainingService.solveTrainingPuzzle(user.getUser(), puzzleId, true);
 
         return ApiUtils.success(response);
     }

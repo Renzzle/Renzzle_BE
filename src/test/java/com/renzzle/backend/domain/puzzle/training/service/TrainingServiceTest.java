@@ -311,7 +311,7 @@ public class TrainingServiceTest {
                     .thenAnswer(invocation -> invocation.getArgument(0));
 
             // when
-            SolveTrainingPuzzleResponse response = trainingService.solveTrainingPuzzle(user, puzzleId);
+            SolveTrainingPuzzleResponse response = trainingService.solveTrainingPuzzle(user, puzzleId, true);
 
             // then
             verify(solvedTrainingPuzzleRepository).save(any(SolvedTrainingPuzzle.class));
@@ -341,7 +341,7 @@ public class TrainingServiceTest {
                     .thenReturn(Optional.of(existingSolvedPuzzle));
 
             // when
-            SolveTrainingPuzzleResponse response = trainingService.solveTrainingPuzzle(user, puzzleId);
+            SolveTrainingPuzzleResponse response = trainingService.solveTrainingPuzzle(user, puzzleId, true);
 
             // then
             assertThat(response.reward()).isEqualTo(0);
@@ -670,7 +670,7 @@ public class TrainingServiceTest {
 
             // when
             CustomException exception = assertThrows(CustomException.class,
-                    () -> trainingService.solveTrainingPuzzle(user, puzzleId));
+                    () -> trainingService.solveTrainingPuzzle(user, puzzleId, true));
 
             // then
             assertEquals(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE, exception.getErrorCode());

@@ -100,7 +100,7 @@ public class TrainingService {
 
     // service test, repo test
     @Transactional
-    public SolveTrainingPuzzleResponse solveTrainingPuzzle(UserEntity user, Long puzzleId) {
+    public SolveTrainingPuzzleResponse solveTrainingPuzzle(UserEntity user, Long puzzleId, Boolean getReward) {
         Optional<SolvedTrainingPuzzle> existInfo =
                 solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId);
 
@@ -130,6 +130,7 @@ public class TrainingService {
             case "HIGH" -> TRAINING_HIGH_REWARD.getPrice();
             default -> 0;
         };
+        if(getReward) user.getReward(reward);
 
         return SolveTrainingPuzzleResponse.builder()
                 .reward(reward)
@@ -300,7 +301,7 @@ public class TrainingService {
 
         newUser.purchase(ItemPrice.HINT.getPrice());
 
-        solveTrainingPuzzle(user, puzzle.getId());
+        solveTrainingPuzzle(user, puzzle.getId(), false);
 
         return GetTrainingPuzzleAnswerResponse.builder()
                 .answer(puzzle.getAnswer())
