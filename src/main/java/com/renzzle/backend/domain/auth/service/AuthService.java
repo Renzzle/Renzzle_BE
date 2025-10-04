@@ -64,10 +64,14 @@ public class AuthService {
     }
 
     @Transactional
-    public LoginResponse reissueToken(UserEntity user, ReissueTokenRequest request) {
-        if(!verifyRefreshToken(request.refreshToken()))
+    public LoginResponse reissueToken(ReissueTokenRequest request) {
+        Long userId = jwtProvider.getUserId(request.refreshToken());
+        Optional<RefreshTokenEntity> tokenEntity = refreshTokenRepository.findById(userId);
+
+        if(tokenEntity.isEmpty())
             throw new CustomException(ErrorCode.EXPIRED_JWT_TOKEN);
-        return createAuthTokens(user.getId());
+
+        return createAuthTokens(userId);
     }
 
     private boolean verifyRefreshToken(String token) {

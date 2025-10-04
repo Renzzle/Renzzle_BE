@@ -21,12 +21,12 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     Optional<UserEntity> findByEmail(String email);
 
-    @Modifying(clearAutomatically = true)
+    @Modifying
     @Query("UPDATE UserEntity u SET u.status = (SELECT s FROM Status s WHERE s.name = 'DELETED'), " +
             "u.deletedAt = :deletedAt WHERE u.id = :userId")
     int softDelete(@Param("userId") Long userId, @Param("deletedAt") Instant deletedAt);
 
-    @Modifying(clearAutomatically = true)
+    @Modifying
     @Query("UPDATE UserEntity u SET u.currency = u.currency + :amount WHERE u.id = :userId")
     void addUserCurrency(@Param("userId") Long userId, @Param("amount") int amount);
 
@@ -59,14 +59,14 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     @Query("SELECT CASE WHEN (u.lastAccessedAt < CURRENT_DATE) THEN true ELSE false END FROM UserEntity u WHERE u.id = :userId")
     Boolean isLastAccessBeforeToday(@Param("userId") Long userId);
 
-    @Modifying(clearAutomatically = true)
+    @Modifying
     @Query("UPDATE UserEntity u SET u.lastAccessedAt = :lastAccessedAt WHERE u.id = :userId")
     void updateLastAccessedAt(@Param("userId") Long userId, @Param("lastAccessedAt") Instant lastAccessedAt);
 
     @Query("SELECT u.title FROM UserEntity u WHERE u.id = :userId")
     Optional<Title> getUserTitle(@Param("userId") Long userId);
 
-    @Modifying(clearAutomatically = true)
+    @Modifying
     @Query("UPDATE UserEntity u SET u.title = :title WHERE u.id = :userId")
     void updateUserTitle(@Param("userId") Long userId, @Param("title") Title title);
 

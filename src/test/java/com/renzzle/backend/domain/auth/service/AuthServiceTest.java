@@ -85,19 +85,17 @@ public class AuthServiceTest {
     @Test
     public void reissueToken_ShouldReturnNewTokens_WhenRefreshTokenIsValid() {
         // given
-        Long userId = 1L;
+        long userId = 1L;
         String refreshToken = "valid-refresh-token";
         ReissueTokenRequest request = new ReissueTokenRequest(refreshToken);
 
-        UserEntity user = mock(UserEntity.class);
-        when(user.getId()).thenReturn(userId);
         when(jwtProvider.getUserId(refreshToken)).thenReturn(userId);
         when(refreshTokenRepository.findById(userId)).thenReturn(Optional.of(mock(RefreshTokenEntity.class)));
         when(jwtProvider.createAccessToken(userId)).thenReturn("access-token");
         when(jwtProvider.createRefreshToken(userId)).thenReturn("refresh-token");
 
         // when
-        LoginResponse response = authService.reissueToken(user, request);
+        LoginResponse response = authService.reissueToken(request);
 
         // then
         assertEquals("access-token", response.accessToken());
@@ -117,7 +115,7 @@ public class AuthServiceTest {
 
         // when & then
         CustomException exception = assertThrows(CustomException.class, () ->
-                authService.reissueToken(user, request));
+                authService.reissueToken(request));
 
         assertEquals(ErrorCode.EXPIRED_JWT_TOKEN, exception.getErrorCode());
     }

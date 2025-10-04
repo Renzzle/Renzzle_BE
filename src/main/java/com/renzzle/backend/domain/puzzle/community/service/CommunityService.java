@@ -105,6 +105,7 @@ public class CommunityService {
                 .boardStatus(puzzle.getBoardStatus())
                 .authorId(puzzle.getUser().getId())
                 .authorName(puzzle.getUser().getNickname())
+                .description(puzzle.getDescription())
                 .depth(puzzle.getDepth())
                 .winColor(puzzle.getWinColor().getName())
                 .solvedCount(puzzle.getSolvedCount())
@@ -128,7 +129,7 @@ public class CommunityService {
 
         persistedUser.purchase(HINT.getPrice());
 
-        solveCommunityPuzzle(puzzleId, user);
+        solveCommunityPuzzle(puzzleId, persistedUser);
 
         return GetCommunityPuzzleAnswerResponse.builder()
                 .answer(puzzle.getAnswer())
@@ -165,6 +166,11 @@ public class CommunityService {
 
         Optional<UserCommunityPuzzle> ucp = userCommunityPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId);
         if (ucp.isPresent()) {
+            if (ucp.get().isLiked()) puzzle.decreaseLikedCount();
+            else {
+                if (ucp.get().isDisliked()) puzzle.decreaseDislikedCount();
+                puzzle.increaseLikedCount();
+            }
             return ucp.get().toggleLike(clock.instant());
         }
 
@@ -176,6 +182,7 @@ public class CommunityService {
                         .likedAt(clock.instant())
                         .build()
         );
+        puzzle.increaseLikedCount();
 
         return true;
     }
@@ -187,6 +194,11 @@ public class CommunityService {
 
         Optional<UserCommunityPuzzle> ucp = userCommunityPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId);
         if (ucp.isPresent()) {
+            if (ucp.get().isDisliked()) puzzle.decreaseDislikedCount();
+            else {
+                if (ucp.get().isLiked()) puzzle.decreaseLikedCount();
+                puzzle.increaseDislikedCount();
+            }
             return ucp.get().toggleDislike();
         }
 
@@ -197,6 +209,7 @@ public class CommunityService {
                         .isDisliked(true)
                         .build()
         );
+        puzzle.increaseDislikedCount();
 
         return true;
     }

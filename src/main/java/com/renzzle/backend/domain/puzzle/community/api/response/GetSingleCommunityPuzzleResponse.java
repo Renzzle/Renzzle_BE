@@ -8,6 +8,7 @@ public record GetSingleCommunityPuzzleResponse(
         String boardStatus,
         long authorId,
         String authorName,
+        String description,
         int depth,
         String winColor,
         int solvedCount,

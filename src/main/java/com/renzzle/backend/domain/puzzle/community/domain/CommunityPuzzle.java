@@ -110,4 +110,21 @@ public class CommunityPuzzle {
     public void increaseSolvedCount() {
         this.solvedCount++;
     }
+
+    public void increaseLikedCount() {
+        this.likeCount++;
+    }
+
+    public void increaseDislikedCount() {
+        this.dislikeCount++;
+    }
+
+    public void decreaseLikedCount() {
+        this.likeCount--;
+    }
+
+    public void decreaseDislikedCount() {
+        this.dislikeCount--;
+    }
+
 }
