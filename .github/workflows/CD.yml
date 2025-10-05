@@ -62,10 +62,10 @@ jobs:
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.HOST }}
-          username: ec2-user
+          username: renzzle.official
           key: ${{ secrets.PRIVATE_KEY }}
           source: './docker-compose.yml'
-          target: '/home/ec2-user/'
+          target: '/home/renzzle.official/'
           port: 22
           timeout: 30s
           command_timeout: 10m
@@ -76,10 +76,10 @@ jobs:
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.HOST }}
-          username: ec2-user
+          username: renzzle.official
           key: ${{ secrets.PRIVATE_KEY }}
           source: './docker-compose.prod.yml'
-          target: '/home/ec2-user/'
+          target: '/home/renzzle.official/'
           port: 22
           timeout: 30s
           command_timeout: 10m
@@ -88,7 +88,7 @@ jobs:
 
       - name: Create .env file and copy to EC2
         run: |
-          echo "DB_ADDRESS=${{ secrets.DB_ADDRESS }}" >> .env
+          echo "DB_ADDRESS=db:3306/${{ secrets.DB_NAME }}" >> .env
           echo "DB_USER=${{ secrets.DB_USER }}" >> .env
           echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
           echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
@@ -100,20 +100,20 @@ jobs:
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.HOST }}
-          username: ec2-user
+          username: renzzle.official
           key: ${{ secrets.PRIVATE_KEY }}
           source: './.env'
-          target: '/home/ec2-user/'
+          target: '/home/renzzle.official/'
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
-          username: ec2-user
+          username: renzzle.official
           key: ${{ secrets.PRIVATE_KEY }}
           script: |
             set -e
-            cd /home/ec2-user/
+            cd /home/renzzle.official/
 
             ALL_CONTAINERS=$(docker ps -q)
             if [ -n "$ALL_CONTAINERS" ]; then
@@ -133,7 +133,7 @@ jobs:
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
-          username: ec2-user
+          username: renzzle.official
           key: ${{ secrets.PRIVATE_KEY }}
           script: |
             docker image prune -f
