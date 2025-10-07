@@ -1,5 +1,6 @@
 server:
   port: 9001
+  forward-headers-strategy: native
 
 spring:
   profiles:
