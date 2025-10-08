@@ -26,5 +26,8 @@ public record AddCommunityPuzzleRequest(
 
         @NotEmpty(message = "깊이 정보가 없습니다")
         @ValidEnum(enumClass = WinColor.WinColorName.class, message = "잘못된 WinColor 타입입니다")
-        String winColor
+        String winColor,
+
+        @NotNull(message = "검증 여부 정보가 없습니다")
+        Boolean isVerified
 ) { }

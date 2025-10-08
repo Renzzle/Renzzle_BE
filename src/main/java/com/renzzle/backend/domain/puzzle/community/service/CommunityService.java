@@ -50,6 +50,7 @@ public class CommunityService {
                 .description(request.description())
                 .user(user)
                 .winColor(WinColor.getWinColor(request.winColor()))
+                .isVerified(request.isVerified())
                 .build();
 
         CommunityPuzzle result = communityPuzzleRepository.save(puzzle);
