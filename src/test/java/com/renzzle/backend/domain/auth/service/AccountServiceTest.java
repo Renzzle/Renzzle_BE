@@ -4,6 +4,7 @@ import com.renzzle.backend.domain.auth.api.request.LoginRequest;
 import com.renzzle.backend.domain.auth.api.request.SignupRequest;
 import com.renzzle.backend.domain.auth.api.response.LoginResponse;
 import com.renzzle.backend.domain.user.dao.UserRepository;
+import com.renzzle.backend.domain.puzzle.training.service.TrainingService;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
@@ -34,6 +35,8 @@ public class AccountServiceTest {
     private UserRepository userRepository;
     @Mock
     private AuthService authService;
+    @Mock
+    private TrainingService trainingService;
 
     @InjectMocks
     private AccountService accountService;
@@ -62,6 +65,7 @@ public class AccountServiceTest {
         when(userRepository.existsByDeviceId(deviceId)).thenReturn(false);
         when(userRepository.save(any(UserEntity.class))).thenAnswer(i -> UserEntity.builder().id(1L).build());
         when(authService.createAuthTokens(anyLong())).thenReturn(mock(LoginResponse.class));
+        doNothing().when(trainingService).grantPackToUser(any(UserEntity.class), eq(1L));
 
         // when
         LoginResponse response = accountService.signUp(validSignupRequest);
