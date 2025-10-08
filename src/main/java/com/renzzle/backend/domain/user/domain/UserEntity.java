@@ -113,6 +113,10 @@ public class UserEntity {
         this.currency -= price;
     }
 
+    public void getReward(int reward){
+        this.currency += reward;
+    }
+
     public void updateRatingTo(double newRating) {
         this.rating = newRating;
     }
