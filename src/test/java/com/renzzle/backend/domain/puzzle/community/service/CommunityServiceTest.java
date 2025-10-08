@@ -61,7 +61,8 @@ public class CommunityServiceTest {
                 "e5",
                 7,
                 "description",
-                "BLACK"
+                "BLACK",
+                true
         );
 
         CommunityPuzzle mockPuzzle = CommunityPuzzle.builder()
@@ -74,6 +75,7 @@ public class CommunityServiceTest {
                 .description(request.description())
                 .user(user)
                 .winColor(WinColor.getWinColor(request.winColor()))
+                .isVerified(request.isVerified())
                 .build();
 
         when(communityPuzzleRepository.save(any(CommunityPuzzle.class)))
