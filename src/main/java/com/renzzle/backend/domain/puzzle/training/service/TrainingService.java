@@ -308,4 +308,28 @@ public class TrainingService {
                 .price(ItemPrice.HINT.getPrice())
                 .build();
     }
+
+    // 회원가입 시 무료로 특정 Pack을 지급 (잔액 차감 없음)
+    @Transactional
+    public void grantPackToUser(UserEntity user, Long packId) {
+        if (user == null || packId == null) {
+            throw new CustomException(ErrorCode.VALIDATION_ERROR);
+        }
+
+        Pack pack = packRepository.findById(packId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
+
+        // 이미 보유한 경우 무시
+        if (userPackRepository.findByUserIdAndPackId(user.getId(), packId).isPresent()) {
+            return;
+        }
+
+        UserPack userPack = UserPack.builder()
+                .user(user)
+                .pack(pack)
+                .solvedCount(0)
+                .build();
+
+        userPackRepository.save(userPack);
+    }
 }

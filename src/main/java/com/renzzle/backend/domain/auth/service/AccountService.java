@@ -4,6 +4,7 @@ import com.renzzle.backend.domain.auth.api.request.LoginRequest;
 import com.renzzle.backend.domain.auth.api.request.SignupRequest;
 import com.renzzle.backend.domain.auth.api.response.LoginResponse;
 import com.renzzle.backend.domain.user.dao.UserRepository;
+import com.renzzle.backend.domain.puzzle.training.service.TrainingService;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
@@ -23,6 +24,7 @@ public class AccountService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final AuthService authService;
+    private final TrainingService trainingService;
 
     @Transactional(readOnly = true)
     public boolean isDuplicatedEmail(String email) {
@@ -46,7 +48,8 @@ public class AccountService {
         }
 
         UserEntity user = createNewUser(request.email(), request.password(), request.nickname(), request.deviceId());
-
+        // 회원가입 시 packId = 1 자동 지급
+        trainingService.grantPackToUser(user, 1L);
         return authService.createAuthTokens(user.getId());
     }
 
