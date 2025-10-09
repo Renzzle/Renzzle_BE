@@ -313,6 +313,7 @@ public class RankServiceTest {
         RankSessionData session = new RankSessionData();
         session.setStarted(true);
 
+         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(valueOperations.get("3")).thenReturn(session);
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user)); // 추가: userRepository Mock
         when(latestRankPuzzleRepository.findAllByUser(user))

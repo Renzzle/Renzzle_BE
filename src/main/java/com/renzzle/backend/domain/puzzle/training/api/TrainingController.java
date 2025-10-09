@@ -119,10 +119,10 @@ public class TrainingController {
     @Operation(summary = "Purchase Training Puzzle Answer", description = "Purchase Training Puzzle Answer")
     @PostMapping("/puzzle/{puzzleId}/answer")
     public ApiResponse<GetTrainingPuzzleAnswerResponse> PurchaseTrainingPuzzleAnswer(
-            @Valid @RequestBody PurchaseTrainingPuzzleAnswerRequest request,
+            @PathVariable Long puzzleId,
             @AuthenticationPrincipal UserDetailsImpl user
     ){
-        GetTrainingPuzzleAnswerResponse response = trainingService.purchaseTrainingPuzzleAnswer(user.getUser(), request);
+        GetTrainingPuzzleAnswerResponse response = trainingService.purchaseTrainingPuzzleAnswer(user.getUser(), puzzleId);
 
         return ApiUtils.success(response);
     }

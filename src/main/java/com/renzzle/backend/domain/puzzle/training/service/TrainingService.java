@@ -293,10 +293,10 @@ public class TrainingService {
     }
 
     @Transactional
-    public GetTrainingPuzzleAnswerResponse purchaseTrainingPuzzleAnswer(UserEntity user, PurchaseTrainingPuzzleAnswerRequest request) {
+    public GetTrainingPuzzleAnswerResponse purchaseTrainingPuzzleAnswer(UserEntity user, Long puzzleId) {
         UserEntity newUser = userRepository.findById(user.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
-        TrainingPuzzle puzzle = trainingPuzzleRepository.findById(request.puzzleId())
+        TrainingPuzzle puzzle = trainingPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
 
         newUser.purchase(ItemPrice.HINT.getPrice());

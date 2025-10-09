@@ -531,10 +531,10 @@ public class TrainingServiceTest {
             when(userRepository.findById(eq(user.getId())))
                     .thenReturn(Optional.of(user));
 
-            PurchaseTrainingPuzzleAnswerRequest request = new PurchaseTrainingPuzzleAnswerRequest(puzzleId);
+//            PurchaseTrainingPuzzleAnswerRequest request = new PurchaseTrainingPuzzleAnswerRequest(puzzleId);
 
             // when
-            GetTrainingPuzzleAnswerResponse response = trainingService.purchaseTrainingPuzzleAnswer(user, request);
+            GetTrainingPuzzleAnswerResponse response = trainingService.purchaseTrainingPuzzleAnswer(user, puzzleId);
 
             // then
             assertThat(response.answer()).isEqualTo("Correct Answer");
@@ -787,7 +787,7 @@ public class TrainingServiceTest {
                     .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))
                     .status(Status.getDefaultStatus())
                     .build();
-            PurchaseTrainingPuzzleAnswerRequest request = new PurchaseTrainingPuzzleAnswerRequest(puzzleId);
+//            PurchaseTrainingPuzzleAnswerRequest request = new PurchaseTrainingPuzzleAnswerRequest(puzzleId);
 
             when(trainingPuzzleRepository.findById(eq(puzzleId)))
                     .thenReturn(Optional.empty());
@@ -797,7 +797,7 @@ public class TrainingServiceTest {
 
             // when
             CustomException exception = assertThrows(CustomException.class, () ->
-                    trainingService.purchaseTrainingPuzzleAnswer(user, request)
+                    trainingService.purchaseTrainingPuzzleAnswer(user, puzzleId)
             );
 
             // then
