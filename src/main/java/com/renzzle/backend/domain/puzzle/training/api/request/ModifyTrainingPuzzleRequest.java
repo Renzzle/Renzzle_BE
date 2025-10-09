@@ -18,6 +18,6 @@ public record ModifyTrainingPuzzleRequest(
 
         Integer depth,
 
-        @ValidEnum(enumClass = WinColor.WinColorName.class, message = "잘못된 WinColor 타입입니다")
+        @ValidEnum(enumClass = WinColor.WinColorName.class, message = "잘못된 WinColor 타입입니다", nullable = true)
         String winColor
 ) { }
