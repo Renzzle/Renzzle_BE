@@ -2,6 +2,8 @@ HELP.md
 .gradle
 build/
 redis-data/
+mysql-data/
+.env
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
@@ -26,7 +28,6 @@ bin/
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
-.env
 
 ### NetBeans ###
 /nbproject/private/

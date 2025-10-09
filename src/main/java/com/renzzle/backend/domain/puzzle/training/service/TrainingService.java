@@ -45,7 +45,6 @@ public class TrainingService {
     // service test, repo test
     @Transactional
     public TrainingPuzzle createTrainingPuzzle(AddTrainingPuzzleRequest request) {
-
         Pack pack = packRepository.findById(request.packId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
@@ -74,6 +73,44 @@ public class TrainingService {
                 .build();
 
         return trainingPuzzleRepository.save(puzzle);
+    }
+
+    @Transactional
+    public TrainingPuzzle modifyTrainingPuzzle(Long puzzleId, ModifyTrainingPuzzleRequest request) {
+        TrainingPuzzle puzzle = trainingPuzzleRepository.findById(puzzleId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
+
+        TrainingPuzzle.TrainingPuzzleBuilder puzzleBuilder = puzzle.toBuilder();
+
+        if (request.packId() != null) {
+            Pack pack = packRepository.findById(request.packId())
+                    .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
+            puzzleBuilder.pack(pack);
+        }
+        if (request.puzzleIndex() != null && request.puzzleIndex() != puzzle.getTrainingIndex()) {
+            int index = trainingPuzzleRepository.findTopIndex(request.packId()) + 1;
+            if(index > request.puzzleIndex()) {
+                index = request.puzzleIndex();
+                trainingPuzzleRepository.increaseIndexesFrom(request.packId(), index);
+            }
+            puzzleBuilder.trainingIndex(index);
+        }
+        if (request.boardStatus() != null) {
+            puzzleBuilder.boardStatus(request.boardStatus());
+            puzzleBuilder.boardKey(BoardUtils.makeBoardKey(request.boardStatus()));
+        }
+        if (request.answer() != null) {
+            puzzleBuilder.answer(request.answer());
+        }
+        if (request.depth() != null) {
+            puzzleBuilder.depth(request.depth());
+            puzzleBuilder.rating(request.depth() * DEFAULT_PUZZLE_RATING);
+        }
+        if (request.winColor() != null) {
+            puzzleBuilder.winColor(WinColor.getWinColor(request.winColor()));
+        }
+
+        return trainingPuzzleRepository.save(puzzleBuilder.build());
     }
 
     // service test, repo test

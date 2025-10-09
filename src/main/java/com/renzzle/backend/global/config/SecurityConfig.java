@@ -55,8 +55,9 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(request -> request
                         .requestMatchers(permitAllRequestMatchers.toArray(new RequestMatcher[0])).permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/lesson").hasAuthority(ADMIN)
-                        .requestMatchers(HttpMethod.DELETE, "/api/lesson/**").hasAuthority(ADMIN)
+                        .requestMatchers(HttpMethod.POST, "/api/training").hasAuthority(ADMIN)
+                        .requestMatchers(HttpMethod.PATCH, "/api/training/**").hasAuthority(ADMIN)
+                        .requestMatchers(HttpMethod.DELETE, "/api/training/**").hasAuthority(ADMIN)
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exceptionHandling ->

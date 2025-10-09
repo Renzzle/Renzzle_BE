@@ -25,19 +25,27 @@ public class TrainingController {
 
     private final TrainingService trainingService;
 
-    //완료 0311
     @Operation(summary = "Add training puzzle", description = "Add training puzzle & Only admins are available")
     @PostMapping("/puzzle")
     public ApiResponse<Long> addTrainingPuzzle(
             @Valid @RequestBody AddTrainingPuzzleRequest request
     ) {
-
         TrainingPuzzle puzzle = trainingService.createTrainingPuzzle(request);
 
         return ApiUtils.success(puzzle.getId());
     }
 
-    //완료 0311
+    @Operation(summary = "Modify training puzzle", description = "Modify training puzzle & Only admins are available")
+    @PatchMapping("/puzzle/{puzzleId}")
+    public ApiResponse<Long> modifyTrainingPuzzle(
+            @PathVariable("puzzleId") Long puzzleId,
+            @Valid @RequestBody ModifyTrainingPuzzleRequest request
+    ) {
+        TrainingPuzzle puzzle = trainingService.modifyTrainingPuzzle(puzzleId, request);
+
+        return ApiUtils.success(puzzle.getId());
+    }
+
     @Operation(summary = "Delete training puzzle", description = "Delete training puzzle & Only admins are available")
     @DeleteMapping("puzzle/{puzzleId}")
     public ApiResponse<Object> deleteTrainingPuzzle(@PathVariable("puzzleId") Long puzzleId) {
@@ -45,7 +53,6 @@ public class TrainingController {
         return ApiUtils.success(null);
     }
 
-    //완료 0311
     @Operation(summary = "Solve training puzzle", description = "Return unlocked training puzzle id (can be null???)")
     @PostMapping("puzzle/{puzzleId}/solve")
     public ApiResponse<SolveTrainingPuzzleResponse> solveTrainingPuzzle(
@@ -57,7 +64,6 @@ public class TrainingController {
         return ApiUtils.success(response);
     }
 
-
     @Operation(summary = "Get training puzzle data", description = "Return training puzzle list")
     @GetMapping("puzzle/{pack}")
     public ApiResponse<List<GetTrainingPuzzleResponse>> getTrainingPuzzle(
@@ -67,7 +73,6 @@ public class TrainingController {
         return ApiUtils.success(trainingService.getTrainingPuzzleList(user.getUser(), pack));
     }
 
-    //완료 0313
     @Operation(summary = "Create Pack", description = "Create pack & Only admins are available")
     @PostMapping("/pack")
     public ApiResponse<Long> addTrainingPack(
@@ -79,7 +84,6 @@ public class TrainingController {
         return ApiUtils.success(pack.getId());
     }
 
-    //완료 0313
     @Operation(summary = "Add Translation", description = "Add Translation & Only admins are available")
     @PostMapping("/pack/translation")
     public ApiResponse<Long> addTranslation(
@@ -90,7 +94,6 @@ public class TrainingController {
         return ApiUtils.success(null);
     }
 
-    //미완료
     @Operation(summary = "Get Training Packs", description = "Get Training Packs")
     @GetMapping("/pack")
     public ApiResponse<List<GetPackResponse>> getTrainingPack(
@@ -103,7 +106,6 @@ public class TrainingController {
         return ApiUtils.success(packs);
     }
 
-    // 0315
     @Operation(summary = "Purchase Training Pack", description = "Purchase Training Pack")
     @PostMapping("/pack/purchase")
     public ApiResponse<GetPackPurchaseResponse> PurchaseTrainingPack(
@@ -115,7 +117,7 @@ public class TrainingController {
 
         return ApiUtils.success(response);
     }
-    // 0315
+
     @Operation(summary = "Purchase Training Puzzle Answer", description = "Purchase Training Puzzle Answer")
     @PostMapping("/puzzle/{puzzleId}/answer")
     public ApiResponse<GetTrainingPuzzleAnswerResponse> PurchaseTrainingPuzzleAnswer(
@@ -126,4 +128,5 @@ public class TrainingController {
 
         return ApiUtils.success(response);
     }
+
 }
