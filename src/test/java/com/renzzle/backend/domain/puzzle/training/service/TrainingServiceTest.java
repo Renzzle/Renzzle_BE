@@ -306,6 +306,10 @@ public class TrainingServiceTest {
             when(trainingPuzzleRepository.findById(puzzleId))
                     .thenReturn(Optional.of(trainingPuzzle));
 
+            // 사용자 조회 성공 (영속 상태의 엔티티 반환)
+            when(userRepository.findById(userId))
+                    .thenReturn(Optional.of(user));
+
             // 저장 결과 더미 설정
             when(solvedTrainingPuzzleRepository.save(any(SolvedTrainingPuzzle.class)))
                     .thenAnswer(invocation -> invocation.getArgument(0));
