@@ -167,7 +167,11 @@ public class TrainingService {
             case "HIGH" -> TRAINING_HIGH_REWARD.getPrice();
             default -> 0;
         };
-        if(getReward) user.getReward(reward);
+        if(getReward){
+            UserEntity persistentUser = userRepository.findById(user.getId())
+                    .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
+            persistentUser.getReward(reward);
+        }
 
         return SolveTrainingPuzzleResponse.builder()
                 .reward(reward)
