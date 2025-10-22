@@ -44,7 +44,7 @@ public class CommunityController {
         return ApiUtils.success(communityService.getCommunityPuzzleList(request, user.getUser()));
     }
 
-    @Operation(summary = "Get a single community puzzle data", description = "Return a specific community puzzle by ID")
+    @Operation(summary = "Get a single community puzzle data", description = "Return a specific community puzzle by ID & Increase puzzle views")
     @GetMapping("/puzzle/{puzzleId}")
     public ApiResponse<GetSingleCommunityPuzzleResponse> getCommunityPuzzleById(
             @PathVariable Long puzzleId,

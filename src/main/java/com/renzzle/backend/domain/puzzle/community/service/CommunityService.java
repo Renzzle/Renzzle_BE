@@ -101,6 +101,8 @@ public class CommunityService {
         Boolean myLike = result.map(LikeDislikeProjection::getIsLiked).orElse(false);
         Boolean myDislike = result.map(LikeDislikeProjection::getIsDisliked).orElse(false);
 
+        puzzle.increaseViews();
+
         return GetSingleCommunityPuzzleResponse.builder()
                 .id(puzzle.getId())
                 .boardStatus(puzzle.getBoardStatus())
