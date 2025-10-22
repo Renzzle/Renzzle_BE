@@ -89,7 +89,7 @@ public class CommunityService {
         return response;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public GetSingleCommunityPuzzleResponse getCommunityPuzzleById(Long puzzleId, UserEntity user) {
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
