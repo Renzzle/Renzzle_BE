@@ -107,6 +107,10 @@ public class CommunityPuzzle {
         }
     }
 
+    public void increaseViews() {
+        this.view++;
+    }
+
     public void increaseSolvedCount() {
         this.solvedCount++;
     }
