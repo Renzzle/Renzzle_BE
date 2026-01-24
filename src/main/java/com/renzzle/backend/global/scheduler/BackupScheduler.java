@@ -55,8 +55,9 @@ public class BackupScheduler {
                     // 3. --ssl-mode=DISABLED : 로컬 도커는 SSL 설정이 없으므로 DISABLED가 맞음
                     "mysqldump -h %s -u %s -p$MAIN_PWD --single-transaction --skip-lock-tables --routines --triggers --no-tablespaces --set-gtid-purged=OFF --ssl-mode=DISABLED %s | " +
 
-                            // 4. --ssl-mode=REQUIRED : Aiven은 보안상 SSL 필수
-                            "mysql -h %s -P %s -u %s -p$BACKUP_PWD --ssl-mode=REQUIRED %s",
+                    // 4. --ssl-mode=REQUIRED : Aiven은 보안상 SSL 필수
+                    "mysql -h %s -P %s -u %s -p$BACKUP_PWD --ssl-mode=REQUIRED %s",
+
 
                     mainHost, mainDbUser, mainDbName,
                     backupHost, backupPort, backupUser, backupDbName
