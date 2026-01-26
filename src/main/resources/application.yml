@@ -56,6 +56,14 @@ rank:
   session:
     ttl: 3600 # 초 단위, 운영 기본값
 
+backup:
+  datasource:
+    # Aiven용 JDBC URL (SSL 옵션 포함)
+    url: ${BACKUP_DB_URL}
+    username: ${BACKUP_DB_USER}
+    password: ${BACKUP_DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
 springdoc:
   packages-to-scan: com.renzzle.backend
   default-consumes-media-type: application/json;charset=UTF-8

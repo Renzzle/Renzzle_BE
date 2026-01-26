@@ -8,6 +8,7 @@ import com.renzzle.backend.domain.test.domain.JdbcEntity;
 import com.renzzle.backend.domain.test.domain.TestEntity;
 import com.renzzle.backend.domain.test.service.TestService;
 import com.renzzle.backend.global.common.response.ApiResponse;
+import com.renzzle.backend.global.scheduler.BackupScheduler;
 import com.renzzle.backend.global.util.ApiUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,6 +26,7 @@ import static com.renzzle.backend.global.util.ErrorUtils.getErrorMessages;
 public class TestController {
 
     private final TestService testService;
+    private final BackupScheduler backupScheduler;
 
     @Operation(summary = "Server response test")
     @GetMapping("/hello/{name}")
@@ -106,6 +108,13 @@ public class TestController {
     public ApiResponse<Boolean> deleteAllTestData() {
         testService.deleteAllTestData();
         return ApiUtils.success(true);
+    }
+
+    @Operation(summary = "DB 백업 강제 실행", description = "로컬 테스트용: 즉시 DB 백업을 수행합니다.")
+    @GetMapping("/backup") // [3] 임시 엔드포인트 생성
+    public String manualBackup() {
+        backupScheduler.backupDatabase(); // [4] 메서드 직접 호출
+        return "백업 로직이 실행되었습니다. 서버 로그를 확인하세요.";
     }
 
 }

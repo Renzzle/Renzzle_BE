@@ -33,6 +33,11 @@ jobs:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+
+          # 백업 DB 환경변수
+          BACKUP_DB_URL: ${{ secrets.BACKUP_DB_URL}}
+          BACKUP_DB_USER: ${{ secrets.BACKUP_DB_USER }}
+          BACKUP_DB_PASSWORD: ${{ secrets.BACKUP_DB_PASSWORD }}
         run: ./gradlew build -x test --stacktrace
 
       - name: Set up Docker environment
@@ -95,6 +100,9 @@ jobs:
           echo "GMAIL_PASSWORD=${{ secrets.GMAIL_PASSWORD }}" >> .env
           echo "GMAIL_ADDRESS=\"${{ secrets.GMAIL_ADDRESS }}\"" >> .env
           echo "JWT_SECRET_KEY=\"${{ secrets.JWT_SECRET_KEY }}\"" >> .env
+          echo "BACKUP_DB_URL=${{ secrets.BACKUP_DB_URL }}" >> .env
+          echo "BACKUP_DB_USER=\"${{ secrets.BACKUP_DB_USER }}\"" >> .env
+          echo "BACKUP_DB_PASSWORD=\"${{ secrets.BACKUP_DB_PASSWORD }}\"" >> .env
 
       - name: Copy .env file to EC2
         uses: appleboy/scp-action@master
