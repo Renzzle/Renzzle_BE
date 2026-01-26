@@ -82,6 +82,9 @@ jobs:
           echo "GMAIL_PASSWORD=${{ secrets.GMAIL_PASSWORD }}" >> .env
           echo "GMAIL_ADDRESS=\"${{ secrets.GMAIL_ADDRESS }}\"" >> .env
           echo "JWT_SECRET_KEY=\"${{ secrets.JWT_SECRET_KEY }}\"" >> .env
+          echo "BACKUP_DB_URL=${{ secrets.BACKUP_DB_URL }}" >> .env
+          echo "BACKUP_DB_USER=\"${{ secrets.BACKUP_DB_USER }}\"" >> .env
+          echo "BACKUP_DB_PASSWORD=\"${{ secrets.BACKUP_DB_PASSWORD }}\"" >> .env
 
       - name: Copy Files to Home Server
         uses: appleboy/scp-action@master
