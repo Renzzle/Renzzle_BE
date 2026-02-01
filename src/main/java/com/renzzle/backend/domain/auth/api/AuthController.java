@@ -77,4 +77,14 @@ public class AuthController {
         return ApiUtils.success(authService.reissueToken(request));
     }
 
+    @Operation(summary = "Verify admin", description = "Check if current user is admin")
+    @GetMapping("/admin/verify")
+    public ApiResponse<Boolean> verifyAdmin(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+        if (userDetails == null || userDetails.getUser() == null) {
+            return ApiUtils.success(false);
+        }
+        boolean isAdmin = accountService.isAdmin(userDetails.getUser());
+        return ApiUtils.success(isAdmin);
+    }
+
 }
