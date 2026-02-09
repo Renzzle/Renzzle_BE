@@ -38,6 +38,9 @@ jobs:
           echo "BACKUP_DB_USER=${{ secrets.BACKUP_DB_USER }}" >> .env
           echo "BACKUP_DB_PASSWORD=${{ secrets.BACKUP_DB_PASSWORD }}" >> .env
 
+          # Promtail → Loki
+          echo "LOKI_TOKEN=${{ secrets.LOKI_TOKEN }}" >> .env
+
       - name: Load environment variables from .env
         run: cat .env >> $GITHUB_ENV
 
