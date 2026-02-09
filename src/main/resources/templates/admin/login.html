@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -92,7 +92,7 @@
       <button type="submit" id="submitBtn">로그인</button>
     </form>
   </div>
-  <script>
+  <script th:inline="javascript">
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('submitBtn');
@@ -105,7 +105,7 @@
 
       btn.disabled = true;
       try {
-        const res = await fetch(window.location.origin + '/api/auth/login', {
+        const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
@@ -120,14 +120,15 @@
         }
 
         const { grantType, accessToken, refreshToken, accessTokenExpiredAt, refreshTokenExpiredAt } = data.response;
-        sessionStorage.setItem('admin_grantType', grantType || 'Bearer');
-        sessionStorage.setItem('admin_accessToken', accessToken);
-        if (refreshToken) sessionStorage.setItem('admin_refreshToken', refreshToken);
-        if (accessTokenExpiredAt) sessionStorage.setItem('admin_accessTokenExpiredAt', accessTokenExpiredAt);
-        if (refreshTokenExpiredAt) sessionStorage.setItem('admin_refreshTokenExpiredAt', refreshTokenExpiredAt);
+        
+        // 쿠키에 저장 (HttpOnly는 서버에서만 설정 가능하므로 여기서는 일반 쿠키로)
+        document.cookie = `admin_accessToken=${accessToken}; path=/; max-age=${60 * 60}`;
+        if (refreshToken) {
+          document.cookie = `admin_refreshToken=${refreshToken}; path=/; max-age=${60 * 60 * 24 * 14}`;
+        }
 
         // admin 권한 확인
-        const verifyRes = await fetch(window.location.origin + '/api/auth/admin/verify', {
+        const verifyRes = await fetch('/api/auth/admin/verify', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -137,18 +138,16 @@
         const verifyData = await verifyRes.json();
 
         if (!verifyData.isSuccess || !verifyData.response) {
-          sessionStorage.removeItem('admin_grantType');
-          sessionStorage.removeItem('admin_accessToken');
-          sessionStorage.removeItem('admin_refreshToken');
-          sessionStorage.removeItem('admin_accessTokenExpiredAt');
-          sessionStorage.removeItem('admin_refreshTokenExpiredAt');
+          // 쿠키 삭제
+          document.cookie = 'admin_accessToken=; path=/; max-age=0';
+          document.cookie = 'admin_refreshToken=; path=/; max-age=0';
           errEl.textContent = '어드민 권한이 없습니다. 일반 사용자는 접근할 수 없습니다.';
           errEl.classList.add('show');
           return;
         }
 
-        const path = window.location.pathname.replace(/index\.html$/i, '').replace(/\/+$/, '') || '/admin';
-        window.location.href = path + '/dashboard.html';
+        // 성공 → 대시보드로 이동
+        window.location.href = '/api/admin/dashboard';
       } catch (err) {
         errEl.textContent = '네트워크 오류: ' + (err.message || '연결할 수 없습니다.');
         errEl.classList.add('show');

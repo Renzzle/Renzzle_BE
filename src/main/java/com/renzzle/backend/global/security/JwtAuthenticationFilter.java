@@ -75,14 +75,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String resolveToken(HttpServletRequest request) {
+        // 1. Authorization 헤더에서 Bearer 토큰 확인
         String bearerToken = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if(!StringUtils.hasText(bearerToken)) {
-            throw new CustomException(ErrorCode.ILLEGAL_TOKEN);
+        if(StringUtils.hasText(bearerToken) && bearerToken.startsWith(GrantType.BEARER.getType())) {
+            return bearerToken.substring(7);
         }
-        if(!bearerToken.startsWith(GrantType.BEARER.getType())) {
-            throw new CustomException(ErrorCode.NOT_BEARER_GRANT_TYPE);
+        
+        // 2. 쿠키에서 admin_accessToken 확인 (브라우저 접속용)
+        if (request.getCookies() != null) {
+            for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
+                if ("admin_accessToken".equals(cookie.getName())) {
+                    String tokenFromCookie = cookie.getValue();
+                    if (StringUtils.hasText(tokenFromCookie)) {
+                        return tokenFromCookie;
+                    }
+                }
+            }
         }
-        return bearerToken.substring(7);
+        
+        // 3. 둘 다 없으면 예외
+        throw new CustomException(ErrorCode.ILLEGAL_TOKEN);
     }
 
     private void handleException(HttpServletResponse response, ErrorCode errorCode) {

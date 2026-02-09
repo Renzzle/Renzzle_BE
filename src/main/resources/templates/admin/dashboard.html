@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -52,6 +52,7 @@
       border-bottom: 1px solid rgba(255,255,255,0.1);
     }
     .header h1 { margin: 0; font-size: 1.35rem; }
+    .header .user-info { font-size: 0.9rem; color: #b0b0b0; margin-right: 1rem; }
     .btn {
       padding: 0.5rem 1rem;
       border: none;
@@ -144,8 +145,11 @@
   </nav>
 
   <div class="header">
-    <h1>Renzzle 어드민 - 팩/문제 관리</h1>
-    <a href="index.html" class="btn" id="logoutBtn">로그아웃</a>
+    <div>
+      <h1>Renzzle 어드민 - 팩/문제 관리</h1>
+      <span class="user-info" th:if="${userEmail}" th:text="${userEmail}"></span>
+    </div>
+    <a href="/admin/logout" class="btn" id="logoutBtn">로그아웃</a>
   </div>
 
   <!-- 팩 목록 -->
@@ -187,9 +191,24 @@
     </div>
     <label>문제 순서 (puzzleIndex) * <small>(비워두면 가장 마지막에 추가됨)</small></label>
     <input type="number" id="problemPuzzleIndex" min="1" placeholder="비워두면 마지막 순서로 자동 추가">
+    
+    <!-- 오목판 시각화 -->
+    <div style="margin: 1.5rem 0;">
+      <label>보드 상태 시각화</label>
+      <p class="hint">오목판을 클릭해서 돌을 두거나, 아래 입력 칸에 직접 입력하세요.</p>
+      <div style="display: flex; gap: 1rem; align-items: flex-start;">
+        <canvas id="gomokuBoard" width="480" height="480" style="background: #DCB35C; border: 2px solid #333; cursor: default;"></canvas>
+        <div style="flex: 1;">
+          <button type="button" class="btn" id="clearBoardBtn" style="margin-bottom: 0.5rem;">보드 초기화</button>
+          <button type="button" class="btn" id="undoMoveBtn" style="margin-bottom: 0.5rem;">마지막 수 취소</button>
+          <p style="font-size: 0.85rem; color: #b0b0b0; margin: 0.5rem 0;">현재 차례: <span id="currentTurn" style="color: #fff; font-weight: 600;">흑</span></p>
+        </div>
+      </div>
+    </div>
+    
     <label>보드 상태 (boardStatus) *</label>
-    <input type="text" id="problemBoardStatus" placeholder="예: a1b2c3... (15x15 보드 위치, a~o+숫자)" required>
-    <p class="hint">형식: 행(a~o) + 열(1~15) 조합으로 돌 위치 나열. 예: a1b2c3</p>
+    <input type="text" id="problemBoardStatus" placeholder="예: h8i7i5h5... (15x15 보드 위치, a~o+숫자)" required>
+    <p class="hint">형식: 행(a~o) + 열(1~15) 조합으로 돌 위치 나열. 예: h8i7i5h5 (오목판 클릭 시 자동 업데이트)</p>
     <label>정답 (answer) *</label>
     <input type="text" id="problemAnswer" placeholder="정답 문자열, 최대 1023자" maxlength="1023" required>
     <label>깊이 (depth) *</label>
@@ -251,17 +270,198 @@
     <div id="createPackMsg" class="msg"></div>
   </section>
 
-  <script>
-    const API_BASE = window.location.origin;
+  <script th:inline="javascript">
+    const API_BASE = '';
     let isRefreshing = false;
 
+    // ===== 오목판 관련 변수 및 함수 =====
+    const canvas = document.getElementById('gomokuBoard');
+    const ctx = canvas.getContext('2d');
+    const BOARD_SIZE = 15;
+    const CELL_SIZE = 30;
+    const MARGIN = 30;  // 좌/상/우/하 동일 마진 (라벨용)
+    const moves = [];   // [{row, col, player}] - row 0=하단(1행), row 14=상단(15행), col 0=a~14=o
+    let currentPlayer = 'black';
+
+    // 논리 좌표 -> 캔버스 좌표 (좌하 a1, 우상 o15)
+    function toCanvasX(col) { return MARGIN + col * CELL_SIZE; }
+    function toCanvasY(row) { return MARGIN + (14 - row) * CELL_SIZE; }
+
+    function drawBoard() {
+      ctx.fillStyle = '#DCB35C';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 1;
+      
+      for (let i = 0; i < BOARD_SIZE; i++) {
+        const pos = MARGIN + i * CELL_SIZE;
+        ctx.beginPath();
+        ctx.moveTo(pos, MARGIN);
+        ctx.lineTo(pos, MARGIN + (BOARD_SIZE - 1) * CELL_SIZE);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(MARGIN, pos);
+        ctx.lineTo(MARGIN + (BOARD_SIZE - 1) * CELL_SIZE, pos);
+        ctx.stroke();
+      }
+      
+      // 화점 (star points) - 논리 좌표 row,col
+      const starPoints = [
+        [3, 3], [3, 11], [7, 7], [11, 3], [11, 11]
+      ];
+      starPoints.forEach(([row, col]) => {
+        const x = toCanvasX(col);
+        const y = toCanvasY(row);
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // 하단 마진: A ~ O (검은 글씨)
+      ctx.fillStyle = '#000';
+      ctx.font = '14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (let c = 0; c < BOARD_SIZE; c++) {
+        const x = toCanvasX(c);
+        const y = canvas.height - MARGIN / 2;
+        ctx.fillText(String.fromCharCode(65 + c), x, y);
+      }
+
+      // 좌측 마진: 1 ~ 15 하단부터 상단 (검은 글씨)
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (let r = 0; r < BOARD_SIZE; r++) {
+        const y = toCanvasY(r);
+        const x = MARGIN / 2;
+        ctx.fillText(String(r + 1), x, y);
+      }
+    }
+
+    function drawStone(row, col, player, moveNumber) {
+      const x = toCanvasX(col);
+      const y = toCanvasY(row);
+      
+      ctx.fillStyle = player === 'black' ? '#000' : '#fff';
+      ctx.beginPath();
+      ctx.arc(x, y, CELL_SIZE / 2 - 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = player === 'black' ? '#333' : '#999';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      
+      if (moveNumber) {
+        ctx.fillStyle = player === 'black' ? '#fff' : '#000';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(moveNumber, x, y);
+      }
+    }
+
+    function redrawBoard() {
+      drawBoard();
+      moves.forEach((move, idx) => {
+        drawStone(move.row, move.col, move.player, idx + 1);
+      });
+    }
+
+    function boardStatusToMoves(boardStatus) {
+      // "a1b2..." -> [{row, col, player}, ...] (a=col0, 1=row0/하단)
+      const result = [];
+      if (!boardStatus || boardStatus.trim() === '') return result;
+      const regex = /([a-oA-O])(\d{1,2})/g;
+      let match;
+      let turnBlack = true;
+      while ((match = regex.exec(boardStatus)) !== null) {
+        const col = match[1].toLowerCase().charCodeAt(0) - 'a'.charCodeAt(0);
+        const row = parseInt(match[2], 10) - 1;  // 1~15 -> 0~14 (1=하단)
+        if (row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE) {
+          result.push({ row, col, player: turnBlack ? 'black' : 'white' });
+          turnBlack = !turnBlack;
+        }
+      }
+      return result;
+    }
+
+    function movesToBoardStatus(moves) {
+      // row 0=1행(하단), col 0=a
+      return moves.map(m => {
+        const rowChar = String.fromCharCode('a'.charCodeAt(0) + m.col);
+        const colNum = m.row + 1;
+        return rowChar + colNum;
+      }).join('');
+    }
+
+    function updateBoardStatusInput() {
+      document.getElementById('problemBoardStatus').value = movesToBoardStatus(moves);
+    }
+
+    canvas.addEventListener('click', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      const col = Math.round((x - MARGIN) / CELL_SIZE);
+      const row = 14 - Math.round((y - MARGIN) / CELL_SIZE);  // 캔버스 y 하->상 = 논리 row 0~14
+      
+      if (row < 0 || row >= BOARD_SIZE || col < 0 || col >= BOARD_SIZE) return;
+      
+      if (moves.some(m => m.row === row && m.col === col)) return;
+      
+      moves.push({ row, col, player: currentPlayer });
+      redrawBoard();
+      updateBoardStatusInput();
+      
+      currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+      document.getElementById('currentTurn').textContent = currentPlayer === 'black' ? '흑' : '백';
+    });
+
+    document.getElementById('clearBoardBtn').addEventListener('click', () => {
+      moves.length = 0;
+      currentPlayer = 'black';
+      document.getElementById('currentTurn').textContent = '흑';
+      redrawBoard();
+      updateBoardStatusInput();
+    });
+
+    document.getElementById('undoMoveBtn').addEventListener('click', () => {
+      if (moves.length === 0) return;
+      moves.pop();
+      currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+      document.getElementById('currentTurn').textContent = currentPlayer === 'black' ? '흑' : '백';
+      redrawBoard();
+      updateBoardStatusInput();
+    });
+
+    // boardStatus 입력 칸 변경 시 오목판에 반영
+    document.getElementById('problemBoardStatus').addEventListener('input', (e) => {
+      const newMoves = boardStatusToMoves(e.target.value);
+      moves.length = 0;
+      moves.push(...newMoves);
+      currentPlayer = moves.length % 2 === 0 ? 'black' : 'white';
+      document.getElementById('currentTurn').textContent = currentPlayer === 'black' ? '흑' : '백';
+      redrawBoard();
+    });
+
+    // 초기 보드 그리기
+    drawBoard();
+    // ===== 오목판 관련 끝 =====
+
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+      return null;
+    }
+
     function getAuthHeaders() {
-      const grantType = sessionStorage.getItem('admin_grantType') || 'Bearer';
-      const accessToken = sessionStorage.getItem('admin_accessToken');
+      const accessToken = getCookie('admin_accessToken');
       if (!accessToken) return null;
       return {
         'Content-Type': 'application/json',
-        'Authorization': grantType + ' ' + accessToken
+        'Authorization': 'Bearer ' + accessToken
       };
     }
 
@@ -269,7 +469,7 @@
       if (isRefreshing) return false;
       isRefreshing = true;
       try {
-        const refreshToken = sessionStorage.getItem('admin_refreshToken');
+        const refreshToken = getCookie('admin_refreshToken');
         if (!refreshToken) return false;
         
         const res = await fetch(API_BASE + '/api/auth/reissueToken', {
@@ -281,11 +481,10 @@
         if (!data.isSuccess) return false;
 
         const { grantType, accessToken, refreshToken: newRefresh, accessTokenExpiredAt, refreshTokenExpiredAt } = data.response;
-        sessionStorage.setItem('admin_grantType', grantType || 'Bearer');
-        sessionStorage.setItem('admin_accessToken', accessToken);
-        if (newRefresh) sessionStorage.setItem('admin_refreshToken', newRefresh);
-        if (accessTokenExpiredAt) sessionStorage.setItem('admin_accessTokenExpiredAt', accessTokenExpiredAt);
-        if (refreshTokenExpiredAt) sessionStorage.setItem('admin_refreshTokenExpiredAt', refreshTokenExpiredAt);
+        document.cookie = `admin_accessToken=${accessToken}; path=/; max-age=${60 * 60}`;
+        if (newRefresh) {
+          document.cookie = `admin_refreshToken=${newRefresh}; path=/; max-age=${60 * 60 * 24 * 14}`;
+        }
         return true;
       } catch (err) {
         return false;
@@ -296,39 +495,23 @@
 
     async function fetchWithAuth(url, options = {}) {
       let headers = getAuthHeaders();
-      if (!headers) throw new Error('로그인이 필요합니다.');
+      if (!headers) {
+        window.location.href = '/admin';
+        throw new Error('로그인이 필요합니다.');
+      }
       
       let res = await fetch(url, { ...options, headers });
       if (res.status === 401) {
         const refreshed = await refreshAccessToken();
-        if (!refreshed) throw new Error('토큰 재발급 실패. 다시 로그인하세요.');
+        if (!refreshed) {
+          window.location.href = '/admin';
+          throw new Error('토큰 재발급 실패. 다시 로그인하세요.');
+        }
         headers = getAuthHeaders();
         res = await fetch(url, { ...options, headers });
       }
       return res;
     }
-
-    function redirectIfNoAuth() {
-      if (!sessionStorage.getItem('admin_accessToken')) {
-        const path = window.location.pathname.replace(/dashboard\.html$/i, '').replace(/\/+$/, '') || '/admin';
-        window.location.href = path + '/index.html';
-        return true;
-      }
-      return false;
-    }
-
-    document.getElementById('logoutBtn').addEventListener('click', (e) => {
-      e.preventDefault();
-      sessionStorage.removeItem('admin_grantType');
-      sessionStorage.removeItem('admin_accessToken');
-      sessionStorage.removeItem('admin_refreshToken');
-      sessionStorage.removeItem('admin_accessTokenExpiredAt');
-      sessionStorage.removeItem('admin_refreshTokenExpiredAt');
-      const path = window.location.pathname.replace(/dashboard\.html$/i, '').replace(/\/+$/, '') || '/admin';
-      window.location.href = path + '/index.html';
-    });
-
-    if (redirectIfNoAuth()) throw new Error('redirect');
 
     // ----- 팩 목록 -----
     document.getElementById('loadPacksBtn').addEventListener('click', async () => {
@@ -399,7 +582,7 @@
       }
     }
 
-    // ----- 팩 생성 (언어 최대 3개, 1개만 써도 됨) -----
+    // ----- 팩 생성 (언어 최대 2개, 1개만 써도 됨) -----
     document.getElementById('createPackBtn').addEventListener('click', async () => {
       const msgEl = document.getElementById('createPackMsg');
       msgEl.classList.remove('show', 'success', 'error');
