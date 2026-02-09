@@ -34,8 +34,8 @@
         </root>
     </springProfile>
 
-    <!-- Local/dev: CONSOLE only -->
-    <springProfile name="local,dev">
+    <!-- Local/dev/test: CONSOLE only (CI/test has no writable /app/logs) -->
+    <springProfile name="local,dev,test">
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
         </root>

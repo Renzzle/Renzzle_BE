@@ -63,6 +63,8 @@ jobs:
           echo "JWT_SECRET_KEY = (hidden)"
 
       - name: Build and Test with Gradle
+        env:
+          SPRING_PROFILES_ACTIVE: test
         run: ./gradlew build
 
       - name: Test build success
