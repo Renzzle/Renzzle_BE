@@ -95,7 +95,7 @@ jobs:
           host: ${{ secrets.HOST }}
           username: renzzle.official
           key: ${{ secrets.PRIVATE_KEY }}
-          script: rm -rf /home/renzzle.official/promtail
+          script: sudo rm -rf /home/renzzle.official/promtail
 
       - name: Copy Promtail config to EC2
         uses: appleboy/scp-action@master
