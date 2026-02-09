@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  promtail:
+    image: grafana/promtail:2.9.4
+    volumes:
+      - app-logs:/var/log/app
+      - ./promtail/config.yml:/etc/promtail/config.yml
+    environment:
+      - LOKI_TOKEN=${LOKI_TOKEN}
+    command:
+      - sh
+      - -c
+      - |
+        mkdir -p /run/promtail
+        echo "$$LOKI_TOKEN" > /run/promtail/token
+        exec promtail -config.file=/etc/promtail/config.yml
+    networks:
+      - app-network
+    depends_on:
+      - app

@@ -89,6 +89,19 @@ jobs:
           debug: true
           overwrite: true
 
+      - name: Copy Docker Compose promtail file to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: renzzle.official
+          key: ${{ secrets.PRIVATE_KEY }}
+          source: './docker-compose.promtail.yml'
+          target: '/home/renzzle.official/'
+          port: 22
+          timeout: 30s
+          command_timeout: 10m
+          overwrite: true
+
       - name: Remove existing promtail dir on EC2
         uses: appleboy/ssh-action@master
         with:
@@ -151,9 +164,9 @@ jobs:
               docker rm $ALL_CONTAINERS
             fi
             
-            docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
-            docker-compose -f docker-compose.yml -f docker-compose.prod.yml pull --profile promtail
-            docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --profile promtail
+            docker-compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.promtail.yml down
+            docker-compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.promtail.yml pull
+            docker-compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.promtail.yml up -d
             
             # check container status
             echo "Running containers:"
