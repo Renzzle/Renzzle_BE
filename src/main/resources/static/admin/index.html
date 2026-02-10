@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Renzzle 어드민 로그인</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      color: #e8e8e8;
+    }
+    .login-card {
+      width: 100%;
+      max-width: 380px;
+      padding: 2rem;
+      background: rgba(255,255,255,0.06);
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    h1 {
+      margin: 0 0 1.5rem;
+      font-size: 1.5rem;
+      font-weight: 600;
+      text-align: center;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-size: 0.9rem;
+      color: #b0b0b0;
+    }
+    input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      background: rgba(0,0,0,0.2);
+      color: #fff;
+      font-size: 1rem;
+    }
+    input::placeholder { color: #666; }
+    input:focus {
+      outline: none;
+      border-color: #4a9eff;
+      box-shadow: 0 0 0 2px rgba(74,158,255,0.2);
+    }
+    button {
+      width: 100%;
+      padding: 0.85rem;
+      margin-top: 0.5rem;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(90deg, #4a9eff, #357abd);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover { opacity: 0.95; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .error {
+      margin-top: 0.75rem;
+      padding: 0.6rem;
+      border-radius: 8px;
+      background: rgba(220, 53, 69, 0.2);
+      border: 1px solid rgba(220, 53, 69, 0.5);
+      color: #f8a0a0;
+      font-size: 0.9rem;
+      display: none;
+    }
+    .error.show { display: block; }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <h1>Renzzle 어드민</h1>
+    <form id="loginForm">
+      <label for="email">이메일</label>
+      <input type="email" id="email" name="email" placeholder="admin@example.com" required autocomplete="email">
+      <label for="password">비밀번호</label>
+      <input type="password" id="password" name="password" placeholder="8자 이상 영문+숫자" required autocomplete="current-password" minlength="8">
+      <div id="error" class="error"></div>
+      <button type="submit" id="submitBtn">로그인</button>
+    </form>
+  </div>
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      const errEl = document.getElementById('error');
+      errEl.classList.remove('show');
+      errEl.textContent = '';
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      btn.disabled = true;
+      try {
+        const res = await fetch(window.location.origin + '/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (!data.isSuccess || !data.response) {
+          const msg = data.errorResponse?.message || data.errorResponse?.messages?.join(', ') || '로그인에 실패했습니다.';
+          errEl.textContent = msg;
+          errEl.classList.add('show');
+          return;
+        }
+
+        const { grantType, accessToken, refreshToken, accessTokenExpiredAt, refreshTokenExpiredAt } = data.response;
+        sessionStorage.setItem('admin_grantType', grantType || 'Bearer');
+        sessionStorage.setItem('admin_accessToken', accessToken);
+        if (refreshToken) sessionStorage.setItem('admin_refreshToken', refreshToken);
+        if (accessTokenExpiredAt) sessionStorage.setItem('admin_accessTokenExpiredAt', accessTokenExpiredAt);
+        if (refreshTokenExpiredAt) sessionStorage.setItem('admin_refreshTokenExpiredAt', refreshTokenExpiredAt);
+
+        // admin 권한 확인
+        const verifyRes = await fetch(window.location.origin + '/api/auth/admin/verify', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': (grantType || 'Bearer') + ' ' + accessToken
+          }
+        });
+        const verifyData = await verifyRes.json();
+
+        if (!verifyData.isSuccess || !verifyData.response) {
+          sessionStorage.removeItem('admin_grantType');
+          sessionStorage.removeItem('admin_accessToken');
+          sessionStorage.removeItem('admin_refreshToken');
+          sessionStorage.removeItem('admin_accessTokenExpiredAt');
+          sessionStorage.removeItem('admin_refreshTokenExpiredAt');
+          errEl.textContent = '어드민 권한이 없습니다. 일반 사용자는 접근할 수 없습니다.';
+          errEl.classList.add('show');
+          return;
+        }
+
+        const path = window.location.pathname.replace(/index\.html$/i, '').replace(/\/+$/, '') || '/admin';
+        window.location.href = path + '/dashboard.html';
+      } catch (err) {
+        errEl.textContent = '네트워크 오류: ' + (err.message || '연결할 수 없습니다.');
+        errEl.classList.add('show');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

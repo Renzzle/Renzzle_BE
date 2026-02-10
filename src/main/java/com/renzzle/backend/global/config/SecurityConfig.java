@@ -37,6 +37,8 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         List<RequestMatcher> permitAllRequestMatchers = Arrays.asList(
                 AntPathRequestMatcher.antMatcher("/api/test/**"),
+                AntPathRequestMatcher.antMatcher("/admin/**"),
+                AntPathRequestMatcher.antMatcher("/api/admin/login"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/email"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/confirmCode"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/api/auth/duplicate/**"),
@@ -55,6 +57,8 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(request -> request
                         .requestMatchers(permitAllRequestMatchers.toArray(new RequestMatcher[0])).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/admin/login").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/admin/dashboard").hasAuthority(ADMIN)
                         .requestMatchers(HttpMethod.POST, "/api/training").hasAuthority(ADMIN)
                         .requestMatchers(HttpMethod.PATCH, "/api/training/**").hasAuthority(ADMIN)
                         .requestMatchers(HttpMethod.DELETE, "/api/training/**").hasAuthority(ADMIN)

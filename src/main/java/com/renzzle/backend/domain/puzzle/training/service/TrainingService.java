@@ -281,15 +281,13 @@ public class TrainingService {
                 .collect(Collectors.toMap(t -> t.getPack().getId(), t -> t));
 
         Long userId = user.getId();
-
         List<UserPack> userPacks = userPackRepository.findAllByUserIdAndPackIdIn(userId, packIds);
         Map<Long, UserPack> userPackMap = userPacks.stream()
                 .collect(Collectors.toMap(up -> up.getPack().getId(), up -> up));
 
         List<GetPackResponse> result = new ArrayList<>();
         for (Pack pack : packs) {
-            PackTranslation translation =
-                    requestedMap.getOrDefault(pack.getId(), defaultMap.get(pack.getId()));
+            PackTranslation translation = requestedMap.getOrDefault(pack.getId(), defaultMap.get(pack.getId()));
 
             UserPack up = userPackMap.get(pack.getId());
             boolean locked = (up == null);
