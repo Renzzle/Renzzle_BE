@@ -21,6 +21,29 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Docker environment preflight
+        run: |
+          docker version
+          docker info
+          docker context ls
+          docker context inspect "$(docker context show)"
+          ls -l /var/run/docker.sock || true
+
+      - name: Resolve Docker Host
+        id: docker_host
+        run: |
+          DOCKER_CONTEXT_HOST=$(docker context inspect "$(docker context show)" --format '{{ (index .Endpoints "docker").Host }}' 2>/dev/null || true)
+          if [ -z "$DOCKER_CONTEXT_HOST" ] || [ "$DOCKER_CONTEXT_HOST" = "<no value>" ] || [ "$DOCKER_CONTEXT_HOST" = "null" ]; then
+            DOCKER_CONTEXT_HOST="unix:///var/run/docker.sock"
+          fi
+          if ! echo "$DOCKER_CONTEXT_HOST" | grep -Eq '^[a-z]+://'; then
+            echo "Invalid Docker host resolved: $DOCKER_CONTEXT_HOST"
+            docker context inspect "$(docker context show)" || true
+            exit 1
+          fi
+          echo "docker_host=$DOCKER_CONTEXT_HOST" >> $GITHUB_OUTPUT
+          echo "Resolved DOCKER_HOST=$DOCKER_CONTEXT_HOST"
+
       - name: Create .env file
         run: |
           echo "DB_ADDRESS=${{ secrets.DB_ADDRESS }}" >> .env
@@ -41,31 +64,72 @@ jobs:
           # Promtail → Loki
           echo "LOKI_TOKEN=${{ secrets.LOKI_TOKEN }}" >> .env
 
-      - name: Load environment variables from .env
-        run: cat .env >> $GITHUB_ENV
-
       - name: Start Docker Compose with .env
         run: docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env up -d
 
       - name: Redis Health Check
-        run: docker exec -i redis redis-cli -a $REDIS_PASSWORD ping
+        run: docker exec -i redis redis-cli -a "${{ secrets.REDIS_PASSWORD }}" ping
+
+      - name: MySQL Health Check
+        run: |
+          for i in {1..30}; do
+            if docker exec -i mysql mysqladmin ping -h localhost -u"${{ secrets.DB_USER }}" -p"${{ secrets.DB_PASSWORD }}" --silent; then
+              echo "MySQL is healthy"
+              exit 0
+            fi
+            echo "Waiting for MySQL to be ready... ($i/30)"
+            sleep 2
+          done
+          echo "MySQL health check failed"
+          docker logs mysql || true
+          exit 1
 
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
       - name: Verify Environment Variables Before Build
         run: |
-          echo "DB_ADDRESS = $DB_ADDRESS"
-          echo "DB_USER = $DB_USER"
-          echo "DB_PASSWORD = (hidden)"
-          echo "REDIS_PASSWORD = (hidden)"
-          echo "GMAIL_ADDRESS = $GMAIL_ADDRESS"
-          echo "JWT_SECRET_KEY = (hidden)"
+          echo "DOCKER_HOST = ${{ steps.docker_host.outputs.docker_host }}"
+          env | grep -E '^DOCKER' | sort
+          docker ps --format 'table {{.Names}}\t{{.Status}}'
+
+      - name: Verify Docker Access For Testcontainers
+        env:
+          DOCKER_HOST: ${{ steps.docker_host.outputs.docker_host }}
+        run: |
+          docker version
+          docker ps --format 'table {{.Names}}\t{{.Status}}'
+
+      - name: Normalize Testcontainers Docker Strategy
+        run: |
+          rm -f ~/.testcontainers.properties
+          cat <<'EOF' > ~/.testcontainers.properties
+          docker.client.strategy=org.testcontainers.dockerclient.UnixSocketClientProviderStrategy
+          docker.host=unix:///var/run/docker.sock
+          EOF
+          cat ~/.testcontainers.properties
 
       - name: Build and Test with Gradle
         env:
           SPRING_PROFILES_ACTIVE: test
-        run: ./gradlew build
+          DB_ADDRESS: ${{ secrets.DB_ADDRESS }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          BACKUP_DB_URL: ${{ secrets.BACKUP_DB_URL }}
+          BACKUP_DB_USER: ${{ secrets.BACKUP_DB_USER }}
+          BACKUP_DB_PASSWORD: ${{ secrets.BACKUP_DB_PASSWORD }}
+          DOCKER_HOST: ${{ steps.docker_host.outputs.docker_host }}
+          DOCKER_API_VERSION: "1.44"
+          TESTCONTAINERS_HOST_OVERRIDE: localhost
+          TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE: /var/run/docker.sock
+          TESTCONTAINERS_DOCKER_CLIENT_STRATEGY: org.testcontainers.dockerclient.UnixSocketClientProviderStrategy
+          TESTCONTAINERS_CHECKS_DISABLE: true
+          TESTCONTAINERS_RYUK_DISABLED: true
+        run: ./gradlew --no-daemon build --stacktrace
 
       - name: Test build success
         run: echo "Build completed successfully!"
