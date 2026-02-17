@@ -100,6 +100,15 @@ jobs:
           docker version
           docker ps --format 'table {{.Names}}\t{{.Status}}'
 
+      - name: Normalize Testcontainers Docker Strategy
+        run: |
+          rm -f ~/.testcontainers.properties
+          cat <<'EOF' > ~/.testcontainers.properties
+          docker.client.strategy=org.testcontainers.dockerclient.UnixSocketClientProviderStrategy
+          docker.host=unix:///var/run/docker.sock
+          EOF
+          cat ~/.testcontainers.properties
+
       - name: Build and Test with Gradle
         env:
           SPRING_PROFILES_ACTIVE: test
@@ -114,7 +123,10 @@ jobs:
           BACKUP_DB_USER: ${{ secrets.BACKUP_DB_USER }}
           BACKUP_DB_PASSWORD: ${{ secrets.BACKUP_DB_PASSWORD }}
           DOCKER_HOST: ${{ steps.docker_host.outputs.docker_host }}
+          DOCKER_API_VERSION: "1.44"
           TESTCONTAINERS_HOST_OVERRIDE: localhost
+          TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE: /var/run/docker.sock
+          TESTCONTAINERS_DOCKER_CLIENT_STRATEGY: org.testcontainers.dockerclient.UnixSocketClientProviderStrategy
           TESTCONTAINERS_CHECKS_DISABLE: true
           TESTCONTAINERS_RYUK_DISABLED: true
         run: ./gradlew --no-daemon build --stacktrace
