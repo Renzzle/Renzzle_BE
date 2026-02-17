@@ -29,13 +29,24 @@ jobs:
           docker context inspect "$(docker context show)"
           ls -l /var/run/docker.sock || true
 
-      - name: Configure Testcontainers for Linux runner
+      - name: Configure Testcontainers from active Docker context
         run: |
-          mkdir -p ~/.testcontainers
-          cat <<'EOF' > ~/.testcontainers.properties
-          docker.client.strategy=org.testcontainers.dockerclient.UnixSocketClientProviderStrategy
-          EOF
-          cat ~/.testcontainers.properties
+          DOCKER_CONTEXT_HOST=$(docker context inspect "$(docker context show)" --format '{{ (index .Endpoints "docker").Host }}')
+          if [ -z "$DOCKER_CONTEXT_HOST" ]; then
+            DOCKER_CONTEXT_HOST="unix:///var/run/docker.sock"
+          fi
+
+          echo "DOCKER_HOST=$DOCKER_CONTEXT_HOST" >> $GITHUB_ENV
+          echo "TESTCONTAINERS_HOST_OVERRIDE=localhost" >> $GITHUB_ENV
+          echo "TESTCONTAINERS_CHECKS_DISABLE=true" >> $GITHUB_ENV
+
+          if [[ "$DOCKER_CONTEXT_HOST" == unix://* ]]; then
+            DOCKER_SOCKET_PATH="${DOCKER_CONTEXT_HOST#unix://}"
+            echo "TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=$DOCKER_SOCKET_PATH" >> $GITHUB_ENV
+            echo "TESTCONTAINERS_DOCKER_CLIENT_STRATEGY=org.testcontainers.dockerclient.UnixSocketClientProviderStrategy" >> $GITHUB_ENV
+          fi
+
+          echo "Resolved DOCKER_HOST=$DOCKER_CONTEXT_HOST"
 
       - name: Create .env file
         run: |
@@ -77,15 +88,12 @@ jobs:
           echo "REDIS_PASSWORD = (hidden)"
           echo "GMAIL_ADDRESS = $GMAIL_ADDRESS"
           echo "JWT_SECRET_KEY = (hidden)"
+          echo "DOCKER_HOST = $DOCKER_HOST"
+          env | grep -E '^TESTCONTAINERS_' | sort
 
       - name: Build and Test with Gradle
         env:
           SPRING_PROFILES_ACTIVE: test
-          DOCKER_HOST: unix:///var/run/docker.sock
-          TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE: /var/run/docker.sock
-          TESTCONTAINERS_HOST_OVERRIDE: localhost
-          TESTCONTAINERS_DOCKER_CLIENT_STRATEGY: org.testcontainers.dockerclient.UnixSocketClientProviderStrategy
-          TESTCONTAINERS_CHECKS_DISABLE: true
         run: ./gradlew --no-daemon build --stacktrace
 
       - name: Test build success
