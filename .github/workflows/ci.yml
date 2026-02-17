@@ -25,6 +25,9 @@ jobs:
         run: |
           docker version
           docker info
+          docker context ls
+          docker context inspect "$(docker context show)"
+          ls -l /var/run/docker.sock || true
 
       - name: Configure Testcontainers for Linux runner
         run: |
@@ -32,6 +35,7 @@ jobs:
           cat <<'EOF' > ~/.testcontainers.properties
           docker.client.strategy=org.testcontainers.dockerclient.UnixSocketClientProviderStrategy
           EOF
+          cat ~/.testcontainers.properties
 
       - name: Create .env file
         run: |
@@ -80,7 +84,9 @@ jobs:
           DOCKER_HOST: unix:///var/run/docker.sock
           TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE: /var/run/docker.sock
           TESTCONTAINERS_HOST_OVERRIDE: localhost
-        run: ./gradlew build
+          TESTCONTAINERS_DOCKER_CLIENT_STRATEGY: org.testcontainers.dockerclient.UnixSocketClientProviderStrategy
+          TESTCONTAINERS_CHECKS_DISABLE: true
+        run: ./gradlew --no-daemon build --stacktrace
 
       - name: Test build success
         run: echo "Build completed successfully!"
