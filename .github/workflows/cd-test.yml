@@ -85,6 +85,7 @@ jobs:
           echo "BACKUP_DB_URL=${{ secrets.BACKUP_DB_URL }}" >> .env
           echo "BACKUP_DB_USER=\"${{ secrets.BACKUP_DB_USER }}\"" >> .env
           echo "BACKUP_DB_PASSWORD=\"${{ secrets.BACKUP_DB_PASSWORD }}\"" >> .env
+          echo "LOKI_TOKEN=${{ secrets.LOKI_TOKEN }}" >> .env
 
       - name: Copy Files to Home Server
         uses: appleboy/scp-action@master

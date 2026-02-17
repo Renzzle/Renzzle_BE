@@ -48,7 +48,8 @@ public class SecurityConfig {
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/signup"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/reissueToken"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/swagger-ui/**"),
-                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/v3/api-docs/**")
+                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/v3/api-docs/**"),
+                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/actuator/**")
         );
 
         return httpSecurity.csrf(AbstractHttpConfigurer::disable)
