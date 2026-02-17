@@ -4,9 +4,9 @@ server:
 positions:
   filename: /tmp/positions.yaml
 
-client:
-  url: https://loki.kang-sm.dev/loki/api/v1/push
-  bearer_token_file: /run/promtail/token
+clients:
+  - url: https://loki.kang-sm.dev/loki/api/v1/push
+    bearer_token_file: /run/promtail/token
 
 scrape_configs:
   - job_name: renzzle-backend
