@@ -21,6 +21,18 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Docker environment preflight
+        run: |
+          docker version
+          docker info
+
+      - name: Configure Testcontainers for Linux runner
+        run: |
+          mkdir -p ~/.testcontainers
+          cat <<'EOF' > ~/.testcontainers.properties
+          docker.client.strategy=org.testcontainers.dockerclient.UnixSocketClientProviderStrategy
+          EOF
+
       - name: Create .env file
         run: |
           echo "DB_ADDRESS=${{ secrets.DB_ADDRESS }}" >> .env
@@ -65,6 +77,9 @@ jobs:
       - name: Build and Test with Gradle
         env:
           SPRING_PROFILES_ACTIVE: test
+          DOCKER_HOST: unix:///var/run/docker.sock
+          TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE: /var/run/docker.sock
+          TESTCONTAINERS_HOST_OVERRIDE: localhost
         run: ./gradlew build
 
       - name: Test build success
