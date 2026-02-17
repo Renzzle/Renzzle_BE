@@ -7,18 +7,23 @@ import com.renzzle.backend.global.exception.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 import java.io.IOException;
 
+/**
+ * 인증 실패(401) 처리: 토큰 없음, 토큰 만료 등
+ * - HTML 요청(브라우저): /admin 로그인 페이지로 redirect
+ * - API 요청: JSON 응답
+ */
 @Slf4j
 @Component
-public class CustomAccessDeniedHandler implements AccessDeniedHandler {
+public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
     @Override
-    public void handle(HttpServletRequest request, HttpServletResponse response,
-                       AccessDeniedException accessDeniedException) throws IOException {
+    public void commence(HttpServletRequest request, HttpServletResponse response,
+                         AuthenticationException authException) throws IOException {
         // HTML 요청(브라우저)인 경우 로그인 페이지로 redirect
         String acceptHeader = request.getHeader("Accept");
         if (acceptHeader != null && acceptHeader.contains("text/html")) {
@@ -27,7 +32,7 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
         }
 
         // API 요청인 경우 JSON 응답
-        ErrorCode errorCode = ErrorCode.ADMIN_ACCESS_DENIED;
+        ErrorCode errorCode = ErrorCode.ILLEGAL_TOKEN;
         response.setStatus(errorCode.getStatus().value());
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
@@ -40,5 +45,4 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
             log.error(e.getMessage());
         }
     }
-
 }
