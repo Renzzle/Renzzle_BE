@@ -6,6 +6,7 @@ plugins {
 
 group = 'com.renzzle'
 version = '0.0.1-SNAPSHOT'
+ext['testcontainers.version'] = '1.21.4'
 
 java {
 	toolchain {
@@ -56,9 +57,9 @@ dependencies {
 	// html thymeleaf
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	//test container
-	testImplementation 'org.testcontainers:testcontainers:1.20.4'
-	testImplementation 'org.testcontainers:junit-jupiter:1.20.4'
-	testImplementation 'org.testcontainers:mysql:1.20.4'
+	testImplementation 'org.testcontainers:testcontainers:1.21.4'
+	testImplementation 'org.testcontainers:junit-jupiter:1.21.4'
+	testImplementation 'org.testcontainers:mysql:1.21.4'
 	// QueryDSL
 	implementation 'com.querydsl:querydsl-jpa:5.1.0:jakarta'
 	annotationProcessor 'com.querydsl:querydsl-apt:5.1.0:jakarta'

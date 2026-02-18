@@ -272,7 +272,6 @@
 
   <script th:inline="javascript">
     const API_BASE = '';
-    let isRefreshing = false;
 
     // ===== 오목판 관련 변수 및 함수 =====
     const canvas = document.getElementById('gomokuBoard');
@@ -465,51 +464,29 @@
       };
     }
 
-    async function refreshAccessToken() {
-      if (isRefreshing) return false;
-      isRefreshing = true;
-      try {
-        const refreshToken = getCookie('admin_refreshToken');
-        if (!refreshToken) return false;
-        
-        const res = await fetch(API_BASE + '/api/auth/reissueToken', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken })
-        });
-        const data = await res.json();
-        if (!data.isSuccess) return false;
-
-        const { grantType, accessToken, refreshToken: newRefresh, accessTokenExpiredAt, refreshTokenExpiredAt } = data.response;
-        document.cookie = `admin_accessToken=${accessToken}; path=/; max-age=${60 * 60}`;
-        if (newRefresh) {
-          document.cookie = `admin_refreshToken=${newRefresh}; path=/; max-age=${60 * 60 * 24 * 14}`;
-        }
-        return true;
-      } catch (err) {
-        return false;
-      } finally {
-        isRefreshing = false;
-      }
-    }
-
+    /**
+     * 모든 API 호출에서 사용: admin_accessToken으로 인증
+     * - 401/403 시 쿠키 삭제 후 로그인 페이지로 리다이렉트
+     * - refreshToken 재발급은 제거 (admin은 12시간 토큰 1회만 발급)
+     */
     async function fetchWithAuth(url, options = {}) {
       let headers = getAuthHeaders();
       if (!headers) {
+        document.cookie = 'admin_accessToken=; path=/; max-age=0';
         window.location.href = '/admin';
         throw new Error('로그인이 필요합니다.');
       }
-      
+
       let res = await fetch(url, { ...options, headers });
-      if (res.status === 401) {
-        const refreshed = await refreshAccessToken();
-        if (!refreshed) {
-          window.location.href = '/admin';
-          throw new Error('토큰 재발급 실패. 다시 로그인하세요.');
-        }
-        headers = getAuthHeaders();
-        res = await fetch(url, { ...options, headers });
+      
+      // 401: 토큰 만료, 403: 권한 없음 -> 즉시 로그인 페이지로
+      if (res.status === 401 || res.status === 403) {
+        document.cookie = 'admin_accessToken=; path=/; max-age=0';
+        alert('토큰이 만료되었거나 권한이 없습니다. 다시 로그인하세요.');
+        window.location.href = '/admin';
+        throw new Error('토큰 만료 또는 권한 없음');
       }
+
       return res;
     }
 
@@ -523,7 +500,7 @@
       listEl.innerHTML = '';
 
       try {
-        const res = await fetchWithAuth(API_BASE + '/api/training/pack?difficulty=' + encodeURIComponent(difficulty) + '&lang=' + encodeURIComponent(lang));
+        const res = await fetchWithAuth(API_BASE + '/admin/training/pack?difficulty=' + encodeURIComponent(difficulty) + '&lang=' + encodeURIComponent(lang));
         const data = await res.json();
         if (!data.isSuccess) {
           msgEl.textContent = data.errorResponse?.message || '목록 조회 실패';
@@ -558,7 +535,7 @@
       document.getElementById('createPuzzle').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
       try {
-        const res = await fetchWithAuth(API_BASE + '/api/training/puzzle/' + packId);
+        const res = await fetchWithAuth(API_BASE + '/admin/training/puzzle/' + packId);
         const data = await res.json();
         if (!data.isSuccess) {
           puzzleListEl.innerHTML = '<li>문제 목록 조회 실패</li>';

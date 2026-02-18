@@ -66,94 +66,103 @@
       cursor: pointer;
     }
     button:hover { opacity: 0.95; }
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
-    .error {
-      margin-top: 0.75rem;
-      padding: 0.6rem;
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    .msg {
+      padding: 0.75rem;
+      margin-top: 1rem;
       border-radius: 8px;
-      background: rgba(220, 53, 69, 0.2);
-      border: 1px solid rgba(220, 53, 69, 0.5);
-      color: #f8a0a0;
       font-size: 0.9rem;
+      text-align: center;
       display: none;
     }
-    .error.show { display: block; }
+    .msg.error {
+      background: rgba(220, 53, 69, 0.2);
+      border: 1px solid rgba(220, 53, 69, 0.4);
+      color: #f8a0a0;
+    }
+    .msg.success {
+      background: rgba(40, 167, 69, 0.2);
+      border: 1px solid rgba(40, 167, 69, 0.4);
+      color: #a0f8a8;
+    }
   </style>
 </head>
 <body>
   <div class="login-card">
     <h1>Renzzle 어드민</h1>
-    <form id="loginForm">
-      <label for="email">이메일</label>
-      <input type="email" id="email" name="email" placeholder="admin@example.com" required autocomplete="email">
-      <label for="password">비밀번호</label>
-      <input type="password" id="password" name="password" placeholder="8자 이상 영문+숫자" required autocomplete="current-password" minlength="8">
-      <div id="error" class="error"></div>
-      <button type="submit" id="submitBtn">로그인</button>
-    </form>
+    <label for="email">이메일</label>
+    <input type="email" id="email" placeholder="이메일을 입력하세요" required>
+    <label for="password">비밀번호</label>
+    <input type="password" id="password" placeholder="비밀번호를 입력하세요" required>
+    <button id="loginBtn">로그인</button>
+    <div class="msg" id="message"></div>
   </div>
-  <script th:inline="javascript">
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btn = document.getElementById('submitBtn');
-      const errEl = document.getElementById('error');
-      errEl.classList.remove('show');
-      errEl.textContent = '';
 
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
+  <script>
+    const loginBtn = document.getElementById('loginBtn');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const messageDiv = document.getElementById('message');
 
-      btn.disabled = true;
+    function showMessage(text, isError) {
+      messageDiv.textContent = text;
+      messageDiv.className = isError ? 'msg error' : 'msg success';
+      messageDiv.style.display = 'block';
+    }
+
+    loginBtn.addEventListener('click', async () => {
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+
+      if (!email || !password) {
+        showMessage('이메일과 비밀번호를 모두 입력해주세요.', true);
+        return;
+      }
+
+      loginBtn.disabled = true;
+      loginBtn.textContent = '로그인 중...';
+
       try {
-        const res = await fetch('/api/auth/login', {
+        // 1. Admin 로그인 API 호출 (12시간 토큰)
+        const loginRes = await fetch('/admin/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
         });
-        const data = await res.json();
 
-        if (!data.isSuccess || !data.response) {
-          const msg = data.errorResponse?.message || data.errorResponse?.messages?.join(', ') || '로그인에 실패했습니다.';
-          errEl.textContent = msg;
-          errEl.classList.add('show');
-          return;
+        if (!loginRes.ok) {
+          const errData = await loginRes.json();
+          throw new Error(errData.errorResponse?.message || '로그인 실패');
         }
 
-        const { grantType, accessToken, refreshToken, accessTokenExpiredAt, refreshTokenExpiredAt } = data.response;
-        
-        // 쿠키에 저장 (HttpOnly는 서버에서만 설정 가능하므로 여기서는 일반 쿠키로)
-        document.cookie = `admin_accessToken=${accessToken}; path=/; max-age=${60 * 60}`;
-        if (refreshToken) {
-          document.cookie = `admin_refreshToken=${refreshToken}; path=/; max-age=${60 * 60 * 24 * 14}`;
-        }
+        const loginData = await loginRes.json();
+        const adminToken = loginData.response.accessToken;
 
-        // admin 권한 확인
-        const verifyRes = await fetch('/api/auth/admin/verify', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': (grantType || 'Bearer') + ' ' + accessToken
-          }
-        });
-        const verifyData = await verifyRes.json();
+        // 2. 쿠키에 admin 토큰 저장 (12시간)
+        const expires = new Date(loginData.response.accessTokenExpiredAt).toUTCString();
+        document.cookie = `admin_accessToken=${adminToken}; expires=${expires}; path=/; SameSite=Strict`;
 
-        if (!verifyData.isSuccess || !verifyData.response) {
-          // 쿠키 삭제
-          document.cookie = 'admin_accessToken=; path=/; max-age=0';
-          document.cookie = 'admin_refreshToken=; path=/; max-age=0';
-          errEl.textContent = '어드민 권한이 없습니다. 일반 사용자는 접근할 수 없습니다.';
-          errEl.classList.add('show');
-          return;
-        }
+        showMessage('로그인 성공! 대시보드로 이동합니다...', false);
 
-        // 성공 → 대시보드로 이동
-        window.location.href = '/api/admin/dashboard';
+        // 3. 대시보드로 redirect
+        setTimeout(() => {
+          window.location.href = '/admin/dashboard';
+        }, 1000);
+
       } catch (err) {
-        errEl.textContent = '네트워크 오류: ' + (err.message || '연결할 수 없습니다.');
-        errEl.classList.add('show');
-      } finally {
-        btn.disabled = false;
+        showMessage(err.message || '로그인 중 오류가 발생했습니다.', true);
+        loginBtn.disabled = false;
+        loginBtn.textContent = '로그인';
       }
+    });
+
+    // Enter 키로 로그인
+    passwordInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') loginBtn.click();
     });
   </script>
 </body>
