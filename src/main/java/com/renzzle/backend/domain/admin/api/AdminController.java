@@ -5,6 +5,7 @@ import com.renzzle.backend.domain.auth.dao.AdminRepository;
 import com.renzzle.backend.domain.auth.service.AccountService;
 import com.renzzle.backend.domain.auth.service.JwtProvider;
 import com.renzzle.backend.domain.puzzle.training.api.request.GetTrainingPackRequest;
+import com.renzzle.backend.domain.puzzle.training.api.response.GetPackDetailForAdminResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.training.service.TrainingService;
@@ -111,6 +112,32 @@ public class AdminController {
     }
 
     /**
+     * 어드민 팩 목록 조회 페이지 (첫 화면)
+     */
+    @Operation(summary = "Admin pack list page", description = "Pack list view - first screen after login")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/pack-list")
+    public String packList(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @Parameter(hidden = true) Model model
+    ) {
+        model.addAttribute("userEmail", userDetails.getUser().getEmail());
+        return "admin/pack-list";
+    }
+
+    /**
+     * 어드민 팩 생성 페이지
+     */
+    @Operation(summary = "Admin pack create page", description = "Pack creation form only")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/pack-create")
+    public String packCreate(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        return "admin/pack-create";
+    }
+
+    /**
      * 어드민 로그아웃
      * - 브라우저 쿠키에 저장된 admin_accessToken 삭제
      * - 로그인 페이지(/admin)로 리다이렉트
@@ -143,11 +170,62 @@ public class AdminController {
     }
 
     /**
-     * Admin 전용 문제 목록 조회 (대시보드용)
-     * - 일반 사용자용 /api/training/puzzle/{packId}와 동일한 로직이지만 admin 권한 필요
-     * - admin 토큰 만료 시 조회 불가
+     * Admin 전용 팩 상세 조회 API
      */
-    @Operation(summary = "Get training puzzle list (Admin only)", description = "Admin-only puzzle list for dashboard")
+    @Operation(summary = "Get pack detail (Admin only)", description = "Admin-only pack detail with translations")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/training/pack/{packId}")
+    @ResponseBody
+    public ApiResponse<GetPackDetailForAdminResponse> getPackDetailForAdmin(
+            @PathVariable("packId") Long packId,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        GetPackDetailForAdminResponse detail = trainingService.getPackDetailForAdmin(packId);
+        return ApiUtils.success(detail);
+    }
+
+    /**
+     * Admin 팩 세부 화면 (팩 이동 시)
+     * - 상단: 제목, 작성자, 설명 (선택한 언어)
+     * - 우상단: 문제 생성 버튼
+     * - 본문: 팩 ID(읽기전용), 문제 순서
+     */
+    @Operation(summary = "Admin pack detail page", description = "Pack detail view with problem list")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/pack-detail")
+    public String packDetail(
+            @RequestParam("packId") Long packId,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @Parameter(hidden = true) Model model
+    ) {
+        model.addAttribute("packId", packId);
+        model.addAttribute("userEmail", userDetails.getUser().getEmail());
+        return "admin/pack-detail";
+    }
+
+    /**
+     * Admin 문제 추가 화면
+     * - 상단: 팩 ID, 제목, 작성자, 설명
+     * - 본문: 보드 시각화, 보드상태, 정답, 깊이, 승리색상, 문제 추가 버튼
+     */
+    @Operation(summary = "Admin puzzle add page", description = "Add puzzle form for a pack")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/puzzle-add")
+    public String puzzleAdd(
+            @RequestParam("packId") Long packId,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @Parameter(hidden = true) Model model
+    ) {
+        model.addAttribute("packId", packId);
+        model.addAttribute("userEmail", userDetails.getUser().getEmail());
+        return "admin/puzzle-add";
+    }
+
+    /**
+     * Admin 전용 문제 목록 조회 (대시보드용)
+     * - 빈 팩도 빈 리스트로 반환 (pack-detail, puzzle-add에서 사용)
+     */
+    @Operation(summary = "Get training puzzle list (Admin only)", description = "Admin-only puzzle list for pack detail")
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/training/puzzle/{packId}")
     @ResponseBody
@@ -155,7 +233,7 @@ public class AdminController {
             @PathVariable("packId") Long packId,
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        List<GetTrainingPuzzleResponse> puzzles = trainingService.getTrainingPuzzleList(userDetails.getUser(), packId);
+        List<GetTrainingPuzzleResponse> puzzles = trainingService.getTrainingPuzzleListForAdmin(packId);
         return ApiUtils.success(puzzles);
     }
 

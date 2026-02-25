@@ -146,11 +146,11 @@
         const expires = new Date(loginData.response.accessTokenExpiredAt).toUTCString();
         document.cookie = `admin_accessToken=${adminToken}; expires=${expires}; path=/; SameSite=Strict`;
 
-        showMessage('로그인 성공! 대시보드로 이동합니다...', false);
+        showMessage('로그인 성공! 문제집 목록으로 이동합니다...', false);
 
-        // 3. 대시보드로 redirect
+        // 3. 문제집 목록으로 redirect (첫 화면)
         setTimeout(() => {
-          window.location.href = '/admin/dashboard';
+          window.location.href = '/admin/pack-list';
         }, 1000);
 
       } catch (err) {

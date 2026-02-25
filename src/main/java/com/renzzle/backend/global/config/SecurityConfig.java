@@ -64,8 +64,13 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/admin/logout").permitAll()
                         // Admin 페이지 (토큰 만료 시 GET 요청 자체가 실패하므로 별도 verify 불필요)
                         .requestMatchers(HttpMethod.GET, "/admin/dashboard").hasAuthority(ADMIN)
+                        .requestMatchers(HttpMethod.GET, "/admin/pack-list").hasAuthority(ADMIN)
+                        .requestMatchers(HttpMethod.GET, "/admin/pack-create").hasAuthority(ADMIN)
+                        .requestMatchers(HttpMethod.GET, "/admin/pack-detail").hasAuthority(ADMIN)
+                        .requestMatchers(HttpMethod.GET, "/admin/puzzle-add").hasAuthority(ADMIN)
                         // Admin 전용 조회 API (대시보드용)
                         .requestMatchers(HttpMethod.GET, "/admin/training/pack").hasAuthority(ADMIN)
+                        .requestMatchers(HttpMethod.GET, "/admin/training/pack/**").hasAuthority(ADMIN)
                         .requestMatchers(HttpMethod.GET, "/admin/training/puzzle/**").hasAuthority(ADMIN)
                         // Admin 전용 생성/수정/삭제 API
                         .requestMatchers(HttpMethod.POST, "/api/training/puzzle").hasAuthority(ADMIN)

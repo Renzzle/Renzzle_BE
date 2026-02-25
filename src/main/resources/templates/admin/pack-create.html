@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Renzzle 어드민 - 문제집 생성</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      color: #e8e8e8;
+      padding: 1rem;
+    }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .header h1 { margin: 0; font-size: 1.35rem; }
+    .btn { padding: 0.5rem 1rem; border: none; border-radius: 8px; background: rgba(255,255,255,0.15); color: #fff; cursor: pointer; font-size: 0.9rem; text-decoration: none; display: inline-block; }
+    .btn:hover { background: rgba(255,255,255,0.25); }
+    .btn-primary { background: linear-gradient(90deg, #4a9eff, #357abd); }
+    .section { max-width: 720px; margin-bottom: 2rem; padding: 1.5rem; background: rgba(255,255,255,0.06); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); }
+    .section h2 { margin: 0 0 1rem; font-size: 1.15rem; }
+    label { display: block; margin-bottom: 0.35rem; font-size: 0.9rem; color: #b0b0b0; }
+    input, select, textarea { width: 100%; padding: 0.6rem 0.8rem; margin-bottom: 0.9rem; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; background: rgba(0,0,0,0.2); color: #fff; font-size: 0.95rem; }
+    textarea { min-height: 80px; resize: vertical; }
+    input::placeholder, textarea::placeholder { color: #666; }
+    .row { display: flex; gap: 1rem; align-items: flex-end; }
+    .row > * { flex: 1; }
+    .msg { margin-top: 0.5rem; padding: 0.5rem; border-radius: 8px; font-size: 0.9rem; display: none; }
+    .msg.show { display: block; }
+    .msg.success { background: rgba(40,167,69,0.2); color: #90ee90; }
+    .msg.error { background: rgba(220,53,69,0.2); color: #f8a0a0; }
+    .lang-block { padding: 1rem; margin-bottom: 1rem; background: rgba(0,0,0,0.2); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); }
+    .lang-block h4 { margin: 0 0 0.5rem; font-size: 0.95rem; }
+    .hint { color: #888; font-size: 0.8rem; margin-top: -0.5rem; margin-bottom: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Renzzle 어드민 - 문제집 생성</h1>
+    <a href="/admin/pack-list" class="btn">← 문제집 목록으로</a>
+  </div>
+
+  <section class="section">
+    <h2>문제집 생성</h2>
+    <p class="hint">언어별 설명은 최대 2개까지 등록 가능합니다. 1개만 작성해도 됩니다.</p>
+    <div id="langBlocks">
+      <div class="lang-block">
+        <h4>언어 1 (KO)</h4>
+        <input type="hidden" name="langCode_0" value="KO">
+        <label>제목 (title)</label>
+        <input type="text" name="title_0" placeholder="문제집 제목" required>
+        <label>작성자 (author)</label>
+        <input type="text" name="author_0" placeholder="작성자명" required>
+        <label>설명 (description, 선택)</label>
+        <textarea name="description_0" placeholder="문제집 설명"></textarea>
+      </div>
+      <div class="lang-block">
+        <h4>언어 2 (EN, 선택)</h4>
+        <input type="hidden" name="langCode_1" value="EN">
+        <label>제목 (title)</label>
+        <input type="text" name="title_1" placeholder="문제집 제목">
+        <label>작성자 (author)</label>
+        <input type="text" name="author_1" placeholder="작성자명">
+        <label>설명 (description, 선택)</label>
+        <textarea name="description_1" placeholder="문제집 설명"></textarea>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>가격 (price)</label>
+        <input type="number" id="packPrice" min="0" value="0" required>
+      </div>
+      <div>
+        <label>난이도 (difficulty)</label>
+        <select id="packDifficulty">
+          <option value="LOW">LOW</option>
+          <option value="MIDDLE">MIDDLE</option>
+          <option value="HIGH">HIGH</option>
+        </select>
+      </div>
+    </div>
+    <button type="button" class="btn btn-primary" id="createPackBtn">문제집 생성</button>
+    <div id="createPackMsg" class="msg"></div>
+  </section>
+
+  <script th:inline="javascript">
+    const API_BASE = '';
+
+    function getCookie(name) {
+      const value = '; ' + document.cookie;
+      const parts = value.split('; ' + name + '=');
+      if (parts.length === 2) return parts.pop().split(';').shift();
+      return null;
+    }
+
+    async function fetchWithAuth(url, options = {}) {
+      const token = getCookie('admin_accessToken');
+      if (!token) {
+        document.cookie = 'admin_accessToken=; path=/; max-age=0';
+        window.location.href = '/admin';
+        throw new Error('로그인이 필요합니다.');
+      }
+      const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+      const res = await fetch(url, { ...options, headers });
+      if (res.status === 401 || res.status === 403) {
+        document.cookie = 'admin_accessToken=; path=/; max-age=0';
+        alert('토큰이 만료되었거나 권한이 없습니다. 다시 로그인하세요.');
+        window.location.href = '/admin';
+        throw new Error('토큰 만료');
+      }
+      return res;
+    }
+
+    document.getElementById('createPackBtn').addEventListener('click', async () => {
+      const msgEl = document.getElementById('createPackMsg');
+      msgEl.classList.remove('show', 'success', 'error');
+
+      const info = [];
+      for (let i = 0; i < 2; i++) {
+        const title = document.querySelector('input[name="title_' + i + '"]').value.trim();
+        const author = document.querySelector('input[name="author_' + i + '"]').value.trim();
+        if (!title || !author) continue;
+        info.push({
+          langCode: document.querySelector('input[name="langCode_' + i + '"]').value,
+          title,
+          author,
+          description: document.querySelector('textarea[name="description_' + i + '"]').value.trim() || null
+        });
+      }
+      if (info.length === 0) {
+        msgEl.textContent = '언어 1개 이상으로 제목·작성자를 입력하세요.';
+        msgEl.classList.add('show', 'error');
+        return;
+      }
+
+      const price = parseInt(document.getElementById('packPrice').value, 10);
+      const difficulty = document.getElementById('packDifficulty').value;
+
+      try {
+        const res = await fetchWithAuth(API_BASE + '/api/training/pack', {
+          method: 'POST',
+          body: JSON.stringify({ info, price, difficulty })
+        });
+        const data = await res.json();
+        if (!data.isSuccess) {
+          msgEl.textContent = data.errorResponse?.message || '문제집 생성 실패';
+          msgEl.classList.add('show', 'error');
+          return;
+        }
+        msgEl.textContent = '문제집 생성 완료. 문제집 목록으로 이동합니다.';
+        msgEl.classList.add('show', 'success');
+        setTimeout(() => { window.location.href = '/admin/pack-list'; }, 500);
+      } catch (err) {
+        msgEl.textContent = '오류: ' + (err.message || '');
+        msgEl.classList.add('show', 'error');
+      }
+    });
+  </script>
+</body>
+</html>

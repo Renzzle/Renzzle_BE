@@ -1,6 +1,7 @@
 package com.renzzle.backend.domain.puzzle.training.service;
 
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
+import com.renzzle.backend.domain.puzzle.training.api.response.GetPackDetailForAdminResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackPurchaseResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleAnswerResponse;
@@ -346,6 +347,63 @@ public class TrainingService {
                 .answer(puzzle.getAnswer())
                 .price(ItemPrice.HINT.getPrice())
                 .build();
+    }
+
+    /**
+     * Admin 전용 팩 상세 조회
+     * - id, 번역 정보(언어별 제목/작성자/설명), 가격, 난이도, 총 문제 수 반환
+     */
+    @Transactional(readOnly = true)
+    public GetPackDetailForAdminResponse getPackDetailForAdmin(Long packId) {
+        Pack pack = packRepository.findById(packId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
+
+        List<PackTranslation> translations = packTranslationRepository.findAllByPack_Id(packId);
+        List<GetPackDetailForAdminResponse.TranslationInfo> info = translations.stream()
+                .map(t -> new GetPackDetailForAdminResponse.TranslationInfo(
+                        t.getLangCode().getName(),
+                        t.getTitle(),
+                        t.getAuthor(),
+                        t.getDescription() != null ? t.getDescription() : ""
+                ))
+                .collect(Collectors.toList());
+
+        return new GetPackDetailForAdminResponse(
+                pack.getId(),
+                info,
+                pack.getPrice(),
+                pack.getDifficulty().getName(),
+                pack.getPuzzleCount()
+        );
+    }
+
+    /**
+     * Admin 전용 문제 목록 조회 - 빈 팩도 빈 리스트로 반환
+     */
+    @Transactional(readOnly = true)
+    public List<GetTrainingPuzzleResponse> getTrainingPuzzleListForAdmin(Long packId) {
+        if (packId == null) {
+            throw new CustomException(ErrorCode.VALIDATION_ERROR);
+        }
+        packRepository.findById(packId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
+
+        List<TrainingPuzzle> trainingPuzzles = trainingPuzzleRepository.findByPack_IdOrderByTrainingIndex(packId);
+        if (trainingPuzzles.isEmpty()) {
+            return List.of();
+        }
+
+        List<GetTrainingPuzzleResponse> response = new ArrayList<>();
+        trainingPuzzles.forEach(trainingPuzzle ->
+                response.add(GetTrainingPuzzleResponse.builder()
+                        .id(trainingPuzzle.getId())
+                        .boardStatus(trainingPuzzle.getBoardStatus())
+                        .depth(trainingPuzzle.getDepth())
+                        .winColor(trainingPuzzle.getWinColor().getName())
+                        .isSolved(false)
+                        .build())
+        );
+        return response;
     }
 
     // 회원가입 시 무료로 특정 Pack을 지급 (잔액 차감 없음)
