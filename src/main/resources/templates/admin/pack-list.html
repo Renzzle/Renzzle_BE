@@ -174,14 +174,14 @@
             const li = document.createElement('li');
             const info = document.createElement('span');
             info.className = 'pack-info';
-            info.innerHTML = '<span class="pack-id">ID: ' + p.id + '</span> ' + (p.title || '') + ' <small>가격:' + p.price + ' / 풀이:' + p.solvedPuzzleCount + '/' + p.totalPuzzleCount + '</small>';
+            info.innerHTML = '<span class="pack-id">ID: ' + p.id + '</span> ' + (p.title || '') + ' <small>가격:' + p.price + ' / 문제 개수:' + p.totalPuzzleCount + '</small>';
             const actions = document.createElement('div');
             actions.className = 'pack-actions';
             const editBtn = document.createElement('button');
             editBtn.type = 'button';
             editBtn.className = 'btn btn-sm';
             editBtn.textContent = '편집';
-            editBtn.onclick = function(e) { e.stopPropagation(); /* 기능 없음 */ };
+            editBtn.onclick = function(e) { e.stopPropagation(); window.location.href = '/admin/pack-create?packId=' + p.id; };
             const moveBtn = document.createElement('button');
             moveBtn.type = 'button';
             moveBtn.className = 'btn btn-sm btn-primary';

@@ -279,6 +279,17 @@
     const BOARD_SIZE = 15;
     const CELL_SIZE = 30;
     const MARGIN = 30;  // 좌/상/우/하 동일 마진 (라벨용)
+    const CANVAS_LOGICAL_SIZE = 480;
+
+    // DPR 스케일링: 고해상도(Retina) 디스플레이에서 1px 구분선이 흐려지지 않고 선명하게 보이도록
+    (function setupCanvasScale() {
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = CANVAS_LOGICAL_SIZE * dpr;
+      canvas.height = CANVAS_LOGICAL_SIZE * dpr;
+      canvas.style.width = CANVAS_LOGICAL_SIZE + 'px';
+      canvas.style.height = CANVAS_LOGICAL_SIZE + 'px';
+      ctx.scale(dpr, dpr);
+    })();
     const moves = [];   // [{row, col, player}] - row 0=하단(1행), row 14=상단(15행), col 0=a~14=o
     let currentPlayer = 'black';
 
@@ -288,7 +299,7 @@
 
     function drawBoard() {
       ctx.fillStyle = '#DCB35C';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillRect(0, 0, CANVAS_LOGICAL_SIZE, CANVAS_LOGICAL_SIZE);
       ctx.strokeStyle = '#000';
       ctx.lineWidth = 1;
       
@@ -324,7 +335,7 @@
       ctx.textBaseline = 'middle';
       for (let c = 0; c < BOARD_SIZE; c++) {
         const x = toCanvasX(c);
-        const y = canvas.height - MARGIN / 2;
+        const y = CANVAS_LOGICAL_SIZE - MARGIN / 2;
         ctx.fillText(String.fromCharCode(65 + c), x, y);
       }
 
@@ -513,7 +524,7 @@
         } else {
           packs.forEach(p => {
             const li = document.createElement('li');
-            li.innerHTML = '<span class="pack-id">ID: ' + p.id + '</span> ' + (p.title || '') + ' <small>가격:' + p.price + ' / 풀이:' + p.solvedPuzzleCount + '/' + p.totalPuzzleCount + '</small>';
+            li.innerHTML = '<span class="pack-id">ID: ' + p.id + '</span> ' + (p.title || '') + ' <small>가격:' + p.price + ' / 문제:' + p.totalPuzzleCount + '</small>';
             li.onclick = () => selectPack(p.id);
             listEl.appendChild(li);
           });

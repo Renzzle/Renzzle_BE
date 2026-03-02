@@ -7,7 +7,7 @@ import com.renzzle.backend.domain.auth.service.JwtProvider;
 import com.renzzle.backend.domain.puzzle.training.api.request.GetTrainingPackRequest;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackDetailForAdminResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackResponse;
-import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleResponse;
+import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleForAdminResponse;
 import com.renzzle.backend.domain.puzzle.training.service.TrainingService;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
@@ -221,6 +221,21 @@ public class AdminController {
         return "admin/puzzle-add";
     }
 
+    @Operation(summary = "Admin 문제 편집 화면", description = "Edit puzzle form - same layout as puzzle-add, data loading deferred")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/puzzle-edit")
+    public String puzzleEdit(
+            @RequestParam("packId") Long packId,
+            @RequestParam("puzzleId") Long puzzleId,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @Parameter(hidden = true) Model model
+    ) {
+        model.addAttribute("packId", packId);
+        model.addAttribute("puzzleId", puzzleId);
+        model.addAttribute("userEmail", userDetails.getUser().getEmail());
+        return "admin/puzzle-edit";
+    }
+
     /**
      * Admin 전용 문제 목록 조회 (대시보드용)
      * - 빈 팩도 빈 리스트로 반환 (pack-detail, puzzle-add에서 사용)
@@ -229,12 +244,24 @@ public class AdminController {
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/training/puzzle/{packId}")
     @ResponseBody
-    public ApiResponse<List<GetTrainingPuzzleResponse>> getTrainingPuzzleForAdmin(
+    public ApiResponse<List<GetTrainingPuzzleForAdminResponse>> getTrainingPuzzleForAdmin(
             @PathVariable("packId") Long packId,
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        List<GetTrainingPuzzleResponse> puzzles = trainingService.getTrainingPuzzleListForAdmin(packId);
+        List<GetTrainingPuzzleForAdminResponse> puzzles = trainingService.getTrainingPuzzleListForAdmin(packId);
         return ApiUtils.success(puzzles);
+    }
+
+    @Operation(summary = "Get single puzzle for admin edit", description = "Admin-only single puzzle detail")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/training/puzzle-detail/{puzzleId}")
+    @ResponseBody
+    public ApiResponse<GetTrainingPuzzleForAdminResponse> getTrainingPuzzleByIdForAdmin(
+            @PathVariable("puzzleId") Long puzzleId,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        GetTrainingPuzzleForAdminResponse puzzle = trainingService.getTrainingPuzzleByIdForAdmin(puzzleId);
+        return ApiUtils.success(puzzle);
     }
 
     public record AdminLoginResponse(

@@ -5,6 +5,7 @@ import com.renzzle.backend.domain.puzzle.training.api.response.GetPackDetailForA
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackPurchaseResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleAnswerResponse;
+import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleForAdminResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.training.api.request.*;
 import com.renzzle.backend.domain.puzzle.training.api.response.SolveTrainingPuzzleResponse;
@@ -235,6 +236,34 @@ public class TrainingService {
         return savedPack;
     }
 
+    @Transactional
+    public Pack updatePack(Long packId, UpdateTrainingPackRequest request) {
+        Pack pack = packRepository.findById(packId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
+
+        Pack updatedPack = pack.toBuilder()
+                .price(request.price())
+                .difficulty(Difficulty.getDifficulty(request.difficulty()))
+                .build();
+        packRepository.save(updatedPack);
+
+        List<PackTranslation> existingTranslations = packTranslationRepository.findAllByPack_Id(packId);
+        packTranslationRepository.deleteAll(existingTranslations);
+
+        List<PackTranslation> newTranslations = request.info().stream()
+                .map(info -> PackTranslation.builder()
+                        .pack(updatedPack)
+                        .langCode(LangCode.getLangCode(info.langCode()))
+                        .title(info.title())
+                        .author(info.author())
+                        .description(info.description())
+                        .build())
+                .collect(Collectors.toList());
+        packTranslationRepository.saveAll(newTranslations);
+
+        return updatedPack;
+    }
+
     // service test, repo test
     @Transactional
     public void addTranslation(TranslationRequest request) {
@@ -381,7 +410,7 @@ public class TrainingService {
      * Admin 전용 문제 목록 조회 - 빈 팩도 빈 리스트로 반환
      */
     @Transactional(readOnly = true)
-    public List<GetTrainingPuzzleResponse> getTrainingPuzzleListForAdmin(Long packId) {
+    public List<GetTrainingPuzzleForAdminResponse> getTrainingPuzzleListForAdmin(Long packId) {
         if (packId == null) {
             throw new CustomException(ErrorCode.VALIDATION_ERROR);
         }
@@ -393,17 +422,34 @@ public class TrainingService {
             return List.of();
         }
 
-        List<GetTrainingPuzzleResponse> response = new ArrayList<>();
+        List<GetTrainingPuzzleForAdminResponse> response = new ArrayList<>();
         trainingPuzzles.forEach(trainingPuzzle ->
-                response.add(GetTrainingPuzzleResponse.builder()
+                response.add(GetTrainingPuzzleForAdminResponse.builder()
                         .id(trainingPuzzle.getId())
                         .boardStatus(trainingPuzzle.getBoardStatus())
+                        .answer(trainingPuzzle.getAnswer())
                         .depth(trainingPuzzle.getDepth())
                         .winColor(trainingPuzzle.getWinColor().getName())
+                        .trainingIndex(trainingPuzzle.getTrainingIndex())
                         .isSolved(false)
                         .build())
         );
         return response;
+    }
+
+    @Transactional(readOnly = true)
+    public GetTrainingPuzzleForAdminResponse getTrainingPuzzleByIdForAdmin(Long puzzleId) {
+        TrainingPuzzle puzzle = trainingPuzzleRepository.findById(puzzleId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
+        return GetTrainingPuzzleForAdminResponse.builder()
+                .id(puzzle.getId())
+                .boardStatus(puzzle.getBoardStatus())
+                .answer(puzzle.getAnswer())
+                .depth(puzzle.getDepth())
+                .winColor(puzzle.getWinColor().getName())
+                .trainingIndex(puzzle.getTrainingIndex())
+                .isSolved(false)
+                .build();
     }
 
     // 회원가입 시 무료로 특정 Pack을 지급 (잔액 차감 없음)

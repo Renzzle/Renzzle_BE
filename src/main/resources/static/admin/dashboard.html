@@ -353,7 +353,7 @@
         } else {
           packs.forEach(p => {
             const li = document.createElement('li');
-            li.innerHTML = '<span class="pack-id">ID: ' + p.id + '</span> ' + (p.title || '') + ' <small>가격:' + p.price + ' / 풀이:' + p.solvedPuzzleCount + '/' + p.totalPuzzleCount + '</small>';
+            li.innerHTML = '<span class="pack-id">ID: ' + p.id + '</span> ' + (p.title || '') + ' <small>가격:' + p.price + ' / 문제:' + p.totalPuzzleCount + '</small>';
             li.onclick = () => selectPack(p.id);
             listEl.appendChild(li);
           });
