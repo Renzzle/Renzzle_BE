@@ -49,6 +49,7 @@ public enum ErrorCode {
     ALREADY_EXISTING_TRANSLATION(HttpStatus.BAD_REQUEST, "P4001", "이미 해당 언어의 번역본이 존재합니다."),
     INVALID_SESSION_TTL(HttpStatus.BAD_REQUEST, "P4002", "세션 TTL 이 올바르지 않습니다."),
     IS_NOT_STARTED(HttpStatus.BAD_REQUEST, "P4003", "잘못된 랭킹전 결과 호출입니다."),
+    WRONG_MOVE(HttpStatus.BAD_REQUEST, "P4004", "해당 보드는 정답 경로가 존재하지 않습니다."),
     INVALID_RANK_PUZZLE_TYPE(HttpStatus.BAD_REQUEST, "R4004", "올바르지 않은 랭크 퍼즐 타입입니다."),
     COMMUNITY_PUZZLE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "P4030", "해당하는 커뮤니티 퍼즐에 대한 권한이 없습니다."),
     CANNOT_FIND_COMMUNITY_PUZZLE(HttpStatus.NOT_FOUND, "P4040", "해당하는 커뮤니티 퍼즐을 찾을 수 없습니다."),
