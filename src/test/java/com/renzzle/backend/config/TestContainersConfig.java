@@ -36,7 +36,11 @@ public class TestContainersConfig implements ApplicationContextInitializer<Confi
                     "spring.mail.username=" + "test@gmail.com",
                     "spring.mail.password=" + "password",
                     "rank.session.ttl=" + "10",
-                    "REDIS_PASSWORD=" + "376198"
+                    "REDIS_PASSWORD=" + "376198",
+                    "backup.datasource.url=" + mysqlContainer.getJdbcUrl(),
+                    "backup.datasource.username=" + mysqlContainer.getUsername(),
+                    "backup.datasource.password=" + mysqlContainer.getPassword(),
+                    "ai.engine.path=/usr/local/bin/renzzle_ai_engine"
             );
         } catch (Exception e) {
             throw new RuntimeException("TestContainers Failed: " + e.getMessage(), e);

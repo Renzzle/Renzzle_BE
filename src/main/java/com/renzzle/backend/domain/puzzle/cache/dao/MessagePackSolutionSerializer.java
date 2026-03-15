@@ -1,8 +1,8 @@
-package com.renzzle.backend.domain.puzzle.play.infrastructure;
+package com.renzzle.backend.domain.puzzle.cache.dao;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.renzzle.backend.domain.puzzle.play.domain.SolutionSerializer;
+import com.renzzle.backend.domain.puzzle.cache.domain.SolutionSerializer;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import org.msgpack.jackson.dataformat.MessagePackFactory;

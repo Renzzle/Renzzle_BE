@@ -1,4 +1,4 @@
-package com.renzzle.backend.domain.puzzle.play.domain;
+package com.renzzle.backend.domain.puzzle.cache.domain;
 
 import java.util.Map;
 
