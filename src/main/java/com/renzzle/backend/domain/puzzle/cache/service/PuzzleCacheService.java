@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
-public class PuzzlePlayService {
+public class PuzzleCacheService {
 
     private static final int BOARD_SIZE = 15;
     private static final Pattern POSITION_PATTERN = Pattern.compile("^[a-o]([1-9]|1[0-5])$");

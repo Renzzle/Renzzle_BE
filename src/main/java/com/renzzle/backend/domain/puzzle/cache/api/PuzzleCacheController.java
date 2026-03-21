@@ -3,7 +3,7 @@ package com.renzzle.backend.domain.puzzle.cache.api;
 import com.renzzle.backend.domain.puzzle.cache.api.request.SavePuzzleRequest;
 import com.renzzle.backend.domain.puzzle.cache.api.response.GetAiResponseResponse;
 import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
-import com.renzzle.backend.domain.puzzle.cache.service.PuzzlePlayService;
+import com.renzzle.backend.domain.puzzle.cache.service.PuzzleCacheService;
 import com.renzzle.backend.global.common.response.ApiResponse;
 import com.renzzle.backend.global.util.ApiUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,15 +20,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/puzzle/cache")
 @RequiredArgsConstructor
-@Tag(name = "Puzzle Play API", description = "퍼즐 플레이 관련 API")
-public class PuzzlePlayController {
+@Tag(name = "Puzzle Cache API", description = "퍼즐 캐시 관련 API")
+public class PuzzleCacheController {
 
-    private final PuzzlePlayService puzzlePlayService;
+    private final PuzzleCacheService puzzleCacheService;
 
     @Operation(summary = "퍼즐 저장", description = "보드 상태와 정답 수를 전달받아 퍼즐에 저장")
     @PostMapping("/save")
     public ApiResponse<Void> savePuzzle(@Valid @RequestBody SavePuzzleRequest request) {
-        puzzlePlayService.savePuzzle(request.puzzleType(), request.puzzleId(), request.currentBoardState(), request.answerPuzzle());
+        puzzleCacheService.savePuzzle(request.puzzleType(), request.puzzleId(), request.currentBoardState(), request.answerPuzzle());
         return ApiUtils.success(null);
     }
 
@@ -38,7 +38,7 @@ public class PuzzlePlayController {
             @RequestParam PuzzleType puzzleType,
             @RequestParam Long puzzleId,
             @RequestParam String currentBoardState) {
-        Integer move = puzzlePlayService.getAiResponse(puzzleType, puzzleId, currentBoardState);
+        Integer move = puzzleCacheService.getAiResponse(puzzleType, puzzleId, currentBoardState);
         String position = (move != null) ? moveIndexToPosition(move) : null;
         return ApiUtils.success(new GetAiResponseResponse(position));
     }
