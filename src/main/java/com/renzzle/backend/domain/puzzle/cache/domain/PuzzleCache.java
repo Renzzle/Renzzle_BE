@@ -29,13 +29,13 @@ import java.time.Instant;
 @Table(
         name = "cache_puzzle",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uk_type_source", columnNames = {"puzzle_type", "source_id"})
+                @UniqueConstraint(name = "uk_type_puzzle", columnNames = {"puzzle_type", "puzzle_id"})
         },
         indexes = {
                 @Index(name = "idx_root_board_state", columnList = "root_board_state")
         }
 )
-public class Puzzle {
+public class PuzzleCache {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -45,8 +45,8 @@ public class Puzzle {
     @Column(name = "puzzle_type", nullable = false, length = 20)
     private PuzzleType puzzleType;
 
-    @Column(name = "source_id", nullable = false)
-    private Long sourceId;
+    @Column(name = "puzzle_id", nullable = false)
+    private Long puzzleId;
 
     @Column(name = "root_board_state", nullable = false, length = 500)
     private String rootBoardState;
