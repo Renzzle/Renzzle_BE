@@ -34,9 +34,6 @@ public class PuzzlePlayServiceTest {
     @Mock
     private SolutionSerializer solutionSerializer;
 
-    @Mock
-    private AiEngineService aiEngineService;
-
     @InjectMocks
     private PuzzlePlayService puzzlePlayService;
 
@@ -120,6 +117,7 @@ public class PuzzlePlayServiceTest {
     @DisplayName("기존 캐시가 있으면 DAG에 추가되어 저장된다")
     void savePuzzle_ShouldSerializeAndPersist_WhenCacheExists() {
         String currentBoardState = "h8h9";
+        String answerPuzzle = "h8";
         byte[] existingDag = new byte[] {1, 2, 3};
         byte[] serialized = new byte[] {9, 8, 7};
 
@@ -130,11 +128,10 @@ public class PuzzlePlayServiceTest {
                 .build();
 
         when(puzzleRepository.findByPuzzleTypeAndSourceId(TYPE, SOURCE_ID)).thenReturn(Optional.of(puzzle));
-        when(aiEngineService.getNextMoveFromEngine(currentBoardState)).thenReturn(112);
         when(solutionSerializer.deserialize(existingDag)).thenReturn(Map.of());
         when(solutionSerializer.serialize(any(Map.class))).thenReturn(serialized);
 
-        puzzlePlayService.savePuzzle(TYPE, SOURCE_ID, currentBoardState);
+        puzzlePlayService.savePuzzle(TYPE, SOURCE_ID, currentBoardState, answerPuzzle);
 
         verify(puzzleRepository).save(any(Puzzle.class));
     }
@@ -143,13 +140,13 @@ public class PuzzlePlayServiceTest {
     @DisplayName("캐시가 없으면 새로 생성되어 저장된다")
     void savePuzzle_ShouldCreateNewCache_WhenNotExists() {
         String currentBoardState = "h8h9";
+        String answerPuzzle = "h8";
         byte[] serialized = new byte[] {9, 8, 7};
 
         when(puzzleRepository.findByPuzzleTypeAndSourceId(TYPE, SOURCE_ID)).thenReturn(Optional.empty());
-        when(aiEngineService.getNextMoveFromEngine(currentBoardState)).thenReturn(112);
         when(solutionSerializer.serialize(any(Map.class))).thenReturn(serialized);
 
-        puzzlePlayService.savePuzzle(TYPE, SOURCE_ID, currentBoardState);
+        puzzlePlayService.savePuzzle(TYPE, SOURCE_ID, currentBoardState, answerPuzzle);
 
         ArgumentCaptor<Puzzle> puzzleCaptor = ArgumentCaptor.forClass(Puzzle.class);
         verify(puzzleRepository).save(puzzleCaptor.capture());
@@ -160,34 +157,33 @@ public class PuzzlePlayServiceTest {
     }
 
     @Test
-    @DisplayName("AI 엔진이 -1을 반환하면 NO_MOVE 예외가 발생한다")
-    void savePuzzle_ShouldThrowNoMove_WhenEngineReturnsNegative() {
-        String currentBoardState = "h8h9";
-
-        when(aiEngineService.getNextMoveFromEngine(currentBoardState)).thenReturn(-1);
-
+    @DisplayName("answerPuzzle이 범위 밖 알파벳이면 INVALID_ANSWER_POSITION 예외가 발생한다")
+    void savePuzzle_ShouldThrowInvalidAnswerPosition_WhenLetterOutOfRange() {
         CustomException exception = assertThrows(
                 CustomException.class,
-                () -> puzzlePlayService.savePuzzle(TYPE, SOURCE_ID, currentBoardState)
+                () -> puzzlePlayService.savePuzzle(TYPE, SOURCE_ID, "h8h9", "z7")
         );
-
-        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.NO_MOVE);
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_ANSWER_POSITION);
     }
 
     @Test
-    @DisplayName("AI 엔진에서 예외가 발생하면 그대로 전파된다")
-    void savePuzzle_ShouldPropagateException_WhenEngineThrows() {
-        String currentBoardState = "h8h9";
-
-        when(aiEngineService.getNextMoveFromEngine(currentBoardState))
-                .thenThrow(new CustomException(ErrorCode.AI_ENGINE_ERROR));
-
+    @DisplayName("answerPuzzle이 범위 밖 숫자이면 INVALID_ANSWER_POSITION 예외가 발생한다")
+    void savePuzzle_ShouldThrowInvalidAnswerPosition_WhenNumberOutOfRange() {
         CustomException exception = assertThrows(
                 CustomException.class,
-                () -> puzzlePlayService.savePuzzle(TYPE, SOURCE_ID, currentBoardState)
+                () -> puzzlePlayService.savePuzzle(TYPE, SOURCE_ID, "h8h9", "a16")
         );
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_ANSWER_POSITION);
+    }
 
-        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.AI_ENGINE_ERROR);
+    @Test
+    @DisplayName("answerPuzzle이 숫자 0이면 INVALID_ANSWER_POSITION 예외가 발생한다")
+    void savePuzzle_ShouldThrowInvalidAnswerPosition_WhenNumberIsZero() {
+        CustomException exception = assertThrows(
+                CustomException.class,
+                () -> puzzlePlayService.savePuzzle(TYPE, SOURCE_ID, "h8h9", "a0")
+        );
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_ANSWER_POSITION);
     }
 
     @SuppressWarnings("unchecked")
@@ -195,6 +191,7 @@ public class PuzzlePlayServiceTest {
     @DisplayName("기존 DAG에 새 항목이 정상적으로 merge 된다")
     void savePuzzle_ShouldMergeNewEntryIntoExistingDag() {
         String currentBoardState = "h8h9";
+        String answerPuzzle = "h8";
         long zobristHash = ZobristHashUtils.hashFromBoardStatus(currentBoardState);
         int newMove = 112;
         long existingHash = 999L;
@@ -213,11 +210,10 @@ public class PuzzlePlayServiceTest {
                 .build();
 
         when(puzzleRepository.findByPuzzleTypeAndSourceId(TYPE, SOURCE_ID)).thenReturn(Optional.of(puzzle));
-        when(aiEngineService.getNextMoveFromEngine(currentBoardState)).thenReturn(newMove);
         when(solutionSerializer.deserialize(existingDagBytes)).thenReturn(existingDag);
         when(solutionSerializer.serialize(any(Map.class))).thenReturn(serialized);
 
-        puzzlePlayService.savePuzzle(TYPE, SOURCE_ID, currentBoardState);
+        puzzlePlayService.savePuzzle(TYPE, SOURCE_ID, currentBoardState, answerPuzzle);
 
         ArgumentCaptor<Map<Long, Integer>> dagCaptor = ArgumentCaptor.forClass(Map.class);
         verify(solutionSerializer).serialize(dagCaptor.capture());

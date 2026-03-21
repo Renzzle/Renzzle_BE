@@ -13,25 +13,25 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
 public class PuzzlePlayService {
 
+    private static final int BOARD_SIZE = 15;
+    private static final Pattern POSITION_PATTERN = Pattern.compile("^[a-o]([1-9]|1[0-5])$");
+
     private final PuzzleRepository puzzleRepository;
     private final SolutionSerializer solutionSerializer;
-    private final AiEngineService aiEngineService;
 
     @Transactional
-    public void savePuzzle(PuzzleType puzzleType, Long puzzleId, String currentBoardState) {
+    public void savePuzzle(PuzzleType puzzleType, Long puzzleId, String currentBoardState, String answerPuzzle) {
         if (puzzleType == null || puzzleId == null || currentBoardState == null || currentBoardState.isBlank()) {
             throw new CustomException(ErrorCode.NO_BOARD_STATUS);
         }
 
-        int nextMove = aiEngineService.getNextMoveFromEngine(currentBoardState);
-        if (nextMove < 0) {
-            throw new CustomException(ErrorCode.NO_MOVE);
-        }
+        int nextMove = parseAnswerPuzzleToMove(answerPuzzle);
 
         long zobristHash = ZobristHashUtils.hashFromBoardStatus(currentBoardState);
 
@@ -79,5 +79,14 @@ public class PuzzlePlayService {
 
         Map<Long, Integer> solutionDag = solutionSerializer.deserialize(puzzle.getSolutionDag());
         return solutionDag.get(currentZobristHash);
+    }
+
+    private int parseAnswerPuzzleToMove(String answerPuzzle) {
+        if (answerPuzzle == null || !POSITION_PATTERN.matcher(answerPuzzle).matches()) {
+            throw new CustomException(ErrorCode.INVALID_ANSWER_POSITION);
+        }
+        char letter = answerPuzzle.charAt(0);
+        int number = Integer.parseInt(answerPuzzle.substring(1));
+        return (letter - 'a') * BOARD_SIZE + (number - 1);
     }
 }

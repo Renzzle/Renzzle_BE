@@ -12,5 +12,8 @@ public record SavePuzzleRequest(
         Long puzzleId,
 
         @NotBlank(message = "보드 상태가 존재해야 합니다.")
-        String currentBoardState
+        String currentBoardState,
+
+        @NotBlank(message = "정답 수가 존재해야 합니다.")
+        String answerPuzzle
 ) { }

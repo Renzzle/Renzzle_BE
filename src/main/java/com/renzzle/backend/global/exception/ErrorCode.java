@@ -49,8 +49,8 @@ public enum ErrorCode {
     ALREADY_EXISTING_TRANSLATION(HttpStatus.BAD_REQUEST, "P4001", "이미 해당 언어의 번역본이 존재합니다."),
     INVALID_SESSION_TTL(HttpStatus.BAD_REQUEST, "P4002", "세션 TTL 이 올바르지 않습니다."),
     IS_NOT_STARTED(HttpStatus.BAD_REQUEST, "P4003", "잘못된 랭킹전 결과 호출입니다."),
-    NO_MOVE(HttpStatus.BAD_REQUEST, "P4004", "해당 보드는 정답 경로가 존재하지 않습니다."),
     NO_BOARD_STATUS(HttpStatus.BAD_REQUEST, "P4005", "퍼즐 ID 또는 보드 상태가 없습니다."),
+    INVALID_ANSWER_POSITION(HttpStatus.BAD_REQUEST, "P4006", "정답 수의 좌표가 올바르지 않습니다. (a~o, 1~15)"),
     INVALID_RANK_PUZZLE_TYPE(HttpStatus.BAD_REQUEST, "R4004", "올바르지 않은 랭크 퍼즐 타입입니다."),
     COMMUNITY_PUZZLE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "P4030", "해당하는 커뮤니티 퍼즐에 대한 권한이 없습니다."),
     CANNOT_FIND_COMMUNITY_PUZZLE(HttpStatus.NOT_FOUND, "P4040", "해당하는 커뮤니티 퍼즐을 찾을 수 없습니다."),
@@ -68,7 +68,6 @@ public enum ErrorCode {
     TREND_PUZZLE_DUPLICATED(HttpStatus.CONFLICT, "P4090", "트렌드 퍼즐이 중복되었습니다."),
     SESSION_ALREADY_ENDED(HttpStatus.GONE, "P4100", "세션이 이미 만료되었습니다."),
     SESSION_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "P5000", "세션 ID 생성에 실패하였습니다."),
-    AI_ENGINE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "P5001", "AI 엔진 연산에 실패하였습니다."),
 
     ;
 

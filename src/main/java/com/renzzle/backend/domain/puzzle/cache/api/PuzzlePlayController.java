@@ -4,7 +4,6 @@ import com.renzzle.backend.domain.puzzle.cache.api.request.SavePuzzleRequest;
 import com.renzzle.backend.domain.puzzle.cache.api.response.GetAiResponseResponse;
 import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
 import com.renzzle.backend.domain.puzzle.cache.service.PuzzlePlayService;
-import com.renzzle.backend.domain.puzzle.shared.util.MoveUtils;
 import com.renzzle.backend.global.common.response.ApiResponse;
 import com.renzzle.backend.global.util.ApiUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,10 +25,10 @@ public class PuzzlePlayController {
 
     private final PuzzlePlayService puzzlePlayService;
 
-    @Operation(summary = "퍼즐 저장", description = "보드 상태를 기반으로 AI 풀이를 생성하여 퍼즐에 저장")
+    @Operation(summary = "퍼즐 저장", description = "보드 상태와 정답 수를 전달받아 퍼즐에 저장")
     @PostMapping("/save")
     public ApiResponse<Void> savePuzzle(@Valid @RequestBody SavePuzzleRequest request) {
-        puzzlePlayService.savePuzzle(request.puzzleType(), request.puzzleId(), request.currentBoardState());
+        puzzlePlayService.savePuzzle(request.puzzleType(), request.puzzleId(), request.currentBoardState(), request.answerPuzzle());
         return ApiUtils.success(null);
     }
 
@@ -40,7 +39,15 @@ public class PuzzlePlayController {
             @RequestParam Long puzzleId,
             @RequestParam String currentBoardState) {
         Integer move = puzzlePlayService.getAiResponse(puzzleType, puzzleId, currentBoardState);
-        String position = (move != null) ? MoveUtils.convertMoveToPosition(move) : null;
+        String position = (move != null) ? moveIndexToPosition(move) : null;
         return ApiUtils.success(new GetAiResponseResponse(position));
+    }
+
+    private static final int BOARD_SIZE = 15;
+
+    private static String moveIndexToPosition(int move) {
+        char letter = (char) ('a' + move / BOARD_SIZE);
+        int number = move % BOARD_SIZE + 1;
+        return "" + letter + number;
     }
 }
