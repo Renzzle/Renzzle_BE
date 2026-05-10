@@ -16,6 +16,7 @@
     }
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
     .header h1 { margin: 0; font-size: 1.35rem; }
+    .header .user-info { font-size: 0.9rem; color: #b0b0b0; }
     .btn { padding: 0.5rem 1rem; border: none; border-radius: 8px; background: rgba(255,255,255,0.15); color: #fff; cursor: pointer; font-size: 0.9rem; text-decoration: none; display: inline-block; }
     .btn:hover { background: rgba(255,255,255,0.25); }
     .btn-primary { background: linear-gradient(90deg, #4a9eff, #357abd); }
@@ -36,7 +37,7 @@
     .hint { color: #888; font-size: 0.8rem; margin-top: -0.5rem; margin-bottom: 0.5rem; }
     .add-lang-section { margin: 1.5rem 0; padding: 1rem; background: rgba(0,0,0,0.15); border-radius: 10px; border: 1px dashed rgba(255,255,255,0.2); }
     .add-lang-row { display: flex; gap: 0.75rem; align-items: flex-end; }
-    .add-lang-row input { flex: 1; margin-bottom: 0; }
+    .add-lang-row input, .add-lang-row select { flex: 1; margin-bottom: 0; }
     .add-lang-row .btn { flex-shrink: 0; }
     .btn-secondary { background: rgba(255,255,255,0.12); }
     .btn-secondary:hover { background: rgba(255,255,255,0.22); }
@@ -51,20 +52,27 @@
 </head>
 <body>
   <div class="header">
-    <h1 id="pageTitle">Renzzle 어드민 - 문제집 생성</h1>
-    <a href="/admin/pack-list" class="btn">← 문제집 목록으로</a>
+    <div>
+      <h1 id="pageTitle">Renzzle 어드민 - 문제집 생성</h1>
+      <span class="user-info" th:if="${userEmail}" th:text="${userEmail}"></span>
+    </div>
+    <a href="/admin/logout" class="btn">로그아웃</a>
   </div>
+
+  <th:block th:replace="~{admin/fragments :: siteNav(false, true, false)}"></th:block>
 
   <section class="section">
     <h2 id="sectionTitle">문제집 생성</h2>
-    <p class="hint">언어 코드를 입력한 후 '세부 번역 추가' 버튼을 눌러 각 언어별 제목·작성자·설명을 추가하세요. 여러 언어를 동적으로 추가할 수 있습니다.</p>
+    <p class="hint">언어 코드를 선택한 후 '세부 번역 추가' 버튼을 눌러 각 언어별 제목·작성자·설명을 추가하세요. 사용 가능한 언어 코드: <span th:text="${#strings.arrayJoin(langCodeNames, ', ')}">EN, KO</span></p>
     <div id="langBlocks"></div>
 
     <!-- 언어 추가 영역 (하단 고정) -->
     <div id="addLangSection" class="add-lang-section">
       <label>언어 코드</label>
       <div class="add-lang-row">
-        <input type="text" id="newLangCode" placeholder="예: KO, EN, JA" maxlength="10">
+        <select id="newLangCode">
+          <option th:each="langCode : ${langCodeNames}" th:value="${langCode}" th:text="${langCode}">EN</option>
+        </select>
         <button type="button" class="btn btn-secondary" id="addTranslationBtn">세부 번역 추가</button>
       </div>
     </div>
@@ -89,6 +97,7 @@
 
   <script th:inline="javascript">
     const API_BASE = '';
+    const LANG_CODE_NAMES = /*[[${langCodeNames}]]*/ ['EN', 'KO'];
 
     let langBlockCount = 0;
 
@@ -128,7 +137,7 @@
         if (editPackId) updateEditSubmitState();
       });
       document.getElementById('langBlocks').appendChild(block);
-      document.getElementById('newLangCode').value = '';
+      document.getElementById('newLangCode').selectedIndex = 0;
       if (!titleVal) document.getElementById('newLangCode').focus();
       if (editPackId) updateEditSubmitState();
     }
@@ -200,9 +209,9 @@
 
           const info = pack.info || [];
           if (info.length === 0) {
-            addLangBlock('KO', '', '', '');
+            addLangBlock(LANG_CODE_NAMES[0], '', '', '');
           } else {
-            info.forEach(t => addLangBlock(t.langCode || 'KO', t.title, t.author, t.description || ''));
+            info.forEach(t => addLangBlock(t.langCode || LANG_CODE_NAMES[0], t.title, t.author, t.description || ''));
           }
           document.getElementById('submitPackBtn').disabled = false;
         } catch (err) {

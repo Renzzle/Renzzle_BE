@@ -8,9 +8,11 @@ import com.renzzle.backend.domain.puzzle.training.api.request.GetTrainingPackReq
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackDetailForAdminResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleForAdminResponse;
+import com.renzzle.backend.domain.puzzle.community.service.CommunityService;
 import com.renzzle.backend.domain.puzzle.training.service.TrainingService;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
+import com.renzzle.backend.global.common.domain.LangCode;
 import com.renzzle.backend.global.common.response.ApiResponse;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
@@ -49,6 +51,7 @@ public class AdminController {
     private final UserRepository userRepository;
     private final AdminRepository adminRepository;
     private final TrainingService trainingService;
+    private final CommunityService communityService;
     private final Clock clock;
 
     /**
@@ -108,6 +111,7 @@ public class AdminController {
             @Parameter(hidden = true) Model model
     ) {
         model.addAttribute("userEmail", userDetails.getUser().getEmail());
+        model.addAttribute("langCodeNames", LangCode.LangCodeName.values());
         return "admin/dashboard";
     }
 
@@ -122,6 +126,7 @@ public class AdminController {
             @Parameter(hidden = true) Model model
     ) {
         model.addAttribute("userEmail", userDetails.getUser().getEmail());
+        model.addAttribute("langCodeNames", LangCode.LangCodeName.values());
         return "admin/pack-list";
     }
 
@@ -132,8 +137,11 @@ public class AdminController {
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/pack-create")
     public String packCreate(
-            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @Parameter(hidden = true) Model model
     ) {
+        model.addAttribute("userEmail", userDetails.getUser().getEmail());
+        model.addAttribute("langCodeNames", LangCode.LangCodeName.values());
         return "admin/pack-create";
     }
 
@@ -200,6 +208,7 @@ public class AdminController {
     ) {
         model.addAttribute("packId", packId);
         model.addAttribute("userEmail", userDetails.getUser().getEmail());
+        model.addAttribute("langCodeNames", LangCode.LangCodeName.values());
         return "admin/pack-detail";
     }
 
@@ -261,6 +270,18 @@ public class AdminController {
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         GetTrainingPuzzleForAdminResponse puzzle = trainingService.getTrainingPuzzleByIdForAdmin(puzzleId);
+        return ApiUtils.success(puzzle);
+    }
+
+    @Operation(summary = "커뮤니티 문제 상세 (어드민 캐시용)", description = "조회수 미증가, answer 포함")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/community/puzzle-detail/{puzzleId}")
+    @ResponseBody
+    public ApiResponse<GetTrainingPuzzleForAdminResponse> getCommunityPuzzleDetailForAdmin(
+            @PathVariable("puzzleId") Long puzzleId,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        GetTrainingPuzzleForAdminResponse puzzle = communityService.getCommunityPuzzleForAdminDetail(puzzleId);
         return ApiUtils.success(puzzle);
     }
 

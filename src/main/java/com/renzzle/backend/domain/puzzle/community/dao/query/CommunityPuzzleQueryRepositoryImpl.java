@@ -143,4 +143,41 @@ public class CommunityPuzzleQueryRepositoryImpl implements CommunityPuzzleQueryR
         return size != null ? size : 10;
     }
 
+    @Override
+    public List<CommunityPuzzle> searchCommunityPuzzlesForCache(
+            String authorNicknameExact,
+            String stone,
+            Integer depthMin,
+            Integer depthMax,
+            Long cursorId,
+            int size
+    ) {
+        return queryFactory
+                .selectFrom(communityPuzzle)
+                .join(communityPuzzle.user, userEntity)
+                .where(
+                        nicknameExactEq(authorNicknameExact),
+                        stoneEq(stone),
+                        depthBetween(depthMin, depthMax),
+                        idLtCursor(cursorId)
+                )
+                .orderBy(communityPuzzle.id.desc())
+                .limit(size)
+                .fetch();
+    }
+
+    private BooleanExpression nicknameExactEq(String nickname) {
+        if (nickname == null || nickname.isBlank()) {
+            return null;
+        }
+        return userEntity.nickname.eq(nickname);
+    }
+
+    private BooleanExpression idLtCursor(Long cursorId) {
+        if (cursorId == null) {
+            return null;
+        }
+        return communityPuzzle.id.lt(cursorId);
+    }
+
 }

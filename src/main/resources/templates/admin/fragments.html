@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- 주요 화면 이동 (문제집 목록·생성·퍼즐 대응 수 입력) — 현재 페이지에 해당하는 링크는 숨김 -->
+<th:block th:fragment="siteNav(hidePackList, hidePackCreate, hidePuzzleCache)">
+  <style>
+    .site-nav-wrap { margin-bottom: 1rem; }
+    .site-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      align-items: center;
+      padding: 0.5rem 0.75rem;
+      background: rgba(0,0,0,0.25);
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+    .site-nav a {
+      padding: 0.4rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      color: #e8e8e8;
+      text-decoration: none;
+      background: rgba(255,255,255,0.08);
+    }
+    .site-nav a:hover { background: rgba(74,158,255,0.35); }
+  </style>
+  <nav class="site-nav-wrap" aria-label="주요 메뉴">
+    <div class="site-nav">
+      <a th:unless="${hidePackList}" th:href="@{/admin/pack-list}">문제집 목록</a>
+      <a th:unless="${hidePackCreate}" th:href="@{/admin/pack-create}">문제집 생성</a>
+      <a th:unless="${hidePuzzleCache}" th:href="@{/puzzle-cache}">퍼즐 대응 수 입력</a>
+    </div>
+  </nav>
+</th:block>
+</body>
+</html>

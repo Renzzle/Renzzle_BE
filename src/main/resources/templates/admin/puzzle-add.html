@@ -60,6 +60,12 @@
     }
     textarea { min-height: 80px; resize: vertical; }
     input:read-only { background: rgba(0,0,0,0.3); cursor: not-allowed; }
+    input.auto-calculated {
+      color: #a8a8a8;
+    }
+    input.auto-calculated::placeholder {
+      color: #6e6e6e;
+    }
     .msg { margin-top: 0.5rem; padding: 0.5rem; border-radius: 8px; font-size: 0.9rem; display: none; }
     .msg.show { display: block; }
     .msg.success { background: rgba(40,167,69,0.2); color: #90ee90; }
@@ -94,6 +100,12 @@
     .pack-info-block .value.empty { color: #666; font-style: italic; }
     .board-btn-group { margin-bottom: 0.6rem; }
     .board-btn-group .btn { display: block; width: 100%; margin-bottom: 0.4rem; }
+    .board-mode-slot {
+      min-height: 7.25rem;
+      margin-bottom: 0.6rem;
+    }
+    .board-mode-slot .board-btn-group { margin-bottom: 0; }
+    .board-side-panel { flex: 1; min-width: 0; display: flex; flex-direction: column; }
     .board-btn-fixed { margin-top: 1.5rem; }
     .board-btn-fixed .btn { display: block; width: 100%; margin-bottom: 0.4rem; }
   </style>
@@ -109,6 +121,8 @@
       <a href="/admin/logout" class="btn">로그아웃</a>
     </div>
   </div>
+
+  <th:block th:replace="~{admin/fragments :: siteNav(false, false, false)}"></th:block>
 
   <!-- 문제집 정보 (상단, pack-detail과 동일 디자인) -->
   <section class="section" id="packInfoSection">
@@ -135,15 +149,17 @@
     <div style="margin: 1.5rem 0;">
       <label>보드 상태 시각화</label>
       <p class="hint">오목판을 클릭해서 돌을 두거나, 아래 입력 칸에 직접 입력하세요.</p>
-      <div style="display: flex; gap: 1rem; align-items: flex-start;">
+      <div class="board-viz-row" style="display: flex; gap: 1rem; align-items: flex-start;">
         <canvas id="gomokuBoard" width="480" height="480" style="background: #DCB35C; border: 2px solid #333; cursor: default;"></canvas>
-        <div style="flex: 1;">
-          <div id="problemModeButtons" class="board-btn-group">
-            <button type="button" class="btn" id="problemModeBtn">문제 종료 및 정답 작성</button>
-          </div>
-          <div id="answerModeButtons" class="board-btn-group" style="display:none;">
-            <button type="button" class="btn" id="clearAnswerBtn">정답만 초기화</button>
-            <button type="button" class="btn" id="backToProblemBtn">정답 초기화 및 문제 작성 모드 진입</button>
+        <div class="board-side-panel">
+          <div class="board-mode-slot">
+            <div id="problemModeButtons" class="board-btn-group">
+              <button type="button" class="btn" id="problemModeBtn">문제 종료 및 정답 작성</button>
+            </div>
+            <div id="answerModeButtons" class="board-btn-group" style="display:none;">
+              <button type="button" class="btn" id="clearAnswerBtn">정답만 초기화</button>
+              <button type="button" class="btn" id="backToProblemBtn">정답 초기화 및 문제 작성 모드 진입</button>
+            </div>
           </div>
           <p style="font-size: 0.85rem; color: #b0b0b0; margin: 0.5rem 0;">현재 모드: <span id="modeLabel" style="color: #fff; font-weight: 600;">문제 작성</span></p>
           <p style="font-size: 0.85rem; color: #b0b0b0; margin: 0.5rem 0;">현재 차례: <span id="currentTurn" style="color: #fff; font-weight: 600;">흑</span></p>
@@ -162,9 +178,9 @@
     <input type="text" id="problemAnswer" placeholder="예: h8i7j6... (소문자+숫자 쌍, 정답 수)" maxlength="1023" required>
     <p class="hint">depth = 정답 돌 개수. 승리 색상 = 보드 상태 돌 개수에 따라 자동 고정 (짝수 → BLACK, 홀수 → WHITE)</p>
     <label>깊이 (depth)</label>
-    <input type="text" id="problemDepth" readonly placeholder="정답 입력 시 자동 계산" style="background: rgba(0,0,0,0.3); cursor: not-allowed;">
+    <input type="text" id="problemDepth" class="auto-calculated" readonly placeholder="정답 입력 시 자동 계산" style="background: rgba(0,0,0,0.3); cursor: not-allowed;">
     <label>승리 색상 (winColor)</label>
-    <input type="text" id="problemWinColor" readonly placeholder="정답 입력 시 자동 계산" style="background: rgba(0,0,0,0.3); cursor: not-allowed;">
+    <input type="text" id="problemWinColor" class="auto-calculated" readonly placeholder="정답 입력 시 자동 계산" style="background: rgba(0,0,0,0.3); cursor: not-allowed;">
     <button type="button" class="btn btn-primary" id="createPuzzleBtn">문제 추가</button>
     <div id="createPuzzleMsg" class="msg"></div>
   </section>
