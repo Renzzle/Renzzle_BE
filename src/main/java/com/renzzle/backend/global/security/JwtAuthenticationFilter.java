@@ -81,7 +81,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return bearerToken.substring(7);
         }
         
-        // 2. 쿠키에서 admin_accessToken 확인 (브라우저 접속용)
+        // 2. 쿠키: 일반 사용자 액세스 토큰 (퍼즐 캐시 HTML 등)
+        if (request.getCookies() != null) {
+            for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
+                if ("accessToken".equals(cookie.getName())) {
+                    String tokenFromCookie = cookie.getValue();
+                    if (StringUtils.hasText(tokenFromCookie)) {
+                        return tokenFromCookie;
+                    }
+                }
+            }
+        }
+
+        // 3. 쿠키에서 admin_accessToken 확인 (어드민 브라우저 접속용)
         if (request.getCookies() != null) {
             for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
                 if ("admin_accessToken".equals(cookie.getName())) {
@@ -93,7 +105,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
         
-        // 3. 둘 다 없으면 예외
+        // 4. 모두 없으면 예외
         throw new CustomException(ErrorCode.ILLEGAL_TOKEN);
     }
 

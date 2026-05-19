@@ -38,3 +38,7 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Local-only SQL (seeds / ad-hoc scripts; not for GitHub) ###
+/sql/local/*
+!/sql/local/.gitignore

@@ -61,6 +61,7 @@
     }
     .row { display: flex; gap: 1rem; align-items: flex-end; }
     .row > * { flex: 1; }
+    .load-button-cell .btn { margin-bottom: 0.9rem; }
     .msg { margin-top: 0.5rem; padding: 0.5rem; border-radius: 8px; font-size: 0.9rem; display: none; }
     .msg.show { display: block; }
     .msg.success { background: rgba(40,167,69,0.2); color: #90ee90; }
@@ -93,6 +94,8 @@
     <a href="/admin/logout" class="btn">로그아웃</a>
   </div>
 
+  <th:block th:replace="~{admin/fragments :: siteNav(true, false, false)}"></th:block>
+
   <section class="section">
     <div class="section-title-row">
       <h2>문제집 목록 조회</h2>
@@ -110,11 +113,10 @@
       <div>
         <label>언어</label>
         <select id="filterLang">
-          <option value="EN">EN</option>
-          <option value="KO">KO</option>
+          <option th:each="langCode : ${langCodeNames}" th:value="${langCode}" th:text="${langCode}">EN</option>
         </select>
       </div>
-      <div>
+      <div class="load-button-cell">
         <button type="button" class="btn btn-primary" id="loadPacksBtn">목록 불러오기</button>
       </div>
     </div>
