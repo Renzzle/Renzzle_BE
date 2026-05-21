@@ -94,6 +94,16 @@ public class TrainingController {
         return ApiUtils.success(null);
     }
 
+    @Operation(summary = "Update Pack", description = "Update pack translations, price, difficulty & Only admins are available")
+    @PatchMapping("/pack/{packId}")
+    public ApiResponse<Long> updateTrainingPack(
+            @PathVariable("packId") Long packId,
+            @Valid @RequestBody UpdateTrainingPackRequest request
+    ) {
+        Pack pack = trainingService.updatePack(packId, request);
+        return ApiUtils.success(pack.getId());
+    }
+
     @Operation(summary = "Get Training Packs", description = "Get Training Packs")
     @GetMapping("/pack")
     public ApiResponse<List<GetPackResponse>> getTrainingPack(

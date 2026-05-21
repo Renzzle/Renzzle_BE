@@ -3,6 +3,7 @@ package com.renzzle.backend.domain.auth.service;
 import com.renzzle.backend.domain.auth.api.request.LoginRequest;
 import com.renzzle.backend.domain.auth.api.request.SignupRequest;
 import com.renzzle.backend.domain.auth.api.response.LoginResponse;
+import com.renzzle.backend.domain.auth.dao.AdminRepository;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.puzzle.training.service.TrainingService;
 import com.renzzle.backend.domain.user.domain.UserEntity;
@@ -25,6 +26,7 @@ public class AccountService {
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final AuthService authService;
     private final TrainingService trainingService;
+    private final AdminRepository adminRepository;
 
     @Transactional(readOnly = true)
     public boolean isDuplicatedEmail(String email) {
@@ -89,6 +91,11 @@ public class AccountService {
         long userId = user.get().getId();
 
         return authService.createAuthTokens(userId);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isAdmin(UserEntity user) {
+        return adminRepository.existsByUser(user);
     }
 
 }

@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Renzzle 어드민 - 문제집 생성</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      color: #e8e8e8;
+      padding: 1rem;
+    }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .header h1 { margin: 0; font-size: 1.35rem; }
+    .header .user-info { font-size: 0.9rem; color: #b0b0b0; }
+    .btn { padding: 0.5rem 1rem; border: none; border-radius: 8px; background: rgba(255,255,255,0.15); color: #fff; cursor: pointer; font-size: 0.9rem; text-decoration: none; display: inline-block; }
+    .btn:hover { background: rgba(255,255,255,0.25); }
+    .btn-primary { background: linear-gradient(90deg, #4a9eff, #357abd); }
+    .section { max-width: 720px; margin-bottom: 2rem; padding: 1.5rem; background: rgba(255,255,255,0.06); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); }
+    .section h2 { margin: 0 0 1rem; font-size: 1.15rem; }
+    label { display: block; margin-bottom: 0.35rem; font-size: 0.9rem; color: #b0b0b0; }
+    input, select, textarea { width: 100%; padding: 0.6rem 0.8rem; margin-bottom: 0.9rem; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; background: rgba(0,0,0,0.2); color: #fff; font-size: 0.95rem; }
+    textarea { min-height: 80px; resize: vertical; }
+    input::placeholder, textarea::placeholder { color: #666; }
+    .row { display: flex; gap: 1rem; align-items: flex-end; }
+    .row > * { flex: 1; }
+    .msg { margin-top: 0.5rem; padding: 0.5rem; border-radius: 8px; font-size: 0.9rem; display: none; }
+    .msg.show { display: block; }
+    .msg.success { background: rgba(40,167,69,0.2); color: #90ee90; }
+    .msg.error { background: rgba(220,53,69,0.2); color: #f8a0a0; }
+    .lang-block { padding: 1rem; margin-bottom: 1rem; background: rgba(0,0,0,0.2); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); }
+    .lang-block h4 { margin: 0 0 0.5rem; font-size: 0.95rem; }
+    .hint { color: #888; font-size: 0.8rem; margin-top: -0.5rem; margin-bottom: 0.5rem; }
+    .add-lang-section { margin: 1.5rem 0; padding: 1rem; background: rgba(0,0,0,0.15); border-radius: 10px; border: 1px dashed rgba(255,255,255,0.2); }
+    .add-lang-row { display: flex; gap: 0.75rem; align-items: flex-end; }
+    .add-lang-row input, .add-lang-row select { flex: 1; margin-bottom: 0; }
+    .add-lang-row .btn { flex-shrink: 0; }
+    .btn-secondary { background: rgba(255,255,255,0.12); }
+    .btn-secondary:hover { background: rgba(255,255,255,0.22); }
+    .desc-with-delete { margin-bottom: 0.9rem; }
+    .desc-with-delete textarea { margin-bottom: 0.4rem; }
+    .desc-with-delete .lang-delete-row { display: flex; justify-content: flex-end; }
+    .desc-with-delete .lang-delete-btn { margin: 0; padding: 0.4rem 0.7rem; font-size: 0.8rem; }
+    .btn-danger { background: rgba(220,53,69,0.4); }
+    .btn-danger:hover { background: rgba(220,53,69,0.6); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1 id="pageTitle">Renzzle 어드민 - 문제집 생성</h1>
+      <span class="user-info" th:if="${userEmail}" th:text="${userEmail}"></span>
+    </div>
+    <a href="/admin/logout" class="btn">로그아웃</a>
+  </div>
+
+  <th:block th:replace="~{admin/fragments :: siteNav(false, true, false)}"></th:block>
+
+  <section class="section">
+    <h2 id="sectionTitle">문제집 생성</h2>
+    <p class="hint">언어 코드를 선택한 후 '세부 번역 추가' 버튼을 눌러 각 언어별 제목·작성자·설명을 추가하세요. 사용 가능한 언어 코드: <span th:text="${#strings.arrayJoin(langCodeNames, ', ')}">EN, KO</span></p>
+    <div id="langBlocks"></div>
+
+    <!-- 언어 추가 영역 (하단 고정) -->
+    <div id="addLangSection" class="add-lang-section">
+      <label>언어 코드</label>
+      <div class="add-lang-row">
+        <select id="newLangCode">
+          <option th:each="langCode : ${langCodeNames}" th:value="${langCode}" th:text="${langCode}">EN</option>
+        </select>
+        <button type="button" class="btn btn-secondary" id="addTranslationBtn">세부 번역 추가</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label>가격 (price)</label>
+        <input type="number" id="packPrice" min="0" value="0" required>
+      </div>
+      <div>
+        <label>난이도 (difficulty)</label>
+        <select id="packDifficulty">
+          <option value="LOW">LOW</option>
+          <option value="MIDDLE">MIDDLE</option>
+          <option value="HIGH">HIGH</option>
+        </select>
+      </div>
+    </div>
+    <button type="button" class="btn btn-primary" id="submitPackBtn">문제집 생성</button>
+    <div id="createPackMsg" class="msg"></div>
+  </section>
+
+  <script th:inline="javascript">
+    const API_BASE = '';
+    const LANG_CODE_NAMES = /*[[${langCodeNames}]]*/ ['EN', 'KO'];
+
+    let langBlockCount = 0;
+
+    function escapeHtml(s) {
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    function addLangBlock(langCode, titleVal, authorVal, descVal) {
+      const code = (langCode || '').trim().toUpperCase();
+      if (!code) {
+        alert('언어 코드를 입력하세요.');
+        return;
+      }
+      const idx = langBlockCount++;
+      const block = document.createElement('div');
+      block.className = 'lang-block';
+      block.dataset.langIndex = idx;
+      block.innerHTML = `
+        <h4>언어 ${idx + 1} (${escapeHtml(code)})</h4>
+        <input type="hidden" name="langCode_${idx}" value="${escapeHtml(code)}">
+        <label>제목 (title)</label>
+        <input type="text" name="title_${idx}" placeholder="문제집 제목" value="${escapeHtml(titleVal || '')}" required>
+        <label>작성자 (author)</label>
+        <input type="text" name="author_${idx}" placeholder="작성자명" value="${escapeHtml(authorVal || '')}" required>
+        <label>설명 (description, 선택)</label>
+        <div class="desc-with-delete">
+          <textarea name="description_${idx}" placeholder="문제집 설명">${escapeHtml(descVal || '')}</textarea>
+          <div class="lang-delete-row">
+            <button type="button" class="btn btn-danger lang-delete-btn">해당 언어 삭제</button>
+          </div>
+        </div>
+      `;
+      block.querySelector('.lang-delete-btn').addEventListener('click', () => {
+        block.remove();
+        if (editPackId) updateEditSubmitState();
+      });
+      document.getElementById('langBlocks').appendChild(block);
+      document.getElementById('newLangCode').selectedIndex = 0;
+      if (!titleVal) document.getElementById('newLangCode').focus();
+      if (editPackId) updateEditSubmitState();
+    }
+
+    function updateEditSubmitState() {
+      if (!editPackId) return;
+      const count = document.querySelectorAll('#langBlocks .lang-block').length;
+      document.getElementById('submitPackBtn').disabled = count === 0;
+    }
+
+    document.getElementById('addTranslationBtn').addEventListener('click', () => {
+      const code = document.getElementById('newLangCode').value;
+      addLangBlock(code, null, null, null);
+    });
+
+    document.getElementById('newLangCode').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addLangBlock(document.getElementById('newLangCode').value, null, null, null);
+      }
+    });
+
+    function getCookie(name) {
+      const value = '; ' + document.cookie;
+      const parts = value.split('; ' + name + '=');
+      if (parts.length === 2) return parts.pop().split(';').shift();
+      return null;
+    }
+
+    async function fetchWithAuth(url, options = {}) {
+      const token = getCookie('admin_accessToken');
+      if (!token) {
+        document.cookie = 'admin_accessToken=; path=/; max-age=0';
+        window.location.href = '/admin';
+        throw new Error('로그인이 필요합니다.');
+      }
+      const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+      const res = await fetch(url, { ...options, headers });
+      if (res.status === 401 || res.status === 403) {
+        document.cookie = 'admin_accessToken=; path=/; max-age=0';
+        alert('토큰이 만료되었거나 권한이 없습니다. 다시 로그인하세요.');
+        window.location.href = '/admin';
+        throw new Error('토큰 만료');
+      }
+      return res;
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const editPackId = urlParams.get('packId');
+
+    if (editPackId) {
+      document.getElementById('pageTitle').textContent = 'Renzzle 어드민 - 문제집 편집';
+      document.getElementById('sectionTitle').textContent = '문제집 편집';
+      document.getElementById('submitPackBtn').textContent = '문제집 수정';
+      document.getElementById('submitPackBtn').disabled = true;
+
+      (async () => {
+        try {
+          const res = await fetchWithAuth(API_BASE + '/admin/training/pack/' + editPackId);
+          const data = await res.json();
+          if (!data.isSuccess || !data.response) {
+            alert('문제집 정보를 불러올 수 없습니다.');
+            window.location.href = '/admin/pack-list';
+            return;
+          }
+          const pack = data.response;
+          document.getElementById('packPrice').value = pack.price || 0;
+          document.getElementById('packDifficulty').value = pack.difficulty || 'LOW';
+
+          const info = pack.info || [];
+          if (info.length === 0) {
+            addLangBlock(LANG_CODE_NAMES[0], '', '', '');
+          } else {
+            info.forEach(t => addLangBlock(t.langCode || LANG_CODE_NAMES[0], t.title, t.author, t.description || ''));
+          }
+          document.getElementById('submitPackBtn').disabled = false;
+        } catch (err) {
+          alert('오류: ' + (err.message || '') + '\n문제집 목록으로 이동합니다.');
+          window.location.href = '/admin/pack-list';
+        }
+      })();
+    }
+
+    document.getElementById('submitPackBtn').addEventListener('click', async () => {
+      const msgEl = document.getElementById('createPackMsg');
+      msgEl.classList.remove('show', 'success', 'error');
+
+      const blocks = document.querySelectorAll('#langBlocks .lang-block');
+      const info = [];
+      blocks.forEach((block) => {
+        const idx = block.dataset.langIndex;
+        const title = block.querySelector('input[name="title_' + idx + '"]')?.value.trim();
+        const author = block.querySelector('input[name="author_' + idx + '"]')?.value.trim();
+        if (!title || !author) return;
+        info.push({
+          langCode: block.querySelector('input[name="langCode_' + idx + '"]')?.value,
+          title,
+          author,
+          description: block.querySelector('textarea[name="description_' + idx + '"]')?.value.trim() || null
+        });
+      });
+      if (info.length === 0) {
+        msgEl.textContent = blocks.length === 0
+          ? '세부 번역 추가 버튼으로 최소 1개 이상의 언어를 추가하세요.'
+          : '언어 1개 이상으로 제목·작성자를 입력하세요.';
+        msgEl.classList.add('show', 'error');
+        return;
+      }
+
+      const price = parseInt(document.getElementById('packPrice').value, 10);
+      const difficulty = document.getElementById('packDifficulty').value;
+
+      try {
+        if (editPackId) {
+          const res = await fetchWithAuth(API_BASE + '/api/training/pack/' + editPackId, {
+            method: 'PATCH',
+            body: JSON.stringify({ info, price, difficulty })
+          });
+          const data = await res.json();
+          if (!data.isSuccess) {
+            msgEl.textContent = data.errorResponse?.message || '문제집 수정 실패';
+            msgEl.classList.add('show', 'error');
+            return;
+          }
+          msgEl.textContent = '문제집 수정 완료. 문제집 목록으로 이동합니다.';
+          msgEl.classList.add('show', 'success');
+          setTimeout(() => { window.location.href = '/admin/pack-list'; }, 500);
+        } else {
+          const res = await fetchWithAuth(API_BASE + '/api/training/pack', {
+            method: 'POST',
+            body: JSON.stringify({ info, price, difficulty })
+          });
+          const data = await res.json();
+          if (!data.isSuccess) {
+            msgEl.textContent = data.errorResponse?.message || '문제집 생성 실패';
+            msgEl.classList.add('show', 'error');
+            return;
+          }
+          msgEl.textContent = '문제집 생성 완료. 문제집 목록으로 이동합니다.';
+          msgEl.classList.add('show', 'success');
+          setTimeout(() => { window.location.href = '/admin/pack-list'; }, 500);
+        }
+      } catch (err) {
+        msgEl.textContent = '오류: ' + (err.message || '');
+        msgEl.classList.add('show', 'error');
+      }
+    });
+  </script>
+</body>
+</html>

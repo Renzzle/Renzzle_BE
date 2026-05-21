@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Renzzle - 퍼즐 정답 보드 입력</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      color: #e8e8e8;
+      padding: 1rem;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .header h1 { margin: 0; font-size: 1.35rem; }
+    .header .user-info { font-size: 0.9rem; color: #b0b0b0; margin-right: 1rem; }
+    .btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      cursor: pointer;
+      font-size: 0.9rem;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn:hover { background: rgba(255,255,255,0.25); }
+    .btn-primary { background: linear-gradient(90deg, #4a9eff, #357abd); }
+    .btn-primary:hover { opacity: 0.95; }
+    .section {
+      max-width: 1100px;
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background: rgba(255,255,255,0.06);
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .section h2 { margin: 0; font-size: 1.15rem; }
+    label { display: block; margin-bottom: 0.35rem; font-size: 0.9rem; color: #b0b0b0; }
+    input, select, textarea {
+      width: 100%;
+      padding: 0.6rem 0.8rem;
+      margin-bottom: 0.9rem;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      background: rgba(0,0,0,0.2);
+      color: #fff;
+      font-size: 0.95rem;
+    }
+    textarea { min-height: 72px; resize: vertical; margin-bottom: 0.75rem; }
+    .msg { margin-top: 0.5rem; padding: 0.5rem; border-radius: 8px; font-size: 0.9rem; display: none; }
+    .msg.show { display: block; }
+    .msg.success { background: rgba(40,167,69,0.2); color: #90ee90; }
+    .msg.error { background: rgba(220,53,69,0.2); color: #f8a0a0; }
+    .hint { color: #888; font-size: 0.8rem; margin-top: -0.5rem; margin-bottom: 0.5rem; }
+    .board-cache-row {
+      display: flex;
+      gap: 1.25rem;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .board-cache-row .board-viz { flex: 0 1 auto; }
+    .cache-panel {
+      flex: 1;
+      min-width: 260px;
+      max-width: 420px;
+      padding: 1rem;
+      background: rgba(0,0,0,0.15);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .cache-panel .btn-block { display: block; width: 100%; margin-bottom: 0.65rem; }
+    .cache-panel .label-after-btn {
+      margin-top: 1.35rem;
+      margin-bottom: 0.4rem;
+    }
+    .turn-line {
+      font-size: 0.85rem;
+      color: #b0b0b0;
+      margin: 0.5rem 0;
+    }
+    .turn-line .turn-value {
+      color: #fff;
+      font-weight: 600;
+    }
+    .meta-line { font-size: 0.85rem; color: #888; margin: 0 0 1rem 0; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>퍼즐 정답 — 보드 입력</h1>
+      <span class="user-info" th:if="${userEmail}" th:text="${userEmail}"></span>
+    </div>
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+      <a href="/puzzle-cache" class="btn">정답 입력 목록</a>
+      <a href="/admin/logout" class="btn">로그아웃</a>
+    </div>
+  </div>
+
+  <th:block th:replace="~{admin/fragments :: siteNav(false, false, false)}"></th:block>
+
+  <section class="section">
+    <h2>보드 · 정답 저장</h2>
+    <p class="meta-line" th:if="${puzzleType == 'TRAINING'}">트레이닝 · 팩 <strong th:text="${packId != null ? packId : '—'}">-</strong> · 문제 <strong th:text="${puzzleId}">-</strong></p>
+    <p class="meta-line" th:if="${puzzleType == 'COMMUNITY'}">커뮤니티 · 문제 <strong th:text="${puzzleId}">-</strong></p>
+
+    <input type="hidden" id="problemPuzzleId" th:value="${puzzleId}">
+    <input type="hidden" id="problemPuzzleIndex">
+    <input type="hidden" id="problemBoardStatus">
+    <input type="hidden" id="problemAnswer">
+    <input type="hidden" id="problemDepth">
+    <input type="hidden" id="problemWinColor">
+
+    <div class="board-cache-row">
+      <div class="board-viz">
+        <label>보드 상태 시각화</label>
+        <p class="hint">currentBoard 지정 후에는 그 다음 한 수만 캔버스에 둘 수 있습니다.</p>
+        <canvas id="gomokuBoard" width="480" height="480" style="background: #DCB35C; border: 2px solid #333; cursor: default;"></canvas>
+      </div>
+
+      <div class="cache-panel">
+        <button type="button" class="btn btn-primary btn-block" id="cacheResetBoardBtn">디폴트 보드로 리셋</button>
+        <button type="button" class="btn btn-primary btn-block" id="setCurrentBoardBtn">현재 보드를 currentBoard로 지정</button>
+
+        <label class="label-after-btn" for="currentBoardState">지정된 currentBoard 문자열</label>
+        <textarea id="currentBoardState" readonly rows="2" placeholder="버튼으로 채움"></textarea>
+
+        <p class="turn-line">현재 차례: <span class="turn-value" id="currentTurn">흑</span></p>
+        <button type="button" class="btn btn-block" id="cacheUndoBtn">마지막 수 취소</button>
+
+        <label for="answerPuzzle">대응 수</label>
+        <input type="text" id="answerPuzzle" readonly placeholder="캔버스에 한 수" maxlength="3" autocomplete="off" style="margin-bottom: 0.65rem;">
+
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button type="button" class="btn btn-primary" id="saveCacheBtn">정답 저장</button>
+          <button type="button" class="btn" id="verifyCacheBtn">보드의 대응 수 조회</button>
+        </div>
+        <div id="cacheMsg" class="msg"></div>
+        <p class="hint" id="verifyOut" style="margin-top:0.5rem;margin-bottom:0;"></p>
+      </div>
+    </div>
+  </section>
+
+  <script th:inline="javascript">
+    const API_BASE = '';
+    const puzzleType = /*[[${puzzleType}]]*/ 'TRAINING';
+    const puzzleId = /*[[${puzzleId}]]*/ 0;
+    const selectedPuzzleType = puzzleType;
+    const selectedPuzzleId = puzzleId;
+
+    let cacheLocked = false;
+    let cacheExtraMove = null;
+
+    const canvas = document.getElementById('gomokuBoard');
+    const ctx = canvas.getContext('2d');
+    const BOARD_SIZE = 15;
+    const CELL_SIZE = 30;
+    const MARGIN = 30;
+    const CANVAS_LOGICAL_SIZE = 480;
+
+    (function setupCanvasScale() {
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = CANVAS_LOGICAL_SIZE * dpr;
+      canvas.height = CANVAS_LOGICAL_SIZE * dpr;
+      canvas.style.width = CANVAS_LOGICAL_SIZE + 'px';
+      canvas.style.height = CANVAS_LOGICAL_SIZE + 'px';
+      ctx.scale(dpr, dpr);
+    })();
+    const moves = [];
+    const answerMoves = [];
+    let currentPlayer = 'black';
+
+    function toCanvasX(col) { return MARGIN + col * CELL_SIZE; }
+    function toCanvasY(row) { return MARGIN + (14 - row) * CELL_SIZE; }
+
+    function drawBoard() {
+      ctx.fillStyle = '#DCB35C';
+      ctx.fillRect(0, 0, CANVAS_LOGICAL_SIZE, CANVAS_LOGICAL_SIZE);
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < BOARD_SIZE; i++) {
+        const pos = MARGIN + i * CELL_SIZE;
+        ctx.beginPath();
+        ctx.moveTo(pos, MARGIN);
+        ctx.lineTo(pos, MARGIN + (BOARD_SIZE - 1) * CELL_SIZE);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(MARGIN, pos);
+        ctx.lineTo(MARGIN + (BOARD_SIZE - 1) * CELL_SIZE, pos);
+        ctx.stroke();
+      }
+      const starPoints = [ [3, 3], [3, 11], [7, 7], [11, 3], [11, 11] ];
+      starPoints.forEach(([row, col]) => {
+        const x = toCanvasX(col);
+        const y = toCanvasY(row);
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.fillStyle = '#000';
+      ctx.font = '14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (let c = 0; c < BOARD_SIZE; c++) {
+        ctx.fillText(String.fromCharCode(65 + c), toCanvasX(c), CANVAS_LOGICAL_SIZE - MARGIN / 2);
+      }
+      for (let r = 0; r < BOARD_SIZE; r++) {
+        ctx.fillText(String(r + 1), MARGIN / 2, toCanvasY(r));
+      }
+    }
+
+    function drawStone(row, col, player, moveNumber) {
+      const x = toCanvasX(col);
+      const y = toCanvasY(row);
+      ctx.fillStyle = player === 'black' ? '#000' : '#fff';
+      ctx.beginPath();
+      ctx.arc(x, y, CELL_SIZE / 2 - 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = player === 'black' ? '#333' : '#999';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      if (moveNumber) {
+        ctx.fillStyle = player === 'black' ? '#fff' : '#000';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(moveNumber, x, y);
+      }
+    }
+
+    function redrawBoard() {
+      drawBoard();
+      const allMoves = [...moves, ...answerMoves];
+      if (cacheExtraMove) allMoves.push(cacheExtraMove);
+      allMoves.forEach((move, idx) => {
+        drawStone(move.row, move.col, move.player, idx + 1);
+      });
+    }
+
+    function boardStatusToMoves(boardStatus) {
+      const result = [];
+      if (!boardStatus || boardStatus.trim() === '') return result;
+      const regex = /([a-oA-O])(\d{1,2})/g;
+      let match;
+      let turnBlack = true;
+      while ((match = regex.exec(boardStatus)) !== null) {
+        const col = match[1].toLowerCase().charCodeAt(0) - 'a'.charCodeAt(0);
+        const row = parseInt(match[2], 10) - 1;
+        if (row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE) {
+          result.push({ row, col, player: turnBlack ? 'black' : 'white' });
+          turnBlack = !turnBlack;
+        }
+      }
+      return result;
+    }
+
+    function movesToBoardStatus(arr) {
+      return arr.map(m => {
+        const rowChar = String.fromCharCode('a'.charCodeAt(0) + m.col);
+        const colNum = m.row + 1;
+        return rowChar + colNum;
+      }).join('');
+    }
+
+    function fullBoardStatusForSnapshot() {
+      return movesToBoardStatus([...moves, ...answerMoves]);
+    }
+
+    function updateBoardStatusInput() {
+      document.getElementById('problemBoardStatus').value = movesToBoardStatus(moves);
+      updateDepthAndWinColor();
+    }
+
+    function updateAnswerInput() {
+      document.getElementById('problemAnswer').value = movesToBoardStatus(answerMoves);
+      updateDepthAndWinColor();
+    }
+
+    function syncCurrentPlayer() {
+      const total = moves.length + answerMoves.length + (cacheExtraMove ? 1 : 0);
+      currentPlayer = total % 2 === 0 ? 'black' : 'white';
+      document.getElementById('currentTurn').textContent = currentPlayer === 'black' ? '흑' : '백';
+    }
+
+    function countMovesInBoardString(str) {
+      if (!str || !str.trim()) return 0;
+      const regex = /([a-o])(\d{1,2})/g;
+      let count = 0;
+      let match;
+      while ((match = regex.exec(str)) !== null) {
+        const num = parseInt(match[2], 10);
+        if (num >= 1 && num <= 15) count++;
+      }
+      return count;
+    }
+
+    function updateDepthAndWinColor() {
+      const boardStatus = document.getElementById('problemBoardStatus').value.trim();
+      const answer = document.getElementById('problemAnswer').value.trim();
+      const boardMoves = countMovesInBoardString(boardStatus);
+      const answerMovesCount = countMovesInBoardString(answer);
+      const depthEl = document.getElementById('problemDepth');
+      const winColorEl = document.getElementById('problemWinColor');
+      depthEl.value = answerMovesCount > 0 ? answerMovesCount : '';
+      winColorEl.value = (boardMoves > 0 && answerMovesCount > 0)
+        ? ((boardMoves % 2 === 0) ? 'BLACK' : 'WHITE')
+        : '';
+    }
+
+    function isBaseOccupied(row, col) {
+      return moves.some(m => m.row === row && m.col === col) ||
+             answerMoves.some(m => m.row === row && m.col === col);
+    }
+
+    function isOccupied(row, col) {
+      if (isBaseOccupied(row, col)) return true;
+      if (cacheExtraMove && cacheExtraMove.row === row && cacheExtraMove.col === col) return true;
+      return false;
+    }
+
+    function applyClearAnswerOnly() {
+      answerMoves.length = 0;
+      updateAnswerInput();
+      redrawBoard();
+      syncCurrentPlayer();
+    }
+
+    canvas.addEventListener('click', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const col = Math.round((x - MARGIN) / CELL_SIZE);
+      const row = 14 - Math.round((y - MARGIN) / CELL_SIZE);
+      if (row < 0 || row >= BOARD_SIZE || col < 0 || col >= BOARD_SIZE) return;
+
+      if (cacheLocked) {
+        if (cacheExtraMove && cacheExtraMove.row === row && cacheExtraMove.col === col) return;
+        if (isBaseOccupied(row, col)) return;
+        const allowed = (moves.length + answerMoves.length) % 2 === 0 ? 'black' : 'white';
+        cacheExtraMove = { row, col, player: allowed };
+        document.getElementById('answerPuzzle').value = movesToBoardStatus([cacheExtraMove]).toLowerCase();
+        redrawBoard();
+        syncCurrentPlayer();
+        return;
+      }
+
+      if (isOccupied(row, col)) return;
+      const newMove = { row, col, player: currentPlayer };
+      answerMoves.push(newMove);
+      updateAnswerInput();
+      redrawBoard();
+      syncCurrentPlayer();
+    });
+
+    document.getElementById('problemBoardStatus').addEventListener('input', (e) => {
+      const newMoves = boardStatusToMoves(e.target.value);
+      moves.length = 0;
+      moves.push(...newMoves);
+      answerMoves.length = 0;
+      document.getElementById('problemAnswer').value = '';
+      cacheLocked = false;
+      cacheExtraMove = null;
+      syncCurrentPlayer();
+      redrawBoard();
+      updateDepthAndWinColor();
+      document.getElementById('answerPuzzle').value = '';
+    });
+
+    document.getElementById('problemAnswer').addEventListener('input', (e) => {
+      const answerStr = e.target.value.trim();
+      const parsed = boardStatusToMoves(answerStr);
+      answerMoves.length = 0;
+      parsed.forEach((m, i) => {
+        const player = (moves.length + i) % 2 === 0 ? 'black' : 'white';
+        answerMoves.push({ ...m, player });
+      });
+      cacheExtraMove = null;
+      syncCurrentPlayer();
+      redrawBoard();
+      updateDepthAndWinColor();
+    });
+
+    drawBoard();
+
+    function getCookie(name) {
+      const value = '; ' + document.cookie;
+      const parts = value.split('; ' + name + '=');
+      if (parts.length === 2) return parts.pop().split(';').shift();
+      return null;
+    }
+
+    async function fetchWithAuth(url, options = {}) {
+      const token = getCookie('admin_accessToken');
+      if (!token) {
+        document.cookie = 'admin_accessToken=; path=/; max-age=0';
+        window.location.href = '/admin';
+        throw new Error('로그인이 필요합니다.');
+      }
+      const headers = Object.assign(
+        { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        options.headers || {}
+      );
+      if (options.body === undefined || options.body === null) {
+        delete headers['Content-Type'];
+      }
+      const res = await fetch(url, Object.assign({}, options, { headers }));
+      if (res.status === 401 || res.status === 403) {
+        document.cookie = 'admin_accessToken=; path=/; max-age=0';
+        alert('토큰이 만료되었거나 권한이 없습니다. 다시 로그인하세요.');
+        window.location.href = '/admin';
+        throw new Error('토큰 만료');
+      }
+      return res;
+    }
+
+    function clearCacheFormFields() {
+      document.getElementById('currentBoardState').value = '';
+      document.getElementById('answerPuzzle').value = '';
+      document.getElementById('verifyOut').textContent = '';
+      const msg = document.getElementById('cacheMsg');
+      msg.classList.remove('show', 'success', 'error');
+    }
+
+    function showCacheMsg(el, text, ok) {
+      el.textContent = text;
+      el.classList.add('show');
+      el.classList.toggle('success', ok);
+      el.classList.toggle('error', !ok);
+    }
+
+    async function loadPuzzleDetail() {
+      try {
+        const detailPath = puzzleType === 'COMMUNITY'
+            ? '/admin/community/puzzle-detail/'
+            : '/admin/training/puzzle-detail/';
+        const res = await fetchWithAuth(API_BASE + detailPath + puzzleId);
+        const data = await res.json();
+        if (!data.isSuccess) {
+          alert(data.errorResponse?.message || '문제 조회 실패');
+          window.location.href = '/puzzle-cache';
+          return;
+        }
+
+        const puzzle = data.response || {};
+        const boardStatus = (puzzle.boardStatus || '').trim();
+        const answer = (puzzle.answer || '').trim();
+
+        document.getElementById('problemPuzzleId').value = puzzle.id ?? puzzleId;
+        document.getElementById('problemPuzzleIndex').value = puzzle.trainingIndex ?? '';
+        document.getElementById('problemBoardStatus').value = boardStatus;
+        document.getElementById('problemAnswer').value = answer;
+        document.getElementById('problemDepth').value = (puzzle.depth ?? '') === 0 ? '' : (puzzle.depth ?? '');
+        document.getElementById('problemWinColor').value = puzzle.winColor || '';
+
+        moves.length = 0;
+        moves.push(...boardStatusToMoves(boardStatus));
+
+        answerMoves.length = 0;
+        const parsedAnswerMoves = boardStatusToMoves(answer);
+        parsedAnswerMoves.forEach((m, i) => {
+          const player = (moves.length + i) % 2 === 0 ? 'black' : 'white';
+          answerMoves.push({ ...m, player });
+        });
+
+        cacheExtraMove = null;
+        cacheLocked = false;
+        applyClearAnswerOnly();
+        clearCacheFormFields();
+        syncCurrentPlayer();
+      } catch (err) {
+        alert('오류: ' + (err.message || ''));
+      }
+    }
+
+    document.getElementById('cacheResetBoardBtn').addEventListener('click', () => {
+      loadPuzzleDetail();
+    });
+
+    document.getElementById('setCurrentBoardBtn').addEventListener('click', () => {
+      cacheExtraMove = null;
+      document.getElementById('answerPuzzle').value = '';
+      document.getElementById('currentBoardState').value = fullBoardStatusForSnapshot();
+      cacheLocked = true;
+      redrawBoard();
+      syncCurrentPlayer();
+    });
+
+    document.getElementById('cacheUndoBtn').addEventListener('click', () => {
+      if (cacheLocked) {
+        if (cacheExtraMove) {
+          cacheExtraMove = null;
+          document.getElementById('answerPuzzle').value = '';
+          redrawBoard();
+          syncCurrentPlayer();
+          return;
+        }
+        if (answerMoves.length > 0) {
+          answerMoves.pop();
+          updateAnswerInput();
+          redrawBoard();
+          syncCurrentPlayer();
+          return;
+        }
+        if (moves.length > 0) {
+          moves.pop();
+          updateBoardStatusInput();
+          redrawBoard();
+          syncCurrentPlayer();
+        }
+        return;
+      }
+      if (answerMoves.length > 0) {
+        answerMoves.pop();
+        updateAnswerInput();
+      } else if (moves.length > 0) {
+        moves.pop();
+        updateBoardStatusInput();
+      } else return;
+      redrawBoard();
+      syncCurrentPlayer();
+    });
+
+    document.getElementById('saveCacheBtn').addEventListener('click', async () => {
+      const msg = document.getElementById('cacheMsg');
+      msg.classList.remove('show', 'success', 'error');
+      const currentBoardState = document.getElementById('currentBoardState').value.trim();
+      const answerPuzzle = document.getElementById('answerPuzzle').value.trim().toLowerCase();
+      if (!currentBoardState || !answerPuzzle) {
+        showCacheMsg(msg, 'currentBoard 지정 및 대응 수를 입력하세요.', false);
+        return;
+      }
+      try {
+        const res = await fetchWithAuth(API_BASE + '/api/puzzle/cache/save', {
+          method: 'POST',
+          body: JSON.stringify({
+            puzzleType: selectedPuzzleType,
+            puzzleId: selectedPuzzleId,
+            currentBoardState,
+            answerPuzzle
+          })
+        });
+        const data = await res.json();
+        if (!data.isSuccess) {
+          showCacheMsg(msg, data.errorResponse?.message || '저장 실패', false);
+          return;
+        }
+        showCacheMsg(msg, '저장 완료 (보드는 그대로 유지됩니다).', true);
+      } catch (err) {
+        showCacheMsg(msg, '오류: ' + (err.message || ''), false);
+      }
+    });
+
+    document.getElementById('verifyCacheBtn').addEventListener('click', async () => {
+      const out = document.getElementById('verifyOut');
+      out.textContent = '';
+      const currentBoardState = document.getElementById('currentBoardState').value.trim();
+      if (!currentBoardState) {
+        out.textContent = 'currentBoard를 지정하세요.';
+        return;
+      }
+      try {
+        const q = 'puzzleType=' + encodeURIComponent(selectedPuzzleType)
+          + '&puzzleId=' + encodeURIComponent(selectedPuzzleId)
+          + '&currentBoardState=' + encodeURIComponent(currentBoardState);
+        const res = await fetchWithAuth(API_BASE + '/api/puzzle/cache/ai-response?' + q);
+        const data = await res.json();
+        if (!data.isSuccess) {
+          out.textContent = data.errorResponse?.message || '조회 실패';
+          return;
+        }
+        out.textContent = '정답 다음 수: ' + (data.response && data.response.position != null ? data.response.position : '(없음)');
+      } catch (err) {
+        out.textContent = '오류: ' + (err.message || '');
+      }
+    });
+
+    loadPuzzleDetail();
+  </script>
+</body>
+</html>

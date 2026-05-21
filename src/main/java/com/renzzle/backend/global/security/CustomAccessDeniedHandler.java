@@ -19,6 +19,14 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response,
                        AccessDeniedException accessDeniedException) throws IOException {
+        // HTML 요청(브라우저)인 경우 로그인 페이지로 redirect
+        String acceptHeader = request.getHeader("Accept");
+        if (acceptHeader != null && acceptHeader.contains("text/html")) {
+            response.sendRedirect("/admin");
+            return;
+        }
+
+        // API 요청인 경우 JSON 응답
         ErrorCode errorCode = ErrorCode.ADMIN_ACCESS_DENIED;
         response.setStatus(errorCode.getStatus().value());
         response.setContentType("application/json");

@@ -112,6 +112,90 @@ public class TrainingServiceTest {
             verify(packTranslationRepository, times(1)).saveAll(anyList());
         }
 
+        @DisplayName("updatePack : 팩 수정 (번역/가격/난이도)")
+        @Test
+        @SuppressWarnings("unchecked")
+        public void testUpdatePack() {
+            // given
+            Long packId = 1L;
+            Pack existingPack = Pack.builder()
+                    .id(packId)
+                    .price(500)
+                    .difficulty(Difficulty.getDifficulty("LOW"))
+                    .puzzleCount(7)
+                    .build();
+
+            List<PackTranslationRequest> translationRequests = Arrays.asList(
+                    new PackTranslationRequest("KO", "초보용 1(수정)", "김", "설명(수정)"),
+                    new PackTranslationRequest("EN", "For Beginner 1 (Edited)", "KIM", "Description (Edited)")
+            );
+            UpdateTrainingPackRequest request = new UpdateTrainingPackRequest(translationRequests, 1200, "HIGH");
+
+            List<PackTranslation> existingTranslations = Arrays.asList(
+                    PackTranslation.builder()
+                            .id(10L)
+                            .pack(existingPack)
+                            .langCode(LangCode.getLangCode("KO"))
+                            .title("초보용 1")
+                            .author("김")
+                            .description("처음 퍼즐을 푸는...")
+                            .build(),
+                    PackTranslation.builder()
+                            .id(11L)
+                            .pack(existingPack)
+                            .langCode(LangCode.getLangCode("EN"))
+                            .title("For Beginner 1")
+                            .author("KIM")
+                            .description("First time to solve...")
+                            .build()
+            );
+
+            when(packRepository.findById(packId)).thenReturn(Optional.of(existingPack));
+            when(packTranslationRepository.findAllByPack_Id(packId)).thenReturn(existingTranslations);
+            when(packRepository.save(any(Pack.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            // when
+            Pack updatedPack = trainingService.updatePack(packId, request);
+
+            // then
+            assertThat(updatedPack.getId()).isEqualTo(packId);
+            assertThat(updatedPack.getPrice()).isEqualTo(1200);
+            assertThat(updatedPack.getDifficulty().getName()).isEqualTo("HIGH");
+            assertThat(updatedPack.getPuzzleCount()).isEqualTo(7);
+
+            ArgumentCaptor<Pack> packCaptor = ArgumentCaptor.forClass(Pack.class);
+            verify(packRepository, times(1)).save(packCaptor.capture());
+            assertThat(packCaptor.getValue().getId()).isEqualTo(packId);
+            assertThat(packCaptor.getValue().getPrice()).isEqualTo(1200);
+            assertThat(packCaptor.getValue().getDifficulty().getName()).isEqualTo("HIGH");
+            assertThat(packCaptor.getValue().getPuzzleCount()).isEqualTo(7);
+
+            verify(packTranslationRepository, times(1)).findAllByPack_Id(packId);
+            verify(packTranslationRepository, times(1)).deleteAll(existingTranslations);
+
+            ArgumentCaptor<List> translationsCaptor = ArgumentCaptor.forClass(List.class);
+            verify(packTranslationRepository, times(1)).saveAll(translationsCaptor.capture());
+            List<PackTranslation> savedTranslations = (List<PackTranslation>) translationsCaptor.getValue();
+            assertThat(savedTranslations).hasSize(2);
+            assertThat(savedTranslations).allSatisfy(t -> assertThat(t.getPack().getId()).isEqualTo(packId));
+
+            PackTranslation ko = savedTranslations.stream()
+                    .filter(t -> t.getLangCode().getName().equals("KO"))
+                    .findFirst()
+                    .orElseThrow();
+            assertThat(ko.getTitle()).isEqualTo("초보용 1(수정)");
+            assertThat(ko.getAuthor()).isEqualTo("김");
+            assertThat(ko.getDescription()).isEqualTo("설명(수정)");
+
+            PackTranslation en = savedTranslations.stream()
+                    .filter(t -> t.getLangCode().getName().equals("EN"))
+                    .findFirst()
+                    .orElseThrow();
+            assertThat(en.getTitle()).isEqualTo("For Beginner 1 (Edited)");
+            assertThat(en.getAuthor()).isEqualTo("KIM");
+            assertThat(en.getDescription()).isEqualTo("Description (Edited)");
+        }
+
         @DisplayName("addTranslation : Pack에 번역을 추가")
         @Test
         public void testAddTranslation() {
@@ -596,6 +680,29 @@ public class TrainingServiceTest {
             // then
             assertEquals(ErrorCode.NO_SUCH_TRAINING_PACK, exception.getErrorCode());
             verify(packTranslationRepository, never()).save(any(PackTranslation.class));
+        }
+
+        @DisplayName("updatePack: Pack이 존재하지 않으면 번역/팩 저장을 시도하지 않고 NO_SUCH_TRAINING_PACK 예외를 던진다")
+        @Test
+        public void testUpdatePack_PackNotFound() {
+            // given
+            Long packId = 1L;
+            List<PackTranslationRequest> translationRequests = Collections.singletonList(
+                    new PackTranslationRequest("KO", "초보용 1(수정)", "강상민", "설명(수정)")
+            );
+            UpdateTrainingPackRequest request = new UpdateTrainingPackRequest(translationRequests, 1200, "HIGH");
+
+            when(packRepository.findById(packId)).thenReturn(Optional.empty());
+
+            // when
+            CustomException exception = assertThrows(CustomException.class, () -> trainingService.updatePack(packId, request));
+
+            // then
+            assertEquals(ErrorCode.NO_SUCH_TRAINING_PACK, exception.getErrorCode());
+            verify(packRepository, never()).save(any(Pack.class));
+            verify(packTranslationRepository, never()).findAllByPack_Id(anyLong());
+            verify(packTranslationRepository, never()).deleteAll(anyList());
+            verify(packTranslationRepository, never()).saveAll(anyList());
         }
 
         @DisplayName("Pack이 존재하지 않는 경우 NO_SUCH_TRAINING_PACK 예외처리")

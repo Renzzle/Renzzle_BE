@@ -3,10 +3,13 @@ package com.renzzle.backend.domain.puzzle.community.service;
 import com.renzzle.backend.domain.puzzle.community.api.request.AddCommunityPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.community.api.response.AddCommunityPuzzleResponse;
+import com.renzzle.backend.domain.puzzle.cache.api.request.GetCommunityPuzzlesForCacheRequest;
+import com.renzzle.backend.domain.puzzle.cache.api.response.CommunityPuzzleCachePickerResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleAnswerResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlesResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetSingleCommunityPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
+import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleForAdminResponse;
 import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.dao.projection.LikeDislikeProjection;
 import com.renzzle.backend.domain.puzzle.community.domain.*;
@@ -87,6 +90,63 @@ public class CommunityService {
             );
         }
 
+        return response;
+    }
+
+    /**
+     * 어드민 캐시 입력용: 보드·정답 전체. 조회수 증가 없음.
+     */
+    @Transactional(readOnly = true)
+    public GetTrainingPuzzleForAdminResponse getCommunityPuzzleForAdminDetail(Long puzzleId) {
+        CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
+        return GetTrainingPuzzleForAdminResponse.builder()
+                .id(puzzle.getId())
+                .boardStatus(puzzle.getBoardStatus())
+                .answer(puzzle.getAnswer())
+                .depth(puzzle.getDepth())
+                .winColor(puzzle.getWinColor().getName())
+                .trainingIndex(0)
+                .isSolved(false)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CommunityPuzzleCachePickerResponse> getCommunityPuzzlesForCachePicker(GetCommunityPuzzlesForCacheRequest request) {
+        int depthMin = request.depthMin() != null ? request.depthMin() : 1;
+        int depthMax = request.depthMax() != null ? request.depthMax() : 225;
+        if (depthMin > depthMax) {
+            throw new CustomException("depthMin은 depthMax보다 클 수 없습니다.", ErrorCode.VALIDATION_ERROR);
+        }
+        int size = request.size() != null ? request.size() : 20;
+        String nickname = request.authorNickname();
+        if (nickname != null) {
+            nickname = nickname.trim();
+            if (nickname.isEmpty()) {
+                nickname = null;
+            }
+        }
+        List<CommunityPuzzle> puzzleList = communityPuzzleRepository.searchCommunityPuzzlesForCache(
+                nickname,
+                request.stone(),
+                depthMin,
+                depthMax,
+                request.id(),
+                size
+        );
+        List<CommunityPuzzleCachePickerResponse> response = new ArrayList<>();
+        for (CommunityPuzzle puzzle : puzzleList) {
+            response.add(
+                    CommunityPuzzleCachePickerResponse.builder()
+                            .id(puzzle.getId())
+                            .boardStatus(puzzle.getBoardStatus())
+                            .depth(puzzle.getDepth())
+                            .winColor(puzzle.getWinColor().getName())
+                            .description(puzzle.getDescription())
+                            .authorNickname(puzzle.getUser().getNickname())
+                            .build()
+            );
+        }
         return response;
     }
 

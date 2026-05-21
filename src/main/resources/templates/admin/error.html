@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Renzzle 어드민 - 오류</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      color: #e8e8e8;
+    }
+    .error-card {
+      width: 100%;
+      max-width: 500px;
+      padding: 2.5rem;
+      background: rgba(255,255,255,0.06);
+      border-radius: 16px;
+      border: 1px solid rgba(220, 53, 69, 0.5);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    h1 {
+      margin: 0 0 1rem;
+      font-size: 2rem;
+      font-weight: 600;
+      color: #dc3545;
+    }
+    p {
+      margin: 0 0 2rem;
+      font-size: 1.1rem;
+      color: #f8a0a0;
+      line-height: 1.5;
+    }
+    .btn {
+      display: inline-block;
+      padding: 0.85rem 2rem;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(90deg, #4a9eff, #357abd);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .btn:hover { opacity: 0.95; }
+  </style>
+</head>
+<body>
+  <div class="error-card">
+    <h1>접근 오류</h1>
+    <p th:text="${errorMessage}">오류가 발생했습니다.</p>
+    <a href="/admin" class="btn">로그인 페이지로</a>
+  </div>
+</body>
+</html>
