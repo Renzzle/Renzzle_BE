@@ -54,10 +54,10 @@ public class JwtProvider {
 
     private Jws<Claims> parseToken(String token) {
         try {
-            return Jwts.parserBuilder()
-                    .setSigningKey(secretKey)
+            return Jwts.parser()
+                    .verifyWith(secretKey)
                     .build()
-                    .parseClaimsJws(token);
+                    .parseSignedClaims(token);
         } catch (ExpiredJwtException e) {
             throw new CustomException(ErrorCode.EXPIRED_JWT_TOKEN);
         } catch (MalformedJwtException e) {
