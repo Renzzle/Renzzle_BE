@@ -4,12 +4,17 @@ on:
   issue_comment:
     types: [created]
 
+permissions:
+  contents: read
+  actions: write
+
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: >
       github.event.issue.pull_request &&
-      contains(github.event.comment.body, '/test deploy')
+      contains(github.event.comment.body, '/test deploy') &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
 
     steps:
       - name: Checkout code
@@ -35,10 +40,11 @@ jobs:
           ping -c 3 ${{ secrets.TEST_HOST }}
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
+          cache: 'gradle'
 
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
@@ -66,10 +72,17 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build and Push Docker image
-        run: |
-          docker build -t renzzle/github-action:test-latest .
-          docker push renzzle/github-action:test-latest
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: renzzle/github-action:test-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Create .env file for Test Server
         run: |
