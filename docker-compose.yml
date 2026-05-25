@@ -20,6 +20,16 @@ services:
       redis:
         condition: service_started
 
+  caddy:
+    image: caddy:2-alpine
+    command: caddy reverse-proxy --from :80 --to app:9001
+    ports:
+      - "${HTTP_HOST_PORT:-80}:80"
+    networks:
+      - app-network
+    depends_on:
+      - app
+
   db:
     container_name: mysql
     image: mysql:8.0
