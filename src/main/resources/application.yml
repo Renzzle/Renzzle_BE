@@ -56,6 +56,15 @@ rank:
   session:
     ttl: 3600 # 초 단위, 운영 기본값
 
+iap:
+  google:
+    package-name: ${GOOGLE_PLAY_PACKAGE_NAME:}
+    credentials-path: ${GOOGLE_APPLICATION_CREDENTIALS:}
+  apple:
+    shared-secret: ${APPLE_APP_SHARED_SECRET:}
+    production-url: https://buy.itunes.apple.com/verifyReceipt
+    sandbox-url: https://sandbox.itunes.apple.com/verifyReceipt
+
 backup:
   datasource:
     # Aiven용 JDBC URL (SSL 옵션 포함)
