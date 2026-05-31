@@ -140,6 +140,8 @@ jobs:
           echo "BACKUP_DB_USER=\"${{ secrets.BACKUP_DB_USER }}\"" >> .env
           echo "BACKUP_DB_PASSWORD=\"${{ secrets.BACKUP_DB_PASSWORD }}\"" >> .env
           echo "LOKI_TOKEN=${{ secrets.LOKI_TOKEN }}" >> .env
+          echo "ACME_EMAIL=${{ secrets.ACME_EMAIL }}" >> .env
+          echo "ACTUATOR_TOKEN=${{ secrets.ACTUATOR_TOKEN }}" >> .env
 
       - name: Copy .env file to EC2
         uses: appleboy/scp-action@master
