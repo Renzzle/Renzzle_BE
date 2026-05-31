@@ -112,6 +112,24 @@ jobs:
           target: "/home/${{ secrets.TEST_USERNAME }}/app/"
           overwrite: true
 
+      - name: Remove existing caddy dir on Home Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.TEST_HOST }}
+          username: ${{ secrets.TEST_USERNAME }}
+          key: ${{ secrets.TEST_PRIVATE_KEY }}
+          script: sudo rm -rf /home/${{ secrets.TEST_USERNAME }}/app/caddy
+
+      - name: Copy Caddy config to Home Server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.TEST_HOST }}
+          username: ${{ secrets.TEST_USERNAME }}
+          key: ${{ secrets.TEST_PRIVATE_KEY }}
+          source: './caddy'
+          target: "/home/${{ secrets.TEST_USERNAME }}/app/"
+          overwrite: true
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@master
         with:
