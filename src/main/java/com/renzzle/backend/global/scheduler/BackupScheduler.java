@@ -15,18 +15,15 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class BackupScheduler {
 
-    // application.yml에서 환경변수를 가져옵니다.
     @Value("${spring.datasource.url}")
-    private String mainDbUrl; // 예: jdbc:mysql://host:3306/db
+    private String mainDbUrl;
     @Value("${spring.datasource.username}")
     private String mainDbUser;
     @Value("${spring.datasource.password}")
     private String mainDbPassword;
 
-    // 백업 DB (Aiven) 정보 - 환경변수로 따로 관리하는 것을 추천합니다.
-
     @Value("${backup.datasource.url}")
-    private String backupDbUrl; // 전체 JDBC URL을 받아옵니다.
+    private String backupDbUrl;
     @Value("${backup.datasource.username}")
     private String backupUser;
     @Value("${backup.datasource.password}")
@@ -34,36 +31,30 @@ public class BackupScheduler {
 
     @Scheduled(cron = "0 0 4 * * *")
     public void backupDatabase() {
-        log.info("🚀 [Backup Start] 전체 데이터베이스 백업을 시작합니다...");
+        log.info("[Backup Start] Starting full database backup...");
 
         try {
-            // 1. 메인 DB 호스트 파싱
             String mainHost = parseHost(mainDbUrl);
             String mainDbName = parseDbName(mainDbUrl);
 
-            // 2. 백업 DB (Aiven) 정보 파싱 (URL에서 추출)
             String backupHost = parseHost(backupDbUrl);
             String backupPort = parsePort(backupDbUrl);
             String backupDbName = parseDbName(backupDbUrl);
 
-            // 2. 셸 명령어 작성 (mysqldump -> mysql)
-            // ProcessBuilder의 환경변수 맵을 활용해 안전하게 주입
+            // Passwords injected via env (MAIN_PWD/BACKUP_PWD) so they don't leak into the process argv.
+            // Source flags:
+            //   --no-tablespaces      : avoid 'Access denied' on tablespace metadata
+            //   --set-gtid-purged=OFF : prevent GTID conflicts when restoring to another server
+            //   --ssl-mode=DISABLED   : local docker MySQL has no TLS
+            // Target flag:
+            //   --ssl-mode=REQUIRED   : Aiven enforces TLS
             String command = String.format(
-                    // [Source: 로컬 Docker MySQL]
-                    // 1. --no-tablespaces : 아까 겪으신 'Access denied' 권한 에러 해결
-                    // 2. --set-gtid-purged=OFF : DB 간 이동 시 ID 충돌 방지
-                    // 3. --ssl-mode=DISABLED : 로컬 도커는 SSL 설정이 없으므로 DISABLED가 맞음
                     "mysqldump -h %s -u %s -p$MAIN_PWD --single-transaction --skip-lock-tables --routines --triggers --no-tablespaces --set-gtid-purged=OFF --ssl-mode=DISABLED %s | " +
-
-                    // 4. --ssl-mode=REQUIRED : Aiven은 보안상 SSL 필수
                     "mysql -h %s -P %s -u %s -p$BACKUP_PWD --ssl-mode=REQUIRED %s",
-
-
                     mainHost, mainDbUser, mainDbName,
                     backupHost, backupPort, backupUser, backupDbName
             );
 
-            // 3. 프로세스 실행
             ProcessBuilder pb = new ProcessBuilder("/bin/sh", "-c", command);
             Map<String, String> env = pb.environment();
             env.put("MAIN_PWD", mainDbPassword);
@@ -71,28 +62,27 @@ public class BackupScheduler {
 
             Process process = pb.start();
 
-            // 로그 출력
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    log.error("Backup Process Log: {}", line);
+                    log.info("Backup Process Log: {}", line);
                 }
             }
 
             int exitCode = process.waitFor();
             if (exitCode == 0) {
-                log.info("✅ [Backup Process Finished] 백업 성공!");
+                log.info("[Backup Process Finished] Backup succeeded");
             } else {
-                log.error("❌ [Backup Failed] 종료 코드: {}", exitCode);
+                log.error("[Backup Failed] exit code: {}", exitCode);
             }
 
         } catch (Exception e) {
-            log.error("❌ [Backup Error] 백업 중 예외 발생", e);
+            log.error("[Backup Error] exception during backup", e);
         }
     }
 
     private String parseHost(String url) {
-        String cleanUrl = url.replace("jdbc:mysql://", ""); // host:port/dbName...
+        String cleanUrl = url.replace("jdbc:mysql://", "");
         return cleanUrl.substring(0, cleanUrl.indexOf("/")).split(":")[0];
     }
 
@@ -102,14 +92,14 @@ public class BackupScheduler {
         if (hostAndPort.contains(":")) {
             return hostAndPort.split(":")[1];
         }
-        return "3306"; // 포트 없으면 기본값
+        return "3306";
     }
 
     private String parseDbName(String url) {
         String cleanUrl = url.replace("jdbc:mysql://", "");
         String dbAndParams = cleanUrl.substring(cleanUrl.indexOf("/") + 1);
         if (dbAndParams.contains("?")) {
-            return dbAndParams.split("\\?")[0]; // 파라미터 제거
+            return dbAndParams.split("\\?")[0];
         }
         return dbAndParams;
     }

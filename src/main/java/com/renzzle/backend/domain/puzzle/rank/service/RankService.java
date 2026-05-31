@@ -256,7 +256,6 @@ public class RankService {
 
         List<Object> allCandidates = new ArrayList<>();
         allCandidates.addAll(selectedTrainings);
-//        log.info();
         allCandidates.addAll(selectedCommunities);
 
         if (allCandidates.isEmpty()) {
