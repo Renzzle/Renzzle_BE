@@ -37,7 +37,7 @@ public class AppleReceiptVerifierTest {
                             "in_app": [
                               {
                                 "transaction_id": "transaction-id",
-                                "product_id": "coin_100"
+                                "product_id": "piece_1000"
                               }
                             ]
                           }
@@ -45,10 +45,10 @@ public class AppleReceiptVerifierTest {
                         """, MediaType.APPLICATION_JSON));
 
         // when
-        StoreVerificationResult result = verifier.verify("coin_100", "transaction-id", "receipt");
+        StoreVerificationResult result = verifier.verify("piece_1000", "transaction-id", "receipt");
 
         // then
-        assertThat(result.productId()).isEqualTo("coin_100");
+        assertThat(result.productId()).isEqualTo("piece_1000");
         assertThat(result.transactionId()).isEqualTo("transaction-id");
         server.verify();
     }

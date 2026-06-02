@@ -13,6 +13,7 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
     volumes:
       - app-logs:/app/logs
+      - ./secrets/google-play-service-account.json:/app/secrets/google-play-service-account.json:ro
     networks:
       - app-network
     depends_on:

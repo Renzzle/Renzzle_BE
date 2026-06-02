@@ -53,7 +53,7 @@ public class PaymentServiceTest {
         // given
         UserEntity user = TestUserEntityBuilder.builder().withId(1L).build();
         VerifyInAppPurchaseRequest request =
-                new VerifyInAppPurchaseRequest("ios", "coin_100", null, null, "receipt");
+                new VerifyInAppPurchaseRequest("ios", "piece_1000", null, null, "receipt");
 
         // when
         CustomException exception = assertThrows(CustomException.class,
@@ -70,7 +70,7 @@ public class PaymentServiceTest {
         // given
         UserEntity user = TestUserEntityBuilder.builder().withId(1L).build();
         VerifyInAppPurchaseRequest request =
-                new VerifyInAppPurchaseRequest("ios", "coin_100", "transaction-id", null, null);
+                new VerifyInAppPurchaseRequest("ios", "piece_1000", "transaction-id", null, null);
 
         // when
         CustomException exception = assertThrows(CustomException.class,
@@ -87,11 +87,11 @@ public class PaymentServiceTest {
         // given
         UserEntity user = TestUserEntityBuilder.builder().withId(1L).build();
         VerifyInAppPurchaseRequest request =
-                new VerifyInAppPurchaseRequest("ios", "coin_100", "transaction-id", null, "receipt");
+                new VerifyInAppPurchaseRequest("ios", "piece_1000", "transaction-id", null, "receipt");
 
         when(inAppPurchaseRepository.existsByTransactionId("transaction-id")).thenReturn(false);
-        when(appleReceiptVerifier.verify("coin_100", "transaction-id", "receipt"))
-                .thenReturn(new StoreVerificationResult("coin_100", "other-transaction-id"));
+        when(appleReceiptVerifier.verify("piece_1000", "transaction-id", "receipt"))
+                .thenReturn(new StoreVerificationResult("piece_1000", "other-transaction-id"));
 
         // when
         CustomException exception = assertThrows(CustomException.class,
@@ -108,7 +108,7 @@ public class PaymentServiceTest {
         // given
         UserEntity user = TestUserEntityBuilder.builder().withId(1L).build();
         VerifyInAppPurchaseRequest request =
-                new VerifyInAppPurchaseRequest("android", "coin_100", "order-id", null, null);
+                new VerifyInAppPurchaseRequest("android", "piece_1000", "order-id", null, null);
 
         // when
         CustomException exception = assertThrows(CustomException.class,
@@ -125,7 +125,7 @@ public class PaymentServiceTest {
         // given
         UserEntity user = TestUserEntityBuilder.builder().withId(1L).build();
         VerifyInAppPurchaseRequest request =
-                new VerifyInAppPurchaseRequest("android", "coin_100", null, "purchase-token", null);
+                new VerifyInAppPurchaseRequest("android", "piece_1000", null, "purchase-token", null);
 
         when(inAppPurchaseRepository.existsByPurchaseToken("purchase-token")).thenReturn(true);
 
@@ -145,7 +145,7 @@ public class PaymentServiceTest {
         // given
         UserEntity user = TestUserEntityBuilder.builder().withId(1L).build();
         VerifyInAppPurchaseRequest request =
-                new VerifyInAppPurchaseRequest("ios", "coin_100", "transaction-id", null, "receipt");
+                new VerifyInAppPurchaseRequest("ios", "piece_1000", "transaction-id", null, "receipt");
 
         when(inAppPurchaseRepository.existsByTransactionId("transaction-id")).thenReturn(true);
 
@@ -166,11 +166,11 @@ public class PaymentServiceTest {
         UserEntity principalUser = TestUserEntityBuilder.builder().withId(1L).build();
         UserEntity persistedUser = TestUserEntityBuilder.builder().withId(1L).withCurrency(0).build();
         VerifyInAppPurchaseRequest request =
-                new VerifyInAppPurchaseRequest("android", "coin_100", null, "purchase-token", null);
+                new VerifyInAppPurchaseRequest("android", "piece_1000", null, "purchase-token", null);
 
         when(inAppPurchaseRepository.existsByPurchaseToken("purchase-token")).thenReturn(false);
-        when(googlePlayReceiptVerifier.verify("coin_100", "purchase-token"))
-                .thenReturn(new StoreVerificationResult("coin_100", "order-id"));
+        when(googlePlayReceiptVerifier.verify("piece_1000", "purchase-token"))
+                .thenReturn(new StoreVerificationResult("piece_1000", "order-id"));
         when(userRepository.findById(1L)).thenReturn(Optional.of(persistedUser));
 
         // when
@@ -182,14 +182,45 @@ public class PaymentServiceTest {
 
         InAppPurchase savedPurchase = captor.getValue();
         assertThat(savedPurchase.getPlatform()).isEqualTo(PaymentPlatform.ANDROID);
-        assertThat(savedPurchase.getProductId()).isEqualTo("coin_100");
+        assertThat(savedPurchase.getProductId()).isEqualTo("piece_1000");
         assertThat(savedPurchase.getPurchaseToken()).isEqualTo("purchase-token");
         assertThat(savedPurchase.getTransactionId()).isEqualTo("order-id");
-        assertThat(savedPurchase.getGrantedCurrency()).isEqualTo(100);
-        assertThat(persistedUser.getCurrency()).isEqualTo(100);
+        assertThat(savedPurchase.getGrantedCurrency()).isEqualTo(1000);
+        assertThat(persistedUser.getCurrency()).isEqualTo(1000);
 
         assertThat(response.platform()).isEqualTo("ANDROID");
-        assertThat(response.productId()).isEqualTo("coin_100");
-        assertThat(response.grantedCurrency()).isEqualTo(100);
+        assertThat(response.productId()).isEqualTo("piece_1000");
+        assertThat(response.grantedCurrency()).isEqualTo(1000);
+    }
+
+    @DisplayName("remove_ads 결제는 기록만 저장하고 재화는 지급하지 않음")
+    @Test
+    void verifyInAppPurchase_WhenRemoveAdsPurchaseValid_ThenSavePurchaseWithoutGrantingCurrency() {
+        // given
+        UserEntity principalUser = TestUserEntityBuilder.builder().withId(1L).build();
+        UserEntity persistedUser = TestUserEntityBuilder.builder().withId(1L).withCurrency(50).build();
+        VerifyInAppPurchaseRequest request =
+                new VerifyInAppPurchaseRequest("android", "remove_ads", null, "purchase-token", null);
+
+        when(inAppPurchaseRepository.existsByPurchaseToken("purchase-token")).thenReturn(false);
+        when(googlePlayReceiptVerifier.verify("remove_ads", "purchase-token"))
+                .thenReturn(new StoreVerificationResult("remove_ads", "order-id"));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(persistedUser));
+
+        // when
+        VerifyInAppPurchaseResponse response = paymentService.verifyInAppPurchase(principalUser, request);
+
+        // then
+        ArgumentCaptor<InAppPurchase> captor = ArgumentCaptor.forClass(InAppPurchase.class);
+        verify(inAppPurchaseRepository).save(captor.capture());
+
+        InAppPurchase savedPurchase = captor.getValue();
+        assertThat(savedPurchase.getProductId()).isEqualTo("remove_ads");
+        assertThat(savedPurchase.getGrantedCurrency()).isEqualTo(0);
+        assertThat(persistedUser.getCurrency()).isEqualTo(50);
+        assertThat(persistedUser.isAdsRemoved()).isTrue();
+
+        assertThat(response.productId()).isEqualTo("remove_ads");
+        assertThat(response.grantedCurrency()).isEqualTo(0);
     }
 }

@@ -63,6 +63,15 @@ jobs:
 
           # Promtail → Loki
           echo "LOKI_TOKEN=${{ secrets.LOKI_TOKEN }}" >> .env
+          echo "GOOGLE_PLAY_PACKAGE_NAME=com.renzzle_fe" >> .env
+          echo "GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/google-play-service-account.json" >> .env
+
+      - name: Create Google Play service account file
+        run: |
+          mkdir -p secrets
+          cat > secrets/google-play-service-account.json <<'EOF'
+          ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          EOF
 
       - name: Start Docker Compose with .env
         run: docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env up -d

@@ -30,7 +30,6 @@ import java.time.Instant;
 @Table(
         name = "in_app_purchase",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uk_purchase_token", columnNames = "purchase_token"),
                 @UniqueConstraint(name = "uk_transaction_id", columnNames = "transaction_id")
         }
 )

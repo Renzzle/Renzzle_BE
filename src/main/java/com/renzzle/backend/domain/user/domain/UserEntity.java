@@ -60,6 +60,10 @@ public class UserEntity {
     @Column(name = "currency")
     private int currency = 0;
 
+    @Builder.Default
+    @Column(name = "ads_removed", nullable = false)
+    private boolean adsRemoved = false;
+
     @Column(name = "device_id", nullable = false, length = 1024)
     private String deviceId;
 
@@ -115,6 +119,10 @@ public class UserEntity {
 
     public void getReward(int reward){
         this.currency += reward;
+    }
+
+    public void removeAds() {
+        this.adsRemoved = true;
     }
 
     public void updateRatingTo(double newRating) {

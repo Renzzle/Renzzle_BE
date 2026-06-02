@@ -81,6 +81,8 @@ public class PaymentService {
         UserEntity persistedUser = userRepository.findById(user.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
 
+        int grantedCurrency = product.grantsCurrency() ? product.getGrantedCurrency() : 0;
+
         inAppPurchaseRepository.save(InAppPurchase.builder()
                 .user(persistedUser)
                 .platform(platform)
@@ -88,15 +90,20 @@ public class PaymentService {
                 .transactionId(transactionId)
                 .purchaseToken(purchaseToken)
                 .status(InAppPurchaseStatus.VERIFIED)
-                .grantedCurrency(product.getGrantedCurrency())
+                .grantedCurrency(grantedCurrency)
                 .build());
 
-        persistedUser.getReward(product.getGrantedCurrency());
+        if (product.grantsCurrency()) {
+            persistedUser.getReward(grantedCurrency);
+        }
+        if (product.removesAds()) {
+            persistedUser.removeAds();
+        }
 
         return VerifyInAppPurchaseResponse.builder()
                 .platform(platform.name())
                 .productId(productId)
-                .grantedCurrency(product.getGrantedCurrency())
+                .grantedCurrency(grantedCurrency)
                 .build();
     }
 
