@@ -36,6 +36,7 @@ public class UserService {
                 .email(user.getEmail())
                 .nickname(user.getNickname())
                 .currency(user.getCurrency())
+                .adsRemoved(user.isAdsRemoved())
                 .build();
     }
 

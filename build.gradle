@@ -44,6 +44,7 @@ dependencies {
 	// aws
 	implementation 'software.amazon.awssdk:s3:2.17.89'
 	implementation 'software.amazon.awssdk:auth:2.17.89'
+	implementation 'com.google.auth:google-auth-library-oauth2-http:1.47.0'
 	// security, jwt
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'

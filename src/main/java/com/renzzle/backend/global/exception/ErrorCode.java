@@ -44,6 +44,14 @@ public enum ErrorCode {
     INSUFFICIENT_CURRENCY(HttpStatus.BAD_REQUEST, "U4002", "재화가 부족합니다."),
     UNAUTHORIZED_ACTION(HttpStatus.UNAUTHORIZED, "U401", "유효하지 않은 사용자입니다."),
 
+    // Payment
+    INVALID_PAYMENT_REQUEST(HttpStatus.BAD_REQUEST, "I4000", "올바르지 않은 결제 요청입니다."),
+    UNSUPPORTED_PAYMENT_PLATFORM(HttpStatus.BAD_REQUEST, "I4001", "지원하지 않는 결제 플랫폼입니다."),
+    STORE_VERIFICATION_FAILED(HttpStatus.BAD_REQUEST, "I4002", "스토어 결제 검증에 실패했습니다."),
+    RECEIPT_TRANSACTION_MISMATCH(HttpStatus.BAD_REQUEST, "I4003", "영수증의 거래 정보가 요청과 일치하지 않습니다."),
+    UNKNOWN_IAP_PRODUCT(HttpStatus.NOT_FOUND, "I4040", "등록되지 않은 인앱결제 상품입니다."),
+    ALREADY_PROCESSED_RECEIPT(HttpStatus.CONFLICT, "I4090", "이미 처리된 결제 영수증입니다."),
+
     // Puzzle
     ALREADY_SOLVED_PUZZLE(HttpStatus.BAD_REQUEST, "P4000", "이미 풀이를 완료한 퍼즐입니다."),
     ALREADY_EXISTING_TRANSLATION(HttpStatus.BAD_REQUEST, "P4001", "이미 해당 언어의 번역본이 존재합니다."),
