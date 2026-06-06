@@ -119,7 +119,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String responseBody = new ObjectMapper().writeValueAsString(objectApiResponse);
             response.getWriter().write(responseBody);
         } catch(Exception e) {
-            log.error(e.getMessage());
+            log.warn(e.getMessage());
         }
     }
 
