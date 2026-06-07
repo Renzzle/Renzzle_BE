@@ -4,7 +4,3 @@ services:
       context: .
       dockerfile: Dockerfile
     image: myapp:dev
-    environment:
-      BACKUP_DB_URL: ${BACKUP_DB_URL:-jdbc:mysql://db:3306/${DB_NAME}}
-      BACKUP_DB_USER: ${BACKUP_DB_USER:-${DB_USER}}
-      BACKUP_DB_PASSWORD: ${BACKUP_DB_PASSWORD:-${DB_PASSWORD}}
