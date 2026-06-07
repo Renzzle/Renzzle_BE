@@ -44,7 +44,17 @@ jobs:
           fi
           echo "docker_host=$DOCKER_CONTEXT_HOST" >> $GITHUB_OUTPUT
           echo "Resolved DOCKER_HOST=$DOCKER_CONTEXT_HOST"
-
+          echo "docker_host=$DOCKER_CONTEXT_HOST" >> $GITHUB_OUTPUT
+          echo "Resolved DOCKER_HOST=$DOCKER_CONTEXT_HOST"
+          
+          
+      - name: Create Google Play service account file
+        run: |
+          mkdir -p secrets
+          cat > secrets/google-play-service-account.json <<'EOF'
+          ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          EOF
+          
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
@@ -83,6 +93,8 @@ jobs:
           BACKUP_DB_URL: ${{ secrets.BACKUP_DB_URL }}
           BACKUP_DB_USER: ${{ secrets.BACKUP_DB_USER }}
           BACKUP_DB_PASSWORD: ${{ secrets.BACKUP_DB_PASSWORD }}
+          GOOGLE_PLAY_PACKAGE_NAME: com.renzzle_fe
+          GOOGLE_APPLICATION_CREDENTIALS: secrets/google-play-service-account.json
           DOCKER_HOST: ${{ steps.docker_host.outputs.docker_host }}
           DOCKER_API_VERSION: "1.44"
           TESTCONTAINERS_HOST_OVERRIDE: localhost

@@ -42,3 +42,6 @@ out/
 ### Local-only SQL (seeds / ad-hoc scripts; not for GitHub) ###
 /sql/local/*
 !/sql/local/.gitignore
+
+### Google Play service account (never commit real keys) ###
+/secrets/

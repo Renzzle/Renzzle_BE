@@ -6,5 +6,6 @@ public record UserResponse(
         Long id,
         String email,
         String nickname,
-        int currency
+        int currency,
+        boolean adsRemoved
 ) { }

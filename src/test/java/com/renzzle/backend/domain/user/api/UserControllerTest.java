@@ -43,7 +43,8 @@ class UserControllerTest {
                 1L,
                 "tintintest46@mail.com",
                 "tintin",
-                1300
+                1300,
+                true
         );
         Mockito.when(userService.getUserResponse(Mockito.eq(userEntity))).thenReturn(userResponse);
 
@@ -52,7 +53,8 @@ class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.response.id").value(1L))
                 .andExpect(jsonPath("$.response.email").value("tintintest46@mail.com"))
-                .andExpect(jsonPath("$.response.nickname").value("tintin"));
+                .andExpect(jsonPath("$.response.nickname").value("tintin"))
+                .andExpect(jsonPath("$.response.adsRemoved").value(true));
 
         // check if userService.getUser() is called
         Mockito.verify(userService).getUserResponse(userEntity);
