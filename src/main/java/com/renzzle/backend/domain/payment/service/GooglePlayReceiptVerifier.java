@@ -27,6 +27,7 @@ public class GooglePlayReceiptVerifier {
     private final ObjectMapper objectMapper;
     private final String packageName;
     private final String credentialsPath;
+    private GoogleCredentials credentials;
 
     public GooglePlayReceiptVerifier(
             RestClient.Builder restClientBuilder,
@@ -86,12 +87,19 @@ public class GooglePlayReceiptVerifier {
     }
 
     private String issueAccessToken() throws IOException {
-        try (FileInputStream credentialsStream = new FileInputStream(credentialsPath)) {
-            GoogleCredentials credentials = GoogleCredentials.fromStream(credentialsStream)
-                    .createScoped(List.of(ANDROID_PUBLISHER_SCOPE));
-            credentials.refreshIfExpired();
-            return credentials.getAccessToken().getTokenValue();
+        GoogleCredentials loadedCredentials = getCredentials();
+        loadedCredentials.refreshIfExpired();
+        return loadedCredentials.getAccessToken().getTokenValue();
+    }
+
+    private synchronized GoogleCredentials getCredentials() throws IOException {
+        if (credentials == null) {
+            try (FileInputStream credentialsStream = new FileInputStream(credentialsPath)) {
+                credentials = GoogleCredentials.fromStream(credentialsStream)
+                        .createScoped(List.of(ANDROID_PUBLISHER_SCOPE));
+            }
         }
+        return credentials;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
