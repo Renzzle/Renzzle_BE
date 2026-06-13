@@ -34,8 +34,10 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } finally {
             long latency = System.currentTimeMillis() - start;
-            log.info("{} {} status={} {}ms",
-                    request.getMethod(), request.getRequestURI(), response.getStatus(), latency);
+            if (!request.getRequestURI().startsWith("/actuator")) {
+                log.info("{} {} status={} {}ms",
+                        request.getMethod(), request.getRequestURI(), response.getStatus(), latency);
+            }
             MDC.clear();
         }
     }
