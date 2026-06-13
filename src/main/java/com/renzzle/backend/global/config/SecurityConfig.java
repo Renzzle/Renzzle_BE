@@ -38,7 +38,6 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         List<RequestMatcher> permitAllRequestMatchers = Arrays.asList(
-                AntPathRequestMatcher.antMatcher("/api/test/**"),
                 AntPathRequestMatcher.antMatcher("/admin"),  // 어드민 로그인 페이지 (JWT 필터 제외)
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/admin/login"),  // 어드민 로그인 API (토큰 없이 호출)
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/email"),
