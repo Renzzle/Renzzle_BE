@@ -110,6 +110,7 @@
   </div>
 
   <th:block th:replace="~{admin/fragments :: siteNav(false, false, true)}"></th:block>
+  <th:block th:replace="~{admin/fragments :: uiKit}"></th:block>
 
   <section class="section">
     <h2>트레이닝 문제집 · 문제</h2>
@@ -138,7 +139,6 @@
 
     <h3 class="subsection-title">선택한 문제집의 문제</h3>
     <ul class="puzzle-list" id="puzzleListUl"></ul>
-    <div id="listMsg" class="msg"></div>
   </section>
 
   <section class="section">
@@ -180,7 +180,6 @@
       </div>
     </div>
     <ul class="puzzle-list" id="commPuzzleListUl"></ul>
-    <div id="commListMsg" class="msg"></div>
   </section>
 
   <script th:inline="javascript">
@@ -213,20 +212,32 @@
     }
 
     function showListMsg(text, ok) {
-      const msgEl = document.getElementById('listMsg');
-      msgEl.textContent = text;
-      msgEl.classList.add('show');
-      msgEl.classList.toggle('success', ok);
-      msgEl.classList.toggle('error', !ok);
+      adminToast(text, ok ? 'success' : 'error');
     }
 
-    document.getElementById('loadPacksBtn').addEventListener('click', async () => {
+    const PC_FILTER_KEY = 'admin_puzzlecache_filter';
+    function savePcFilters() {
+      localStorage.setItem(PC_FILTER_KEY, JSON.stringify({
+        difficulty: document.getElementById('filterDifficulty').value,
+        lang: document.getElementById('filterLang').value
+      }));
+    }
+    function restorePcFilters() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(PC_FILTER_KEY) || '{}');
+        const diffEl = document.getElementById('filterDifficulty');
+        const langEl = document.getElementById('filterLang');
+        if (saved.difficulty && [...diffEl.options].some(o => o.value === saved.difficulty)) diffEl.value = saved.difficulty;
+        if (saved.lang && [...langEl.options].some(o => o.value === saved.lang)) langEl.value = saved.lang;
+      } catch (e) { /* 무시 */ }
+    }
+
+    async function loadPacks() {
       const difficulty = document.getElementById('filterDifficulty').value;
       const lang = document.getElementById('filterLang').value;
-      const msgEl = document.getElementById('listMsg');
       const listEl = document.getElementById('packListUl');
       const puzzleListEl = document.getElementById('puzzleListUl');
-      msgEl.classList.remove('show', 'success', 'error');
+      savePcFilters();
       listEl.innerHTML = '';
       puzzleListEl.innerHTML = '';
       selectedPackId = null;
@@ -240,13 +251,23 @@
         }
         const packs = (data.response || []).filter(p => p.title && p.title.trim() !== '');
         if (packs.length === 0) {
-          listEl.innerHTML = '<li>해당 조건의 문제집이 없습니다.</li>';
+          const li = document.createElement('li');
+          li.textContent = '해당 조건의 문제집이 없습니다.';
+          listEl.appendChild(li);
         } else {
           packs.forEach(p => {
             const li = document.createElement('li');
             const info = document.createElement('span');
             info.className = 'pack-info';
-            info.innerHTML = '<span class="pack-id">ID: ' + p.id + '</span> ' + (p.title || '') + ' <small>가격:' + p.price + ' / 문제 개수:' + p.totalPuzzleCount + '</small>';
+            const idSpan = document.createElement('span');
+            idSpan.className = 'pack-id';
+            idSpan.textContent = 'ID: ' + p.id;
+            const meta = document.createElement('small');
+            meta.textContent = '가격:' + p.price + ' / 문제 개수:' + p.totalPuzzleCount;
+            // 제목은 서버 값이므로 textContent로 안전하게 삽입 (XSS 방지)
+            info.appendChild(idSpan);
+            info.appendChild(document.createTextNode(' ' + (p.title || '') + ' '));
+            info.appendChild(meta);
             const actions = document.createElement('div');
             actions.className = 'pack-actions';
             const selectBtn = document.createElement('button');
@@ -270,7 +291,7 @@
       } catch (err) {
         showListMsg('오류: ' + (err.message || ''), false);
       }
-    });
+    }
 
     async function loadPuzzlesForPack(packId) {
       const puzzleListEl = document.getElementById('puzzleListUl');
@@ -292,7 +313,14 @@
           const li = document.createElement('li');
           const text = document.createElement('span');
           text.className = 'puzzle-text';
-          text.innerHTML = '<span class="pack-id">#' + p.trainingIndex + '</span> id ' + p.id + ' <small>depth ' + p.depth + ' · ' + p.winColor + (p.isSolved ? ' · 풀이됨' : '') + '</small>';
+          const idxSpan = document.createElement('span');
+          idxSpan.className = 'pack-id';
+          idxSpan.textContent = '#' + p.trainingIndex;
+          const meta = document.createElement('small');
+          meta.textContent = 'depth ' + p.depth + ' · ' + p.winColor + (p.isSolved ? ' · 풀이됨' : '');
+          text.appendChild(idxSpan);
+          text.appendChild(document.createTextNode(' id ' + p.id + ' '));
+          text.appendChild(meta);
           const goBtn = document.createElement('a');
           goBtn.className = 'btn btn-sm btn-primary';
           goBtn.textContent = '정답 입력';
@@ -308,17 +336,11 @@
     }
 
     function showCommMsg(text, ok) {
-      const msgEl = document.getElementById('commListMsg');
-      msgEl.textContent = text;
-      msgEl.classList.add('show');
-      msgEl.classList.toggle('success', ok);
-      msgEl.classList.toggle('error', !ok);
+      adminToast(text, ok ? 'success' : 'error');
     }
 
     document.getElementById('loadCommPuzzlesBtn').addEventListener('click', async () => {
       const listEl = document.getElementById('commPuzzleListUl');
-      const msgEl = document.getElementById('commListMsg');
-      msgEl.classList.remove('show', 'success', 'error');
       listEl.innerHTML = '';
       const author = document.getElementById('commAuthor').value.trim();
       const stone = document.getElementById('commStone').value;
@@ -346,8 +368,23 @@
             const li = document.createElement('li');
             const text = document.createElement('span');
             text.className = 'puzzle-text';
-            const desc = (p.description || '').length > 60 ? (p.description || '').slice(0, 57) + '…' : (p.description || '');
-            text.innerHTML = '<span class="pack-id">id ' + p.id + '</span> <small>@' + (p.authorNickname || '') + ' depth ' + p.depth + ' · ' + p.winColor + '</small>' + (desc ? '<br><small>' + desc.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</small>' : '');
+            const idSpan = document.createElement('span');
+            idSpan.className = 'pack-id';
+            idSpan.textContent = 'id ' + p.id;
+            const meta = document.createElement('small');
+            // 닉네임은 사용자 입력이므로 textContent로 안전하게 삽입 (XSS 방지)
+            meta.textContent = '@' + (p.authorNickname || '') + ' depth ' + p.depth + ' · ' + p.winColor;
+            text.appendChild(idSpan);
+            text.appendChild(document.createTextNode(' '));
+            text.appendChild(meta);
+            const rawDesc = p.description || '';
+            const desc = rawDesc.length > 60 ? rawDesc.slice(0, 57) + '…' : rawDesc;
+            if (desc) {
+              text.appendChild(document.createElement('br'));
+              const descSmall = document.createElement('small');
+              descSmall.textContent = desc;
+              text.appendChild(descSmall);
+            }
             const goBtn = document.createElement('a');
             goBtn.className = 'btn btn-sm btn-primary';
             goBtn.textContent = '정답 입력';
@@ -362,6 +399,13 @@
         showCommMsg('오류: ' + (err.message || ''), false);
       }
     });
+
+    // 진입 시: 마지막 필터 복원 후 트레이닝 문제집 목록 자동 로드
+    document.getElementById('loadPacksBtn').addEventListener('click', loadPacks);
+    document.getElementById('filterDifficulty').addEventListener('change', loadPacks);
+    document.getElementById('filterLang').addEventListener('change', loadPacks);
+    restorePcFilters();
+    loadPacks();
   </script>
 </body>
 </html>
