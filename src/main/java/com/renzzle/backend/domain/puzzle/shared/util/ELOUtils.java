@@ -18,12 +18,12 @@ public class ELOUtils {
         return userMmr >= MMR_THRESHOLD ? LOW_REWARD : HIGH_REWARD;
     }
 
-    // ELO 를 통한 예상 승률 계산
+    // Calculate expected win probability via ELO
     public static double expectedWinProbability(double userRating, double problemRating) {
         return 1.0 / (1.0 + Math.pow(10, (problemRating - userRating) / 400.0));
     }
 
-    // 사용자 레이팅 기준 승률에 맞는 문제 Rating을 계산
+    // Calculate the problem Rating matching the target win probability based on the user's rating
     public static double getProblemRatingForTargetWinProbability(double userRating, double targetWinProbability) {
         double ratingOffset = 400 * Math.log10((1 - targetWinProbability) / targetWinProbability);
         return userRating + Math.round(ratingOffset);

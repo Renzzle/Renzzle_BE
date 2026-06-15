@@ -43,16 +43,16 @@ public class ContentService {
 
         Long userId = user.getId();
 
-        // 가장 최근에 푼 퍼즐 하나 조회
+        // Query the single most recently solved puzzle
         Optional<SolvedTrainingPuzzle> recentSolvedOpt = solvedTrainingPuzzleRepository
                 .findTopByUserOrderBySolvedAtDesc(userId);
 
         if (recentSolvedOpt.isEmpty()) {
-            // 퍼즐을 푼 적이 없는 신규 사용자 -> 기본 추천 제공
+            // New user who has never solved a puzzle -> provide default recommendation
             return createDefaultRecommendedPack(request);
         }
 
-        // 퍼즐을 푼 기록이 있는 경우
+        // When there is a record of solved puzzles
         SolvedTrainingPuzzle recentSolved = recentSolvedOpt.get();
         Pack pack = recentSolved.getPuzzle().getPack();
 
@@ -60,7 +60,7 @@ public class ContentService {
             throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK);
         }
 
-        // 번역 정보 조회
+        // Query translation information
         LangCode requestedLang = LangCode.getLangCode(request.langCode());
         LangCode defaultLang = LangCode.getLangCode(LangCode.LangCodeName.EN);
 
@@ -70,7 +70,7 @@ public class ContentService {
                                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_PACK_TRANSLATION))
                 );
 
-        // 유저의 pack 진행 정보 조회
+        // Query the user's pack progress information
         UserPack userPack = userPackRepository
                 .findByUserIdAndPackId(userId, pack.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_USER_PROGRESS_FOR_PACK));
@@ -90,21 +90,21 @@ public class ContentService {
     }
 
     private getRecommendPackResponse createDefaultRecommendedPack(GetRecommendRequest request) {
-        // 가장 id가 낮은 Pack 조회
+        // Query the Pack with the lowest id
         Pack pack = packRepository.findFirstByOrderByIdAsc()
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
         LangCode requestedLang = LangCode.getLangCode(request.langCode());
         LangCode defaultLang = LangCode.getLangCode(LangCode.LangCodeName.EN);
 
-        // 번역 정보 조회
+        // Query translation information
         PackTranslation translation = packTranslationRepository.findByPackAndLangCode(pack, requestedLang)
                 .orElseGet(() ->
                         packTranslationRepository.findByPackAndLangCode(pack, defaultLang)
                                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_PACK_TRANSLATION))
                 );
 
-        // 결과 반환
+        // Return the result
         return getRecommendPackResponse.builder()
                 .id(pack.getId())
                 .title(translation.getTitle())
@@ -112,8 +112,8 @@ public class ContentService {
                 .description(translation.getDescription())
                 .price(pack.getPrice())
                 .totalPuzzleCount(pack.getPuzzleCount())
-                .solvedPuzzleCount(0) // 아직 아무 문제도 풀지 않았으니까
-                .locked(false)        // 기본 추천이므로 잠금 아님
+                .solvedPuzzleCount(0) // No problems solved yet
+                .locked(false)        // Not locked because it is a default recommendation
                 .build();
     }
 
@@ -125,18 +125,18 @@ public class ContentService {
 
         Instant oneWeekAgo = instant.minus(7, ChronoUnit.DAYS);
 
-        // 최근 1주일 내 퍼즐 조회
+        // Query puzzles from within the last week
         List<CommunityPuzzle> puzzlesIn7Days = communityPuzzleRepository
                 .findByCreatedAtAfter(oneWeekAgo);
 
-        // 정렬 기준 적용 후 선정
+        // Apply sort criteria, then select
         List<CommunityPuzzle> sortedRecent = puzzlesIn7Days.stream()
                 .sorted(trendComparator())
                 .toList();
 
         selectTrendPuzzles(sortedRecent, result, selectedIds, user);
 
-        //부족 시 → 최근 1주일 이전 퍼즐 중 최신 30개
+        // If insufficient -> the latest 30 puzzles from before the last week
         if (result.size() < 5) {
             List<CommunityPuzzle> latest30 = communityPuzzleRepository
                     .findTop30ByCreatedAtBeforeOrderByCreatedAtDesc(oneWeekAgo);

@@ -225,7 +225,7 @@ public class TrainingServiceTest {
             // when
             trainingService.addTranslation(request);
 
-            // ArgumentCaptor 를 통해 addTranslation 되는 PackTranslation 객체를 가져옴
+            // Capture the PackTranslation object passed to addTranslation via ArgumentCaptor
             ArgumentCaptor<PackTranslation> captor = ArgumentCaptor.forClass(PackTranslation.class);
 
             // then
@@ -258,20 +258,20 @@ public class TrainingServiceTest {
 
             when(trainingPuzzleRepository.findTopIndex(packId)).thenReturn(5);
 
-            // Pack 객체 생성 (필요한 필드만 채움)
+            // Create the Pack object (fill in only the required fields)
             Pack pack = Pack.builder()
                     .id(packId)
-                    .puzzleCount(0)    // 초기 puzzleCount 값 (예시)
+                    .puzzleCount(0)    // initial puzzleCount value (example)
                     .price(1000)
                     .difficulty(Difficulty.getDifficulty("LOW"))
                     .build();
             when(packRepository.findById(packId)).thenReturn(Optional.of(pack));
 
-            // increasePuzzleCount 는 void 메소드이므로 doNothing() 처리
+            // increasePuzzleCount is a void method, so handle it with doNothing()
             doNothing().when(packRepository).increasePuzzleCount(packId);
 
-            // 서비스 로직에서는 TrainingPuzzle 엔티티를 빌드한 후 trainingPuzzleRepository.save()를 호출
-            // unsaved Puzzle은 내부에서 구성되며, 최종적으로 id가 할당된 savedPuzzle을 반환하도록 모킹함.
+            // The service logic builds a TrainingPuzzle entity and then calls trainingPuzzleRepository.save()
+            // The unsaved Puzzle is constructed internally; mock it to return the savedPuzzle with an assigned id.
             TrainingPuzzle savedPuzzle = TrainingPuzzle.builder()
                     .id(100L)
                     .pack(pack)
@@ -280,7 +280,7 @@ public class TrainingServiceTest {
                     .boardStatus(boardStatus)
                     .boardKey("generatedKey")
                     .depth(depth)
-                    .rating(depth * 200) // TODO: RatingUtils로 레이팅 계산식 관리
+                    .rating(depth * 200) // TODO: manage the rating calculation formula via RatingUtils
                     .winColor(WinColor.getWinColor(winColorStr))
                     .build();
 
@@ -366,7 +366,7 @@ public class TrainingServiceTest {
                     .nickname("testUser")
                     .deviceId("dummy-device")
                     .lastAccessedAt(Instant.now())
-                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt은 미래 시점으로 설정 (예시)
+                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
                     .status(Status.getDefaultStatus())
                     .build();
 
@@ -382,19 +382,19 @@ public class TrainingServiceTest {
                     .pack(pack)
                     .build();
 
-            // 기존에 풀이 기록이 없음을 가정
+            // Assume there is no existing solve record
             when(solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId))
                     .thenReturn(Optional.empty());
 
-            // 퍼즐 조회 성공
+            // Puzzle lookup succeeds
             when(trainingPuzzleRepository.findById(puzzleId))
                     .thenReturn(Optional.of(trainingPuzzle));
 
-            // 사용자 조회 성공 (영속 상태의 엔티티 반환)
+            // User lookup succeeds (returns a managed entity)
             when(userRepository.findById(userId))
                     .thenReturn(Optional.of(user));
 
-            // 저장 결과 더미 설정
+            // Set up a dummy save result
             when(solvedTrainingPuzzleRepository.save(any(SolvedTrainingPuzzle.class)))
                     .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -420,7 +420,7 @@ public class TrainingServiceTest {
                     .nickname("testUser")
                     .deviceId("dummy-device")
                     .lastAccessedAt(fixedNow)
-                    .deletedAt(fixedNow.plus(1, ChronoUnit.DAYS))  // deletedAt은 미래 시점으로 설정 (예시)
+                    .deletedAt(fixedNow.plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
                     .status(Status.getDefaultStatus())
                     .build();
 
@@ -450,11 +450,11 @@ public class TrainingServiceTest {
                     .nickname("testUser")
                     .deviceId("dummy-device")
                     .lastAccessedAt(Instant.now())
-                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt은 미래 시점으로 설정 (예시)
+                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
                     .status(Status.getDefaultStatus())
                     .build();
 
-            // 예시 TrainingPuzzle 생성 (WinColor는 미리 영속화된 것으로 가정하고, 이름만 사용)
+            // Create an example TrainingPuzzle (assume WinColor is already persisted; only use its name)
             WinColor winColor = WinColor.getWinColor("WHITE");
             TrainingPuzzle puzzle = TrainingPuzzle.builder()
                     .id(10L)
@@ -465,7 +465,7 @@ public class TrainingServiceTest {
             List<TrainingPuzzle> puzzles = Collections.singletonList(puzzle);
             when(trainingPuzzleRepository.findByPack_IdOrderByTrainingIndex(packId)).thenReturn(puzzles);
 
-            // solvedTrainingPuzzleRepository.existsByUserAndPuzzle(user, puzzle) 가 false라고 가정
+            // Assume solvedTrainingPuzzleRepository.existsByUserAndPuzzle(user, puzzle) returns false
             when(solvedTrainingPuzzleRepository.existsByUserAndPuzzle(user, puzzle)).thenReturn(false);
 
             // when
@@ -492,13 +492,13 @@ public class TrainingServiceTest {
                     .nickname("testUser")
                     .deviceId("dummy-device")
                     .lastAccessedAt(Instant.now())
-                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt은 미래 시점으로 설정 (예시)
+                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
                     .status(Status.getDefaultStatus())
                     .build();
 
-            GetTrainingPackRequest request = new GetTrainingPackRequest(Difficulty.getDifficulty("LOW").getName(), "EN"); // lang 기본값 EN
+            GetTrainingPackRequest request = new GetTrainingPackRequest(Difficulty.getDifficulty("LOW").getName(), "EN"); // default lang EN
 
-            // Pack 생성 (예: ID 1, price 1000, puzzleCount 10)
+            // Create Pack (e.g., ID 1, price 1000, puzzleCount 10)
             Pack pack = Pack.builder()
                     .id(1L)
                     .price(1000)
@@ -508,7 +508,7 @@ public class TrainingServiceTest {
             when(packRepository.findByDifficulty(any(Difficulty.class)))
                     .thenReturn(packs);
 
-            // PackTranslation 생성 (연결된 pack의 ID 1)
+            // Create PackTranslation (linked pack with ID 1)
             PackTranslation translation = PackTranslation.builder()
                     .pack(pack)
                     .langCode(LangCode.getLangCode("EN"))
@@ -524,7 +524,7 @@ public class TrainingServiceTest {
                     argThat(arg -> arg.getName().equals("EN"))
             )).thenReturn(List.of(translation));
 
-            // userPackRepository: 사용자가 해당 pack에 대한 기록이 없으므로, 빈 리스트 반환 (locked = true, solvedCount = 0)
+            // userPackRepository: the user has no record for this pack, so return an empty list (locked = true, solvedCount = 0)
             when(userPackRepository.findAllByUserIdAndPackIdIn(100L, List.of(1L)))
                     .thenReturn(Collections.emptyList());
 
@@ -547,7 +547,7 @@ public class TrainingServiceTest {
         @DisplayName("testPurchaseTrainingPack: 충분한 잔액을 가진 사용자가 팩 구매 시, 팩 금액 반환")
         public void testPurchaseTrainingPack() {
             // given
-            // 사용자 초기 잔액 2000
+            // user's initial balance 2000
             UserEntity user = UserEntity.builder()
                     .id(100L)
                     .email("test@example.com")
@@ -556,7 +556,7 @@ public class TrainingServiceTest {
                     .deviceId("dummy-device")
                     .currency(2000)
                     .lastAccessedAt(Instant.now())
-                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt은 미래 시점으로 설정 (예시)
+                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
                     .status(Status.getDefaultStatus())
                     .build();
 
@@ -569,7 +569,7 @@ public class TrainingServiceTest {
 
             when(packRepository.findById(1L)).thenReturn(Optional.of(pack));
 
-            // 어떤 UserEntity가 저장 요청되더라도, 그 UserEntity 객체 자체를 반환하라 라는 의미
+            // Meaning: whatever UserEntity is requested to be saved, return that UserEntity object itself
             when(userRepository.save(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             // when
@@ -723,7 +723,7 @@ public class TrainingServiceTest {
                     winColorStr
             );
 
-            // Pack이 존재하지 않는 경우
+            // Case where the Pack does not exist
             when(packRepository.findById(packId)).thenReturn(Optional.empty());
 
             // when
@@ -733,7 +733,7 @@ public class TrainingServiceTest {
             // then
             assertEquals(ErrorCode.NO_SUCH_TRAINING_PACK, exception.getErrorCode());
 
-            // Pack이 없으므로 save()가 호출되지 않아야 함
+            // Since there is no Pack, save() should not be called
             verify(trainingPuzzleRepository, never()).save(any(TrainingPuzzle.class));
         }
 
@@ -769,11 +769,11 @@ public class TrainingServiceTest {
                     .nickname("testUser")
                     .deviceId("dummy-device")
                     .lastAccessedAt(Instant.now())
-                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt은 미래 시점으로 설정 (예시)
+                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
                     .status(Status.getDefaultStatus())
                     .build();
 
-            // 기존 풀이 기록은 없으나, 퍼즐이 존재하지 않음
+            // No existing solve record, and the puzzle does not exist
             when(solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId))
                     .thenReturn(Optional.empty());
             when(trainingPuzzleRepository.findById(puzzleId))
@@ -805,7 +805,7 @@ public class TrainingServiceTest {
                     .nickname("testUser")
                     .deviceId("dummy-device")
                     .lastAccessedAt(Instant.now())
-                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt은 미래 시점으로 설정 (예시)
+                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
                     .status(Status.getDefaultStatus())
                     .build();
 
@@ -817,7 +817,7 @@ public class TrainingServiceTest {
             );
             assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.NO_SUCH_TRAINING_PACK);
 
-            // 불필요한 추가 호출이 없음을 확인 (원하는 경우)
+            // Verify there are no unnecessary additional calls (if desired)
             verifyNoMoreInteractions(trainingPuzzleRepository, solvedTrainingPuzzleRepository);
         }
 
@@ -832,7 +832,7 @@ public class TrainingServiceTest {
                     .nickname("testUser")
                     .deviceId("dummy-device")
                     .lastAccessedAt(Instant.now())
-                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt은 미래 시점으로 설정 (예시)
+                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
                     .status(Status.getDefaultStatus())
                     .build();
             GetTrainingPackRequest request = new GetTrainingPackRequest("LOW", null);
@@ -859,7 +859,7 @@ public class TrainingServiceTest {
                     .deviceId("dummy-device")
                     .currency(500)
                     .lastAccessedAt(Instant.now())
-                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt은 미래 시점으로 설정 (예시)
+                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
                     .status(Status.getDefaultStatus())
                     .build();
 

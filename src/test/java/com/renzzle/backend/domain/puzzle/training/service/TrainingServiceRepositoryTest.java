@@ -66,7 +66,7 @@ public class TrainingServiceRepositoryTest {
                 .deviceId("device123")
                 .lastAccessedAt(Instant.now())
                 .deletedAt(Instant.now().plusSeconds(3600))
-                // status는 @PrePersist에서 기본값이 설정되어서 설정하지 않음
+                // status is not set here because its default value is assigned in @PrePersist
                 .build();
         entityManager.persist(user);
         return user;
@@ -187,7 +187,7 @@ public class TrainingServiceRepositoryTest {
         TrainingPuzzle puzzle = TrainingPuzzle.builder()
                 .pack(savedPack)
                 .trainingIndex(1)
-                .boardStatus("a1a3d8f9") // BoardUtils에서 유효한 값이어야 함
+                .boardStatus("a1a3d8f9") // must be a valid value for BoardUtils
                 .boardKey("sampleKey")
                 .answer("sample answer")
                 .depth(3)
@@ -309,7 +309,7 @@ public class TrainingServiceRepositoryTest {
     public void GetTrainingPackList_WhenGetDifficulty_ThenReturnPackList() {
         // Given
         Difficulty difficulty = Difficulty.getDifficulty("LOW");
-        // Pack 생성 및 저장
+        // Create and save Pack
         Pack pack = Pack.builder()
                 .price(1000)
                 .difficulty(difficulty)
@@ -317,7 +317,7 @@ public class TrainingServiceRepositoryTest {
                 .build();
         Pack savedPack = packRepository.save(pack);
 
-        // PackTranslation 생성 및 저장 (언어 코드 "EN")
+        // Create and save PackTranslation (language code "EN")
         PackTranslation translation = PackTranslation.builder()
                 .pack(savedPack)
                 .langCode(LangCode.getLangCode("EN"))

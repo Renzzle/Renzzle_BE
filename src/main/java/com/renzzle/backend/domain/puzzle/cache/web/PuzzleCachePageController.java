@@ -10,9 +10,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 /**
- * 어드민이 브라우저에서 퍼즐 캐시를 입력하기 위한 HTML.
- * {@code GET /puzzle-cache}, {@code GET /puzzle-cache/board}는 ADMIN 권한 필요.
- * 캐시 REST API({@code /api/puzzle/cache/**})는 일반 인증 사용자도 호출 가능.
+ * HTML for admins to enter the puzzle cache from a browser.
+ * {@code GET /puzzle-cache} and {@code GET /puzzle-cache/board} require the ADMIN authority.
+ * The cache REST API ({@code /api/puzzle/cache/**}) can also be called by regular authenticated users.
  */
 @Controller
 public class PuzzleCachePageController {

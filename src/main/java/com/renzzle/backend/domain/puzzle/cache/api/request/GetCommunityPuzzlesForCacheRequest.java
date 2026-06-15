@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 
 /**
- * 퍼즐 캐시 입력 UI용 커뮤니티 문제 목록 조회 파라미터.
+ * Parameters for querying the community puzzle list for the puzzle cache entry UI.
  */
 public record GetCommunityPuzzlesForCacheRequest(
         @Size(max = 31, message = "닉네임은 최대 31자입니다")

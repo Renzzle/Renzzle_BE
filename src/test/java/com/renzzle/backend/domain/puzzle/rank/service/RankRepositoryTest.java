@@ -46,14 +46,14 @@ public class RankRepositoryTest {
 
     @Test
     void saveLatestRankPuzzle_WhenTrainingPuzzleGiven_ThenSaveSuccessfully() {
-        // 사용자 생성
+        // Create user
         UserEntity user = userRepository.save(TestUserFactory.createTestUser("seeder-user", 1500));
 
-        // 퍼즐 생성 via seeder
+        // Create puzzles via seeder
         trainingPuzzleSeeder.seedPuzzle(1, "a1a2", "a3", 3, 1400, "BLACK");
         communityPuzzleSeeder.seedPuzzle("b1b2", "b3", 4, 1450, "WHITE", user);
 
-        // 퍼즐 직접 조회해서 랭킹 기록 생성
+        // Look up the puzzle directly and create a ranking record
         TrainingPuzzle training = trainingPuzzleRepository.findAll().get(0);
         LatestRankPuzzle latest = LatestRankPuzzle.builder()
                 .user(user)
@@ -65,7 +65,7 @@ public class RankRepositoryTest {
                 .build();
         latestRankPuzzleRepository.save(latest);
 
-        // 검증
+        // Verify
         List<LatestRankPuzzle> all = latestRankPuzzleRepository.findAllByUser(user);
         assertThat(all).hasSize(1);
         assertThat(all.get(0).getBoardStatus()).isEqualTo("a1a2");
@@ -76,13 +76,13 @@ public class RankRepositoryTest {
         // Given
         UserEntity user = userRepository.save(TestUserFactory.createTestUser("author", 1500));
 
-        // 시더를 통해 커뮤니티 퍼즐 생성
+        // Create community puzzle via seeder
         communityPuzzleSeeder.seedPuzzle(
                 "b1b2", "b3", 4, 1450.0, "WHITE", user
         );
         CommunityPuzzle community = communityPuzzleRepository.findAll().get(0);
 
-        // 랭킹 퍼즐 저장
+        // Save ranking puzzle
         LatestRankPuzzle latest = latestRankPuzzleRepository.save(
                 LatestRankPuzzle.builder()
                         .user(user)

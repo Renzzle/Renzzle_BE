@@ -50,7 +50,7 @@ public class AccountService {
         }
 
         UserEntity user = createNewUser(request.email(), request.password(), request.nickname(), request.deviceId());
-        // 회원가입 시 packId = 1 자동 지급
+        // Automatically grant packId = 1 on sign-up
         trainingService.grantPackToUser(user, 1L);
         return authService.createAuthTokens(user.getId());
     }

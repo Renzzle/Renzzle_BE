@@ -94,7 +94,7 @@ public class CommunityService {
     }
 
     /**
-     * 어드민 캐시 입력용: 보드·정답 전체. 조회수 증가 없음.
+     * For admin cache entry: full board and answer. Does not increment the view count.
      */
     @Transactional(readOnly = true)
     public GetTrainingPuzzleForAdminResponse getCommunityPuzzleForAdminDetail(Long puzzleId) {

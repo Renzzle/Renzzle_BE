@@ -176,7 +176,7 @@ public class CommunityPuzzleRepositoryTest {
         assertThat(result)
                 .hasSize(3)
                 .extracting("id")
-                .containsExactly(puzzle3.getId(), puzzle2.getId(), puzzle1.getId()); // 최신 순
+                .containsExactly(puzzle3.getId(), puzzle2.getId(), puzzle1.getId()); // newest first
     }
 
     @Test

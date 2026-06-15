@@ -38,8 +38,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         List<RequestMatcher> permitAllRequestMatchers = Arrays.asList(
-                AntPathRequestMatcher.antMatcher("/admin"),  // 어드민 로그인 페이지 (JWT 필터 제외)
-                AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/admin/login"),  // 어드민 로그인 API (토큰 없이 호출)
+                AntPathRequestMatcher.antMatcher("/admin"),  // Admin login page (excluded from JWT filter)
+                AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/admin/login"),  // Admin login API (called without a token)
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/email"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/confirmCode"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/api/auth/duplicate/**"),
@@ -59,9 +59,9 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(request -> request
                         .requestMatchers(permitAllRequestMatchers.toArray(new RequestMatcher[0])).permitAll()
-                        // Admin 로그아웃은 토큰 상태와 무관하게 항상 접근 가능해야 함
+                        // Admin logout must always be accessible regardless of token state
                         .requestMatchers(HttpMethod.GET, "/admin/logout").permitAll()
-                        // Admin 페이지 (토큰 만료 시 GET 요청 자체가 실패하므로 별도 verify 불필요)
+                        // Admin page (when the token is expired the GET request itself fails, so no separate verify is needed)
                         .requestMatchers(HttpMethod.GET, "/admin/dashboard").hasAuthority(ADMIN)
                         .requestMatchers(HttpMethod.GET, "/admin/pack-list").hasAuthority(ADMIN)
                         .requestMatchers(HttpMethod.GET, "/admin/pack-create").hasAuthority(ADMIN)
@@ -70,20 +70,20 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/admin/puzzle-edit").hasAuthority(ADMIN)
                         .requestMatchers(HttpMethod.GET, "/puzzle-cache").hasAuthority(ADMIN)
                         .requestMatchers(HttpMethod.GET, "/puzzle-cache/board").hasAuthority(ADMIN)
-                        // Admin 전용 조회 API (대시보드용)
+                        // Admin-only query APIs (for the dashboard)
                         .requestMatchers(HttpMethod.GET, "/admin/training/pack").hasAuthority(ADMIN)
                         .requestMatchers(HttpMethod.GET, "/admin/training/pack/**").hasAuthority(ADMIN)
                         .requestMatchers(HttpMethod.GET, "/admin/training/puzzle/**").hasAuthority(ADMIN)
                         .requestMatchers(HttpMethod.GET, "/admin/training/puzzle-detail/**").hasAuthority(ADMIN)
                         .requestMatchers(HttpMethod.GET, "/admin/community/puzzle-detail/**").hasAuthority(ADMIN)
-                        // Admin 전용 생성/수정/삭제 API
+                        // Admin-only create/update/delete APIs
                         .requestMatchers(HttpMethod.POST, "/api/training/puzzle").hasAuthority(ADMIN)
                         .requestMatchers(HttpMethod.POST, "/api/training/pack").hasAuthority(ADMIN)
                         .requestMatchers(HttpMethod.PATCH, "/api/training/pack/**").hasAuthority(ADMIN)
                         .requestMatchers(HttpMethod.POST, "/api/training/pack/translation").hasAuthority(ADMIN)
                         .requestMatchers(HttpMethod.PATCH, "/api/training/puzzle/**").hasAuthority(ADMIN)
                         .requestMatchers(HttpMethod.DELETE, "/api/training/puzzle/**").hasAuthority(ADMIN)
-                        // 나머지 모든 요청은 인증 필요 (일반 사용자 포함)
+                        // All remaining requests require authentication (including regular users)
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exceptionHandling ->
