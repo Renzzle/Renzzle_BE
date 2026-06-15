@@ -10,7 +10,6 @@ import com.renzzle.backend.domain.puzzle.training.domain.*;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.constant.ItemPrice;
-import com.renzzle.backend.global.common.constant.LanguageCode;
 import com.renzzle.backend.global.common.domain.LangCode;
 import com.renzzle.backend.global.common.domain.Status;
 import com.renzzle.backend.support.DataJpaTestWithInitContainers;
@@ -25,12 +24,11 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTestWithInitContainers
-public class TrainingServiceRepositoryTest {
+class TrainingServiceRepositoryTest {
 
     @Autowired
     private PackRepository packRepository;
@@ -54,7 +52,7 @@ public class TrainingServiceRepositoryTest {
     private EntityManager entityManager;
 
     @BeforeEach
-    public void clearDatabase() {
+    void clearDatabase() {
         userRepository.deleteAll();
     }
 
@@ -75,7 +73,7 @@ public class TrainingServiceRepositoryTest {
     @Test
     @DisplayName("TrainingPuzzle 저장 및 조회: 유효한 Pack과 TrainingPuzzle을 저장 후 정상 조회")
     @Transactional
-    public void increaseIndexesFrom_WhenCalled_ThenIncrementsAllFollowingIndexes() {
+    void increaseIndexesFrom_WhenCalled_ThenIncrementsAllFollowingIndexes() {
         // Given
         Difficulty difficulty = Difficulty.getDifficulty("LOW");
         WinColor winColor = WinColor.getWinColor("WHITE");
@@ -112,7 +110,7 @@ public class TrainingServiceRepositoryTest {
     @Test
     @DisplayName("testDeleteAndDecreaseIndexes: 존재하는 퍼즐 삭제 후, 후속 퍼즐의 trainingIndex가 감소된다.")
     @Transactional
-    public void decreaseIndexesFrom_WhenCalled_ThenDecrementsIndexesGreaterThanTarget() {
+    void decreaseIndexesFrom_WhenCalled_ThenDecrementsIndexesGreaterThanTarget() {
         // Given
         Difficulty difficulty = Difficulty.getDifficulty("LOW");
         WinColor winColor = WinColor.getWinColor("WHITE");
@@ -172,7 +170,7 @@ public class TrainingServiceRepositoryTest {
     @Test
     @DisplayName("testSaveAndFindSolvedTrainingPuzzle: SolvedTrainingPuzzle 저장 후, findByUserIdAndPuzzleId로 조회")
     @Transactional
-    public void findByPackId_WhenPackExists_ThenReturnsAllAssociatedPuzzles() {
+    void findByPackId_WhenPackExists_ThenReturnsAllAssociatedPuzzles() {
         // Given
         Difficulty difficulty = Difficulty.getDifficulty("LOW");
         WinColor winColor = WinColor.getWinColor("WHITE");
@@ -216,7 +214,7 @@ public class TrainingServiceRepositoryTest {
     @Test
     @DisplayName("GetTrainingPuzzleList: 특정 Pack의 TrainingPuzzle 목록이 정상적으로 조회된다.")
     @Transactional
-    public void findByChapterAndIndex_WhenExists_ThenReturnsPuzzle() {
+    void findByChapterAndIndex_WhenExists_ThenReturnsPuzzle() {
         // Given
         Difficulty difficulty = Difficulty.getDifficulty("LOW");
         WinColor winColor = WinColor.getWinColor("WHITE");
@@ -257,15 +255,14 @@ public class TrainingServiceRepositoryTest {
         List<TrainingPuzzle> puzzles = trainingPuzzleRepository.findByPack_IdOrderByTrainingIndex(savedPack.getId());
 
         // Then
-        assertThat(puzzles).isNotEmpty();
-        assertThat(puzzles).hasSize(2);
+        assertThat(puzzles).isNotEmpty().hasSize(2);
         assertThat(puzzles.get(0).getBoardStatus()).isIn("status1", "status2");
     }
 
     @Test
     @DisplayName("PackTranslation들이 정상 저장되고 조회")
     @Transactional
-    public void saveTranslations_WhenTranslationsLinkedToPack_ThenAllAreSaved() {
+    void saveTranslations_WhenTranslationsLinkedToPack_ThenAllAreSaved() {
         // Given
         Difficulty difficulty = Difficulty.getDifficulty("LOW");
 
@@ -290,7 +287,7 @@ public class TrainingServiceRepositoryTest {
                         .author(info.author())
                         .description(info.description())
                         .build())
-                .collect(Collectors.toList());
+                .toList();
         packTranslationRepository.saveAll(packTranslations);
 
         // Then
@@ -306,7 +303,7 @@ public class TrainingServiceRepositoryTest {
     @Test
     @DisplayName("getTrainingPackList : findByDifficulty, findAllByPack_IdInAndLanguageCode, findAllByUserIdAndPackIdIn 메소드 확인")
     @Transactional
-    public void GetTrainingPackList_WhenGetDifficulty_ThenReturnPackList() {
+    void GetTrainingPackList_WhenGetDifficulty_ThenReturnPackList() {
         // Given
         Difficulty difficulty = Difficulty.getDifficulty("LOW");
         // Create and save Pack
@@ -329,7 +326,7 @@ public class TrainingServiceRepositoryTest {
 
         // When
         List<Pack> packs = packRepository.findByDifficulty(difficulty);
-        List<Long> packIds = packs.stream().map(Pack::getId).collect(Collectors.toList());
+        List<Long> packIds = packs.stream().map(Pack::getId).toList();
         List<PackTranslation> translations = packTranslationRepository.findAllByPack_IdInAndLangCode(packIds, LangCode.getLangCode("EN"));
 
         // Then
@@ -345,7 +342,7 @@ public class TrainingServiceRepositoryTest {
     @Test
     @DisplayName("testAddTranslation: 유효한 Pack에 대해 번역을 추가 시 저장")
     @Transactional
-    public void AddTranslation_WhenPackExist_ThenReturnPack() {
+    void AddTranslation_WhenPackExist_ThenReturnPack() {
         // Given
         Difficulty difficulty = Difficulty.getDifficulty("LOW");
 
@@ -382,7 +379,7 @@ public class TrainingServiceRepositoryTest {
     @Test
     @DisplayName("testPurchaseTrainingPack: 사용자의 잔액 차감 및 UserPack 저장")
     @Transactional
-    public void PurchaseTrainingPack() {
+    void PurchaseTrainingPack() {
         // Given
         Difficulty difficulty = Difficulty.getDifficulty("LOW");
 //        entityManager.persist(difficulty);
@@ -429,13 +426,13 @@ public class TrainingServiceRepositoryTest {
         List<UserPack> userPacks = userPackRepository.findAllByUserIdAndPackIdIn(updatedUser.getId(),
                 List.of(savedPack.getId()));
         assertThat(userPacks).hasSize(1);
-        assertThat(userPacks.get(0).getSolvedCount()).isEqualTo(0);
+        assertThat(userPacks.get(0).getSolvedCount()).isZero();
     }
 
     @Test
     @DisplayName("testPurchaseTrainingPuzzleAnswer: 사용자의 잔액이 정상 차감되고, 구매 후 결과를 조회할 수 있다")
     @Transactional
-    public void PurchaseTrainingPuzzleAnswer_WhenEnoughCurrent_ThenReturnRemainCurrent() {
+    void PurchaseTrainingPuzzleAnswer_WhenEnoughCurrent_ThenReturnRemainCurrent() {
         // Given
         Difficulty difficulty = Difficulty.getDifficulty("LOW");
 //        entityManager.persist(difficulty);

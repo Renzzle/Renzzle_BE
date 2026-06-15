@@ -40,7 +40,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class RankServiceTest {
+class RankServiceTest {
     private RankService rankService;
     @Mock
     private RedisTemplate<String, Object> redisRankingTemplate;

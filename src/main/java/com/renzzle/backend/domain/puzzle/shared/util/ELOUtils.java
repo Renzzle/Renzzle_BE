@@ -2,6 +2,8 @@ package com.renzzle.backend.domain.puzzle.shared.util;
 
 public class ELOUtils {
 
+    private ELOUtils() {}
+
     private static final double K_MMR = 20.0;
     private static final double K_RATING = 10.0;
     private static final double MMR_THRESHOLD = 1500.0;

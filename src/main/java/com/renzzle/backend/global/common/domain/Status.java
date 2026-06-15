@@ -42,13 +42,18 @@ public class Status {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof Status) {
-            return Objects.equals(this.name, ((Status) obj).name);
-        } else if (obj instanceof StatusName) {
-            return Objects.equals(this.name, ((StatusName) obj).name());
+        if (obj instanceof Status status) {
+            return Objects.equals(this.name, status.name);
+        } else if (obj instanceof StatusName statusName) {
+            return Objects.equals(this.name, statusName.name());
         } else {
             return false;
         }
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(name);
     }
 
 }

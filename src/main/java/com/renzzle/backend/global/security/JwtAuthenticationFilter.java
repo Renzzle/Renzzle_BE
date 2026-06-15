@@ -26,7 +26,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import static com.renzzle.backend.domain.auth.domain.Admin.ADMIN;
+import static com.renzzle.backend.domain.auth.domain.Admin.ADMIN_PREFIX;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -69,7 +69,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         List<String> authorities = new ArrayList<>();
         if(adminRepository.existsByUser(user.get()))
-            authorities.add(ADMIN);
+            authorities.add(ADMIN_PREFIX);
 
         return new UserDetailsImpl(user.get(), user.get().getPassword(), authorities);
     }

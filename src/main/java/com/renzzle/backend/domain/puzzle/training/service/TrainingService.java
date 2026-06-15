@@ -140,6 +140,10 @@ public class TrainingService {
     // service test, repo test
     @Transactional
     public SolveTrainingPuzzleResponse solveTrainingPuzzle(UserEntity user, Long puzzleId, Boolean getReward) {
+        return applySolveTrainingPuzzle(user, puzzleId, getReward);
+    }
+
+    private SolveTrainingPuzzleResponse applySolveTrainingPuzzle(UserEntity user, Long puzzleId, Boolean getReward) {
         Optional<SolvedTrainingPuzzle> existInfo =
                 solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId);
 
@@ -169,7 +173,7 @@ public class TrainingService {
             case "HIGH" -> TRAINING_HIGH_REWARD.getPrice();
             default -> 0;
         };
-        if(getReward){
+        if(Boolean.TRUE.equals(getReward)){
             UserEntity persistentUser = userRepository.findById(user.getId())
                     .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
             persistentUser.getReward(reward);
@@ -229,7 +233,7 @@ public class TrainingService {
                         .author(info.author())
                         .description(info.description())
                         .build())
-                .collect(Collectors.toList());
+                .toList();
 
         packTranslationRepository.saveAll(translations);
 
@@ -258,7 +262,7 @@ public class TrainingService {
                         .author(info.author())
                         .description(info.description())
                         .build())
-                .collect(Collectors.toList());
+                .toList();
         packTranslationRepository.saveAll(newTranslations);
 
         return updatedPack;
@@ -296,7 +300,7 @@ public class TrainingService {
             throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACKS);
         }
 
-        List<Long> packIds = packs.stream().map(Pack::getId).collect(Collectors.toList());
+        List<Long> packIds = packs.stream().map(Pack::getId).toList();
         LangCode requestedLangCode = LangCode.getLangCode(request.lang());
         LangCode defaultLangCode = LangCode.getLangCode(LangCode.LangCodeName.EN);
 
@@ -370,7 +374,7 @@ public class TrainingService {
 
         newUser.purchase(ItemPrice.HINT.getPrice());
 
-        solveTrainingPuzzle(user, puzzle.getId(), false);
+        applySolveTrainingPuzzle(user, puzzle.getId(), false);
 
         return GetTrainingPuzzleAnswerResponse.builder()
                 .answer(puzzle.getAnswer())
@@ -395,7 +399,7 @@ public class TrainingService {
                         t.getAuthor(),
                         t.getDescription() != null ? t.getDescription() : ""
                 ))
-                .collect(Collectors.toList());
+                .toList();
 
         return new GetPackDetailForAdminResponse(
                 pack.getId(),
@@ -414,8 +418,9 @@ public class TrainingService {
         if (packId == null) {
             throw new CustomException(ErrorCode.VALIDATION_ERROR);
         }
-        packRepository.findById(packId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
+        if (!packRepository.existsById(packId)) {
+            throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK);
+        }
 
         List<TrainingPuzzle> trainingPuzzles = trainingPuzzleRepository.findByPack_IdOrderByTrainingIndex(packId);
         if (trainingPuzzles.isEmpty()) {

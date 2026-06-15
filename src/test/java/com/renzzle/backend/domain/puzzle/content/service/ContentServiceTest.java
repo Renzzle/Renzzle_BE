@@ -6,7 +6,7 @@ import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleReposi
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.content.api.request.GetRecommendRequest;
 import com.renzzle.backend.domain.puzzle.content.api.response.GetTrendPuzzlesResponse;
-import com.renzzle.backend.domain.puzzle.content.api.response.getRecommendPackResponse;
+import com.renzzle.backend.domain.puzzle.content.api.response.GetRecommendPackResponse;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.puzzle.shared.util.BoardUtils;
 import com.renzzle.backend.domain.puzzle.training.dao.PackRepository;
@@ -42,7 +42,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class ContentServiceTest {
+class ContentServiceTest {
     @Mock
     private SolvedTrainingPuzzleRepository solvedTrainingPuzzleRepository;
 
@@ -120,11 +120,11 @@ public class ContentServiceTest {
                 .thenReturn(Optional.of(solvedTrainingPuzzle));
         when(packTranslationRepository.findByPackAndLangCode(eq(pack), any()))
                 .thenReturn(Optional.of(translation));
-        when(userPackRepository.findByUserIdAndPackId(eq(user.getId()), eq(pack.getId())))
+        when(userPackRepository.findByUserIdAndPackId(user.getId(), pack.getId()))
                 .thenReturn(Optional.of(userPack));
 
         // When
-        getRecommendPackResponse response = contentService.getRecommendedPack(new GetRecommendRequest("EN"), user);
+        GetRecommendPackResponse response = contentService.getRecommendedPack(new GetRecommendRequest("EN"), user);
 
         // Then
         assertThat(response.id()).isEqualTo(pack.getId());
@@ -157,12 +157,12 @@ public class ContentServiceTest {
                 .thenReturn(Optional.of(translation));
 
         // When
-        getRecommendPackResponse response = contentService.getRecommendedPack(new GetRecommendRequest("EN"), user);
+        GetRecommendPackResponse response = contentService.getRecommendedPack(new GetRecommendRequest("EN"), user);
 
         // Then
         assertThat(response.id()).isEqualTo(pack.getId());
         assertThat(response.title()).isEqualTo(translation.getTitle());
-        assertThat(response.solvedPuzzleCount()).isEqualTo(0);
+        assertThat(response.solvedPuzzleCount()).isZero();
         assertThat(response.locked()).isFalse();
     }
 
@@ -238,7 +238,7 @@ public class ContentServiceTest {
                 .thenReturn(Optional.of(solvedTrainingPuzzle));
         when(packTranslationRepository.findByPackAndLangCode(eq(pack), any()))
                 .thenReturn(Optional.of(translation));
-        when(userPackRepository.findByUserIdAndPackId(eq(user.getId()), eq(pack.getId())))
+        when(userPackRepository.findByUserIdAndPackId(user.getId(), pack.getId()))
                 .thenReturn(Optional.empty());
 
         // When & Then
@@ -364,7 +364,7 @@ public class ContentServiceTest {
         assertThat(dto.createdAt()).isEqualTo(puzzle.getCreatedAt().toString());
         assertThat(dto.isSolved()).isTrue();
         assertThat(dto.isVerified()).isEqualTo(puzzle.getIsVerified());
-        assertThat(dto.solvedCount()).isEqualTo(0); // no solvedCount calculation logic yet
+        assertThat(dto.solvedCount()).isZero(); // no solvedCount calculation logic yet
     }
 
 }

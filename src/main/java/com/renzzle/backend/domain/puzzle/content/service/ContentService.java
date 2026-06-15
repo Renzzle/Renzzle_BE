@@ -6,7 +6,7 @@ import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleReposi
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.content.api.request.GetRecommendRequest;
 import com.renzzle.backend.domain.puzzle.content.api.response.GetTrendPuzzlesResponse;
-import com.renzzle.backend.domain.puzzle.content.api.response.getRecommendPackResponse;
+import com.renzzle.backend.domain.puzzle.content.api.response.GetRecommendPackResponse;
 import com.renzzle.backend.domain.puzzle.training.dao.PackRepository;
 import com.renzzle.backend.domain.puzzle.training.dao.PackTranslationRepository;
 import com.renzzle.backend.domain.puzzle.training.dao.SolvedTrainingPuzzleRepository;
@@ -39,7 +39,7 @@ public class ContentService {
     private final PackRepository packRepository;
     private final UserCommunityPuzzleRepository userCommunityPuzzleRepository;
     private final Clock clock;
-    public getRecommendPackResponse getRecommendedPack(GetRecommendRequest request, UserEntity user) {
+    public GetRecommendPackResponse getRecommendedPack(GetRecommendRequest request, UserEntity user) {
 
         Long userId = user.getId();
 
@@ -77,7 +77,7 @@ public class ContentService {
 
         int solvedCount = (userPack != null) ? userPack.getSolvedCount() : 0;
 
-        return getRecommendPackResponse.builder()
+        return GetRecommendPackResponse.builder()
                 .id(pack.getId())
                 .title(translation.getTitle())
                 .author(translation.getAuthor())
@@ -89,7 +89,7 @@ public class ContentService {
                 .build();
     }
 
-    private getRecommendPackResponse createDefaultRecommendedPack(GetRecommendRequest request) {
+    private GetRecommendPackResponse createDefaultRecommendedPack(GetRecommendRequest request) {
         // Query the Pack with the lowest id
         Pack pack = packRepository.findFirstByOrderByIdAsc()
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
@@ -105,7 +105,7 @@ public class ContentService {
                 );
 
         // Return the result
-        return getRecommendPackResponse.builder()
+        return GetRecommendPackResponse.builder()
                 .id(pack.getId())
                 .title(translation.getTitle())
                 .author(translation.getAuthor())

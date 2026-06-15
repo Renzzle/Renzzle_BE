@@ -2,6 +2,8 @@ package com.renzzle.backend.global.security;
 
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import lombok.Getter;
+
+import java.io.Serial;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -10,6 +12,9 @@ import java.util.Collections;
 import java.util.List;
 
 public class UserDetailsImpl implements UserDetails {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     @Getter
     private final transient UserEntity user;

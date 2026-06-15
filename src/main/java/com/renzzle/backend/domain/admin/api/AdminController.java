@@ -46,6 +46,10 @@ import java.util.Optional;
 @Tag(name = "Admin", description = "Admin login and dashboard page")
 public class AdminController {
 
+    private static final String USER_EMAIL = "userEmail";
+    private static final String LANG_CODE_NAMES = "langCodeNames";
+    private static final String PACK_ID = "packId";
+
     private final AccountService accountService;
     private final JwtProvider jwtProvider;
     private final UserRepository userRepository;
@@ -110,8 +114,8 @@ public class AdminController {
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Parameter(hidden = true) Model model
     ) {
-        model.addAttribute("userEmail", userDetails.getUser().getEmail());
-        model.addAttribute("langCodeNames", LangCode.LangCodeName.values());
+        model.addAttribute(USER_EMAIL, userDetails.getUser().getEmail());
+        model.addAttribute(LANG_CODE_NAMES, LangCode.LangCodeName.values());
         return "admin/dashboard";
     }
 
@@ -125,8 +129,8 @@ public class AdminController {
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Parameter(hidden = true) Model model
     ) {
-        model.addAttribute("userEmail", userDetails.getUser().getEmail());
-        model.addAttribute("langCodeNames", LangCode.LangCodeName.values());
+        model.addAttribute(USER_EMAIL, userDetails.getUser().getEmail());
+        model.addAttribute(LANG_CODE_NAMES, LangCode.LangCodeName.values());
         return "admin/pack-list";
     }
 
@@ -140,8 +144,8 @@ public class AdminController {
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Parameter(hidden = true) Model model
     ) {
-        model.addAttribute("userEmail", userDetails.getUser().getEmail());
-        model.addAttribute("langCodeNames", LangCode.LangCodeName.values());
+        model.addAttribute(USER_EMAIL, userDetails.getUser().getEmail());
+        model.addAttribute(LANG_CODE_NAMES, LangCode.LangCodeName.values());
         return "admin/pack-create";
     }
 
@@ -185,7 +189,7 @@ public class AdminController {
     @GetMapping("/training/pack/{packId}")
     @ResponseBody
     public ApiResponse<GetPackDetailForAdminResponse> getPackDetailForAdmin(
-            @PathVariable("packId") Long packId,
+            @PathVariable(PACK_ID) Long packId,
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         GetPackDetailForAdminResponse detail = trainingService.getPackDetailForAdmin(packId);
@@ -202,13 +206,13 @@ public class AdminController {
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/pack-detail")
     public String packDetail(
-            @RequestParam("packId") Long packId,
+            @RequestParam(PACK_ID) Long packId,
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Parameter(hidden = true) Model model
     ) {
-        model.addAttribute("packId", packId);
-        model.addAttribute("userEmail", userDetails.getUser().getEmail());
-        model.addAttribute("langCodeNames", LangCode.LangCodeName.values());
+        model.addAttribute(PACK_ID, packId);
+        model.addAttribute(USER_EMAIL, userDetails.getUser().getEmail());
+        model.addAttribute(LANG_CODE_NAMES, LangCode.LangCodeName.values());
         return "admin/pack-detail";
     }
 
@@ -221,12 +225,12 @@ public class AdminController {
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/puzzle-add")
     public String puzzleAdd(
-            @RequestParam("packId") Long packId,
+            @RequestParam(PACK_ID) Long packId,
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Parameter(hidden = true) Model model
     ) {
-        model.addAttribute("packId", packId);
-        model.addAttribute("userEmail", userDetails.getUser().getEmail());
+        model.addAttribute(PACK_ID, packId);
+        model.addAttribute(USER_EMAIL, userDetails.getUser().getEmail());
         return "admin/puzzle-add";
     }
 
@@ -234,14 +238,14 @@ public class AdminController {
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/puzzle-edit")
     public String puzzleEdit(
-            @RequestParam("packId") Long packId,
+            @RequestParam(PACK_ID) Long packId,
             @RequestParam("puzzleId") Long puzzleId,
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Parameter(hidden = true) Model model
     ) {
-        model.addAttribute("packId", packId);
+        model.addAttribute(PACK_ID, packId);
         model.addAttribute("puzzleId", puzzleId);
-        model.addAttribute("userEmail", userDetails.getUser().getEmail());
+        model.addAttribute(USER_EMAIL, userDetails.getUser().getEmail());
         return "admin/puzzle-edit";
     }
 
@@ -254,7 +258,7 @@ public class AdminController {
     @GetMapping("/training/puzzle/{packId}")
     @ResponseBody
     public ApiResponse<List<GetTrainingPuzzleForAdminResponse>> getTrainingPuzzleForAdmin(
-            @PathVariable("packId") Long packId,
+            @PathVariable(PACK_ID) Long packId,
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         List<GetTrainingPuzzleForAdminResponse> puzzles = trainingService.getTrainingPuzzleListForAdmin(packId);

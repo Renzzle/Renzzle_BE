@@ -7,22 +7,15 @@ import com.renzzle.backend.domain.auth.api.response.LoginResponse;
 import com.renzzle.backend.domain.auth.service.AccountService;
 import com.renzzle.backend.domain.auth.service.AuthService;
 import com.renzzle.backend.domain.auth.service.EmailService;
-import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.response.ApiResponse;
-import com.renzzle.backend.global.exception.CustomException;
-import com.renzzle.backend.global.exception.ErrorCode;
 import com.renzzle.backend.global.security.UserDetailsImpl;
 import com.renzzle.backend.global.util.ApiUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import static com.renzzle.backend.domain.auth.service.EmailService.EMAIL_VERIFICATION_LIMIT;
-import static com.renzzle.backend.global.util.ErrorUtils.getErrorMessages;
 
 @RestController
 @RequestMapping("/api/auth")

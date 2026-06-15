@@ -37,6 +37,10 @@ public class AuthService {
 
     @Transactional
     public LoginResponse createAuthTokens(Long id) {
+        return issueAuthTokens(id);
+    }
+
+    private LoginResponse issueAuthTokens(Long id) {
         String grantType = GrantType.BEARER.getType();
         String accessToken = jwtProvider.createAccessToken(id);
         String refreshToken = jwtProvider.createRefreshToken(id);
@@ -71,14 +75,7 @@ public class AuthService {
         if(tokenEntity.isEmpty())
             throw new CustomException(ErrorCode.EXPIRED_JWT_TOKEN);
 
-        return createAuthTokens(userId);
-    }
-
-    private boolean verifyRefreshToken(String token) {
-        Long userId = jwtProvider.getUserId(token);
-        Optional<RefreshTokenEntity> tokenEntity = refreshTokenRepository.findById(userId);
-
-        return tokenEntity.isPresent();
+        return issueAuthTokens(userId);
     }
 
 }

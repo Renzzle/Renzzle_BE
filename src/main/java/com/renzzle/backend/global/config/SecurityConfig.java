@@ -22,7 +22,7 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.renzzle.backend.domain.auth.domain.Admin.ADMIN;
+import static com.renzzle.backend.domain.auth.domain.Admin.ADMIN_PREFIX;
 
 @Configuration
 @EnableWebSecurity
@@ -62,27 +62,27 @@ public class SecurityConfig {
                         // Admin logout must always be accessible regardless of token state
                         .requestMatchers(HttpMethod.GET, "/admin/logout").permitAll()
                         // Admin page (when the token is expired the GET request itself fails, so no separate verify is needed)
-                        .requestMatchers(HttpMethod.GET, "/admin/dashboard").hasAuthority(ADMIN)
-                        .requestMatchers(HttpMethod.GET, "/admin/pack-list").hasAuthority(ADMIN)
-                        .requestMatchers(HttpMethod.GET, "/admin/pack-create").hasAuthority(ADMIN)
-                        .requestMatchers(HttpMethod.GET, "/admin/pack-detail").hasAuthority(ADMIN)
-                        .requestMatchers(HttpMethod.GET, "/admin/puzzle-add").hasAuthority(ADMIN)
-                        .requestMatchers(HttpMethod.GET, "/admin/puzzle-edit").hasAuthority(ADMIN)
-                        .requestMatchers(HttpMethod.GET, "/puzzle-cache").hasAuthority(ADMIN)
-                        .requestMatchers(HttpMethod.GET, "/puzzle-cache/board").hasAuthority(ADMIN)
+                        .requestMatchers(HttpMethod.GET, "/admin/dashboard").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.GET, "/admin/pack-list").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.GET, "/admin/pack-create").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.GET, "/admin/pack-detail").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.GET, "/admin/puzzle-add").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.GET, "/admin/puzzle-edit").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.GET, "/puzzle-cache").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.GET, "/puzzle-cache/board").hasAuthority(ADMIN_PREFIX)
                         // Admin-only query APIs (for the dashboard)
-                        .requestMatchers(HttpMethod.GET, "/admin/training/pack").hasAuthority(ADMIN)
-                        .requestMatchers(HttpMethod.GET, "/admin/training/pack/**").hasAuthority(ADMIN)
-                        .requestMatchers(HttpMethod.GET, "/admin/training/puzzle/**").hasAuthority(ADMIN)
-                        .requestMatchers(HttpMethod.GET, "/admin/training/puzzle-detail/**").hasAuthority(ADMIN)
-                        .requestMatchers(HttpMethod.GET, "/admin/community/puzzle-detail/**").hasAuthority(ADMIN)
+                        .requestMatchers(HttpMethod.GET, "/admin/training/pack").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.GET, "/admin/training/pack/**").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.GET, "/admin/training/puzzle/**").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.GET, "/admin/training/puzzle-detail/**").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.GET, "/admin/community/puzzle-detail/**").hasAuthority(ADMIN_PREFIX)
                         // Admin-only create/update/delete APIs
-                        .requestMatchers(HttpMethod.POST, "/api/training/puzzle").hasAuthority(ADMIN)
-                        .requestMatchers(HttpMethod.POST, "/api/training/pack").hasAuthority(ADMIN)
-                        .requestMatchers(HttpMethod.PATCH, "/api/training/pack/**").hasAuthority(ADMIN)
-                        .requestMatchers(HttpMethod.POST, "/api/training/pack/translation").hasAuthority(ADMIN)
-                        .requestMatchers(HttpMethod.PATCH, "/api/training/puzzle/**").hasAuthority(ADMIN)
-                        .requestMatchers(HttpMethod.DELETE, "/api/training/puzzle/**").hasAuthority(ADMIN)
+                        .requestMatchers(HttpMethod.POST, "/api/training/puzzle").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.POST, "/api/training/pack").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.PATCH, "/api/training/pack/**").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.POST, "/api/training/pack/translation").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.PATCH, "/api/training/puzzle/**").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.DELETE, "/api/training/puzzle/**").hasAuthority(ADMIN_PREFIX)
                         // All remaining requests require authentication (including regular users)
                         .anyRequest().authenticated()
                 )

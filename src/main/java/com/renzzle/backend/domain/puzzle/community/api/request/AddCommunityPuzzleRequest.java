@@ -1,12 +1,10 @@
 package com.renzzle.backend.domain.puzzle.community.api.request;
 
-import com.renzzle.backend.domain.puzzle.training.domain.Difficulty;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.global.validation.ValidBoardString;
 import com.renzzle.backend.global.validation.ValidEnum;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import org.hibernate.validator.constraints.Length;
 
 public record AddCommunityPuzzleRequest(

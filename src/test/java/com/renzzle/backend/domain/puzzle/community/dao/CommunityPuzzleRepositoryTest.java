@@ -21,7 +21,7 @@ import static com.renzzle.backend.domain.puzzle.shared.domain.WinColor.getWinCol
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTestWithInitContainers
-public class CommunityPuzzleRepositoryTest {
+class CommunityPuzzleRepositoryTest {
 
     @Autowired
     private EntityManager entityManager;
@@ -36,7 +36,7 @@ public class CommunityPuzzleRepositoryTest {
     private UserCommunityPuzzleRepository userCommunityPuzzleRepository;
 
     @Test
-    public void searchCommunityPuzzles_WhenVariousConditions_ThenReturnsExpectedResults() {
+    void searchCommunityPuzzles_WhenVariousConditions_ThenReturnsExpectedResults() {
         // Given
         UserEntity user = TestUserEntityBuilder.builder()
                 .withNickname("test")
@@ -71,7 +71,7 @@ public class CommunityPuzzleRepositoryTest {
     }
 
     @Test
-    public void searchCommunityPuzzles_WhenCursorIdAndSizeProvided_ThenReturnsCorrectSubset() {
+    void searchCommunityPuzzles_WhenCursorIdAndSizeProvided_ThenReturnsCorrectSubset() {
         // Given
         UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
 
@@ -93,7 +93,7 @@ public class CommunityPuzzleRepositoryTest {
     }
 
     @Test
-    public void searchCommunityPuzzles_WhenSortIsLike_ThenOrderedByLikeCountDesc() {
+    void searchCommunityPuzzles_WhenSortIsLike_ThenOrderedByLikeCountDesc() {
         // Given
         UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
 
@@ -120,7 +120,7 @@ public class CommunityPuzzleRepositoryTest {
     }
 
     @Test
-    public void searchCommunityPuzzles_WhenSortIsLatest_ThenOrderedByCreatedAtDesc() {
+    void searchCommunityPuzzles_WhenSortIsLatest_ThenOrderedByCreatedAtDesc() {
         // Given
         UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
 
@@ -144,7 +144,7 @@ public class CommunityPuzzleRepositoryTest {
     }
 
     @Test
-    public void getUserLikedPuzzles_WhenCursorIsNull_ThenReturnsLikedPuzzlesSorted() {
+    void getUserLikedPuzzles_WhenCursorIsNull_ThenReturnsLikedPuzzlesSorted() {
         // Given
         UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
 
@@ -180,7 +180,7 @@ public class CommunityPuzzleRepositoryTest {
     }
 
     @Test
-    public void getUserLikedPuzzles_WhenCursorProvided_ThenReturnsRemainingPuzzles() {
+    void getUserLikedPuzzles_WhenCursorProvided_ThenReturnsRemainingPuzzles() {
         // Given
         UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
 
@@ -216,7 +216,7 @@ public class CommunityPuzzleRepositoryTest {
     }
 
     @Test
-    public void getUserPuzzles_WhenCursorIsNull_ThenReturnSortedList() {
+    void getUserPuzzles_WhenCursorIsNull_ThenReturnSortedList() {
         // Given
         UserEntity user1 = TestUserEntityBuilder.builder().save(userRepository);
         UserEntity user2 = TestUserEntityBuilder.builder().save(userRepository);
@@ -245,7 +245,7 @@ public class CommunityPuzzleRepositoryTest {
     }
 
     @Test
-    public void getUserPuzzles_WhenCursorProvided_ThenReturnOnlyPreviousOnes() {
+    void getUserPuzzles_WhenCursorProvided_ThenReturnOnlyPreviousOnes() {
         // Given
         UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
 
@@ -270,7 +270,7 @@ public class CommunityPuzzleRepositoryTest {
     }
 
     @Test
-    public void softDelete_WhenCalled_ThenPuzzleIsMarkedDeleted() {
+    void softDelete_WhenCalled_ThenPuzzleIsMarkedDeleted() {
         // Given
         UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
         CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user)

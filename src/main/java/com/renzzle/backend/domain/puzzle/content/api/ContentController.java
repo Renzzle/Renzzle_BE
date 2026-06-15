@@ -2,7 +2,7 @@ package com.renzzle.backend.domain.puzzle.content.api;
 
 import com.renzzle.backend.domain.puzzle.content.api.request.GetRecommendRequest;
 import com.renzzle.backend.domain.puzzle.content.api.response.GetTrendPuzzlesResponse;
-import com.renzzle.backend.domain.puzzle.content.api.response.getRecommendPackResponse;
+import com.renzzle.backend.domain.puzzle.content.api.response.GetRecommendPackResponse;
 import com.renzzle.backend.domain.puzzle.content.service.ContentService;
 import com.renzzle.backend.global.common.response.ApiResponse;
 import com.renzzle.backend.global.security.UserDetailsImpl;
@@ -23,11 +23,11 @@ public class ContentController {
 
     @Operation(summary = "Get recommend Pack", description = "Get recommend Pack")
     @GetMapping("/recommend")
-    public ApiResponse<getRecommendPackResponse> getRecommendPack(
+    public ApiResponse<GetRecommendPackResponse> getRecommendPack(
             @Valid @ModelAttribute GetRecommendRequest request,
             @AuthenticationPrincipal UserDetailsImpl user
     ) {
-        getRecommendPackResponse response = contentService.getRecommendedPack(request, user.getUser());
+        GetRecommendPackResponse response = contentService.getRecommendedPack(request, user.getUser());
         return ApiUtils.success(response);
     }
 

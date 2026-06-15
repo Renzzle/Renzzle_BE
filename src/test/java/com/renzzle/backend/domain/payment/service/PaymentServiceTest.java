@@ -30,7 +30,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class PaymentServiceTest {
+class PaymentServiceTest {
 
     @Mock
     private InAppPurchaseRepository inAppPurchaseRepository;
@@ -216,11 +216,11 @@ public class PaymentServiceTest {
 
         InAppPurchase savedPurchase = captor.getValue();
         assertThat(savedPurchase.getProductId()).isEqualTo("remove_ads");
-        assertThat(savedPurchase.getGrantedCurrency()).isEqualTo(0);
+        assertThat(savedPurchase.getGrantedCurrency()).isZero();
         assertThat(persistedUser.getCurrency()).isEqualTo(50);
         assertThat(persistedUser.isAdsRemoved()).isTrue();
 
         assertThat(response.productId()).isEqualTo("remove_ads");
-        assertThat(response.grantedCurrency()).isEqualTo(0);
+        assertThat(response.grantedCurrency()).isZero();
     }
 }

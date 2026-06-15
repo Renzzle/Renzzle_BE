@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import java.util.function.ToDoubleFunction;
 
 import static com.renzzle.backend.domain.puzzle.shared.util.ELOUtils.TARGET_WIN_PROBABILITY;
 import static com.renzzle.backend.domain.puzzle.shared.util.ELOUtils.WIN_PROBABILITY_DELTA;
@@ -134,14 +134,14 @@ public class RankService {
         double userBeforeMmr = session.getMmrBeforePenalty();
         double userBeforeRating = session.getRatingBeforePenalty();
         double lastProblemRating = session.getLastProblemRating();
-        double WinProbability = session.getTargetWinProbability();
+        double winProbability = session.getTargetWinProbability();
         /*
         If the previous puzzle was solved,
         adjust the target win probability for the next puzzle,
         apply the multiplier to adjust the mmr and rating values, and update the variables
          */
         if (request.isSolved()) {
-            WinProbability -= WIN_PROBABILITY_DELTA;
+            winProbability -= WIN_PROBABILITY_DELTA;
 
             double mmrIncrease = ELOUtils.calculateMMRIncrease(userBeforeMmr, lastProblemRating);
             double ratingIncrease = ELOUtils.calculateRatingIncrease(userBeforeRating, lastProblemRating);
@@ -152,7 +152,7 @@ public class RankService {
             userBeforeMmr = userBeforeMmr + mmrIncrease;
             userBeforeRating = userBeforeRating + ratingIncrease;
         } else {
-            WinProbability += WIN_PROBABILITY_DELTA;
+            winProbability += WIN_PROBABILITY_DELTA;
             double mmrDecrease = ELOUtils.calculateMMRDecrease(userBeforeMmr, lastProblemRating);
             double ratingDecrease = ELOUtils.calculateRatingDecrease(userBeforeRating, lastProblemRating);
 
@@ -164,7 +164,7 @@ public class RankService {
         }
 
         // Fetch a suitable puzzle based on the user's rating & target win probability
-        NextPuzzleResult puzzleResult = getNextPuzzle(userBeforeMmr, WinProbability, user);
+        NextPuzzleResult puzzleResult = getNextPuzzle(userBeforeMmr, winProbability, user);
         LatestRankPuzzle latestPuzzle = puzzleResult.latestPuzzle();
         double puzzleRating = puzzleResult.rating();
 
@@ -192,7 +192,7 @@ public class RankService {
         session.setWinnerColor(latestPuzzle.getWinColor().getName());
         session.setMmrBeforePenalty(userBeforeMmr);
         session.setRatingBeforePenalty(userBeforeRating);
-        session.setTargetWinProbability(WinProbability);
+        session.setTargetWinProbability(winProbability);
 
         redisTemplate.opsForValue().set(redisKey, session, currentTTL, TimeUnit.SECONDS);
 
@@ -345,7 +345,7 @@ public class RankService {
                         .isSolved(puzzle.getIsSolved())
                         .winColor(puzzle.getWinColor().getName())
                         .build())
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -423,7 +423,7 @@ public class RankService {
     @SuppressWarnings("unchecked")
     private <T, R> List<R> extractTopRankedUsers(
             String key,
-            Function<T, Double> scoreExtractor,
+            ToDoubleFunction<T> scoreExtractor,
             BiFunction<Integer, T, R> builder
     ) {
         Set<ZSetOperations.TypedTuple<Object>> rawSet =
@@ -438,7 +438,7 @@ public class RankService {
 
         for (ZSetOperations.TypedTuple<Object> tuple : rawSet) {
             T obj = (T) tuple.getValue();
-            double score = scoreExtractor.apply(obj);
+            double score = scoreExtractor.applyAsDouble(obj);
             rankCounter++;
 
             if (Double.compare(score, lastScore) != 0) {
@@ -456,7 +456,7 @@ public class RankService {
     private <T> int findMyRank(
             String key,
             Predicate<T> isMyself,
-            Function<T, Double> scoreExtractor
+            ToDoubleFunction<T> scoreExtractor
     ) {
         Set<ZSetOperations.TypedTuple<Object>> fullSet =
                 Optional.ofNullable(redisRankingTemplate.opsForZSet()
@@ -469,7 +469,7 @@ public class RankService {
 
         for (ZSetOperations.TypedTuple<Object> tuple : fullSet) {
             T obj = (T) tuple.getValue();
-            double score = scoreExtractor.apply(obj);
+            double score = scoreExtractor.applyAsDouble(obj);
             rankCounter++;
 
             if (Double.compare(score, lastScore) != 0) {
@@ -520,7 +520,7 @@ public class RankService {
             int dislikes = communityPuzzleRepository.sumDislikesByUser(user.getId());
             int c = Math.max(0, likes - dislikes);
 
-            double score = Math.log((a + 1) * Math.pow(b + 1, 2) * Math.pow(c + 1, 3) + 1) * 100;
+            double score = Math.log((a + 1.0) * Math.pow(b + 1.0, 2) * Math.pow(c + 1.0, 3) + 1) * 100;
             score = Math.floor(score);
 
             UserPuzzlerRankInfo info = UserPuzzlerRankInfo.builder()

@@ -193,7 +193,7 @@ public class CommunityService {
 
         persistedUser.purchase(HINT.getPrice());
 
-        solveCommunityPuzzle(puzzleId, persistedUser);
+        applySolveCommunityPuzzle(puzzleId, persistedUser);
 
         return GetCommunityPuzzleAnswerResponse.builder()
                 .answer(puzzle.getAnswer())
@@ -203,6 +203,10 @@ public class CommunityService {
 
     @Transactional
     public void solveCommunityPuzzle(Long puzzleId, UserEntity user) {
+        applySolveCommunityPuzzle(puzzleId, user);
+    }
+
+    private void applySolveCommunityPuzzle(Long puzzleId, UserEntity user) {
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
 

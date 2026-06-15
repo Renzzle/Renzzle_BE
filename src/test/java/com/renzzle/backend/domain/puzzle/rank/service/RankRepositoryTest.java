@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTestWithInitContainers
 @Import({TrainingPuzzleSeeder.class, CommunityPuzzleSeeder.class, PackSeeder.class})
-public class RankRepositoryTest {
+class RankRepositoryTest {
 
     @Autowired
     private TrainingPuzzleSeeder trainingPuzzleSeeder;

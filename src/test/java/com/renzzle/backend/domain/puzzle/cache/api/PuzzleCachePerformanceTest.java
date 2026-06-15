@@ -120,7 +120,7 @@ class PuzzleCachePerformanceTest {
         System.out.println("[차이] " + String.format("%.2f", afterMs - beforeMs) + " ms");
         System.out.println("========================================");
 
-        assertThat(afterMs).isGreaterThan(0);
+        assertThat(afterMs).isPositive();
     }
 
     @Test
@@ -161,7 +161,7 @@ class PuzzleCachePerformanceTest {
         System.out.println("[차이] " + String.format("%.2f", afterMs - beforeMs) + " ms");
         System.out.println("========================================");
 
-        assertThat(afterMs).isGreaterThan(0);
+        assertThat(afterMs).isPositive();
     }
 
     private double measureApiCall(Long puzzleId) {

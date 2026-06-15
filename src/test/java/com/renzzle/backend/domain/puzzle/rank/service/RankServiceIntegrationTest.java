@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = TestContainersConfig.class)
 @Transactional
-public class RankServiceIntegrationTest {
+class RankServiceIntegrationTest {
 
     @Autowired private RankService rankService;
     @Autowired private UserRepository userRepository;

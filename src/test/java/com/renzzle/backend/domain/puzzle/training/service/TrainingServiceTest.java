@@ -8,7 +8,6 @@ import com.renzzle.backend.domain.puzzle.training.domain.*;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.constant.ItemPrice;
-import com.renzzle.backend.global.common.constant.LanguageCode;
 import com.renzzle.backend.global.common.domain.LangCode;
 import com.renzzle.backend.global.common.domain.Status;
 import com.renzzle.backend.global.exception.CustomException;
@@ -30,7 +29,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -73,7 +71,7 @@ public class TrainingServiceTest {
 
         @DisplayName("createPack : 팩 생성")
         @Test
-        public void testCreatePack() {
+        void testCreatePack() {
             // given
             List<PackTranslationRequest> translationRequests = Arrays.asList(
                     new PackTranslationRequest("KO", "초보용 1", "강상민", "처음 퍼즐을 푸는..."),
@@ -98,7 +96,7 @@ public class TrainingServiceTest {
                             .author(info.author())
                             .description(info.description())
                             .build())
-                    .collect(Collectors.toList());
+                    .toList();
 
             when(packTranslationRepository.saveAll(anyList())).thenReturn(expectedTranslations);
 
@@ -114,8 +112,7 @@ public class TrainingServiceTest {
 
         @DisplayName("updatePack : 팩 수정 (번역/가격/난이도)")
         @Test
-        @SuppressWarnings("unchecked")
-        public void testUpdatePack() {
+        void testUpdatePack() {
             // given
             Long packId = 1L;
             Pack existingPack = Pack.builder()
@@ -173,11 +170,10 @@ public class TrainingServiceTest {
             verify(packTranslationRepository, times(1)).findAllByPack_Id(packId);
             verify(packTranslationRepository, times(1)).deleteAll(existingTranslations);
 
-            ArgumentCaptor<List> translationsCaptor = ArgumentCaptor.forClass(List.class);
+            ArgumentCaptor<List<PackTranslation>> translationsCaptor = ArgumentCaptor.captor();
             verify(packTranslationRepository, times(1)).saveAll(translationsCaptor.capture());
-            List<PackTranslation> savedTranslations = (List<PackTranslation>) translationsCaptor.getValue();
-            assertThat(savedTranslations).hasSize(2);
-            assertThat(savedTranslations).allSatisfy(t -> assertThat(t.getPack().getId()).isEqualTo(packId));
+            List<PackTranslation> savedTranslations = translationsCaptor.getValue();
+            assertThat(savedTranslations).hasSize(2).allSatisfy(t -> assertThat(t.getPack().getId()).isEqualTo(packId));
 
             PackTranslation ko = savedTranslations.stream()
                     .filter(t -> t.getLangCode().getName().equals("KO"))
@@ -198,7 +194,7 @@ public class TrainingServiceTest {
 
         @DisplayName("addTranslation : Pack에 번역을 추가")
         @Test
-        public void testAddTranslation() {
+        void testAddTranslation() {
             // given
             Long packId = 1L;
             Pack pack = Pack.builder()
@@ -241,7 +237,7 @@ public class TrainingServiceTest {
 
         @DisplayName("createTrainingPuzzle: 유효한 요청과 존재하는 Pack을 전달하면 TrainingPuzzle이 정상적으로 생성")
         @Test
-        public void testCreateTrainingPuzzle() {
+        void testCreateTrainingPuzzle() {
             // given
             Long packId = 1L;
             String boardStatus = "a1a2a3a4";
@@ -307,7 +303,7 @@ public class TrainingServiceTest {
 
         @DisplayName("testDeleteTrainingPuzzle: 존재하는 퍼즐 id가 주어지면 퍼즐 삭제 및 인덱스 감소")
         @Test
-        public void testDeleteTrainingPuzzle() {
+        void testDeleteTrainingPuzzle() {
             // given
             Long puzzleId = 1L;
             int trainingIndex = 5;
@@ -354,7 +350,7 @@ public class TrainingServiceTest {
 
         @DisplayName("SolveLessonPuzzle: 주어진 user와 puzzleId에 대해 최초 풀이라면 solvedTrainingPuzzle이 저장")
         @Test
-        public void testSolveLessonPuzzle() {
+        void testSolveLessonPuzzle() {
             // given
             Long puzzleId = 1L;
             Long userId = 100L;
@@ -410,7 +406,7 @@ public class TrainingServiceTest {
 
         @DisplayName("testSolveLessonPuzzle_AlreadySolved: 이미 풀이한 퍼즐의 경우 solvedAt을 갱신")
         @Test
-        public void testSolveLessonPuzzle_AlreadySolved() {
+        void testSolveLessonPuzzle_AlreadySolved() {
             // given
             Long puzzleId = 1L;
             UserEntity user = UserEntity.builder()
@@ -432,7 +428,7 @@ public class TrainingServiceTest {
             SolveTrainingPuzzleResponse response = trainingService.solveTrainingPuzzle(user, puzzleId, true);
 
             // then
-            assertThat(response.reward()).isEqualTo(0);
+            assertThat(response.reward()).isZero();
             verify(existingSolvedPuzzle, times(1)).updateSolvedAtToNow(clock);
             verify(solvedTrainingPuzzleRepository, never()).save(any());
             verify(trainingPuzzleRepository, never()).findById(any());
@@ -440,7 +436,7 @@ public class TrainingServiceTest {
 
         @Test
         @DisplayName("getTrainingPuzzleList : 유효한 Pack ID에 대해 TrainingPuzzle 목록과 solved 여부가 올바르게 조회")
-        public void testGetTrainingPuzzleList() {
+        void testGetTrainingPuzzleList() {
             // given
             Long packId = 1L;
             UserEntity user = UserEntity.builder()
@@ -483,7 +479,7 @@ public class TrainingServiceTest {
 
         @Test
         @DisplayName("testGetTrainingPackList: 유효한 요청 시, 올바른 GetPackResponse 리스트 반환")
-        public void testGetTrainingPackList() {
+        void testGetTrainingPackList() {
             // given
             UserEntity user = UserEntity.builder()
                     .id(100L)
@@ -517,8 +513,6 @@ public class TrainingServiceTest {
                     .description("Description")
                     .build();
 
-            LangCode langCode = LangCode.getLangCode("EN");
-
             when(packTranslationRepository.findAllByPack_IdInAndLangCode(
                     eq(List.of(1L)),
                     argThat(arg -> arg.getName().equals("EN"))
@@ -539,13 +533,13 @@ public class TrainingServiceTest {
             assertThat(resp.author()).isEqualTo("Author");
             assertThat(resp.description()).isEqualTo("Description");
             assertThat(resp.price()).isEqualTo(1000);
-            assertThat(resp.solvedPuzzleCount()).isEqualTo(0);
+            assertThat(resp.solvedPuzzleCount()).isZero();
             assertThat(resp.locked()).isTrue();
         }
 
         @Test
         @DisplayName("testPurchaseTrainingPack: 충분한 잔액을 가진 사용자가 팩 구매 시, 팩 금액 반환")
-        public void testPurchaseTrainingPack() {
+        void testPurchaseTrainingPack() {
             // given
             // user's initial balance 2000
             UserEntity user = UserEntity.builder()
@@ -584,7 +578,7 @@ public class TrainingServiceTest {
 
         @Test
         @DisplayName("testPurchaseTrainingPuzzleAnswer: 정상 구매 시, 퍼즐 정답과 퍼즐 정답보기 금액 반환")
-        public void testPurchaseTrainingPuzzleAnswer() {
+        void testPurchaseTrainingPuzzleAnswer() {
             // given
             Pack pack = Pack.builder()
                     .id(1L)
@@ -600,7 +594,7 @@ public class TrainingServiceTest {
                     .answer("Correct Answer")
                     .pack(pack)
                     .build();
-            when(trainingPuzzleRepository.findById(eq(puzzleId)))
+            when(trainingPuzzleRepository.findById(puzzleId))
                     .thenReturn(Optional.of(puzzle));
 
             UserEntity user = UserEntity.builder()
@@ -616,10 +610,8 @@ public class TrainingServiceTest {
                     .build();
 
 
-            when(userRepository.findById(eq(user.getId())))
+            when(userRepository.findById(user.getId()))
                     .thenReturn(Optional.of(user));
-
-//            PurchaseTrainingPuzzleAnswerRequest request = new PurchaseTrainingPuzzleAnswerRequest(puzzleId);
 
             // when
             GetTrainingPuzzleAnswerResponse response = trainingService.purchaseTrainingPuzzleAnswer(user, puzzleId);
@@ -635,11 +627,11 @@ public class TrainingServiceTest {
     class Failure {
         @DisplayName("addTranslation : Pack에 이미 해당 언어의 번역이 존재하기에 ALREADY_EXISTING_TRANSLATION 예외 처리")
         @Test
-        public void testAddTranslation_AlreadyExists() {
+        void testAddTranslation_AlreadyExists() {
             // given
             Long packId = 1L;
             Pack pack = Pack.builder().id(packId).build();
-            LangCode langCode = LangCode.getLangCode("EN");
+
             TranslationRequest request = new TranslationRequest(
                     packId,
                     "EN",
@@ -662,7 +654,7 @@ public class TrainingServiceTest {
 
         @DisplayName("addTranslation: Pack이 존재하지 않으면 번역 저장을 시도하지 않고 NO_SUCH_TRAINING_PACK 예외를 던진다")
         @Test
-        public void testAddTranslation_PackNotFound() {
+        void testAddTranslation_PackNotFound() {
             // given
             Long packId = 1L;
             TranslationRequest request = new TranslationRequest(
@@ -684,7 +676,7 @@ public class TrainingServiceTest {
 
         @DisplayName("updatePack: Pack이 존재하지 않으면 번역/팩 저장을 시도하지 않고 NO_SUCH_TRAINING_PACK 예외를 던진다")
         @Test
-        public void testUpdatePack_PackNotFound() {
+        void testUpdatePack_PackNotFound() {
             // given
             Long packId = 1L;
             List<PackTranslationRequest> translationRequests = Collections.singletonList(
@@ -707,7 +699,7 @@ public class TrainingServiceTest {
 
         @DisplayName("Pack이 존재하지 않는 경우 NO_SUCH_TRAINING_PACK 예외처리")
         @Test
-        public void testCreateTrainingPuzzle_PackNotFound() {
+        void testCreateTrainingPuzzle_PackNotFound() {
             // given
             Long packId = 1L;
             String boardStatus = "a1a2a3a4";
@@ -739,7 +731,7 @@ public class TrainingServiceTest {
 
         @DisplayName("DeleteTrainingPuzzle: 존재하지 않는 퍼즐 id가 주어지면 CANNOT_FIND_TRAINING_PUZZLE 예외 처리")
         @Test
-        public void testDeleteTrainingPuzzle_PuzzleNotFound() {
+        void testDeleteTrainingPuzzle_PuzzleNotFound() {
             // given
             Long puzzleId = 1L;
             when(trainingPuzzleRepository.findById(puzzleId)).thenReturn(Optional.empty());
@@ -759,7 +751,7 @@ public class TrainingServiceTest {
 
         @DisplayName("testSolveLessonPuzzle_PuzzleNotFound: 주어진 puzzleId에 해당하는 퍼즐이 없으면 CANNOT_FIND_TRAINING_PUZZLE 예외가 발생")
         @Test
-        public void testSolveLessonPuzzle_PuzzleNotFound() {
+        void testSolveLessonPuzzle_PuzzleNotFound() {
             // given
             Long puzzleId = 1L;
             UserEntity user = UserEntity.builder()
@@ -795,7 +787,7 @@ public class TrainingServiceTest {
 
         @Test
         @DisplayName("testGetTrainingPuzzleList : 존재하지 않는 Pack ID에 대해 TrainingPuzzle 목록이 없으면 NO_SUCH_TRAINING_PACK 예외를 던진다.")
-        public void testGetTrainingPuzzleList_PackNotFound() {
+        void testGetTrainingPuzzleList_PackNotFound() {
             // given
             Long packId = 1L;
             UserEntity user = UserEntity.builder()
@@ -823,7 +815,7 @@ public class TrainingServiceTest {
 
         @Test
         @DisplayName("testGetTrainingPackList: Pack 목록이 비어 있으면 NO_SUCH_TRAINING_PACKS 예외 발생")
-        public void testGetTrainingPackList_NoTrainingPack() {
+        void testGetTrainingPackList_NoTrainingPack() {
             // given
             UserEntity user = UserEntity.builder()
                     .id(100L)
@@ -849,7 +841,7 @@ public class TrainingServiceTest {
 
         @Test
         @DisplayName("testPurchaseTrainingPack: 잔액이 부족하면 INSUFFICIENT_CURRENCY 예외가 발생한다.")
-        public void testPurchaseTrainingPack_NotEnoughCurrency() {
+        void testPurchaseTrainingPack_NotEnoughCurrency() {
             // given
             UserEntity user = UserEntity.builder()
                     .id(100L)
@@ -884,7 +876,7 @@ public class TrainingServiceTest {
 
         @Test
         @DisplayName("testPurchaseTrainingPuzzleAnswer: 존재하지 않는 퍼즐 ID로 구매 시, CANNOT_FIND_TRAINING_PUZZLE 예외 발생")
-        public void testPurchaseTrainingPuzzleAnswer_CannotPurchasePuzzle() {
+        void testPurchaseTrainingPuzzleAnswer_CannotPurchasePuzzle() {
             // given
             Long puzzleId = 1L;
             UserEntity user = UserEntity.builder()
@@ -898,12 +890,11 @@ public class TrainingServiceTest {
                     .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))
                     .status(Status.getDefaultStatus())
                     .build();
-//            PurchaseTrainingPuzzleAnswerRequest request = new PurchaseTrainingPuzzleAnswerRequest(puzzleId);
 
-            when(trainingPuzzleRepository.findById(eq(puzzleId)))
+            when(trainingPuzzleRepository.findById(puzzleId))
                     .thenReturn(Optional.empty());
 
-            when(userRepository.findById(eq(user.getId())))
+            when(userRepository.findById(user.getId()))
                     .thenReturn(Optional.of(user));
 
             // when

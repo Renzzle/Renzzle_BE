@@ -1,7 +1,5 @@
 package com.renzzle.backend.domain.puzzle.training.domain;
 
-
-import com.renzzle.backend.domain.puzzle.training.domain.Pack;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
