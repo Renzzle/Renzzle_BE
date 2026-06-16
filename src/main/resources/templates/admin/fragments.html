@@ -33,5 +33,103 @@
     </div>
   </nav>
 </th:block>
+
+<!-- 공통 UI 키트: 토스트 + 확인 모달 (window.adminToast / window.adminConfirm) -->
+<th:block th:fragment="uiKit">
+  <style>
+    #adminToastWrap {
+      position: fixed; top: 1rem; right: 1rem; z-index: 9999;
+      display: flex; flex-direction: column; gap: 0.5rem; max-width: 360px;
+    }
+    .admin-toast {
+      padding: 0.75rem 1rem; border-radius: 10px; font-size: 0.9rem; color: #fff;
+      background: rgba(40,40,60,0.96); border: 1px solid rgba(255,255,255,0.15);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+      opacity: 0; transform: translateX(20px); transition: opacity .2s ease, transform .2s ease;
+    }
+    .admin-toast.show { opacity: 1; transform: translateX(0); }
+    .admin-toast.success { background: rgba(40,167,69,0.96); }
+    .admin-toast.error { background: rgba(200,45,55,0.96); }
+    .admin-toast.warn { background: rgba(193,140,30,0.96); }
+    #adminModalOverlay {
+      position: fixed; inset: 0; z-index: 10000; display: none;
+      align-items: center; justify-content: center; background: rgba(0,0,0,0.55);
+    }
+    #adminModalOverlay.show { display: flex; }
+    .admin-modal {
+      width: 100%; max-width: 360px; margin: 1rem; padding: 1.25rem;
+      background: #1c2238; border: 1px solid rgba(255,255,255,0.15); border-radius: 14px;
+      color: #e8e8e8; box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    }
+    .admin-modal .modal-msg { font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.1rem; white-space: pre-wrap; }
+    .admin-modal .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
+    .admin-modal .modal-btn {
+      padding: 0.5rem 1rem; border: none; border-radius: 8px; cursor: pointer;
+      font-size: 0.9rem; color: #fff; background: rgba(255,255,255,0.15);
+    }
+    .admin-modal .modal-btn:hover { background: rgba(255,255,255,0.25); }
+    .admin-modal .modal-btn.danger { background: rgba(220,53,69,0.85); }
+    .admin-modal .modal-btn.danger:hover { background: rgba(220,53,69,1); }
+    .admin-modal .modal-btn.primary { background: linear-gradient(90deg,#4a9eff,#357abd); }
+  </style>
+  <div id="adminToastWrap"></div>
+  <div id="adminModalOverlay">
+    <div class="admin-modal" role="dialog" aria-modal="true">
+      <div class="modal-msg" id="adminModalMsg"></div>
+      <div class="modal-actions">
+        <button type="button" class="modal-btn" id="adminModalCancel">취소</button>
+        <button type="button" class="modal-btn danger" id="adminModalOk">확인</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      window.adminToast = function (message, type) {
+        var wrap = document.getElementById('adminToastWrap');
+        if (!wrap) { alert(message); return; }
+        var el = document.createElement('div');
+        el.className = 'admin-toast' + (type ? ' ' + type : '');
+        el.textContent = message;
+        wrap.appendChild(el);
+        requestAnimationFrame(function () { el.classList.add('show'); });
+        setTimeout(function () {
+          el.classList.remove('show');
+          setTimeout(function () { el.remove(); }, 250);
+        }, 3000);
+      };
+      window.adminConfirm = function (message, opts) {
+        opts = opts || {};
+        return new Promise(function (resolve) {
+          var overlay = document.getElementById('adminModalOverlay');
+          if (!overlay) { resolve(window.confirm(message)); return; }
+          var msg = document.getElementById('adminModalMsg');
+          var ok = document.getElementById('adminModalOk');
+          var cancel = document.getElementById('adminModalCancel');
+          msg.textContent = message;
+          ok.textContent = opts.confirmText || '확인';
+          cancel.textContent = opts.cancelText || '취소';
+          ok.className = 'modal-btn ' + (opts.danger === false ? 'primary' : 'danger');
+          overlay.classList.add('show');
+          function cleanup(result) {
+            overlay.classList.remove('show');
+            ok.removeEventListener('click', onOk);
+            cancel.removeEventListener('click', onCancel);
+            overlay.removeEventListener('click', onOverlay);
+            document.removeEventListener('keydown', onKey);
+            resolve(result);
+          }
+          function onOk() { cleanup(true); }
+          function onCancel() { cleanup(false); }
+          function onOverlay(e) { if (e.target === overlay) cleanup(false); }
+          function onKey(e) { if (e.key === 'Escape') cleanup(false); }
+          ok.addEventListener('click', onOk);
+          cancel.addEventListener('click', onCancel);
+          overlay.addEventListener('click', onOverlay);
+          document.addEventListener('keydown', onKey);
+        });
+      };
+    })();
+  </script>
+</th:block>
 </body>
 </html>

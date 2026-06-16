@@ -70,10 +70,12 @@
       align-items: flex-start;
       flex-wrap: wrap;
     }
-    .board-cache-row .board-viz { flex: 0 1 auto; }
+    /* 보드는 가용 폭에 맞춰 축소(최대 480px), 패널은 항상 오른쪽에 */
+    .board-cache-row .board-viz { flex: 1 1 320px; min-width: 280px; max-width: 480px; }
+    .board-cache-row .board-viz canvas { width: 100%; max-width: 480px; height: auto; }
     .cache-panel {
-      flex: 1;
-      min-width: 260px;
+      flex: 1 1 280px;
+      min-width: 250px;
       max-width: 420px;
       padding: 1rem;
       background: rgba(0,0,0,0.15);
@@ -95,6 +97,26 @@
       font-weight: 600;
     }
     .meta-line { font-size: 0.85rem; color: #888; margin: 0 0 1rem 0; }
+    .lock-badge {
+      font-size: 0.82rem; padding: 0.45rem 0.65rem; border-radius: 8px;
+      margin: 0 0 0.65rem 0; display: none; line-height: 1.35;
+    }
+    .lock-badge.show { display: block; }
+    .lock-badge.locked { background: rgba(74,158,255,0.18); border: 1px solid rgba(74,158,255,0.5); color: #cfe3ff; }
+    .lock-badge.unlocked { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.14); color: #b0b0b0; }
+    /* 대응 수 조회 결과 박스 */
+    .verify-result {
+      display: none; align-items: center; gap: 0.5rem;
+      margin-top: 0.65rem; padding: 0.55rem 0.7rem; border-radius: 8px;
+      background: rgba(46,204,113,0.13); border: 1px solid rgba(46,204,113,0.5);
+    }
+    .verify-result.show { display: flex; }
+    .verify-result.empty { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.16); }
+    .verify-result.error { background: rgba(220,53,69,0.16); border-color: rgba(220,53,69,0.5); }
+    .verify-result .verify-label { font-size: 0.78rem; color: #b0b0b0; white-space: nowrap; }
+    .verify-result .verify-value { font-weight: 700; font-size: 1.1rem; color: #7fe0a0; letter-spacing: 0.04em; }
+    .verify-result.empty .verify-value, .verify-result.error .verify-value { color: #e8e8e8; font-size: 0.92rem; font-weight: 600; }
+    .verify-result .verify-clear { margin-left: auto; padding: 0.3rem 0.6rem; font-size: 0.78rem; flex-shrink: 0; }
   </style>
 </head>
 <body>
@@ -126,13 +148,16 @@
     <div class="board-cache-row">
       <div class="board-viz">
         <label>보드 상태 시각화</label>
-        <p class="hint">currentBoard 지정 후에는 그 다음 한 수만 캔버스에 둘 수 있습니다.</p>
+        <p class="hint">문제 돌은 번호 없이, 정답 돌은 1·2·3 수순, 입력 중인 응수는 빨간 링으로 표시됩니다. currentBoard 지정 후에는 그 다음 한 수만 둘 수 있습니다.</p>
         <canvas id="gomokuBoard" width="480" height="480" style="background: #DCB35C; border: 2px solid #333; cursor: default;"></canvas>
       </div>
 
       <div class="cache-panel">
         <button type="button" class="btn btn-primary btn-block" id="cacheResetBoardBtn">디폴트 보드로 리셋</button>
         <button type="button" class="btn btn-primary btn-block" id="setCurrentBoardBtn">현재 보드를 currentBoard로 지정</button>
+        <button type="button" class="btn btn-block" id="cancelCurrentBoardBtn" style="display:none;">currentBoard 지정 취소</button>
+
+        <p id="lockBadge" class="lock-badge"></p>
 
         <label class="label-after-btn" for="currentBoardState">지정된 currentBoard 문자열</label>
         <textarea id="currentBoardState" readonly rows="2" placeholder="버튼으로 채움"></textarea>
@@ -148,7 +173,11 @@
           <button type="button" class="btn" id="verifyCacheBtn">보드의 대응 수 조회</button>
         </div>
         <div id="cacheMsg" class="msg"></div>
-        <p class="hint" id="verifyOut" style="margin-top:0.5rem;margin-bottom:0;"></p>
+        <div id="verifyResult" class="verify-result">
+          <span class="verify-label">AI 대응 수</span>
+          <span class="verify-value" id="verifyValue">—</span>
+          <button type="button" class="btn verify-clear" id="clearVerifyBtn">닫기</button>
+        </div>
       </div>
     </div>
   </section>
@@ -174,8 +203,10 @@
       const dpr = window.devicePixelRatio || 1;
       canvas.width = CANVAS_LOGICAL_SIZE * dpr;
       canvas.height = CANVAS_LOGICAL_SIZE * dpr;
-      canvas.style.width = CANVAS_LOGICAL_SIZE + 'px';
-      canvas.style.height = CANVAS_LOGICAL_SIZE + 'px';
+      // 표시 크기는 가용 폭에 맞춰 축소(최대 480px) — 패널이 옆에 들어가도록
+      canvas.style.width = '100%';
+      canvas.style.maxWidth = CANVAS_LOGICAL_SIZE + 'px';
+      canvas.style.height = 'auto';
       ctx.scale(dpr, dpr);
     })();
     const moves = [];
@@ -243,11 +274,85 @@
 
     function redrawBoard() {
       drawBoard();
-      const allMoves = [...moves, ...answerMoves];
-      if (cacheExtraMove) allMoves.push(cacheExtraMove);
-      allMoves.forEach((move, idx) => {
-        drawStone(move.row, move.col, move.player, idx + 1);
-      });
+      // 문제(초기 배치) 돌: 번호 없이 (에디터와 동일 규칙)
+      moves.forEach(m => drawStone(m.row, m.col, m.player, null));
+      // 정답 수순 돌: 1·2·3 수순 번호
+      answerMoves.forEach((m, i) => drawStone(m.row, m.col, m.player, i + 1));
+      // 입력 중인 대응 수: 번호 대신 빨간 링으로 강조
+      if (cacheExtraMove) {
+        drawStone(cacheExtraMove.row, cacheExtraMove.col, cacheExtraMove.player, null);
+        markResponseMove(cacheExtraMove);
+      }
+    }
+
+    // 입력 중인 '응수' 한 수를 강조 (정답 수순 번호와 구분)
+    function markResponseMove(m) {
+      const x = toCanvasX(m.col), y = toCanvasY(m.row);
+      ctx.strokeStyle = '#ff4d4d';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(x, y, CELL_SIZE / 2 - 1, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // currentBoard 잠금 상태를 배지/캔버스 테두리로 시각화
+    function updateLockUI() {
+      const cancelBtn = document.getElementById('cancelCurrentBoardBtn');
+      if (cancelBtn) cancelBtn.style.display = cacheLocked ? '' : 'none';
+      const badge = document.getElementById('lockBadge');
+      if (!badge) return;
+      if (cacheLocked) {
+        badge.textContent = '🔒 currentBoard 지정됨 · 대응 수 1개만 둘 수 있습니다';
+        badge.classList.remove('unlocked');
+        badge.classList.add('show', 'locked');
+        canvas.style.borderColor = '#4a9eff';
+      } else {
+        badge.textContent = '🔓 미지정 · 보드를 맞춘 뒤 "currentBoard로 지정"을 누르세요';
+        badge.classList.remove('locked');
+        badge.classList.add('show', 'unlocked');
+        canvas.style.borderColor = '#333';
+      }
+    }
+
+    // AI 예측 응수를 보드에 반투명 고스트(초록 링)로 임시 표시 — 다음 redrawBoard에서 자동 제거됨
+    function drawPreviewStone(m) {
+      const x = toCanvasX(m.col), y = toCanvasY(m.row);
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = m.player === 'black' ? '#000' : '#fff';
+      ctx.beginPath();
+      ctx.arc(x, y, CELL_SIZE / 2 - 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      ctx.strokeStyle = '#2ecc71';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(x, y, CELL_SIZE / 2 - 1, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    function drawVerifyPreview(positionStr, currentBoardState) {
+      const parsed = boardStatusToMoves((positionStr || '').toLowerCase());
+      if (!parsed.length) return false;
+      const baseCount = countMovesInBoardString(currentBoardState);
+      const player = baseCount % 2 === 0 ? 'black' : 'white';
+      redrawBoard();  // 이전 미리보기 제거 후 현재 보드를 다시 그림
+      drawPreviewStone({ row: parsed[0].row, col: parsed[0].col, player });
+      return true;
+    }
+
+    function showVerifyResult(text, type) {
+      const box = document.getElementById('verifyResult');
+      document.getElementById('verifyValue').textContent = text;
+      box.classList.remove('empty', 'error');
+      if (type === 'empty') box.classList.add('empty');
+      if (type === 'error') box.classList.add('error');
+      box.classList.add('show');
+    }
+
+    function hideVerifyResult(redraw) {
+      document.getElementById('verifyResult').classList.remove('show');
+      if (redraw) redrawBoard();
     }
 
     function boardStatusToMoves(boardStatus) {
@@ -340,8 +445,9 @@
 
     canvas.addEventListener('click', (e) => {
       const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      const scale = CANVAS_LOGICAL_SIZE / rect.width;  // 반응형 표시 크기 → 논리 좌표 보정
+      const x = (e.clientX - rect.left) * scale;
+      const y = (e.clientY - rect.top) * scale;
       const col = Math.round((x - MARGIN) / CELL_SIZE);
       const row = 14 - Math.round((y - MARGIN) / CELL_SIZE);
       if (row < 0 || row >= BOARD_SIZE || col < 0 || col >= BOARD_SIZE) return;
@@ -376,6 +482,7 @@
       syncCurrentPlayer();
       redrawBoard();
       updateDepthAndWinColor();
+      updateLockUI();
       document.getElementById('answerPuzzle').value = '';
     });
 
@@ -394,6 +501,7 @@
     });
 
     drawBoard();
+    updateLockUI();
 
     function getCookie(name) {
       const value = '; ' + document.cookie;
@@ -429,7 +537,7 @@
     function clearCacheFormFields() {
       document.getElementById('currentBoardState').value = '';
       document.getElementById('answerPuzzle').value = '';
-      document.getElementById('verifyOut').textContent = '';
+      document.getElementById('verifyResult').classList.remove('show');
       const msg = document.getElementById('cacheMsg');
       msg.classList.remove('show', 'success', 'error');
     }
@@ -480,6 +588,7 @@
         applyClearAnswerOnly();
         clearCacheFormFields();
         syncCurrentPlayer();
+        updateLockUI();
       } catch (err) {
         alert('오류: ' + (err.message || ''));
       }
@@ -494,6 +603,20 @@
       document.getElementById('answerPuzzle').value = '';
       document.getElementById('currentBoardState').value = fullBoardStatusForSnapshot();
       cacheLocked = true;
+      updateLockUI();
+      hideVerifyResult(false);  // 새 currentBoard 지정 시 이전 조회 결과 무효화
+      redrawBoard();
+      syncCurrentPlayer();
+    });
+
+    // currentBoard 지정을 취소하고 자유 편집 모드로 복귀 (보드 돌은 유지)
+    document.getElementById('cancelCurrentBoardBtn').addEventListener('click', () => {
+      cacheExtraMove = null;
+      cacheLocked = false;
+      document.getElementById('currentBoardState').value = '';
+      document.getElementById('answerPuzzle').value = '';
+      updateLockUI();
+      hideVerifyResult(false);
       redrawBoard();
       syncCurrentPlayer();
     });
@@ -564,11 +687,9 @@
     });
 
     document.getElementById('verifyCacheBtn').addEventListener('click', async () => {
-      const out = document.getElementById('verifyOut');
-      out.textContent = '';
       const currentBoardState = document.getElementById('currentBoardState').value.trim();
       if (!currentBoardState) {
-        out.textContent = 'currentBoard를 지정하세요.';
+        showVerifyResult('currentBoard를 먼저 지정하세요', 'error');
         return;
       }
       try {
@@ -578,13 +699,24 @@
         const res = await fetchWithAuth(API_BASE + '/api/puzzle/cache/ai-response?' + q);
         const data = await res.json();
         if (!data.isSuccess) {
-          out.textContent = data.errorResponse?.message || '조회 실패';
+          showVerifyResult(data.errorResponse?.message || '조회 실패', 'error');
           return;
         }
-        out.textContent = '정답 다음 수: ' + (data.response && data.response.position != null ? data.response.position : '(없음)');
+        const pos = (data.response && data.response.position != null) ? String(data.response.position) : '';
+        if (!pos) {
+          showVerifyResult('대응 수 없음', 'empty');
+          redrawBoard();  // 이전 미리보기 제거
+          return;
+        }
+        showVerifyResult(pos.toUpperCase(), 'ok');
+        drawVerifyPreview(pos, currentBoardState);  // 보드에 예측 수 임시 표시
       } catch (err) {
-        out.textContent = '오류: ' + (err.message || '');
+        showVerifyResult('오류: ' + (err.message || ''), 'error');
       }
+    });
+
+    document.getElementById('clearVerifyBtn').addEventListener('click', () => {
+      hideVerifyResult(true);  // 결과 박스 + 보드 미리보기 제거
     });
 
     loadPuzzleDetail();
