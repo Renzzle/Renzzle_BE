@@ -108,6 +108,25 @@
     .board-side-panel { flex: 1; min-width: 0; display: flex; flex-direction: column; }
     .board-btn-fixed { margin-top: 1.5rem; }
     .board-btn-fixed .btn { display: block; width: 100%; margin-bottom: 0.4rem; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    /* 정답 수순 재생 / 표시 옵션 */
+    .board-review { margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid rgba(255,255,255,0.12); }
+    .board-review-toggles { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.6rem; }
+    .board-review-toggles .chk {
+      display: flex; align-items: center; gap: 0.45rem;
+      font-size: 0.85rem; color: #cfcfcf; margin: 0; cursor: pointer;
+    }
+    .board-review-toggles .chk input[type="checkbox"] {
+      -webkit-appearance: checkbox; appearance: checkbox;
+      width: 16px; height: 16px; min-width: 16px;
+      margin: 0; padding: 0; border: none; background: none;
+      accent-color: #4a9eff; cursor: pointer; flex-shrink: 0;
+    }
+    .board-review .btn { display: block; width: 100%; margin-bottom: 0; }
+    .playback-row { display: flex; gap: 0.3rem; margin-top: 0.5rem; }
+    .playback-row .btn { flex: 1; padding: 0.4rem 0; margin: 0; font-size: 1rem; }
+    .playback-label { font-size: 0.85rem; color: #b0b0b0; margin: 0.5rem 0 0; text-align: center; }
+    .playback-label b { color: #fff; }
   </style>
 </head>
 <body>
@@ -148,7 +167,7 @@
     <!-- 오목판 시각화 -->
     <div style="margin: 1.5rem 0;">
       <label>보드 상태 시각화</label>
-      <p class="hint">오목판을 클릭해서 돌을 두거나, 아래 입력 칸에 직접 입력하세요.</p>
+      <p class="hint">오목판을 클릭해서 돌을 두거나, 아래 입력 칸에 직접 입력하세요. 문제(초기 배치) 돌은 번호 없이, 정답 돌은 1·2·3… 수순 번호로 표시됩니다.</p>
       <div class="board-viz-row" style="display: flex; gap: 1rem; align-items: flex-start;">
         <canvas id="gomokuBoard" width="480" height="480" style="background: #DCB35C; border: 2px solid #333; cursor: default;"></canvas>
         <div class="board-side-panel">
@@ -166,6 +185,22 @@
           <div class="board-btn-fixed">
             <button type="button" class="btn" id="undoMoveBtn">마지막 수 취소</button>
             <button type="button" class="btn" id="clearBoardBtn">보드 초기화</button>
+          </div>
+          <div class="board-review">
+            <div class="board-review-toggles">
+              <label class="chk"><input type="checkbox" id="toggleNumbers" checked> 정답 수순 번호</label>
+              <label class="chk"><input type="checkbox" id="toggleWinLine" checked> 5목 강조</label>
+            </div>
+            <button type="button" class="btn" id="reviewToggleBtn">▶ 정답 수순 재생</button>
+            <div id="playbackControls" style="display:none;">
+              <div class="playback-row">
+                <button type="button" class="btn" id="pbFirst" title="처음">⏮</button>
+                <button type="button" class="btn" id="pbPrev" title="이전 수">◀</button>
+                <button type="button" class="btn" id="pbNext" title="다음 수">▶</button>
+                <button type="button" class="btn" id="pbLast" title="마지막">⏭</button>
+              </div>
+              <p class="playback-label">정답 <b id="pbStep">0</b> / <b id="pbTotal">0</b> 수</p>
+            </div>
           </div>
         </div>
       </div>
@@ -210,6 +245,12 @@
     const answerMoves = []; // 정답 수들
     let isAnswerMode = false;
     let currentPlayer = 'black';
+
+    // 표시 옵션 / 정답 수순 재생 상태
+    let showNumbers = true;   // 정답 수순 번호 표시
+    let showWinLine = true;   // 5목 강조 표시
+    let reviewMode = false;   // 정답 수순 재생 모드 (편집 일시 중지)
+    let playbackStep = 0;     // 재생 모드에서 보여줄 정답 수 개수
 
     // 논리 좌표 -> 캔버스 좌표 (좌하 a1, 우상 o15)
     function toCanvasX(col) { return MARGIN + col * CELL_SIZE; }
@@ -290,11 +331,133 @@
 
     function redrawBoard() {
       drawBoard();
-      const allMoves = [...moves, ...answerMoves];
-      allMoves.forEach((move, idx) => {
-        drawStone(move.row, move.col, move.player, idx + 1);
-      });
+      // answerMoves가 줄어든 경우(예: 재생 중 초기화)에도 안전하도록 클램프
+      const visibleAnswerCount = Math.min(reviewMode ? playbackStep : answerMoves.length, answerMoves.length);
+      // 문제(초기 배치) 돌: 번호 없이 표시
+      moves.forEach((m) => drawStone(m.row, m.col, m.player, null));
+      // 정답 돌: 수순 번호(1..) 표시
+      for (let i = 0; i < visibleAnswerCount; i++) {
+        const m = answerMoves[i];
+        drawStone(m.row, m.col, m.player, showNumbers ? (i + 1) : null);
+      }
+      // 재생 중 마지막으로 표시된 수 강조
+      if (reviewMode && visibleAnswerCount > 0) {
+        markLastMove(answerMoves[visibleAnswerCount - 1]);
+      }
+      // 5목 강조 (현재 보이는 돌 기준)
+      if (showWinLine) {
+        const visible = [...moves, ...answerMoves.slice(0, visibleAnswerCount)];
+        const line = findWinLine(visible);
+        if (line) highlightWinLine(line);
+      }
+      refreshReviewAvailability();
     }
+
+    // 같은 색 5개 이상 연속 라인 탐색 (가로/세로/두 대각)
+    function findWinLine(stones) {
+      const occ = new Map();
+      stones.forEach(m => occ.set(m.row + ',' + m.col, m.player));
+      // th:inline 자바스크립트에서 Thymeleaf가 이중 대괄호를 표현식으로 오해하지 않도록 줄바꿈으로 분리
+      const dirs = [
+        [0, 1], [1, 0], [1, 1], [1, -1]
+      ];
+      for (const m of stones) {
+        for (const [dr, dc] of dirs) {
+          const line = [{ row: m.row, col: m.col }];
+          let r = m.row + dr, c = m.col + dc;
+          while (occ.get(r + ',' + c) === m.player) { line.push({ row: r, col: c }); r += dr; c += dc; }
+          r = m.row - dr; c = m.col - dc;
+          while (occ.get(r + ',' + c) === m.player) { line.unshift({ row: r, col: c }); r -= dr; c -= dc; }
+          if (line.length >= 5) return line;
+        }
+      }
+      return null;
+    }
+
+    function markLastMove(m) {
+      const x = toCanvasX(m.col), y = toCanvasY(m.row);
+      ctx.strokeStyle = '#ff4d4d';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(x, y, CELL_SIZE / 2 - 1, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    function highlightWinLine(line) {
+      const first = line[0], last = line[line.length - 1];
+      ctx.strokeStyle = 'rgba(255,77,77,0.9)';
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(toCanvasX(first.col), toCanvasY(first.row));
+      ctx.lineTo(toCanvasX(last.col), toCanvasY(last.row));
+      ctx.stroke();
+      ctx.lineWidth = 2.5;
+      line.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(toCanvasX(p.col), toCanvasY(p.row), CELL_SIZE / 2 - 1, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+      ctx.lineCap = 'butt';
+    }
+
+    // 정답이 있을 때만 '정답 수순 재생' 버튼 활성화 (재생 중에는 종료 버튼이므로 항상 활성)
+    function refreshReviewAvailability() {
+      const btn = document.getElementById('reviewToggleBtn');
+      if (btn) btn.disabled = (!reviewMode && answerMoves.length === 0);
+    }
+
+    // 재생 모드 동안에는 편집(클릭/입력/모드 전환)을 일시 중지
+    function setEditingDisabled(disabled) {
+      ['problemModeBtn', 'clearAnswerBtn', 'backToProblemBtn', 'undoMoveBtn', 'clearBoardBtn'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = disabled;
+      });
+      const bs = document.getElementById('problemBoardStatus');
+      const an = document.getElementById('problemAnswer');
+      if (bs) bs.readOnly = disabled;
+      if (an) an.readOnly = disabled;
+      canvas.style.cursor = disabled ? 'not-allowed' : 'default';
+    }
+
+    function updatePlaybackUI() {
+      document.getElementById('pbStep').textContent = playbackStep;
+      document.getElementById('pbTotal').textContent = answerMoves.length;
+      document.getElementById('pbFirst').disabled = playbackStep <= 0;
+      document.getElementById('pbPrev').disabled = playbackStep <= 0;
+      document.getElementById('pbNext').disabled = playbackStep >= answerMoves.length;
+      document.getElementById('pbLast').disabled = playbackStep >= answerMoves.length;
+    }
+
+    function setReviewMode(on) {
+      reviewMode = on;
+      const controls = document.getElementById('playbackControls');
+      const btn = document.getElementById('reviewToggleBtn');
+      if (on) {
+        playbackStep = 0;
+        controls.style.display = '';
+        btn.textContent = '■ 재생 종료';
+        btn.classList.add('btn-primary');
+        setEditingDisabled(true);
+        updatePlaybackUI();
+      } else {
+        controls.style.display = 'none';
+        btn.textContent = '▶ 정답 수순 재생';
+        btn.classList.remove('btn-primary');
+        setEditingDisabled(false);
+      }
+      redrawBoard();
+    }
+
+    document.getElementById('toggleNumbers').addEventListener('change', (e) => { showNumbers = e.target.checked; redrawBoard(); });
+    document.getElementById('toggleWinLine').addEventListener('change', (e) => { showWinLine = e.target.checked; redrawBoard(); });
+    document.getElementById('reviewToggleBtn').addEventListener('click', () => { setReviewMode(!reviewMode); });
+    document.getElementById('pbFirst').addEventListener('click', () => { playbackStep = 0; updatePlaybackUI(); redrawBoard(); });
+    document.getElementById('pbPrev').addEventListener('click', () => { if (playbackStep > 0) { playbackStep--; updatePlaybackUI(); redrawBoard(); } });
+    document.getElementById('pbNext').addEventListener('click', () => { if (playbackStep < answerMoves.length) { playbackStep++; updatePlaybackUI(); redrawBoard(); } });
+    document.getElementById('pbLast').addEventListener('click', () => { playbackStep = answerMoves.length; updatePlaybackUI(); redrawBoard(); });
+
+    refreshReviewAvailability();
 
     function boardStatusToMoves(boardStatus) {
       // "a1b2..." -> [{row, col, player}, ...] (a=col0, 1=row0/하단)
@@ -379,6 +542,7 @@
     }
 
     canvas.addEventListener('click', (e) => {
+      if (reviewMode) return;  // 재생 모드 중에는 착수 비활성화
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
@@ -574,6 +738,7 @@
         document.getElementById('problemAnswer').value = '';
         moves.length = 0;
         answerMoves.length = 0;
+        if (reviewMode) setReviewMode(false);  // 재생 모드였다면 해제하여 편집 재개
         isAnswerMode = false;
         currentPlayer = 'black';
         updateModeLabel();
