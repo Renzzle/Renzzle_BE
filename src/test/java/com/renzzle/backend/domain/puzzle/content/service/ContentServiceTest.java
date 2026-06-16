@@ -6,7 +6,7 @@ import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleReposi
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.content.api.request.GetRecommendRequest;
 import com.renzzle.backend.domain.puzzle.content.api.response.GetTrendPuzzlesResponse;
-import com.renzzle.backend.domain.puzzle.content.api.response.getRecommendPackResponse;
+import com.renzzle.backend.domain.puzzle.content.api.response.GetRecommendPackResponse;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.puzzle.shared.util.BoardUtils;
 import com.renzzle.backend.domain.puzzle.training.dao.PackRepository;
@@ -42,7 +42,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class ContentServiceTest {
+class ContentServiceTest {
     @Mock
     private SolvedTrainingPuzzleRepository solvedTrainingPuzzleRepository;
 
@@ -120,11 +120,11 @@ public class ContentServiceTest {
                 .thenReturn(Optional.of(solvedTrainingPuzzle));
         when(packTranslationRepository.findByPackAndLangCode(eq(pack), any()))
                 .thenReturn(Optional.of(translation));
-        when(userPackRepository.findByUserIdAndPackId(eq(user.getId()), eq(pack.getId())))
+        when(userPackRepository.findByUserIdAndPackId(user.getId(), pack.getId()))
                 .thenReturn(Optional.of(userPack));
 
         // When
-        getRecommendPackResponse response = contentService.getRecommendedPack(new GetRecommendRequest("EN"), user);
+        GetRecommendPackResponse response = contentService.getRecommendedPack(new GetRecommendRequest("EN"), user);
 
         // Then
         assertThat(response.id()).isEqualTo(pack.getId());
@@ -157,12 +157,12 @@ public class ContentServiceTest {
                 .thenReturn(Optional.of(translation));
 
         // When
-        getRecommendPackResponse response = contentService.getRecommendedPack(new GetRecommendRequest("EN"), user);
+        GetRecommendPackResponse response = contentService.getRecommendedPack(new GetRecommendRequest("EN"), user);
 
         // Then
         assertThat(response.id()).isEqualTo(pack.getId());
         assertThat(response.title()).isEqualTo(translation.getTitle());
-        assertThat(response.solvedPuzzleCount()).isEqualTo(0);
+        assertThat(response.solvedPuzzleCount()).isZero();
         assertThat(response.locked()).isFalse();
     }
 
@@ -238,7 +238,7 @@ public class ContentServiceTest {
                 .thenReturn(Optional.of(solvedTrainingPuzzle));
         when(packTranslationRepository.findByPackAndLangCode(eq(pack), any()))
                 .thenReturn(Optional.of(translation));
-        when(userPackRepository.findByUserIdAndPackId(eq(user.getId()), eq(pack.getId())))
+        when(userPackRepository.findByUserIdAndPackId(user.getId(), pack.getId()))
                 .thenReturn(Optional.empty());
 
         // When & Then
@@ -261,7 +261,7 @@ public class ContentServiceTest {
                 .withView(100)
                 .build();
 
-        List<CommunityPuzzle> puzzlesIn7Days = List.of(puzzle1, puzzle1); // 일부러 중복된 퍼즐 리스트
+        List<CommunityPuzzle> puzzlesIn7Days = List.of(puzzle1, puzzle1); // intentionally duplicated puzzle list
 
         when(communityPuzzleRepository.findByCreatedAtAfter(any()))
                 .thenReturn(puzzlesIn7Days);
@@ -286,10 +286,10 @@ public class ContentServiceTest {
             puzzles.add(
                     TestCommunityPuzzleBuilder.builder(user)
                             .withId(i)
-                            .withCreatedAt(now.minusSeconds(i * 60)) // 시간 차이만 조금씩 줌
-                            .withLikeCount((int) (10 - i)) // 좋아요 수 다르게
-                            .withDislikeCount((int) (i % 3)) // 싫어요도 다르게
-                            .withView((int) (100 + i * 10)) // 조회수 다르게
+                            .withCreatedAt(now.minusSeconds(i * 60)) // vary only the time slightly
+                            .withLikeCount((int) (10 - i)) // vary the like count
+                            .withDislikeCount((int) (i % 3)) // vary the dislike count too
+                            .withView((int) (100 + i * 10)) // vary the view count
                             .build()
             );
         }
@@ -298,7 +298,7 @@ public class ContentServiceTest {
                 .thenReturn(puzzles);
 
         lenient().when(communityPuzzleRepository.findTop30ByCreatedAtBeforeOrderByCreatedAtDesc(any()))
-                .thenReturn(List.of()); // 백업 퍼즐은 없음
+                .thenReturn(List.of()); // no backup puzzles
 
         for (CommunityPuzzle puzzle : puzzles) {
             lenient().when(userCommunityPuzzleRepository.checkIsSolvedPuzzle(user.getId(), puzzle.getId()))
@@ -312,7 +312,7 @@ public class ContentServiceTest {
         // then
         assertThat(response.puzzles()).hasSize(5);
 
-        // 추가 검증: 좋아요 높은 순 + 조회수 높은 순 + id 낮은 순대로 정렬된지 확인
+        // Additional verification: confirm sorting by highest likes + highest views + lowest id
         List<Long> puzzleIds = response.puzzles().stream()
                     .map(GetCommunityPuzzlesResponse::id)
                 .toList();
@@ -364,7 +364,7 @@ public class ContentServiceTest {
         assertThat(dto.createdAt()).isEqualTo(puzzle.getCreatedAt().toString());
         assertThat(dto.isSolved()).isTrue();
         assertThat(dto.isVerified()).isEqualTo(puzzle.getIsVerified());
-        assertThat(dto.solvedCount()).isEqualTo(0); // 아직은 solvedCount 계산 로직 없음
+        assertThat(dto.solvedCount()).isZero(); // no solvedCount calculation logic yet
     }
 
 }

@@ -25,7 +25,7 @@ public class TrainingPuzzleSeeder {
             double rating,
             String winColor
     ) {
-        Pack pack = packSeeder.seedPack("MIDDLE", 1, 0); // 원하는 난이도와 퍼즐 수, 가격 설정 가능
+        Pack pack = packSeeder.seedPack("MIDDLE", 1, 0); // difficulty, puzzle count, and price can be configured as desired
 
         TrainingPuzzle puzzle = TrainingPuzzle.builder()
                 .trainingIndex(trainingIndex)

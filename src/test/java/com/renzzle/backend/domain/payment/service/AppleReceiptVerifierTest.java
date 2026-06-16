@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
-public class AppleReceiptVerifierTest {
+class AppleReceiptVerifierTest {
 
     @DisplayName("운영 URL에서 21007 응답이면 샌드박스 URL로 재시도")
     @Test

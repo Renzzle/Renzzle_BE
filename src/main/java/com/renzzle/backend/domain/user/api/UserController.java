@@ -1,12 +1,9 @@
 package com.renzzle.backend.domain.user.api;
 
-import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlesResponse;
 import com.renzzle.backend.domain.user.api.request.ChangeNicknameRequest;
 import com.renzzle.backend.domain.user.api.response.ChangeNicknameResponse;
-import com.renzzle.backend.domain.user.api.response.GetUserLikedPuzzlesResponse;
 import com.renzzle.backend.domain.user.api.response.UserResponse;
-import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.domain.user.service.UserService;
 import com.renzzle.backend.global.common.response.ApiResponse;
 import com.renzzle.backend.global.security.UserDetailsImpl;
@@ -17,7 +14,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

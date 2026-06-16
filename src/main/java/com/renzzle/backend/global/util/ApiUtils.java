@@ -12,7 +12,7 @@ public class ApiUtils {
         return ApiResponse.create(true, response, null);
     }
 
-    public static ResponseEntity<?> error(ErrorResponse errorResponse) {
+    public static ResponseEntity<ApiResponse<Object>> error(ErrorResponse errorResponse) {
         return ResponseEntity
                 .status(errorResponse.getStatus())
                 .body(ApiResponse.create(false, null, errorResponse));

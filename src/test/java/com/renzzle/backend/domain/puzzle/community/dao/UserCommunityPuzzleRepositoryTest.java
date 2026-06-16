@@ -20,7 +20,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTestWithInitContainers
-public class UserCommunityPuzzleRepositoryTest {
+class UserCommunityPuzzleRepositoryTest {
 
     @Autowired
     private EntityManager entityManager;
@@ -35,7 +35,7 @@ public class UserCommunityPuzzleRepositoryTest {
     private UserCommunityPuzzleRepository userCommunityPuzzleRepository;
 
     @Test
-    public void findByUserIdAndPuzzleId_WhenExists_ThenReturnRecord() {
+    void findByUserIdAndPuzzleId_WhenExists_ThenReturnRecord() {
         // Given
         UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
         CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
@@ -51,7 +51,7 @@ public class UserCommunityPuzzleRepositoryTest {
     }
 
     @Test
-    public void checkIsSolvedPuzzle_WhenSolved_ThenReturnsTrue() {
+    void checkIsSolvedPuzzle_WhenSolved_ThenReturnsTrue() {
         // Given
         UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
         CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
@@ -68,7 +68,7 @@ public class UserCommunityPuzzleRepositoryTest {
     }
 
     @Test
-    public void getMyLikeDislike_WhenLiked_ThenReturnTrueFalseProjection() {
+    void getMyLikeDislike_WhenLiked_ThenReturnTrueFalseProjection() {
         // Given
         UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
         CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
@@ -87,7 +87,7 @@ public class UserCommunityPuzzleRepositoryTest {
     }
 
     @Test
-    public void solvePuzzle_WhenExecuted_ThenIsSolvedBecomesTrue() {
+    void solvePuzzle_WhenExecuted_ThenIsSolvedBecomesTrue() {
         // Given
         UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
         CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);

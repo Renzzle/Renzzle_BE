@@ -8,6 +8,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import java.util.Arrays;
+import java.util.Objects;
 
 @Entity
 @Table(name = "win_color")
@@ -45,9 +46,14 @@ public class WinColor {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof WinColor) {
-            return this.name.equals(((WinColor) obj).name);
+        if (obj instanceof WinColor winColor) {
+            return this.name.equals(winColor.name);
         } else return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(name);
     }
 
 }

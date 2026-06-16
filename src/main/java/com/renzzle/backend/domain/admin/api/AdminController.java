@@ -46,6 +46,10 @@ import java.util.Optional;
 @Tag(name = "Admin", description = "Admin login and dashboard page")
 public class AdminController {
 
+    private static final String USER_EMAIL = "userEmail";
+    private static final String LANG_CODE_NAMES = "langCodeNames";
+    private static final String PACK_ID = "packId";
+
     private final AccountService accountService;
     private final JwtProvider jwtProvider;
     private final UserRepository userRepository;
@@ -55,7 +59,7 @@ public class AdminController {
     private final Clock clock;
 
     /**
-     * 어드민 로그인 페이지
+     * Admin login page
      */
     @Operation(summary = "Admin login page", description = "Returns admin login page.")
     @ApiResponses(value = {
@@ -68,24 +72,24 @@ public class AdminController {
     }
 
     /**
-     * 어드민 전용 로그인 API (12시간 토큰)
+     * Admin-only login API (12-hour token)
      */
     @Operation(summary = "Admin login", description = "Admin-specific login that issues 12-hour access token.")
     @SecurityRequirement(name = "Authorization")
     @PostMapping("/login")
     @ResponseBody
     public ApiResponse<AdminLoginResponse> adminLogin(@Valid @RequestBody LoginRequest request) {
-        // 일반 로그인 처리
+        // Handle normal login
         var loginResponse = accountService.login(request);
-        
-        // admin 확인
+
+        // Verify admin
         Long userId = jwtProvider.getUserId(loginResponse.accessToken());
         Optional<UserEntity> user = userRepository.findById(userId);
         if (user.isEmpty() || !adminRepository.existsByUser(user.get())) {
             throw new CustomException(ErrorCode.ADMIN_ACCESS_DENIED);
         }
 
-        // admin 전용 토큰 (12시간) 재발급
+        // Reissue admin-only token (12 hours)
         String adminAccessToken = jwtProvider.createAdminAccessToken(userId);
         Instant expiredAt = clock.instant().plus(12, ChronoUnit.HOURS);
 
@@ -97,7 +101,7 @@ public class AdminController {
     }
 
     /**
-     * 어드민 대시보드
+     * Admin dashboard
      */
     @Operation(summary = "Admin dashboard", description = "Admin dashboard page (requires admin token from /admin/login)")
     @ApiResponses(value = {
@@ -110,13 +114,13 @@ public class AdminController {
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Parameter(hidden = true) Model model
     ) {
-        model.addAttribute("userEmail", userDetails.getUser().getEmail());
-        model.addAttribute("langCodeNames", LangCode.LangCodeName.values());
+        model.addAttribute(USER_EMAIL, userDetails.getUser().getEmail());
+        model.addAttribute(LANG_CODE_NAMES, LangCode.LangCodeName.values());
         return "admin/dashboard";
     }
 
     /**
-     * 어드민 팩 목록 조회 페이지 (첫 화면)
+     * Admin pack list page (first screen)
      */
     @Operation(summary = "Admin pack list page", description = "Pack list view - first screen after login")
     @SecurityRequirement(name = "Authorization")
@@ -125,13 +129,13 @@ public class AdminController {
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Parameter(hidden = true) Model model
     ) {
-        model.addAttribute("userEmail", userDetails.getUser().getEmail());
-        model.addAttribute("langCodeNames", LangCode.LangCodeName.values());
+        model.addAttribute(USER_EMAIL, userDetails.getUser().getEmail());
+        model.addAttribute(LANG_CODE_NAMES, LangCode.LangCodeName.values());
         return "admin/pack-list";
     }
 
     /**
-     * 어드민 팩 생성 페이지
+     * Admin pack create page
      */
     @Operation(summary = "Admin pack create page", description = "Pack creation form only")
     @SecurityRequirement(name = "Authorization")
@@ -140,30 +144,30 @@ public class AdminController {
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Parameter(hidden = true) Model model
     ) {
-        model.addAttribute("userEmail", userDetails.getUser().getEmail());
-        model.addAttribute("langCodeNames", LangCode.LangCodeName.values());
+        model.addAttribute(USER_EMAIL, userDetails.getUser().getEmail());
+        model.addAttribute(LANG_CODE_NAMES, LangCode.LangCodeName.values());
         return "admin/pack-create";
     }
 
     /**
-     * 어드민 로그아웃
-     * - 브라우저 쿠키에 저장된 admin_accessToken 삭제
-     * - 로그인 페이지(/admin)로 리다이렉트
+     * Admin logout
+     * - Delete admin_accessToken stored in the browser cookie
+     * - Redirect to the login page (/admin)
      */
     @Operation(summary = "Admin logout", description = "Clear admin_accessToken cookie and redirect to login page.")
     @GetMapping("/logout")
     public String logout(HttpServletResponse response) {
         Cookie cookie = new Cookie("admin_accessToken", null);
         cookie.setPath("/");
-        cookie.setMaxAge(0); // 즉시 만료
+        cookie.setMaxAge(0); // Expire immediately
         response.addCookie(cookie);
         return "redirect:/admin";
     }
 
     /**
-     * Admin 전용 팩 목록 조회 (대시보드용)
-     * - 일반 사용자용 /api/training/pack과 동일한 로직이지만 admin 권한 필요
-     * - admin 토큰 만료 시 조회 불가
+     * Admin-only pack list (for the dashboard)
+     * - Same logic as the user-facing /api/training/pack but requires admin privileges
+     * - Not accessible once the admin token has expired
      */
     @Operation(summary = "Get training pack list (Admin only)", description = "Admin-only pack list for dashboard")
     @SecurityRequirement(name = "Authorization")
@@ -178,14 +182,14 @@ public class AdminController {
     }
 
     /**
-     * Admin 전용 팩 상세 조회 API
+     * Admin-only pack detail API
      */
     @Operation(summary = "Get pack detail (Admin only)", description = "Admin-only pack detail with translations")
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/training/pack/{packId}")
     @ResponseBody
     public ApiResponse<GetPackDetailForAdminResponse> getPackDetailForAdmin(
-            @PathVariable("packId") Long packId,
+            @PathVariable(PACK_ID) Long packId,
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         GetPackDetailForAdminResponse detail = trainingService.getPackDetailForAdmin(packId);
@@ -193,40 +197,40 @@ public class AdminController {
     }
 
     /**
-     * Admin 팩 세부 화면 (팩 이동 시)
-     * - 상단: 제목, 작성자, 설명 (선택한 언어)
-     * - 우상단: 문제 생성 버튼
-     * - 본문: 팩 ID(읽기전용), 문제 순서
+     * Admin pack detail screen (when navigating to a pack)
+     * - Top: title, author, description (selected language)
+     * - Top-right: create problem button
+     * - Body: pack ID (read-only), problem order
      */
     @Operation(summary = "Admin pack detail page", description = "Pack detail view with problem list")
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/pack-detail")
     public String packDetail(
-            @RequestParam("packId") Long packId,
+            @RequestParam(PACK_ID) Long packId,
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Parameter(hidden = true) Model model
     ) {
-        model.addAttribute("packId", packId);
-        model.addAttribute("userEmail", userDetails.getUser().getEmail());
-        model.addAttribute("langCodeNames", LangCode.LangCodeName.values());
+        model.addAttribute(PACK_ID, packId);
+        model.addAttribute(USER_EMAIL, userDetails.getUser().getEmail());
+        model.addAttribute(LANG_CODE_NAMES, LangCode.LangCodeName.values());
         return "admin/pack-detail";
     }
 
     /**
-     * Admin 문제 추가 화면
-     * - 상단: 팩 ID, 제목, 작성자, 설명
-     * - 본문: 보드 시각화, 보드상태, 정답, 깊이, 승리색상, 문제 추가 버튼
+     * Admin problem add screen
+     * - Top: pack ID, title, author, description
+     * - Body: board visualization, board status, answer, depth, win color, add problem button
      */
     @Operation(summary = "Admin puzzle add page", description = "Add puzzle form for a pack")
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/puzzle-add")
     public String puzzleAdd(
-            @RequestParam("packId") Long packId,
+            @RequestParam(PACK_ID) Long packId,
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Parameter(hidden = true) Model model
     ) {
-        model.addAttribute("packId", packId);
-        model.addAttribute("userEmail", userDetails.getUser().getEmail());
+        model.addAttribute(PACK_ID, packId);
+        model.addAttribute(USER_EMAIL, userDetails.getUser().getEmail());
         return "admin/puzzle-add";
     }
 
@@ -234,27 +238,27 @@ public class AdminController {
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/puzzle-edit")
     public String puzzleEdit(
-            @RequestParam("packId") Long packId,
+            @RequestParam(PACK_ID) Long packId,
             @RequestParam("puzzleId") Long puzzleId,
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Parameter(hidden = true) Model model
     ) {
-        model.addAttribute("packId", packId);
+        model.addAttribute(PACK_ID, packId);
         model.addAttribute("puzzleId", puzzleId);
-        model.addAttribute("userEmail", userDetails.getUser().getEmail());
+        model.addAttribute(USER_EMAIL, userDetails.getUser().getEmail());
         return "admin/puzzle-edit";
     }
 
     /**
-     * Admin 전용 문제 목록 조회 (대시보드용)
-     * - 빈 팩도 빈 리스트로 반환 (pack-detail, puzzle-add에서 사용)
+     * Admin-only problem list (for the dashboard)
+     * - Returns an empty list even for empty packs (used by pack-detail, puzzle-add)
      */
     @Operation(summary = "Get training puzzle list (Admin only)", description = "Admin-only puzzle list for pack detail")
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/training/puzzle/{packId}")
     @ResponseBody
     public ApiResponse<List<GetTrainingPuzzleForAdminResponse>> getTrainingPuzzleForAdmin(
-            @PathVariable("packId") Long packId,
+            @PathVariable(PACK_ID) Long packId,
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         List<GetTrainingPuzzleForAdminResponse> puzzles = trainingService.getTrainingPuzzleListForAdmin(packId);

@@ -140,6 +140,10 @@ public class TrainingService {
     // service test, repo test
     @Transactional
     public SolveTrainingPuzzleResponse solveTrainingPuzzle(UserEntity user, Long puzzleId, Boolean getReward) {
+        return applySolveTrainingPuzzle(user, puzzleId, getReward);
+    }
+
+    private SolveTrainingPuzzleResponse applySolveTrainingPuzzle(UserEntity user, Long puzzleId, Boolean getReward) {
         Optional<SolvedTrainingPuzzle> existInfo =
                 solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId);
 
@@ -153,7 +157,7 @@ public class TrainingService {
         TrainingPuzzle trainingPuzzle = trainingPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
 
-        // 처음 푼 퍼즐이면 저장 및 난이도에 따른 보상 계산
+        // If solved for the first time, save it and compute the reward based on difficulty
         solvedTrainingPuzzleRepository.save(SolvedTrainingPuzzle.builder()
                 .user(user)
                 .puzzle(trainingPuzzle)
@@ -161,7 +165,7 @@ public class TrainingService {
 
         userPackRepository.increaseSolvedCount(user.getId(), trainingPuzzle.getPack().getId());
 
-        // 난이도 → 보상 매핑
+        // Difficulty -> reward mapping
         Difficulty difficulty = trainingPuzzle.getPack().getDifficulty();
         int reward = switch (difficulty.getName()) {
             case "LOW" -> TRAINING_LOW_REWARD.getPrice();
@@ -169,7 +173,7 @@ public class TrainingService {
             case "HIGH" -> TRAINING_HIGH_REWARD.getPrice();
             default -> 0;
         };
-        if(getReward){
+        if(Boolean.TRUE.equals(getReward)){
             UserEntity persistentUser = userRepository.findById(user.getId())
                     .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
             persistentUser.getReward(reward);
@@ -187,7 +191,7 @@ public class TrainingService {
             throw new CustomException(ErrorCode.VALIDATION_ERROR);
         }
 
-        //TODO : training index 순서대로 반환할 수 있도록
+        //TODO : return in training index order
         List<TrainingPuzzle> trainingPuzzles = trainingPuzzleRepository.findByPack_IdOrderByTrainingIndex(packId);
 
         if(trainingPuzzles.isEmpty()) {
@@ -229,7 +233,7 @@ public class TrainingService {
                         .author(info.author())
                         .description(info.description())
                         .build())
-                .collect(Collectors.toList());
+                .toList();
 
         packTranslationRepository.saveAll(translations);
 
@@ -258,7 +262,7 @@ public class TrainingService {
                         .author(info.author())
                         .description(info.description())
                         .build())
-                .collect(Collectors.toList());
+                .toList();
         packTranslationRepository.saveAll(newTranslations);
 
         return updatedPack;
@@ -296,7 +300,7 @@ public class TrainingService {
             throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACKS);
         }
 
-        List<Long> packIds = packs.stream().map(Pack::getId).collect(Collectors.toList());
+        List<Long> packIds = packs.stream().map(Pack::getId).toList();
         LangCode requestedLangCode = LangCode.getLangCode(request.lang());
         LangCode defaultLangCode = LangCode.getLangCode(LangCode.LangCodeName.EN);
 
@@ -370,7 +374,7 @@ public class TrainingService {
 
         newUser.purchase(ItemPrice.HINT.getPrice());
 
-        solveTrainingPuzzle(user, puzzle.getId(), false);
+        applySolveTrainingPuzzle(user, puzzle.getId(), false);
 
         return GetTrainingPuzzleAnswerResponse.builder()
                 .answer(puzzle.getAnswer())
@@ -379,8 +383,8 @@ public class TrainingService {
     }
 
     /**
-     * Admin 전용 팩 상세 조회
-     * - id, 번역 정보(언어별 제목/작성자/설명), 가격, 난이도, 총 문제 수 반환
+     * Admin-only pack detail lookup
+     * - Returns id, translation info (title/author/description per language), price, difficulty, and total puzzle count
      */
     @Transactional(readOnly = true)
     public GetPackDetailForAdminResponse getPackDetailForAdmin(Long packId) {
@@ -395,7 +399,7 @@ public class TrainingService {
                         t.getAuthor(),
                         t.getDescription() != null ? t.getDescription() : ""
                 ))
-                .collect(Collectors.toList());
+                .toList();
 
         return new GetPackDetailForAdminResponse(
                 pack.getId(),
@@ -407,15 +411,16 @@ public class TrainingService {
     }
 
     /**
-     * Admin 전용 문제 목록 조회 - 빈 팩도 빈 리스트로 반환
+     * Admin-only puzzle list lookup - returns an empty list even for an empty pack
      */
     @Transactional(readOnly = true)
     public List<GetTrainingPuzzleForAdminResponse> getTrainingPuzzleListForAdmin(Long packId) {
         if (packId == null) {
             throw new CustomException(ErrorCode.VALIDATION_ERROR);
         }
-        packRepository.findById(packId)
-                .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
+        if (!packRepository.existsById(packId)) {
+            throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK);
+        }
 
         List<TrainingPuzzle> trainingPuzzles = trainingPuzzleRepository.findByPack_IdOrderByTrainingIndex(packId);
         if (trainingPuzzles.isEmpty()) {
@@ -452,7 +457,7 @@ public class TrainingService {
                 .build();
     }
 
-    // 회원가입 시 무료로 특정 Pack을 지급 (잔액 차감 없음)
+    // Grant a specific Pack for free at signup (no balance deduction)
     @Transactional
     public void grantPackToUser(UserEntity user, Long packId) {
         if (user == null || packId == null) {
@@ -462,7 +467,7 @@ public class TrainingService {
         Pack pack = packRepository.findById(packId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
-        // 이미 보유한 경우 무시
+        // Ignore if the user already owns it
         if (userPackRepository.findByUserIdAndPackId(user.getId(), packId).isPresent()) {
             return;
         }

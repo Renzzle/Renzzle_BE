@@ -2,6 +2,8 @@ package com.renzzle.backend.global.security;
 
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import lombok.Getter;
+
+import java.io.Serial;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -11,8 +13,11 @@ import java.util.List;
 
 public class UserDetailsImpl implements UserDetails {
 
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     @Getter
-    private final UserEntity user;
+    private final transient UserEntity user;
     private final String password;
     private final List<String> authorities;
 
@@ -40,26 +45,6 @@ public class UserDetailsImpl implements UserDetails {
     @Override
     public String getUsername() {
         return user.getEmail();
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return true;
     }
 
 }

@@ -3,10 +3,9 @@ package com.renzzle.backend.global.util;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-
 public class ErrorUtils {
+
+    private ErrorUtils() {}
 
     public static String getErrorMessages(BindingResult bindingResult) {
         StringBuilder errorMessages = new StringBuilder();
@@ -20,12 +19,6 @@ public class ErrorUtils {
         e.getAllErrors()
                 .forEach(error -> errorMessages.append(error.getDefaultMessage()).append(". "));
         return errorMessages.toString();
-    }
-
-    public static String getStakeTrace(Exception e) {
-        StringWriter sw = new StringWriter();
-        e.printStackTrace(new PrintWriter(sw));
-        return sw.toString();
     }
 
 }
