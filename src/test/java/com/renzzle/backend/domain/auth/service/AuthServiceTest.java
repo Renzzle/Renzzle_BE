@@ -22,7 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class AuthServiceTest {
+class AuthServiceTest {
 
     @Mock
     private Clock clock;
@@ -37,12 +37,12 @@ public class AuthServiceTest {
     private final String FIXED_TIME = "2025-03-20T10:00:00Z";
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         lenient().when(clock.instant()).thenReturn(Instant.parse(FIXED_TIME));
     }
 
     @Test
-    public void createAndVerifyAuthVerityToken_ShouldVerify() {
+    void createAndVerifyAuthVerityToken_ShouldVerify() {
         String email = "test@example.com";
         String validToken = "valid-token";
         when(jwtProvider.createAuthVerityToken(email)).thenReturn(validToken);
@@ -59,7 +59,7 @@ public class AuthServiceTest {
     }
 
     @Test
-    public void createAuthTokens_ShouldReturnLoginResponse() {
+    void createAuthTokens_ShouldReturnLoginResponse() {
         // given
         String token = "token";
         when(jwtProvider.createAccessToken(any(Long.class))).thenReturn(token);
@@ -83,7 +83,7 @@ public class AuthServiceTest {
     }
 
     @Test
-    public void reissueToken_ShouldReturnNewTokens_WhenRefreshTokenIsValid() {
+    void reissueToken_ShouldReturnNewTokens_WhenRefreshTokenIsValid() {
         // given
         long userId = 1L;
         String refreshToken = "valid-refresh-token";
@@ -103,7 +103,7 @@ public class AuthServiceTest {
     }
 
     @Test
-    public void reissueToken_ShouldThrowException_WhenRefreshTokenInvalid() {
+    void reissueToken_ShouldThrowException_WhenRefreshTokenInvalid() {
         // given
         Long userId = 1L;
         String invalidRefreshToken = "invalid-refresh-token";

@@ -46,7 +46,7 @@ class UserControllerTest {
                 1300,
                 true
         );
-        Mockito.when(userService.getUserResponse(Mockito.eq(userEntity))).thenReturn(userResponse);
+        Mockito.when(userService.getUserResponse(userEntity)).thenReturn(userResponse);
 
         // GET /api/user request test by using MockMvc
         mockMvc.perform(get("/api/user"))

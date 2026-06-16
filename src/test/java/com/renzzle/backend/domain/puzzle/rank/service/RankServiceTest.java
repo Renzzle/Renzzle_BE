@@ -40,7 +40,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class RankServiceTest {
+class RankServiceTest {
     private RankService rankService;
     @Mock
     private RedisTemplate<String, Object> redisRankingTemplate;
@@ -98,7 +98,7 @@ public class RankServiceTest {
     void startRankGame_WhenValidUser_ThenReturnsResponseAndStoresSession() {
         // Given
         UserEntity user = TestUserFactory.createTestUser("tester", 1500.0);
-        ReflectionTestUtils.setField(user, "id", 1L); // ID 강제 주입
+        ReflectionTestUtils.setField(user, "id", 1L); // force-inject the ID
 
         TrainingPuzzle puzzle = TrainingPuzzle.builder()
                 .boardStatus("a1a2")
@@ -230,7 +230,7 @@ public class RankServiceTest {
         session.setLastProblemRating(1400);
         session.setTargetWinProbability(0.7);
 
-        // 기존 문제(이전 라운드 문제)
+        // Existing problem (previous round's problem)
         LatestRankPuzzle previous = LatestRankPuzzle.builder()
                 .user(user)
                 .boardStatus("a1a2")
@@ -240,7 +240,7 @@ public class RankServiceTest {
                 .winColor(WinColor.getWinColor("WHITE"))
                 .build();
 
-        // 다음 문제 후보 (TrainingPuzzle)
+        // Next problem candidate (TrainingPuzzle)
         TrainingPuzzle candidatePuzzle = TrainingPuzzle.builder()
                 .boardStatus("nextBoard")
                 .answer("nextAnswer")
@@ -277,7 +277,7 @@ public class RankServiceTest {
         UserEntity user = TestUserFactory.createTestUser("user1", 1500);
         ReflectionTestUtils.setField(user, "id", 1L);
 
-        when(valueOperations.get("1")).thenReturn(null); // 세션 없음
+        when(valueOperations.get("1")).thenReturn(null); // no session
         // When
         CustomException ex = assertThrows(CustomException.class, () ->
                 rankService.endRankGame(user)
@@ -293,7 +293,7 @@ public class RankServiceTest {
         ReflectionTestUtils.setField(user, "id", 2L);
 
         RankSessionData session = new RankSessionData();
-        session.setStarted(false); // 시작되지 않은 세션
+        session.setStarted(false); // session that has not been started
 
         when(valueOperations.get("2")).thenReturn(session);
         // When
@@ -315,7 +315,7 @@ public class RankServiceTest {
 
          when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(valueOperations.get("3")).thenReturn(session);
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user)); // 추가: userRepository Mock
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user)); // added: userRepository Mock
         when(latestRankPuzzleRepository.findAllByUser(user))
                 .thenReturn(List.of(
                         LatestRankPuzzle.builder().isSolved(true).build(),
@@ -497,11 +497,11 @@ public class RankServiceTest {
         when(communityPuzzleRepository.findUsersWhoCreatedPuzzlesSince(any())).thenReturn(creators);
         when(userCommunityPuzzleRepository.findUsersWhoSolvedPuzzlesSince(any())).thenReturn(solvers);
 
-        // 사용자 활동 점수 계산을 위한 모킹
-        when(communityPuzzleRepository.countByAuthor(anyLong())).thenReturn(1L); // 출제 수
+        // Mocking for calculating the user's activity score
+        when(communityPuzzleRepository.countByAuthor(anyLong())).thenReturn(1L); // number of puzzles created
         when(communityPuzzleRepository.sumLikesByUser(anyLong())).thenReturn(10);
         when(communityPuzzleRepository.sumDislikesByUser(anyLong())).thenReturn(2);
-        when(userCommunityPuzzleRepository.countSolvedByUser(anyLong())).thenReturn(3L); // 푼 문제 수
+        when(userCommunityPuzzleRepository.countSolvedByUser(anyLong())).thenReturn(3L); // number of puzzles solved
 
         when(redisRankingTemplate.opsForZSet()).thenReturn(zSetOperations);
 
@@ -537,15 +537,15 @@ public class RankServiceTest {
                 .withNickname("user2")
                 .build();
 
-        // user1은 출제 2, 풀이 1
-        // user2는 출제 2, 풀이 0
+        // user1: created 2, solved 1
+        // user2: created 2, solved 0
         List<UserEntity> creators = List.of(user1, user2);
-        List<UserEntity> solvers = List.of(user1); // user1만 푼 문제 있음
+        List<UserEntity> solvers = List.of(user1); // only user1 has solved puzzles
 
         when(communityPuzzleRepository.findUsersWhoCreatedPuzzlesSince(any())).thenReturn(creators);
         when(userCommunityPuzzleRepository.findUsersWhoSolvedPuzzlesSince(any())).thenReturn(solvers);
 
-        // 활동 지표 설정
+        // Set up activity metrics
         when(communityPuzzleRepository.countByAuthor(1L)).thenReturn(2L);
         when(communityPuzzleRepository.countByAuthor(2L)).thenReturn(2L);
 
@@ -570,7 +570,7 @@ public class RankServiceTest {
 
         List<UserPuzzlerRankInfo> captured = captor.getAllValues();
 
-        // 점수가 높은 user1이 먼저 들어와야 한다 (높은 점수 먼저 저장 = reverseRangeWithScores 시 상위 노출)
+        // user1 with the higher score should come first (higher score stored first = appears at the top with reverseRangeWithScores)
         UserPuzzlerRankInfo first = captured.get(0);
         UserPuzzlerRankInfo second = captured.get(1);
 

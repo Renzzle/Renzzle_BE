@@ -27,7 +27,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class AccountServiceTest {
+class AccountServiceTest {
 
     @Mock
     private Clock clock;
@@ -51,13 +51,13 @@ public class AccountServiceTest {
     private LoginRequest validLoginRequest;
 
     @BeforeEach
-    public void setup() {
+    void setup() {
         validSignupRequest = new SignupRequest(email, password, nickname, authVerityToken, deviceId);
         validLoginRequest = new LoginRequest(email, password);
     }
 
     @Test
-    public void signUp_ShouldCreateUserAndReturnTokens_WhenValid() {
+    void signUp_ShouldCreateUserAndReturnTokens_WhenValid() {
         // given
         when(authService.verifyAuthVerityToken(authVerityToken, email)).thenReturn(true);
         when(userRepository.existsByEmail(email)).thenReturn(false);
@@ -76,7 +76,7 @@ public class AccountServiceTest {
     }
 
     @Test
-    public void signUp_ShouldThrowException_WhenEmailAlreadyExists() {
+    void signUp_ShouldThrowException_WhenEmailAlreadyExists() {
         when(authService.verifyAuthVerityToken(authVerityToken, email)).thenReturn(true);
         when(userRepository.existsByEmail(email)).thenReturn(true);
 
@@ -88,7 +88,7 @@ public class AccountServiceTest {
     }
 
     @Test
-    public void signUp_ShouldThrowException_WhenInvalidAuthToken() {
+    void signUp_ShouldThrowException_WhenInvalidAuthToken() {
         when(authService.verifyAuthVerityToken(authVerityToken, email)).thenReturn(false);
 
         CustomException ex = assertThrows(CustomException.class, () -> {
@@ -99,7 +99,7 @@ public class AccountServiceTest {
     }
 
     @Test
-    public void login_ShouldReturnTokens_WhenCredentialsAreValid() {
+    void login_ShouldReturnTokens_WhenCredentialsAreValid() {
         UserEntity user = UserEntity.builder()
                 .email(email)
                 .password(new BCryptPasswordEncoder().encode(password))
@@ -117,7 +117,7 @@ public class AccountServiceTest {
     }
 
     @Test
-    public void login_ShouldThrowException_WhenEmailNotFound() {
+    void login_ShouldThrowException_WhenEmailNotFound() {
         when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
 
         CustomException ex = assertThrows(CustomException.class, () -> {
@@ -128,7 +128,7 @@ public class AccountServiceTest {
     }
 
     @Test
-    public void login_ShouldThrowException_WhenPasswordMismatch() {
+    void login_ShouldThrowException_WhenPasswordMismatch() {
         UserEntity user = UserEntity.builder()
                 .email(email)
                 .password(new BCryptPasswordEncoder().encode("wrong-password"))

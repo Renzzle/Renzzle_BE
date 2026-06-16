@@ -22,11 +22,12 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class PuzzleCacheServiceTest {
+class PuzzleCacheServiceTest {
 
     @Mock
     private PuzzleCacheRepository puzzleCacheRepository;
@@ -129,7 +130,7 @@ public class PuzzleCacheServiceTest {
 
         when(puzzleCacheRepository.findByPuzzleTypeAndPuzzleId(TYPE, PUZZLE_ID)).thenReturn(Optional.of(puzzle));
         when(solutionSerializer.deserialize(existingDag)).thenReturn(Map.of());
-        when(solutionSerializer.serialize(any(Map.class))).thenReturn(serialized);
+        when(solutionSerializer.serialize(anyMap())).thenReturn(serialized);
 
         puzzleCacheService.savePuzzle(TYPE, PUZZLE_ID, currentBoardState, answerPuzzle);
 
@@ -144,7 +145,7 @@ public class PuzzleCacheServiceTest {
         byte[] serialized = new byte[] {9, 8, 7};
 
         when(puzzleCacheRepository.findByPuzzleTypeAndPuzzleId(TYPE, PUZZLE_ID)).thenReturn(Optional.empty());
-        when(solutionSerializer.serialize(any(Map.class))).thenReturn(serialized);
+        when(solutionSerializer.serialize(anyMap())).thenReturn(serialized);
 
         puzzleCacheService.savePuzzle(TYPE, PUZZLE_ID, currentBoardState, answerPuzzle);
 
@@ -211,7 +212,7 @@ public class PuzzleCacheServiceTest {
 
         when(puzzleCacheRepository.findByPuzzleTypeAndPuzzleId(TYPE, PUZZLE_ID)).thenReturn(Optional.of(puzzle));
         when(solutionSerializer.deserialize(existingDagBytes)).thenReturn(existingDag);
-        when(solutionSerializer.serialize(any(Map.class))).thenReturn(serialized);
+        when(solutionSerializer.serialize(anyMap())).thenReturn(serialized);
 
         puzzleCacheService.savePuzzle(TYPE, PUZZLE_ID, currentBoardState, answerPuzzle);
 
@@ -219,8 +220,9 @@ public class PuzzleCacheServiceTest {
         verify(solutionSerializer).serialize(dagCaptor.capture());
 
         Map<Long, Integer> mergedDag = dagCaptor.getValue();
-        assertThat(mergedDag).hasSize(2);
-        assertThat(mergedDag).containsEntry(existingHash, existingMove);
-        assertThat(mergedDag).containsEntry(zobristHash, newMove);
+        assertThat(mergedDag)
+                .hasSize(2)
+                .containsEntry(existingHash, existingMove)
+                .containsEntry(zobristHash, newMove);
     }
 }

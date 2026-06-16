@@ -5,7 +5,6 @@ import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository
 import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.user.api.response.ChangeNicknameResponse;
-import com.renzzle.backend.domain.user.api.response.GetUserLikedPuzzlesResponse;
 import com.renzzle.backend.domain.user.api.response.UserResponse;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;

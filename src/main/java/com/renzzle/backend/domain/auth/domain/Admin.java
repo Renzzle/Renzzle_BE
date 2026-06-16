@@ -14,7 +14,7 @@ import org.hibernate.annotations.OnDeleteAction;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Admin {
 
-    public static final String ADMIN = "ADMIN";
+    public static final String ADMIN_PREFIX = "ADMIN";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

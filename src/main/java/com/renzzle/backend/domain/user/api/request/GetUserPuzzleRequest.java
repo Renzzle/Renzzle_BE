@@ -1,7 +1,5 @@
 package com.renzzle.backend.domain.user.api.request;
 
-import com.renzzle.backend.global.common.constant.SortOption;
-import com.renzzle.backend.global.validation.ValidEnum;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 

@@ -6,6 +6,8 @@ import java.util.Objects;
 
 public class NoticeTextBuilderUtil {
 
+    private NoticeTextBuilderUtil() {}
+
     public static String buildAttendanceMessage(LangCode langCode, int price) {
         String code = langCode.getName();
         if (Objects.equals(code, LangCode.LangCodeName.KO.name())) {

@@ -3,7 +3,7 @@ package com.renzzle.backend.domain.puzzle.content.api.response;
 import lombok.Builder;
 
 @Builder
-public record getRecommendPackResponse(
+public record GetRecommendPackResponse(
         Long id,
         String title,
         String author,

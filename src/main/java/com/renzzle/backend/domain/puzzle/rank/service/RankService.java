@@ -31,9 +31,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import java.util.function.ToDoubleFunction;
 
 import static com.renzzle.backend.domain.puzzle.shared.util.ELOUtils.TARGET_WIN_PROBABILITY;
 import static com.renzzle.backend.domain.puzzle.shared.util.ELOUtils.WIN_PROBABILITY_DELTA;
@@ -124,7 +123,7 @@ public class RankService {
             throw new CustomException(ErrorCode.INVALID_SESSION_TTL);
         }
 
-        // 이전 문제 조회 및 풀이 여부 업데이트
+        // Look up the previous puzzle and update whether it was solved
         LatestRankPuzzle previousPuzzle = latestRankPuzzleRepository
                 .findTopByUserOrderByAssignedAtDesc(user)
                 .orElseThrow(() -> new CustomException(ErrorCode.LATEST_PUZZLE_NOT_FOUND));
@@ -134,14 +133,14 @@ public class RankService {
         double userBeforeMmr = session.getMmrBeforePenalty();
         double userBeforeRating = session.getRatingBeforePenalty();
         double lastProblemRating = session.getLastProblemRating();
-        double WinProbability = session.getTargetWinProbability();
+        double winProbability = session.getTargetWinProbability();
         /*
-        이전 문제를 풀었다면
-        다음 문제 기대 승률 조정
-        배수 적용 하여 mmr % rating 값 조정 및 변수 값 업데이트
+        If the previous puzzle was solved,
+        adjust the target win probability for the next puzzle,
+        apply the multiplier to adjust the mmr and rating values, and update the variables
          */
         if (request.isSolved()) {
-            WinProbability -= WIN_PROBABILITY_DELTA;
+            winProbability -= WIN_PROBABILITY_DELTA;
 
             double mmrIncrease = ELOUtils.calculateMMRIncrease(userBeforeMmr, lastProblemRating);
             double ratingIncrease = ELOUtils.calculateRatingIncrease(userBeforeRating, lastProblemRating);
@@ -152,7 +151,7 @@ public class RankService {
             userBeforeMmr = userBeforeMmr + mmrIncrease;
             userBeforeRating = userBeforeRating + ratingIncrease;
         } else {
-            WinProbability += WIN_PROBABILITY_DELTA;
+            winProbability += WIN_PROBABILITY_DELTA;
             double mmrDecrease = ELOUtils.calculateMMRDecrease(userBeforeMmr, lastProblemRating);
             double ratingDecrease = ELOUtils.calculateRatingDecrease(userBeforeRating, lastProblemRating);
 
@@ -163,8 +162,8 @@ public class RankService {
             userBeforeRating = userBeforeRating + ratingDecrease;
         }
 
-        // 사용자의 레이팅 & 기대 승률 을 통해 적합한 문제를 가져옴
-        NextPuzzleResult puzzleResult = getNextPuzzle(userBeforeMmr, WinProbability, user);
+        // Fetch a suitable puzzle based on the user's rating & target win probability
+        NextPuzzleResult puzzleResult = getNextPuzzle(userBeforeMmr, winProbability, user);
         LatestRankPuzzle latestPuzzle = puzzleResult.latestPuzzle();
         double puzzleRating = puzzleResult.rating();
 
@@ -192,7 +191,7 @@ public class RankService {
         session.setWinnerColor(latestPuzzle.getWinColor().getName());
         session.setMmrBeforePenalty(userBeforeMmr);
         session.setRatingBeforePenalty(userBeforeRating);
-        session.setTargetWinProbability(WinProbability);
+        session.setTargetWinProbability(winProbability);
 
         redisTemplate.opsForValue().set(redisKey, session, currentTTL, TimeUnit.SECONDS);
 
@@ -237,20 +236,20 @@ public class RankService {
 
     NextPuzzleResult getNextPuzzle(double originalMmr, double targetWinProbability, UserEntity user) {
         /*
-            사용자의 레이팅 & 기대 승률 을 통해 적합한 문제를 가져옴
-            문제들을
-            windowSize 만큼 각 퍼즐에서 선정 후 이들을 섞은 후 이 중 하나의 문제를 선택하여 다음 문제로 사용
+            Fetch a suitable puzzle based on the user's rating & target win probability.
+            From each puzzle source, select windowSize candidates,
+            shuffle them, then pick one of them to use as the next puzzle.
         */
         double desiredRating = ELOUtils.getProblemRatingForTargetWinProbability(originalMmr, targetWinProbability);
         int windowSize = 5;
 
-        // 각 퍼즐 후보군 가져오기 (레이팅 기준 정렬)
+        // Fetch each puzzle candidate pool (sorted by rating)
         List<TrainingPuzzle> trainingPuzzles =
                 trainingPuzzleRepository.findAvailableTrainingPuzzlesSortedByRating(user);
         List<CommunityPuzzle> communityPuzzles =
                 communityPuzzleRepository.findAvailableCommunityPuzzlesSortedByRating(user);
 
-        // 슬라이싱 유틸
+        // Slicing utility
         List<TrainingPuzzle> selectedTrainings = pickNearByWindow(trainingPuzzles, desiredRating, windowSize);
         List<CommunityPuzzle> selectedCommunities = pickNearByWindow(communityPuzzles, desiredRating, windowSize);
 
@@ -296,14 +295,14 @@ public class RankService {
 
     private <T> List<T> pickNearByWindow(List<T> sorted, double targetRating, int windowSize) {
         /*
-            1. 레이팅 오차 200 미만의 문제들 중에서 windowSize만큼 선택(가능하면)
-            2. 만약 200 미만의 문제가 windowSize만큼 없다면, 레이팅 오차 제한 없이 가장 가까운 문제들을 windowSize만큼 선택
+            1. From puzzles with a rating difference under 200, select windowSize of them (if possible)
+            2. If there are not windowSize puzzles under 200, select the closest windowSize puzzles without the rating-difference limit
         */
         if (sorted.isEmpty()) return Collections.emptyList();
 
         double maxDiff = 200.0;
 
-        // 1차: 200 미만 오차 내에서 windowSize만큼 선택
+        // First pass: select windowSize within a difference under 200
         List<T> within200 = new ArrayList<>();
         for (T item : sorted) {
             double rating = getRating(item);
@@ -316,14 +315,14 @@ public class RankService {
             return within200.subList(0, windowSize);
         }
 
-        // 2차: 제한 없이 가까운 순서대로 windowSize만큼 선택
+        // Second pass: select windowSize in order of closeness without a limit
         List<T> sortedByClosest = new ArrayList<>(sorted);
         sortedByClosest.sort(Comparator.comparingDouble(o -> Math.abs(getRating(o) - targetRating)));
         int limit = Math.min(windowSize, sortedByClosest.size());
         return sortedByClosest.subList(0, limit);
     }
 
-    // 퍼즐 rating 추출 유틸
+    // Utility to extract a puzzle's rating
     private double getRating(Object obj) {
         if (obj instanceof TrainingPuzzle tp) return tp.getRating();
         if (obj instanceof CommunityPuzzle cp) return cp.getRating();
@@ -345,7 +344,7 @@ public class RankService {
                         .isSolved(puzzle.getIsSolved())
                         .winColor(puzzle.getWinColor().getName())
                         .build())
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -400,7 +399,7 @@ public class RankService {
                 UserPuzzlerRankInfo::score
         );
 
-        // 내 점수는 Redis에서 가져올 수 없을 수 있으므로 따로 계산 or 0 처리
+        // My score may not be retrievable from Redis, so compute it separately or default to 0
         double myScore = top100.stream()
                 .filter(i -> i.nickname().equals(user.getNickname()))
                 .findFirst()
@@ -423,7 +422,7 @@ public class RankService {
     @SuppressWarnings("unchecked")
     private <T, R> List<R> extractTopRankedUsers(
             String key,
-            Function<T, Double> scoreExtractor,
+            ToDoubleFunction<T> scoreExtractor,
             BiFunction<Integer, T, R> builder
     ) {
         Set<ZSetOperations.TypedTuple<Object>> rawSet =
@@ -438,7 +437,7 @@ public class RankService {
 
         for (ZSetOperations.TypedTuple<Object> tuple : rawSet) {
             T obj = (T) tuple.getValue();
-            double score = scoreExtractor.apply(obj);
+            double score = scoreExtractor.applyAsDouble(obj);
             rankCounter++;
 
             if (Double.compare(score, lastScore) != 0) {
@@ -456,7 +455,7 @@ public class RankService {
     private <T> int findMyRank(
             String key,
             Predicate<T> isMyself,
-            Function<T, Double> scoreExtractor
+            ToDoubleFunction<T> scoreExtractor
     ) {
         Set<ZSetOperations.TypedTuple<Object>> fullSet =
                 Optional.ofNullable(redisRankingTemplate.opsForZSet()
@@ -469,7 +468,7 @@ public class RankService {
 
         for (ZSetOperations.TypedTuple<Object> tuple : fullSet) {
             T obj = (T) tuple.getValue();
-            double score = scoreExtractor.apply(obj);
+            double score = scoreExtractor.applyAsDouble(obj);
             rankCounter++;
 
             if (Double.compare(score, lastScore) != 0) {
@@ -485,7 +484,7 @@ public class RankService {
         return -1;
     }
 
-    @Scheduled(fixedRate = 1000 * 60 * 60) // 60분마다 실행
+    @Scheduled(fixedRate = 1000 * 60 * 60) // Runs every 60 minutes
     public void updateRankingCache() {
         String rankingKey = "user:ranking";
         String puzzlerRankingKey = "user:puzzler:ranking";
@@ -520,7 +519,7 @@ public class RankService {
             int dislikes = communityPuzzleRepository.sumDislikesByUser(user.getId());
             int c = Math.max(0, likes - dislikes);
 
-            double score = Math.log((a + 1) * Math.pow(b + 1, 2) * Math.pow(c + 1, 3) + 1) * 100;
+            double score = Math.log((a + 1.0) * Math.pow(b + 1.0, 2) * Math.pow(c + 1.0, 3) + 1) * 100;
             score = Math.floor(score);
 
             UserPuzzlerRankInfo info = UserPuzzlerRankInfo.builder()

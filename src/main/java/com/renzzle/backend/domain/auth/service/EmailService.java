@@ -8,20 +8,14 @@ import com.renzzle.backend.domain.auth.dao.EmailRedisRepository;
 import com.renzzle.backend.domain.auth.domain.AuthEmailEntity;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.thymeleaf.context.Context;
-import org.thymeleaf.spring6.SpringTemplateEngine;
 import java.time.Clock;
 import java.time.Duration;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Optional;
-import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +24,8 @@ public class EmailService {
     public static final int EMAIL_CODE_VALID_SECOND = 5 * 60; // 5 minute
     public static final int EMAIL_VERIFICATION_LIMIT = 5;
 
+    private static final SecureRandom RANDOM = new SecureRandom();
+
     private final Clock clock;
     private final EmailRedisRepository emailRepository;
     private final AccountService accountService;
@@ -37,11 +33,10 @@ public class EmailService {
     private final EmailSender emailSender;
 
     private String generateRandomCode() {
-        Random random = new Random();
         StringBuilder code = new StringBuilder();
 
         for (int i = 0; i < 6; i++) {
-            int digit = random.nextInt(10);
+            int digit = RANDOM.nextInt(10);
             code.append(digit);
         }
 

@@ -6,25 +6,25 @@ import org.junit.jupiter.api.Test;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-public class BoardUtilsTest {
+class BoardUtilsTest {
 
     @Test
-    public void getBoardPositionFromStringTest() throws Exception {
+    void getBoardPositionFromStringTest() throws Exception {
         // get private method
         Method method = BoardUtils.class.getDeclaredMethod("getBoardPositionFromString", String.class, int.class);
         method.setAccessible(true);
 
         // b15 == 30
         int position = (int) method.invoke(null, "a1b15c7", 2);
-        Assertions.assertEquals(position, 30);
+        Assertions.assertEquals(30, position);
 
         // a1 == 1
         position = (int) method.invoke(null, "a1b15c7", 0);
-        Assertions.assertEquals(position, 1);
+        Assertions.assertEquals(1, position);
 
         // c7 == 37
         position = (int) method.invoke(null, "a1b15c7", 5);
-        Assertions.assertEquals(position, 37);
+        Assertions.assertEquals(37, position);
 
         // number part more than 15
         Exception exception = Assertions.assertThrows(InvocationTargetException.class, () -> {
@@ -63,7 +63,7 @@ public class BoardUtilsTest {
     }
 
     @Test
-    public void rotate90Test() throws Exception {
+    void rotate90Test() throws Exception {
         Method getBoardPositionFromString = BoardUtils.class.getDeclaredMethod("getBoardPositionFromString", String.class, int.class);
         getBoardPositionFromString.setAccessible(true);
 
@@ -90,7 +90,7 @@ public class BoardUtilsTest {
     }
 
     @Test
-    public void xAxisSymmetryTest() throws Exception {
+    void xAxisSymmetryTest() throws Exception {
         Method getBoardPositionFromString = BoardUtils.class.getDeclaredMethod("getBoardPositionFromString", String.class, int.class);
         getBoardPositionFromString.setAccessible(true);
 
@@ -117,7 +117,7 @@ public class BoardUtilsTest {
     }
 
     @Test
-    public void makeBoardKeyTest() {
+    void makeBoardKeyTest() {
         String s1 = BoardUtils.makeBoardKey("h8i9i7h7j8i8j9k9");
         String s2 = BoardUtils.makeBoardKey("i7k9j8h7h8i8j9i9");
         Assertions.assertEquals(s1, s2);

@@ -1,5 +1,8 @@
 package com.renzzle.backend.domain.puzzle.shared.util;
 
+import com.renzzle.backend.global.exception.CustomException;
+import com.renzzle.backend.global.exception.ErrorCode;
+
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -74,7 +77,7 @@ public class BoardUtils {
                 result.append(String.format("%02x", b));
             }
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+            throw new CustomException(e.getMessage(), ErrorCode.INTERNAL_SERVER_ERROR);
         }
 
         return result.toString();
@@ -83,12 +86,12 @@ public class BoardUtils {
     public static boolean validBoardString(String str) {
         for(int i = 0; i < str.length();) {
             char charPart = str.charAt(i);
-            if(!isCharInAtoO(charPart))
+            if(isCharNotInAtoO(charPart))
                 return false;
 
             if(str.length() <= i + 1)
                 return false;
-            if(!isNonZeroDigit(str.charAt(i + 1)))
+            if(isZeroDigit(str.charAt(i + 1)))
                 return false;
             int digitsNum = calculateDigitsNum(str, i + 1);
 
@@ -147,7 +150,7 @@ public class BoardUtils {
     private static int getBoardPositionFromString(String boardStatus, int index) {
         char charPart = boardStatus.charAt(index);
 
-        if(!isCharInAtoO(charPart))
+        if(isCharNotInAtoO(charPart))
             throwIllegalBoardStatusException(boardStatus);
 
         int n = (charPart - 'a') * 15;
@@ -155,7 +158,7 @@ public class BoardUtils {
         // determine the number of digits
         if(index + 1 >= boardStatus.length())
             throwIllegalBoardStatusException(boardStatus);
-        if(!isNonZeroDigit(boardStatus.charAt(index + 1)))
+        if(isZeroDigit(boardStatus.charAt(index + 1)))
             throwIllegalBoardStatusException(boardStatus);
         int digitsNum = calculateDigitsNum(boardStatus, index + 1);
 
@@ -175,16 +178,16 @@ public class BoardUtils {
         throw new IllegalArgumentException("Invalid board status string: " + boardStatus);
     }
 
-    private static boolean isCharInAtoO(char c) {
-        return 'a' <= c && c <= 'o';
+    private static boolean isCharNotInAtoO(char c) {
+        return 'a' > c || c > 'o';
     }
 
     private static boolean isDigit(char c) {
         return '0' <= c && c <= '9';
     }
 
-    private static boolean isNonZeroDigit(char c) {
-        return '1' <= c && c <= '9';
+    private static boolean isZeroDigit(char c) {
+        return '1' > c || c > '9';
     }
 
     private static int calculateDigitsNum(String boardStatus, int startIndex) {
