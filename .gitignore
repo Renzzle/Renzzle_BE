@@ -45,3 +45,6 @@ out/
 
 ### Google Play service account (never commit real keys) ###
 /secrets/
+
+### Mac Mise ###
+mise.toml
