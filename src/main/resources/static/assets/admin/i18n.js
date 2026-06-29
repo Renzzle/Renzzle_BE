@@ -5,7 +5,7 @@
   const messages = {
     en: {
       common: {
-        appName: 'Renzzle Content Admin',
+        appName: 'Renzzle Admin',
         language: 'Language',
         english: 'English',
         korean: 'Korean',
@@ -287,7 +287,7 @@
     },
     ko: {
       common: {
-        appName: 'Renzzle 콘텐츠 관리자',
+        appName: 'Renzzle Admin',
         language: '언어',
         english: '영어',
         korean: '한국어',
@@ -362,7 +362,7 @@
         responseMoves: '응답 수'
       },
       login: {
-        heading: 'Renzzle 관리자',
+        heading: 'Renzzle Admin',
         email: '이메일',
         emailPlaceholder: '이메일 입력',
         password: '비밀번호',

@@ -1,45 +1,64 @@
+    :root {
+      --admin-bg: #f5f7fa;
+      --admin-surface: #ffffff;
+      --admin-text: #17202a;
+      --admin-muted: #526579;
+      --admin-border: #d9e0e8;
+      --admin-primary: #4340DB;
+      --admin-primary-hover: #3431B8;
+      --admin-danger: #b42318;
+      --admin-radius: 8px;
+      --admin-shadow-raised: 0 14px 34px rgba(20, 30, 45, 0.1);
+    }
     * { box-sizing: border-box; }
     body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-family: Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       margin: 0;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #f5f7fa;
-      color: #17202a;
+      padding: 1rem;
+      background: var(--admin-bg);
+      color: var(--admin-text);
+      letter-spacing: 0;
     }
     .error-card {
       width: 100%;
       max-width: 500px;
-      padding: 2.5rem;
-      background: #fff;
-      border-radius: 8px;
+      padding: 2rem;
+      background: var(--admin-surface);
+      border-radius: var(--admin-radius);
       border: 1px solid #f3b8b1;
-      box-shadow: 0 8px 32px rgba(20,30,45,0.12);
+      box-shadow: var(--admin-shadow-raised);
       text-align: center;
     }
     h1 {
       margin: 0 0 1rem;
-      font-size: 2rem;
-      font-weight: 600;
-      color: #dc3545;
+      font-size: 1.5rem;
+      font-weight: 750;
+      color: var(--admin-danger);
     }
     p {
-      margin: 0 0 2rem;
-      font-size: 1.1rem;
-      color: #b42318;
+      margin: 0 0 1.5rem;
+      font-size: 0.95rem;
+      color: var(--admin-muted);
       line-height: 1.5;
     }
     .btn {
-      display: inline-block;
-      padding: 0.85rem 2rem;
-      border: none;
-      border-radius: 8px;
-      background: #4340DB; color: #fff;
-      font-size: 1rem;
-      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 2.5rem;
+      padding: 0.55rem 1rem;
+      border: 1px solid var(--admin-primary);
+      border-radius: var(--admin-radius);
+      background: var(--admin-primary);
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 650;
+      line-height: 1.2;
       cursor: pointer;
       text-decoration: none;
     }
-    .btn:hover { background: #3431B8; }
+    .btn:hover { background: var(--admin-primary-hover); }

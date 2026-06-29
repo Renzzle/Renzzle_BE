@@ -18,10 +18,17 @@
 
 <th:block th:fragment="languageSelect">
   <div class="admin-language-control">
-    <label for="adminLanguageSelect" data-i18n="common.language">Language</label>
-    <select id="adminLanguageSelect" data-admin-language-select>
-      <option value="en" data-i18n="common.english">English</option>
-      <option value="ko" data-i18n="common.korean">Korean</option>
+    <label for="adminLanguageSelect" class="admin-language-icon" aria-label="Language selector">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M2 12h20"></path>
+        <path d="M12 2a15.3 15.3 0 0 1 0 20"></path>
+        <path d="M12 2a15.3 15.3 0 0 0 0 20"></path>
+      </svg>
+    </label>
+    <select id="adminLanguageSelect" data-admin-language-select aria-label="Language">
+      <option value="en" lang="en">English</option>
+      <option value="ko" lang="ko">한국어</option>
     </select>
   </div>
 </th:block>
