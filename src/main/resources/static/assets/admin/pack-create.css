@@ -12,8 +12,8 @@
     .header .user-info { font-size: 0.9rem; color: #526579; }
     .btn { padding: 0.5rem 1rem; border: none; border-radius: 8px; background: #fff; color: #17202a; cursor: pointer; font-size: 0.9rem; text-decoration: none; display: inline-block; }
     .btn:hover { background: #f0f3f7; }
-    .btn-primary { background: #176b5f; color: #fff; }
-    .section { max-width: 720px; margin-bottom: 2rem; padding: 1.5rem; background: #fff; border-radius: 16px; border: 1px solid #d9e0e8; }
+    .btn-primary { background: #4340DB; color: #fff; }
+    .section { max-width: 720px; margin-bottom: 2rem; padding: 1.5rem; background: #fff; border-radius: 8px; border: 1px solid #d9e0e8; }
     .section h2 { margin: 0 0 1rem; font-size: 1.15rem; }
     label { display: block; margin-bottom: 0.35rem; font-size: 0.9rem; color: #526579; }
     input, select, textarea { width: 100%; padding: 0.6rem 0.8rem; margin-bottom: 0.9rem; border: 1px solid #d9e0e8; border-radius: 8px; background: #fff; color: #17202a; font-size: 0.95rem; }
@@ -25,10 +25,10 @@
     .msg.show { display: block; }
     .msg.success { background: #effaf4; color: #13633d; }
     .msg.error { background: #fff0ee; color: #b42318; }
-    .lang-block { padding: 1rem; margin-bottom: 1rem; background: #fff; border-radius: 10px; border: 1px solid #d9e0e8; }
+    .lang-block { padding: 1rem; margin-bottom: 1rem; background: #fff; border-radius: 8px; border: 1px solid #d9e0e8; }
     .lang-block h4 { margin: 0 0 0.5rem; font-size: 0.95rem; }
     .hint { color: #526579; font-size: 0.8rem; margin-top: -0.5rem; margin-bottom: 0.5rem; }
-    .add-lang-section { margin: 1.5rem 0; padding: 1rem; background: #fbfcfe; border-radius: 10px; border: 1px dashed #d9e0e8; }
+    .add-lang-section { margin: 1.5rem 0; padding: 1rem; background: #fbfcfe; border-radius: 8px; border: 1px dashed #d9e0e8; }
     .add-lang-row { display: flex; gap: 0.75rem; align-items: flex-end; }
     .add-lang-row input, .add-lang-row select { flex: 1; margin-bottom: 0; }
     .add-lang-row .btn { flex-shrink: 0; }

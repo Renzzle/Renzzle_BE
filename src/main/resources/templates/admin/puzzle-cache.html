@@ -3,17 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Renzzle - Response Move Entry</title>
-  <link rel="stylesheet" href="/assets/admin/pages/puzzle-cache.css">
-  <link rel="stylesheet" href="/assets/admin/admin.css">
+  <title data-i18n="title.responseMoves">Renzzle - Response Move Entry</title>
+  <link rel="stylesheet" href="/assets/admin/puzzle-cache.css">
+  <link rel="stylesheet" href="/assets/admin/common.css">
+  <script src="/assets/admin/i18n.js"></script>
 </head>
 <body>
   <div class="header">
     <div>
-      <h1>Renzzle Content Admin</h1>
+      <h1 data-i18n="common.appName">Renzzle Content Admin</h1>
       <span class="user-info" th:if="${userEmail}" th:text="${userEmail}"></span>
     </div>
-    <a href="/admin/logout" class="btn">Log out</a>
+    <div class="header-actions">
+      <th:block th:replace="~{admin/fragments :: languageSelect}"></th:block>
+      <a href="/admin/logout" class="btn" data-i18n="common.logout">Log out</a>
+    </div>
   </div>
 
   <th:block th:replace="~{admin/fragments :: siteNav(false, false, true)}"></th:block>
@@ -22,17 +26,17 @@
   <main class="admin-shell">
     <div class="admin-page-heading">
       <div>
-        <h2>Response Moves</h2>
-        <p>Select a training or community puzzle, then save response moves from the board screen.</p>
+        <h2 data-i18n="cacheList.heading">Response Moves</h2>
+        <p data-i18n="cacheList.description">Select a training or community puzzle, then save response moves from the board screen.</p>
       </div>
     </div>
 
   <section class="section">
-    <h2>Training Pack · Puzzle</h2>
-    <p class="hint">The pack list uses the same filters as the admin pack list. Select a pack, then choose a puzzle below and open response entry.</p>
+    <h2 data-i18n="cacheList.trainingHeading">Training Pack · Puzzle</h2>
+    <p class="hint" data-i18n="cacheList.trainingHelp">The pack list uses the same filters as the admin pack list. Select a pack, then choose a puzzle below and open response entry.</p>
     <div class="row">
       <div>
-        <label for="filterDifficulty">Difficulty</label>
+        <label for="filterDifficulty" data-i18n="common.difficulty">Difficulty</label>
         <select id="filterDifficulty">
           <option value="LOW">LOW</option>
           <option value="MIDDLE">MIDDLE</option>
@@ -40,34 +44,34 @@
         </select>
       </div>
       <div>
-        <label for="filterLang">Language</label>
+        <label for="filterLang" data-i18n="common.language">Language</label>
         <select id="filterLang">
           <option th:each="langCode : ${langCodeNames}" th:value="${langCode}" th:text="${langCode}">EN</option>
         </select>
       </div>
       <div class="load-button-cell">
-        <button type="button" class="btn btn-primary" id="loadPacksBtn">Load List</button>
+        <button type="button" class="btn btn-primary" id="loadPacksBtn" data-i18n="common.loadList">Load List</button>
       </div>
     </div>
-    <h3 class="subsection-title pack-subsection-title">Pack</h3>
+    <h3 class="subsection-title pack-subsection-title" data-i18n="cacheList.packSubheading">Pack</h3>
     <ul class="pack-list" id="packListUl"></ul>
 
-    <h3 class="subsection-title">Puzzles in Selected Pack</h3>
+    <h3 class="subsection-title" data-i18n="cacheList.puzzlesSubheading">Puzzles in Selected Pack</h3>
     <ul class="puzzle-list" id="puzzleListUl"></ul>
   </section>
 
   <section class="section">
-    <h2>Community Puzzle Response Entry</h2>
-    <p class="hint">Author filters by exact nickname match. The board screen opens by puzzle ID.</p>
+    <h2 data-i18n="cacheList.communityHeading">Community Puzzle Response Entry</h2>
+    <p class="hint" data-i18n="cacheList.communityHelp">Author filters by exact nickname match. The board screen opens by puzzle ID.</p>
     <div class="row">
       <div>
-        <label for="commAuthor">Author Nickname (exact match, optional)</label>
-        <input type="text" id="commAuthor" maxlength="31" placeholder="Nickname" autocomplete="off">
+        <label for="commAuthor" data-i18n="cacheList.authorNickname">Author Nickname (exact match, optional)</label>
+        <input type="text" id="commAuthor" maxlength="31" data-i18n-placeholder="cacheList.nicknamePlaceholder" placeholder="Nickname" autocomplete="off">
       </div>
       <div>
-        <label for="commStone">Win Color</label>
+        <label for="commStone" data-i18n="common.winColor">Win Color</label>
         <select id="commStone">
-          <option value="">(All)</option>
+          <option value="" data-i18n="common.all">(All)</option>
           <option value="BLACK">BLACK</option>
           <option value="WHITE">WHITE</option>
         </select>
@@ -75,23 +79,23 @@
     </div>
     <div class="row">
       <div>
-        <label for="commDepthMin">Min Depth</label>
+        <label for="commDepthMin" data-i18n="cacheList.minDepth">Min Depth</label>
         <input type="number" id="commDepthMin" min="1" max="225" value="1">
       </div>
       <div>
-        <label for="commDepthMax">Max Depth</label>
+        <label for="commDepthMax" data-i18n="cacheList.maxDepth">Max Depth</label>
         <input type="number" id="commDepthMax" min="1" max="225" value="225">
       </div>
       <div>
-        <label for="commCursorId">Cursor ID (next page)</label>
-        <input type="number" id="commCursorId" min="1" placeholder="Select">
+        <label for="commCursorId" data-i18n="cacheList.cursor">Cursor ID (next page)</label>
+        <input type="number" id="commCursorId" min="1" data-i18n-placeholder="cacheList.cursorPlaceholder" placeholder="Select">
       </div>
       <div>
-        <label for="commSize">Size</label>
+        <label for="commSize" data-i18n="common.size">Size</label>
         <input type="number" id="commSize" min="1" max="100" value="20">
       </div>
       <div class="load-button-cell">
-        <button type="button" class="btn btn-primary" id="loadCommPuzzlesBtn">Load List</button>
+        <button type="button" class="btn btn-primary" id="loadCommPuzzlesBtn" data-i18n="common.loadList">Load List</button>
       </div>
     </div>
     <ul class="puzzle-list" id="commPuzzleListUl"></ul>
@@ -109,15 +113,15 @@
       }
       const res = await fetch(url, { ...options, headers, credentials: 'same-origin' });
       if (res.status === 401 || res.status === 403) {
-        alert('Your session has expired or you do not have permission. Please log in again.');
+        alert(adminT('msg.sessionExpired'));
         globalThis.location.href = '/admin/logout';
         return null;
       }
       return res;
     }
 
-    function showListMsg(text, ok) {
-      adminToast(text, ok ? 'success' : 'error');
+    function showListError(text) {
+      adminToast(text, 'error');
     }
 
     const PC_FILTER_KEY = 'admin_puzzlecache_filter';
@@ -154,7 +158,7 @@
         if (!res) return;
         const data = await res.json();
         if (!data.isSuccess) {
-          showListMsg('Failed to load list', false);
+          showListError(adminT('cacheList.failedLoadList'));
           return;
         }
         const packs = (data.response || []).filter(p => {
@@ -163,7 +167,7 @@
         });
         if (packs.length === 0) {
           const li = document.createElement('li');
-          li.textContent = 'No packs match the current filters.';
+          li.textContent = adminT('cacheList.noPacks');
           listEl.appendChild(li);
         } else {
           packs.forEach(p => {
@@ -176,9 +180,9 @@
             info.className = 'pack-info';
             const idSpan = document.createElement('span');
             idSpan.className = 'pack-id';
-            idSpan.textContent = 'ID: ' + packIdValue;
+            idSpan.textContent = adminT('common.id') + ': ' + packIdValue;
             const meta = document.createElement('small');
-            meta.textContent = 'Price:' + packPrice + ' / Puzzle Size:' + totalPuzzleCount;
+            meta.textContent = adminT('cacheList.packMeta', { price: packPrice, count: totalPuzzleCount });
             // Server-provided titles are inserted with textContent for XSS safety
             info.appendChild(idSpan);
             info.appendChild(document.createTextNode(' ' + packTitle + ' '));
@@ -188,7 +192,7 @@
             const selectBtn = document.createElement('button');
             selectBtn.type = 'button';
             selectBtn.className = 'btn btn-sm btn-primary';
-            selectBtn.textContent = 'Select';
+            selectBtn.textContent = adminT('common.select');
             selectBtn.onclick = function(e) {
               e.stopPropagation();
               [...listEl.children].forEach(c => c.classList.remove('selected'));
@@ -202,9 +206,8 @@
             listEl.appendChild(li);
           });
         }
-        showListMsg(packs.length + ' loaded', true);
       } catch (err) {
-        showListMsg('Error: ' + (err.message || ''), false);
+        showListError(adminT('common.errorPrefix', { message: err.message || '' }));
       }
     }
 
@@ -216,13 +219,17 @@
         if (!res) return;
         const data = await res.json();
         if (!data.isSuccess) {
-          showListMsg('Failed to load puzzle list', false);
+          showListError(adminT('cacheList.failedLoadPuzzleList'));
           return;
         }
         const puzzles = data.response || [];
         if (puzzles.length === 0) {
-          puzzleListEl.innerHTML = '<li><span class="puzzle-text">This pack has no puzzles.</span></li>';
-          showListMsg('0 puzzles', true);
+          const li = document.createElement('li');
+          const text = document.createElement('span');
+          text.className = 'puzzle-text';
+          text.textContent = adminT('cacheList.noPuzzles');
+          li.appendChild(text);
+          puzzleListEl.appendChild(li);
           return;
         }
         puzzles.forEach(p => {
@@ -230,7 +237,7 @@
           const trainingIndex = p['trainingIndex'] ?? '-';
           const depth = p['depth'] ?? '-';
           const winColor = p['winColor'] || '-';
-          const solvedText = p['isSolved'] ? ' · Solved' : '';
+          const solvedText = p['isSolved'] ? adminT('cacheList.solved') : '';
           const li = document.createElement('li');
           const text = document.createElement('span');
           text.className = 'puzzle-text';
@@ -238,26 +245,25 @@
           idxSpan.className = 'pack-id';
           idxSpan.textContent = '#' + trainingIndex;
           const meta = document.createElement('small');
-          meta.textContent = 'depth ' + depth + ' · ' + winColor + solvedText;
+          meta.textContent = adminT('cacheList.puzzleMeta', { depth, winColor, solved: solvedText });
           text.appendChild(idxSpan);
-          text.appendChild(document.createTextNode(' id ' + puzzleIdValue + ' '));
+          text.appendChild(document.createTextNode(' ' + adminT('common.id').toLowerCase() + ' ' + puzzleIdValue + ' '));
           text.appendChild(meta);
           const goBtn = document.createElement('a');
           goBtn.className = 'btn btn-sm btn-primary';
-          goBtn.textContent = 'Response Entry';
+          goBtn.textContent = adminT('cacheList.responseEntry');
           goBtn.href = '/puzzle-cache/board?puzzleType=TRAINING&packId=' + encodeURIComponent(packId) + '&puzzleId=' + encodeURIComponent(puzzleIdValue);
           li.appendChild(text);
           li.appendChild(goBtn);
           puzzleListEl.appendChild(li);
         });
-        showListMsg('Puzzle ' + puzzles.length + ' (Pack id ' + packId + ')', true);
       } catch (err) {
-        showListMsg('Error: ' + (err.message || ''), false);
+        showListError(adminT('common.errorPrefix', { message: err.message || '' }));
       }
     }
 
-    function showCommMsg(text, ok) {
-      adminToast(text, ok ? 'success' : 'error');
+    function showCommError(text) {
+      adminToast(text, 'error');
     }
 
     document.getElementById('loadCommPuzzlesBtn').addEventListener('click', async () => {
@@ -279,12 +285,17 @@
         if (!res) return;
         const data = await res.json();
         if (!data.isSuccess) {
-          showCommMsg('Failed to load list', false);
+          showCommError(adminT('cacheList.failedLoadList'));
           return;
         }
         const puzzles = data.response || [];
         if (puzzles.length === 0) {
-          listEl.innerHTML = '<li><span class="puzzle-text">No community puzzles match the current filters.</span></li>';
+          const li = document.createElement('li');
+          const text = document.createElement('span');
+          text.className = 'puzzle-text';
+          text.textContent = adminT('cacheList.noCommunity');
+          li.appendChild(text);
+          listEl.appendChild(li);
         } else {
           puzzles.forEach(p => {
             const puzzleIdValue = p['id'];
@@ -296,10 +307,10 @@
             text.className = 'puzzle-text';
             const idSpan = document.createElement('span');
             idSpan.className = 'pack-id';
-            idSpan.textContent = 'id ' + puzzleIdValue;
+            idSpan.textContent = adminT('common.id').toLowerCase() + ' ' + puzzleIdValue;
             const meta = document.createElement('small');
             // User-entered nicknames are inserted with textContent for XSS safety
-            meta.textContent = '@' + authorNickname + ' depth ' + depth + ' · ' + winColor;
+            meta.textContent = adminT('cacheList.communityMeta', { author: authorNickname, depth, winColor });
             text.appendChild(idSpan);
             text.appendChild(document.createTextNode(' '));
             text.appendChild(meta);
@@ -313,16 +324,15 @@
             }
             const goBtn = document.createElement('a');
             goBtn.className = 'btn btn-sm btn-primary';
-            goBtn.textContent = 'Response Entry';
+            goBtn.textContent = adminT('cacheList.responseEntry');
             goBtn.href = '/puzzle-cache/board?puzzleType=COMMUNITY&puzzleId=' + encodeURIComponent(puzzleIdValue);
             li.appendChild(text);
             li.appendChild(goBtn);
             listEl.appendChild(li);
           });
         }
-        showCommMsg(puzzles.length + ' loaded', true);
       } catch (err) {
-        showCommMsg('Error: ' + (err.message || ''), false);
+        showCommError(adminT('common.errorPrefix', { message: err.message || '' }));
       }
     });
 
@@ -330,6 +340,12 @@
     document.getElementById('loadPacksBtn').addEventListener('click', loadPacks);
     document.getElementById('filterDifficulty').addEventListener('change', loadPacks);
     document.getElementById('filterLang').addEventListener('change', loadPacks);
+    document.addEventListener('admin:language-change', () => {
+      loadPacks();
+      if (document.getElementById('commPuzzleListUl').children.length > 0) {
+        document.getElementById('loadCommPuzzlesBtn').click();
+      }
+    });
     restorePcFilters();
     await loadPacks();
   </script>

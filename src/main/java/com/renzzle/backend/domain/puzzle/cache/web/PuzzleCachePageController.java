@@ -26,7 +26,7 @@ public class PuzzleCachePageController {
             model.addAttribute("userEmail", userDetails.getUser().getEmail());
         }
         model.addAttribute("langCodeNames", LangCode.LangCodeName.values());
-        return "puzzle-cache";
+        return "admin/puzzle-cache";
     }
 
     @GetMapping("/puzzle-cache/board")
@@ -43,6 +43,6 @@ public class PuzzleCachePageController {
         if (userDetails != null) {
             model.addAttribute("userEmail", userDetails.getUser().getEmail());
         }
-        return "puzzle-cache-board";
+        return "admin/puzzle-cache-board";
     }
 }

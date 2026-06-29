@@ -14,7 +14,7 @@
       max-width: 380px;
       padding: 2rem;
       background: #fff;
-      border-radius: 16px;
+      border-radius: 8px;
       border: 1px solid #d9e0e8;
       box-shadow: 0 8px 32px rgba(20,30,45,0.12);
     }
@@ -43,8 +43,8 @@
     input::placeholder { color: #526579; }
     input:focus {
       outline: none;
-      border-color: #176b5f;
-      box-shadow: 0 0 0 2px rgba(74,158,255,0.2);
+      border-color: #4340DB;
+      box-shadow: 0 0 0 2px rgba(67, 64, 219, 0.18);
     }
     button {
       width: 100%;
@@ -52,14 +52,14 @@
       margin-top: 0.5rem;
       border: none;
       border-radius: 8px;
-      background: #176b5f; color: #fff;
+      background: #4340DB; color: #fff;
       font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
     }
-    button:hover { opacity: 0.95; }
+    button:hover { background: #3431B8; }
     button:disabled {
-      background: #555;
+      background: #526579;
       cursor: not-allowed;
       opacity: 0.6;
     }

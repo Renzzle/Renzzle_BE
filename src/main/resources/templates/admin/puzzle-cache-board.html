@@ -3,19 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Renzzle - Response Board Entry</title>
-  <link rel="stylesheet" href="/assets/admin/pages/puzzle-cache-board.css">
-  <link rel="stylesheet" href="/assets/admin/admin.css">
+  <title data-i18n="title.responseBoard">Renzzle - Response Board Entry</title>
+  <link rel="stylesheet" href="/assets/admin/puzzle-cache-board.css">
+  <link rel="stylesheet" href="/assets/admin/common.css">
+  <script src="/assets/admin/i18n.js"></script>
 </head>
 <body>
   <div class="header">
     <div>
-      <h1>Renzzle Content Admin</h1>
+      <h1 data-i18n="common.appName">Renzzle Content Admin</h1>
       <span class="user-info" th:if="${userEmail}" th:text="${userEmail}"></span>
     </div>
     <div class="header-actions">
-      <a href="/puzzle-cache" class="btn">Response Entry List</a>
-      <a href="/admin/logout" class="btn">Log out</a>
+      <a href="/puzzle-cache" class="btn" data-i18n="common.responseEntryList">Response Entry List</a>
+      <th:block th:replace="~{admin/fragments :: languageSelect}"></th:block>
+      <a href="/admin/logout" class="btn" data-i18n="common.logout">Log out</a>
     </div>
   </div>
 
@@ -24,16 +26,16 @@
   <main class="admin-shell">
     <div class="admin-page-heading">
       <div>
-        <h2>Response Board</h2>
-        <p>Save or look up the next response for the selected puzzle board state.</p>
+        <h2 data-i18n="cacheBoard.heading">Response Board</h2>
+        <p data-i18n="cacheBoard.description">Save or look up the next response for the selected puzzle board state.</p>
       </div>
-      <a href="/puzzle-cache" class="btn">Back to List</a>
+      <a href="/puzzle-cache" class="btn" data-i18n="common.backToList">Back to List</a>
     </div>
 
   <section class="section">
-    <h2>Board · Answer Save</h2>
-    <p class="meta-line" th:if="${puzzleType == 'TRAINING'}">Training · Pack <strong th:text="${packId != null ? packId : '—'}">-</strong> · Puzzle <strong th:text="${puzzleId}">-</strong></p>
-    <p class="meta-line" th:if="${puzzleType == 'COMMUNITY'}">Community · Puzzle <strong th:text="${puzzleId}">-</strong></p>
+    <h2 data-i18n="cacheBoard.boardSave">Board · Answer Save</h2>
+    <p class="meta-line" th:if="${puzzleType == 'TRAINING'}"><span data-i18n="common.training">Training</span> · <span data-i18n="common.pack">Pack</span> <strong th:text="${packId != null ? packId : '—'}">-</strong> · <span data-i18n="common.puzzle">Puzzle</span> <strong th:text="${puzzleId}">-</strong></p>
+    <p class="meta-line" th:if="${puzzleType == 'COMMUNITY'}"><span data-i18n="common.community">Community</span> · <span data-i18n="common.puzzle">Puzzle</span> <strong th:text="${puzzleId}">-</strong></p>
 
     <input type="hidden" id="problemPuzzleId" th:value="${puzzleId}">
     <input type="hidden" id="problemPuzzleIndex">
@@ -44,36 +46,36 @@
 
     <div class="board-cache-row">
       <div class="board-viz">
-        <div class="field-label">Board Visualization</div>
-        <p class="hint">Initial puzzle stones are unnumbered, answer stones show sequence numbers, and the response being entered is marked with a red ring. After locking currentBoard, only one next move can be placed.</p>
-        <canvas id="gomokuBoard" class="gomoku-board" width="480" height="480" aria-label="Interactive Gomoku response board">Interactive Gomoku response board.</canvas>
+        <div class="field-label" data-i18n="cacheBoard.boardVisualization">Board Visualization</div>
+        <p class="hint" data-i18n="cacheBoard.boardHint">Initial puzzle stones are unnumbered, answer stones show sequence numbers, and the response being entered is marked with a red ring. After locking currentBoard, only one next move can be placed.</p>
+        <canvas id="gomokuBoard" class="gomoku-board" width="480" height="480" aria-label="Interactive Gomoku response board" data-i18n="cacheBoard.canvasLabel" data-i18n-aria-label="cacheBoard.canvasLabel">Interactive Gomoku response board.</canvas>
       </div>
 
       <div class="cache-panel">
-        <button type="button" class="btn btn-primary btn-block" id="cacheResetBoardBtn">Reset to Default Board</button>
-        <button type="button" class="btn btn-primary btn-block" id="setCurrentBoardBtn">Set Current Board</button>
-        <button type="button" class="btn btn-block" id="cancelCurrentBoardBtn" hidden>Cancel Current Board</button>
+        <button type="button" class="btn btn-primary btn-block" id="cacheResetBoardBtn" data-i18n="cacheBoard.resetBoard">Reset to Default Board</button>
+        <button type="button" class="btn btn-primary btn-block" id="setCurrentBoardBtn" data-i18n="cacheBoard.setCurrentBoard">Set Current Board</button>
+        <button type="button" class="btn btn-block" id="cancelCurrentBoardBtn" hidden data-i18n="cacheBoard.cancelCurrentBoard">Cancel Current Board</button>
 
         <p id="lockBadge" class="lock-badge"></p>
 
-        <label class="label-after-btn" for="currentBoardState">Current Board String</label>
-        <textarea id="currentBoardState" readonly rows="2" placeholder="Filled by button"></textarea>
+        <label class="label-after-btn" for="currentBoardState" data-i18n="cacheBoard.currentBoardString">Current Board String</label>
+        <textarea id="currentBoardState" readonly rows="2" data-i18n-placeholder="cacheBoard.filledByButton" placeholder="Filled by button"></textarea>
 
-        <p class="turn-line">Current Turn: <span class="turn-value" id="currentTurn">Black</span></p>
-        <button type="button" class="btn btn-block" id="cacheUndoBtn">Undo Last Move</button>
+        <p class="turn-line"><span data-i18n="common.currentTurn">Current Turn</span>: <span class="turn-value" id="currentTurn">Black</span></p>
+        <button type="button" class="btn btn-block" id="cacheUndoBtn" data-i18n="puzzleForm.undo">Undo Last Move</button>
 
-        <label for="answerPuzzle">Response Move</label>
-        <input type="text" id="answerPuzzle" class="compact-input" readonly placeholder="Click one move on the board" maxlength="3" autocomplete="off">
+        <label for="answerPuzzle" data-i18n="cacheBoard.responseMove">Response Move</label>
+        <input type="text" id="answerPuzzle" class="compact-input" readonly data-i18n-placeholder="cacheBoard.responsePlaceholder" placeholder="Click one move on the board" maxlength="3" autocomplete="off">
 
         <div class="inline-actions-wrap">
-          <button type="button" class="btn btn-primary" id="saveCacheBtn">Answer Save</button>
-          <button type="button" class="btn" id="verifyCacheBtn">Lookup Board Response</button>
+          <button type="button" class="btn btn-primary" id="saveCacheBtn" data-i18n="cacheBoard.answerSave">Answer Save</button>
+          <button type="button" class="btn" id="verifyCacheBtn" data-i18n="cacheBoard.lookup">Lookup Board Response</button>
         </div>
         <div id="cacheMsg" class="msg"></div>
         <div id="verifyResult" class="verify-result">
-          <span class="verify-label">AI Response</span>
+          <span class="verify-label" data-i18n="cacheBoard.aiResponse">AI Response</span>
           <span class="verify-value" id="verifyValue">—</span>
-          <button type="button" class="btn verify-clear" id="clearVerifyBtn">Close</button>
+          <button type="button" class="btn verify-clear" id="clearVerifyBtn" data-i18n="cacheBoard.close">Close</button>
         </div>
       </div>
     </div>
@@ -196,12 +198,12 @@
       const badge = document.getElementById('lockBadge');
       if (!badge) return;
       if (cacheLocked) {
-        badge.textContent = '🔒 Current board is set. Place exactly one response move.';
+        badge.textContent = '🔒 ' + adminT('cacheBoard.locked');
         badge.classList.remove('unlocked');
         badge.classList.add('show', 'locked');
         canvas.classList.add('cache-locked');
       } else {
-        badge.textContent = 'Not set. Match the board, then click Set Current Board.';
+        badge.textContent = adminT('cacheBoard.unlocked');
         badge.classList.remove('locked');
         badge.classList.add('show', 'unlocked');
         canvas.classList.remove('cache-locked');
@@ -291,7 +293,7 @@
     function syncCurrentPlayer() {
       const total = moves.length + answerMoves.length + (cacheExtraMove ? 1 : 0);
       currentPlayer = total % 2 === 0 ? 'black' : 'white';
-      document.getElementById('currentTurn').textContent = currentPlayer === 'black' ? 'Black' : 'White';
+      document.getElementById('currentTurn').textContent = currentPlayer === 'black' ? adminT('common.black') : adminT('common.white');
     }
 
     function countMovesInBoardString(str) {
@@ -402,6 +404,7 @@
 
     drawBoard();
     updateLockUI();
+    syncCurrentPlayer();
 
     async function fetchWithAuth(url, options = {}) {
       const headers = { 'Content-Type': 'application/json', ...options.headers };
@@ -410,7 +413,7 @@
       }
       const res = await fetch(url, { ...options, headers, credentials: 'same-origin' });
       if (res.status === 401 || res.status === 403) {
-        alert('Your session has expired or you do not have permission. Please log in again.');
+        alert(adminT('msg.sessionExpired'));
         globalThis.location.href = '/admin/logout';
         return null;
       }
@@ -441,7 +444,7 @@
         if (!res) return;
         const data = await res.json();
         if (!data.isSuccess) {
-          alert('Failed to load puzzle.');
+          alert(adminT('puzzleForm.failedLoadPuzzle'));
           globalThis.location.href = '/puzzle-cache';
           return;
         }
@@ -476,7 +479,7 @@
         syncCurrentPlayer();
         updateLockUI();
       } catch (err) {
-        alert('Error: ' + (err.message || ''));
+        alert(adminT('common.errorPrefix', { message: err.message || '' }));
       }
     }
 
@@ -548,7 +551,7 @@
       const currentBoardState = document.getElementById('currentBoardState').value.trim();
       const answerPuzzle = document.getElementById('answerPuzzle').value.trim().toLowerCase();
       if (!currentBoardState || !answerPuzzle) {
-        showCacheMsg(msg, 'Set currentBoard and enter a response move.', false);
+        showCacheMsg(msg, adminT('cacheBoard.needCurrentBoard'), false);
         return;
       }
       try {
@@ -564,19 +567,19 @@
         if (!res) return;
         const data = await res.json();
         if (!data.isSuccess) {
-          showCacheMsg(msg, 'Save failed', false);
+          showCacheMsg(msg, adminT('cacheBoard.saveFailed'), false);
           return;
         }
-        showCacheMsg(msg, 'Saved. The board remains unchanged.', true);
+        showCacheMsg(msg, adminT('cacheBoard.saved'), true);
       } catch (err) {
-        showCacheMsg(msg, 'Error: ' + (err.message || ''), false);
+        showCacheMsg(msg, adminT('common.errorPrefix', { message: err.message || '' }), false);
       }
     });
 
     document.getElementById('verifyCacheBtn').addEventListener('click', async () => {
       const currentBoardState = document.getElementById('currentBoardState').value.trim();
       if (!currentBoardState) {
-        showVerifyResult('Set currentBoard first', 'error');
+        showVerifyResult(adminT('cacheBoard.setCurrentBoardFirst'), 'error');
         return;
       }
       try {
@@ -587,24 +590,29 @@
         if (!res) return;
         const data = await res.json();
         if (!data.isSuccess) {
-          showVerifyResult('Failed to lookup', 'error');
+          showVerifyResult(adminT('cacheBoard.lookupFailed'), 'error');
           return;
         }
         const pos = (data.response && data.response.position != null) ? String(data.response.position) : '';
         if (!pos) {
-          showVerifyResult('No response move', 'empty');
+          showVerifyResult(adminT('cacheBoard.noResponse'), 'empty');
           redrawBoard();  // Remove previous preview
           return;
         }
         showVerifyResult(pos.toUpperCase(), 'ok');
         drawVerifyPreview(pos, currentBoardState);  // Temporarily show predicted move on the board
       } catch (err) {
-        showVerifyResult('Error: ' + (err.message || ''), 'error');
+        showVerifyResult(adminT('common.errorPrefix', { message: err.message || '' }), 'error');
       }
     });
 
     document.getElementById('clearVerifyBtn').addEventListener('click', () => {
       hideVerifyResult(true);  // Remove the result box and board preview
+    });
+
+    document.addEventListener('admin:language-change', () => {
+      updateLockUI();
+      document.getElementById('currentTurn').textContent = currentPlayer === 'black' ? adminT('common.black') : adminT('common.white');
     });
 
     await loadPuzzleDetail();

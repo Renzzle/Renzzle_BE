@@ -29,18 +29,14 @@
       display: inline-block;
     }
     .btn:hover { background: #f0f3f7; }
-    .btn-primary { background: #176b5f; color: #fff; }
+    .btn-primary { background: #4340DB; color: #fff; }
     .btn-primary:hover { opacity: 0.95; }
-    .btn-edit { background: #f0f3f7; color: #17202a; }
-    .btn-edit:hover { background: #e7edf5; }
-    .btn-delete { background: #fff0ee; color: #b42318; }
-    .btn-delete:hover { background: #f8d7da; }
     .section {
       max-width: 800px;
       margin-bottom: 2rem;
       padding: 1.5rem;
       background: #fff;
-      border-radius: 16px;
+      border-radius: 8px;
       border: 1px solid #d9e0e8;
     }
     .section h2 { margin: 0; font-size: 1.15rem; }
@@ -68,6 +64,7 @@
     .msg.success { background: #effaf4; color: #13633d; }
     .msg.error { background: #fff0ee; color: #b42318; }
     .hint { color: #526579; font-size: 0.8rem; margin-top: -0.5rem; margin-bottom: 0.5rem; }
+    /* Pack info, same layout as pack detail */
     .pack-info-simple { margin-top: 0.8rem; }
     .pack-info-row {
       display: flex;
@@ -96,7 +93,6 @@
     .pack-info-block .value.empty { color: #526579; font-style: italic; }
     .board-btn-group { margin-bottom: 0.6rem; }
     .board-btn-group .btn { display: block; width: 100%; margin-bottom: 0.4rem; }
-    /* Height based on answer-entry mode controls so the lower buttons stay stable when modes change */
     .board-mode-slot {
       min-height: 7.25rem;
       margin-bottom: 0.6rem;
@@ -105,7 +101,6 @@
     .board-side-panel { flex: 1; min-width: 0; display: flex; flex-direction: column; }
     .board-btn-fixed { margin-top: 1.5rem; }
     .board-btn-fixed .btn { display: block; width: 100%; margin-bottom: 0.4rem; }
-    .edit-buttons { display: flex; gap: 0.75rem; margin-top: 1rem; }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
     /* Answer sequence replay and display options */
     .board-review { margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid #d9e0e8; }
@@ -118,7 +113,7 @@
       -webkit-appearance: checkbox; appearance: checkbox;
       width: 16px; height: 16px; min-width: 16px;
       margin: 0; padding: 0; border: none; background: none;
-      accent-color: #176b5f; cursor: pointer; flex-shrink: 0;
+      accent-color: #4340DB; cursor: pointer; flex-shrink: 0;
     }
     .board-review .btn { display: block; width: 100%; margin-bottom: 0; }
     .playback-row { display: flex; gap: 0.3rem; margin-top: 0.5rem; }

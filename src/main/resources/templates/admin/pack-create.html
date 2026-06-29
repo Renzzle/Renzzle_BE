@@ -3,17 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Renzzle Admin - Pack Form</title>
-  <link rel="stylesheet" href="/assets/admin/pages/pack-create.css">
-  <link rel="stylesheet" href="/assets/admin/admin.css">
+  <title data-i18n="title.packForm">Renzzle Admin - Pack Form</title>
+  <link rel="stylesheet" href="/assets/admin/pack-create.css">
+  <link rel="stylesheet" href="/assets/admin/common.css">
+  <script src="/assets/admin/i18n.js"></script>
 </head>
 <body>
   <div class="header">
     <div>
-      <h1 id="pageTitle">Renzzle Content Admin</h1>
+      <h1 id="pageTitle" data-i18n="common.appName">Renzzle Content Admin</h1>
       <span class="user-info" th:if="${userEmail}" th:text="${userEmail}"></span>
     </div>
-    <a href="/admin/logout" class="btn">Log out</a>
+    <div class="header-actions">
+      <th:block th:replace="~{admin/fragments :: languageSelect}"></th:block>
+      <a href="/admin/logout" class="btn" data-i18n="common.logout">Log out</a>
+    </div>
   </div>
 
   <th:block th:replace="~{admin/fragments :: siteNav(false, true, false)}"></th:block>
@@ -22,40 +26,40 @@
   <main class="admin-shell">
     <div class="admin-page-heading">
       <div>
-        <h2 id="sectionTitle">Create Pack</h2>
-        <p>Save the pack basics and per-language display text first.</p>
+        <h2 id="sectionTitle" data-i18n="packCreate.headingCreate">Create Pack</h2>
+        <p data-i18n="packCreate.description">Save the pack basics and per-language display text first.</p>
       </div>
-      <a href="/admin/pack-list" class="btn">Pack List</a>
+      <a href="/admin/pack-list" class="btn" data-i18n="common.packList">Pack List</a>
     </div>
 
   <section class="section">
     <div class="section-title-row">
       <div>
-        <h2>Basic Info</h2>
-        <p>After saving, you will move to the pack workspace.</p>
+        <h2 data-i18n="packCreate.basicInfo">Basic Info</h2>
+        <p data-i18n="packCreate.afterSaving">After saving, you will move to the pack workspace.</p>
       </div>
     </div>
-    <p class="hint">Select a language code, then use 'Add Translation' to add each language title, author, and description. Available language codes: <span th:text="${#strings.arrayJoin(langCodeNames, ', ')}">EN, KO</span></p>
+    <p class="hint"><span data-i18n="packCreate.languageHelpPrefix">Select a language code, then use 'Add Translation' to add each language title, author, and description. Available language codes:</span> <span th:text="${#strings.arrayJoin(langCodeNames, ', ')}">EN, KO</span></p>
     <div id="langBlocks"></div>
 
     <!-- Language add area -->
     <div id="addLangSection" class="add-lang-section">
-      <label for="newLangCode">Language Code</label>
+      <label for="newLangCode" data-i18n="packCreate.languageCode">Language Code</label>
       <div class="add-lang-row">
         <select id="newLangCode">
           <option th:each="langCode : ${langCodeNames}" th:value="${langCode}" th:text="${langCode}">EN</option>
         </select>
-        <button type="button" class="btn btn-secondary" id="addTranslationBtn">Add Translation</button>
+        <button type="button" class="btn btn-secondary" id="addTranslationBtn" data-i18n="packCreate.addTranslation">Add Translation</button>
       </div>
     </div>
 
     <div class="row">
       <div>
-        <label for="packPrice">Price (price)</label>
+        <label for="packPrice" data-i18n="packCreate.priceLabel">Price (price)</label>
         <input type="number" id="packPrice" min="0" value="0" required>
       </div>
       <div>
-        <label for="packDifficulty">Difficulty (difficulty)</label>
+        <label for="packDifficulty" data-i18n="packCreate.difficultyLabel">Difficulty (difficulty)</label>
         <select id="packDifficulty">
           <option value="LOW">LOW</option>
           <option value="MIDDLE">MIDDLE</option>
@@ -63,7 +67,7 @@
         </select>
       </div>
     </div>
-    <button type="button" class="btn btn-primary" id="submitPackBtn">Create Pack</button>
+    <button type="button" class="btn btn-primary" id="submitPackBtn" data-i18n="packCreate.createPack">Create Pack</button>
     <div id="createPackMsg" class="msg"></div>
   </section>
   </main>
@@ -93,7 +97,7 @@
       Array.from(select.options).forEach((opt, i) => {
         const isUsed = used.includes((opt.value || '').toUpperCase());
         opt.disabled = isUsed;
-        opt.textContent = isUsed ? (opt.value + ' (added)') : opt.value;
+        opt.textContent = isUsed ? adminT('packCreate.languageAdded', { code: opt.value }) : opt.value;
         if (!isUsed && firstEnabled < 0) firstEnabled = i;
       });
       const current = select.options[select.selectedIndex];
@@ -105,11 +109,11 @@
     function addLangBlock(langCode, titleVal, authorVal, descVal) {
       const code = (langCode || '').trim().toUpperCase();
       if (!code) {
-        globalThis.adminToast('Select a language code.', 'warn');
+        globalThis.adminToast(adminT('packCreate.selectLanguageCode'), 'warn');
         return;
       }
       if (getUsedLangCodes().includes(code)) {
-        globalThis.adminToast('Language already added: ' + code, 'warn');
+        globalThis.adminToast(adminT('packCreate.languageAlreadyAdded', { code }), 'warn');
         return;
       }
       const idx = langBlockCount++;
@@ -119,20 +123,22 @@
       block.innerHTML = `
         <h4>Language ${idx + 1} (${escapeHtml(code)})</h4>
         <input type="hidden" name="langCode_${idx}" value="${escapeHtml(code)}">
-        <label for="title_${idx}">Title (title)</label>
-        <input type="text" id="title_${idx}" name="title_${idx}" placeholder="Pack Title" value="${escapeHtml(titleVal || '')}" required>
-        <label for="author_${idx}">Author (author)</label>
-        <input type="text" id="author_${idx}" name="author_${idx}" placeholder="Author name" value="${escapeHtml(authorVal || '')}" required>
-        <label for="description_${idx}">Description (description, optional)</label>
+        <label for="title_${idx}" data-i18n="packCreate.titleLabel">Title (title)</label>
+        <input type="text" id="title_${idx}" name="title_${idx}" data-i18n-placeholder="packCreate.titlePlaceholder" placeholder="Pack Title" value="${escapeHtml(titleVal || '')}" required>
+        <label for="author_${idx}" data-i18n="packCreate.authorLabel">Author (author)</label>
+        <input type="text" id="author_${idx}" name="author_${idx}" data-i18n-placeholder="packCreate.authorPlaceholder" placeholder="Author name" value="${escapeHtml(authorVal || '')}" required>
+        <label for="description_${idx}" data-i18n="packCreate.descriptionLabel">Description (description, optional)</label>
         <div class="desc-with-delete">
-          <textarea id="description_${idx}" name="description_${idx}" placeholder="Pack Description">${escapeHtml(descVal || '')}</textarea>
+          <textarea id="description_${idx}" name="description_${idx}" data-i18n-placeholder="packCreate.descriptionPlaceholder" placeholder="Pack Description">${escapeHtml(descVal || '')}</textarea>
           <div class="lang-delete-row">
-            <button type="button" class="btn btn-danger lang-delete-btn">Delete Language</button>
+            <button type="button" class="btn btn-danger lang-delete-btn" data-i18n="packCreate.deleteLanguage">Delete Language</button>
           </div>
         </div>
       `;
+      adminSetText(block.querySelector('h4'), 'packCreate.languageNumber', { index: idx + 1, code });
+      adminApplyI18n(block);
       block.querySelector('.lang-delete-btn').addEventListener('click', async () => {
-        const ok = await globalThis.adminConfirm('Delete this language translation?\n(' + code + ')', { confirmText: 'Delete', danger: true });
+        const ok = await globalThis.adminConfirm(adminT('packCreate.deleteLanguageConfirm', { code }), { confirmText: adminT('common.delete'), danger: true });
         if (!ok) return;
         block.remove();
         refreshLangOptions();
@@ -169,7 +175,7 @@
       }
       const res = await fetch(url, { ...options, headers, credentials: 'same-origin' });
       if (res.status === 401 || res.status === 403) {
-        alert('Your session has expired or you do not have permission. Please log in again.');
+        alert(adminT('msg.sessionExpired'));
         globalThis.location.href = '/admin/logout';
         return null;
       }
@@ -180,9 +186,8 @@
     const editPackId = urlParams.get('packId');
 
     if (editPackId) {
-      document.getElementById('pageTitle').textContent = 'Renzzle Admin - Edit Pack';
-      document.getElementById('sectionTitle').textContent = 'Edit Pack';
-      document.getElementById('submitPackBtn').textContent = 'Update Pack';
+      adminSetText(document.getElementById('sectionTitle'), 'packCreate.headingEdit');
+      adminSetText(document.getElementById('submitPackBtn'), 'packCreate.updatePack');
       document.getElementById('submitPackBtn').disabled = true;
 
       try {
@@ -190,7 +195,7 @@
         if (res) {
           const data = await res.json();
           if (!data.isSuccess || !data.response) {
-            globalThis.adminToast('Could not load pack info.', 'error');
+            globalThis.adminToast(adminT('packCreate.loadFailed'), 'error');
             setTimeout(() => { globalThis.location.href = '/admin/pack-list'; }, 1200);
           } else {
             const pack = data.response;
@@ -205,9 +210,9 @@
             }
             document.getElementById('submitPackBtn').disabled = false;
           }
-        }
-      } catch (err) {
-        globalThis.adminToast('Error: ' + (err.message || '') + ' — Returning to the list.', 'error');
+      }
+    } catch (err) {
+        globalThis.adminToast(adminT('common.errorPrefix', { message: (err.message || '') + ' - ' + adminT('packCreate.returningToList') }), 'error');
         setTimeout(() => { globalThis.location.href = '/admin/pack-list'; }, 1200);
       }
     }
@@ -232,8 +237,8 @@
       });
       if (info.length === 0) {
         msgEl.textContent = blocks.length === 0
-          ? 'Add at least one language with the Add Translation button.'
-          : 'Enter a title and author for at least one language.';
+          ? adminT('packCreate.needLanguage')
+          : adminT('packCreate.needTitleAuthor');
         msgEl.classList.add('show', 'error');
         return;
       }
@@ -250,11 +255,11 @@
           if (!res) return;
           const data = await res.json();
           if (!data.isSuccess) {
-            msgEl.textContent = 'Failed to update pack';
+            msgEl.textContent = adminT('packCreate.updateFailed');
             msgEl.classList.add('show', 'error');
             return;
           }
-          msgEl.textContent = 'Pack updated. Opening the pack workspace.';
+          msgEl.textContent = adminT('packCreate.updated');
           msgEl.classList.add('show', 'success');
           setTimeout(() => { globalThis.location.href = '/admin/pack-detail?packId=' + editPackId; }, 500);
         } else {
@@ -265,17 +270,25 @@
           if (!res) return;
           const data = await res.json();
           if (!data.isSuccess) {
-            msgEl.textContent = 'Failed to create pack';
+            msgEl.textContent = adminT('packCreate.createFailed');
             msgEl.classList.add('show', 'error');
             return;
           }
-          msgEl.textContent = 'Pack created. Opening the pack workspace.';
+          msgEl.textContent = adminT('packCreate.created');
           msgEl.classList.add('show', 'success');
           setTimeout(() => { globalThis.location.href = '/admin/pack-detail?packId=' + data.response; }, 500);
         }
       } catch (err) {
-        msgEl.textContent = 'Error: ' + (err.message || '');
+        msgEl.textContent = adminT('common.errorPrefix', { message: err.message || '' });
         msgEl.classList.add('show', 'error');
+      }
+    });
+
+    document.addEventListener('admin:language-change', () => {
+      refreshLangOptions();
+      if (editPackId) {
+        adminSetText(document.getElementById('sectionTitle'), 'packCreate.headingEdit');
+        adminSetText(document.getElementById('submitPackBtn'), 'packCreate.updatePack');
       }
     });
   </script>

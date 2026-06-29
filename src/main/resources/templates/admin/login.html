@@ -3,18 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Renzzle Admin Login</title>
-  <link rel="stylesheet" href="/assets/admin/pages/login.css">
-  <link rel="stylesheet" href="/assets/admin/admin.css">
+  <title data-i18n="title.login">Renzzle Admin Login</title>
+  <link rel="stylesheet" href="/assets/admin/login.css">
+  <link rel="stylesheet" href="/assets/admin/common.css">
+  <script src="/assets/admin/i18n.js"></script>
 </head>
 <body>
   <div class="login-card">
-    <h1>Renzzle Admin</h1>
-    <label for="email">Email</label>
-    <input type="email" id="email" placeholder="Enter email" required>
-    <label for="password">Password</label>
-    <input type="password" id="password" placeholder="Enter password" required>
-    <button type="button" id="loginBtn">Log in</button>
+    <h1 data-i18n="login.heading">Renzzle Admin</h1>
+    <label for="email" data-i18n="login.email">Email</label>
+    <input type="email" id="email" data-i18n-placeholder="login.emailPlaceholder" placeholder="Enter email" required>
+    <label for="password" data-i18n="login.password">Password</label>
+    <input type="password" id="password" data-i18n-placeholder="login.passwordPlaceholder" placeholder="Enter password" required>
+    <button type="button" id="loginBtn" data-i18n="login.login">Log in</button>
     <div class="msg" id="message"></div>
   </div>
 
@@ -35,12 +36,12 @@
       const password = passwordInput.value.trim();
 
       if (!email || !password) {
-        showMessage('Enter both email and password.', true);
+        showMessage(adminT('login.required'), true);
         return;
       }
 
       loginBtn.disabled = true;
-      loginBtn.textContent = 'Logging in...';
+      loginBtn.textContent = adminT('login.loggingIn');
 
       try {
         // 1. Call the admin login API (12-hour token)
@@ -52,7 +53,7 @@
         });
 
         if (!loginRes.ok) {
-          let errorMessage = 'Login failed';
+          let errorMessage = adminT('login.failed');
           try {
             const errorData = await loginRes.json();
             errorMessage = errorData?.errorResponse?.message || errorData?.message || errorMessage;
@@ -61,23 +62,17 @@
           }
           showMessage(errorMessage, true);
           loginBtn.disabled = false;
-          loginBtn.textContent = 'Log in';
+          loginBtn.textContent = adminT('login.login');
           return;
         }
 
         await loginRes.json();
-
-        showMessage('Login successful. Opening the pack list...', false);
-
-        // 3. Redirect to the pack list (first screen)
-        setTimeout(() => {
-          globalThis.location.href = '/admin/pack-list';
-        }, 1000);
+        globalThis.location.href = '/admin/pack-list';
 
       } catch (err) {
-        showMessage(err.message || 'An error occurred during login.', true);
+        showMessage(err.message || adminT('login.error'), true);
         loginBtn.disabled = false;
-        loginBtn.textContent = 'Log in';
+        loginBtn.textContent = adminT('login.login');
       }
     });
 

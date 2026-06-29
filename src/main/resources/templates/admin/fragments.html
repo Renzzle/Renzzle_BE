@@ -9,11 +9,21 @@
 <th:block th:fragment="siteNav(hidePackList, hidePackCreate, hidePuzzleCache)">
   <nav class="site-nav-wrap" aria-label="Main menu">
     <div class="site-nav">
-      <a th:classappend="${hidePackList} ? 'active'" th:href="@{/admin/pack-list}">Pack</a>
-      <a th:classappend="${hidePackCreate} ? 'active'" th:href="@{/admin/pack-create}">New Pack</a>
-      <a th:classappend="${hidePuzzleCache} ? 'active'" th:href="@{/puzzle-cache}">Response Moves</a>
+      <a th:classappend="${hidePackList} ? 'active'" th:href="@{/admin/pack-list}" data-i18n="nav.packs">Pack</a>
+      <a th:classappend="${hidePackCreate} ? 'active'" th:href="@{/admin/pack-create}" data-i18n="nav.newPack">New Pack</a>
+      <a th:classappend="${hidePuzzleCache} ? 'active'" th:href="@{/puzzle-cache}" data-i18n="nav.responseMoves">Response Moves</a>
     </div>
   </nav>
+</th:block>
+
+<th:block th:fragment="languageSelect">
+  <div class="admin-language-control">
+    <label for="adminLanguageSelect" data-i18n="common.language">Language</label>
+    <select id="adminLanguageSelect" data-admin-language-select>
+      <option value="en" data-i18n="common.english">English</option>
+      <option value="ko" data-i18n="common.korean">Korean</option>
+    </select>
+  </div>
 </th:block>
 
 <!-- Shared UI kit: toast and confirm modal (globalThis.adminToast / globalThis.adminConfirm) -->
@@ -22,8 +32,8 @@
   <dialog id="adminModalDialog" class="admin-modal" aria-labelledby="adminModalMsg">
     <div class="modal-msg" id="adminModalMsg"></div>
     <div class="modal-actions">
-      <button type="button" class="modal-btn" id="adminModalCancel">Cancel</button>
-      <button type="button" class="modal-btn danger" id="adminModalOk">Check</button>
+      <button type="button" class="modal-btn" id="adminModalCancel" data-i18n="common.cancel">Cancel</button>
+      <button type="button" class="modal-btn danger" id="adminModalOk" data-i18n="common.check">Check</button>
     </div>
   </dialog>
   <script>
@@ -50,8 +60,8 @@
           let ok = document.getElementById('adminModalOk');
           let cancel = document.getElementById('adminModalCancel');
           msg.textContent = message;
-          ok.textContent = opts.confirmText || 'Check';
-          cancel.textContent = opts.cancelText || 'Cancel';
+          ok.textContent = opts.confirmText || (globalThis.adminT ? globalThis.adminT('common.check') : 'Check');
+          cancel.textContent = opts.cancelText || (globalThis.adminT ? globalThis.adminT('common.cancel') : 'Cancel');
           ok.className = 'modal-btn ' + (opts.danger === false ? 'primary' : 'danger');
           if (typeof dialog.showModal === 'function') {
             dialog.showModal();

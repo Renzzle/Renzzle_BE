@@ -3,17 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Renzzle Admin - Packs</title>
-  <link rel="stylesheet" href="/assets/admin/pages/pack-list.css">
-  <link rel="stylesheet" href="/assets/admin/admin.css">
+  <title data-i18n="title.packList">Renzzle Admin - Packs</title>
+  <link rel="stylesheet" href="/assets/admin/pack-list.css">
+  <link rel="stylesheet" href="/assets/admin/common.css">
+  <script src="/assets/admin/i18n.js"></script>
 </head>
 <body>
   <div class="header">
     <div>
-      <h1>Renzzle Content Admin</h1>
+      <h1 data-i18n="common.appName">Renzzle Content Admin</h1>
       <span class="user-info" th:if="${userEmail}" th:text="${userEmail}"></span>
     </div>
-    <a href="/admin/logout" class="btn">Log out</a>
+    <div class="header-actions">
+      <th:block th:replace="~{admin/fragments :: languageSelect}"></th:block>
+      <a href="/admin/logout" class="btn" data-i18n="common.logout">Log out</a>
+    </div>
   </div>
 
   <th:block th:replace="~{admin/fragments :: siteNav(true, false, false)}"></th:block>
@@ -22,23 +26,23 @@
   <main class="admin-shell">
     <div class="admin-page-heading">
       <div>
-        <h2>Packs</h2>
-        <p>Select a pack first, then create or edit puzzles inside it.</p>
+        <h2 data-i18n="packList.heading">Packs</h2>
+        <p data-i18n="packList.description">Select a pack first, then create or edit puzzles inside it.</p>
       </div>
-      <a href="/admin/pack-create" class="btn btn-primary">New Pack</a>
+      <a href="/admin/pack-create" class="btn btn-primary" data-i18n="common.newPack">New Pack</a>
     </div>
 
     <section class="section">
       <div class="section-title-row">
         <div>
-          <h2>Select Pack</h2>
-          <p>The list refreshes automatically when filters change.</p>
+          <h2 data-i18n="packList.selectPack">Select Pack</h2>
+          <p data-i18n="packList.autoRefresh">The list refreshes automatically when filters change.</p>
         </div>
       </div>
 
       <div class="admin-toolbar">
         <div>
-          <label for="filterDifficulty">Difficulty</label>
+          <label for="filterDifficulty" data-i18n="common.difficulty">Difficulty</label>
           <select id="filterDifficulty">
             <option value="LOW">LOW</option>
             <option value="MIDDLE">MIDDLE</option>
@@ -46,21 +50,21 @@
           </select>
         </div>
         <div>
-          <label for="filterLang">Language</label>
+          <label for="filterLang" data-i18n="common.language">Language</label>
           <select id="filterLang">
             <option th:each="langCode : ${langCodeNames}" th:value="${langCode}" th:text="${langCode}">EN</option>
           </select>
         </div>
         <div class="load-button-cell">
-          <button type="button" class="btn" id="loadPacksBtn">Refresh</button>
+          <button type="button" class="btn" id="loadPacksBtn" data-i18n="common.refresh">Refresh</button>
         </div>
       </div>
 
       <div id="packEmptyState" class="admin-empty" hidden>
-        <strong>No packs match the current filters.</strong>
-        <span>Create a pack, then add puzzles from the pack workspace.</span>
+        <strong data-i18n="packList.noPacksStrong">No packs match the current filters.</strong>
+        <span data-i18n="packList.noPacksHelp">Create a pack, then add puzzles from the pack workspace.</span>
         <div class="mt-1">
-          <a href="/admin/pack-create" class="btn btn-primary">New Pack</a>
+          <a href="/admin/pack-create" class="btn btn-primary" data-i18n="common.newPack">New Pack</a>
         </div>
       </div>
 
@@ -68,12 +72,12 @@
         <table class="admin-table">
           <thead>
           <tr>
-            <th>ID</th>
-            <th>Pack</th>
-            <th>Difficulty</th>
-            <th>Price</th>
-            <th>Puzzles</th>
-            <th class="actions-col">Actions</th>
+            <th data-i18n="common.id">ID</th>
+            <th data-i18n="common.pack">Pack</th>
+            <th data-i18n="common.difficulty">Difficulty</th>
+            <th data-i18n="common.price">Price</th>
+            <th data-i18n="common.puzzles">Puzzles</th>
+            <th class="actions-col" data-i18n="common.actions">Actions</th>
           </tr>
           </thead>
           <tbody id="packTableBody"></tbody>
@@ -93,7 +97,7 @@
       }
       const res = await fetch(url, { ...options, headers, credentials: 'same-origin' });
       if (res.status === 401 || res.status === 403) {
-        alert('Your session has expired or you do not have permission. Please log in again.');
+        alert(adminT('msg.sessionExpired'));
         globalThis.location.href = '/admin/logout';
         return null;
       }
@@ -141,11 +145,11 @@
         if (!data.isSuccess) {
           if (res.status === 404) {
             emptyState.hidden = false;
-            msgEl.textContent = '0 packs found';
+            msgEl.textContent = adminT('packList.zero');
             msgEl.classList.add('show', 'success');
             return;
           }
-          msgEl.textContent = 'Failed to load packs';
+          msgEl.textContent = adminT('packList.failedLoad');
           msgEl.classList.add('show', 'error');
           return;
         }
@@ -159,7 +163,7 @@
           tableWrap.hidden = false;
           packs.forEach(p => {
             const packIdValue = p['id'];
-            const packTitle = p['title'] || '(Untitled)';
+            const packTitle = p['title'] || adminT('common.untitled');
             const packAuthor = p['author'];
             const tr = document.createElement('tr');
             tr.addEventListener('click', () => { globalThis.location.href = '/admin/pack-detail?packId=' + packIdValue; });
@@ -177,7 +181,7 @@
             titleTd.appendChild(title);
             const meta = document.createElement('div');
             meta.className = 'pack-row-meta';
-            meta.textContent = packAuthor ? 'Author: ' + packAuthor : 'No author';
+            meta.textContent = packAuthor ? adminT('packList.metaAuthor', { author: packAuthor }) : adminT('common.noAuthor');
             titleTd.appendChild(meta);
 
             const diffTd = document.createElement('td');
@@ -199,17 +203,17 @@
             const editBtn = document.createElement('button');
             editBtn.type = 'button';
             editBtn.className = 'btn btn-sm';
-            editBtn.textContent = 'Edit Info';
+            editBtn.textContent = adminT('common.editInfo');
             editBtn.onclick = function(e) { e.stopPropagation(); globalThis.location.href = '/admin/pack-create?packId=' + packIdValue; };
             const deleteBtn = document.createElement('button');
             deleteBtn.type = 'button';
             deleteBtn.className = 'btn btn-sm btn-danger';
-            deleteBtn.textContent = 'Delete';
+            deleteBtn.textContent = adminT('common.delete');
             deleteBtn.onclick = function(e) { e.stopPropagation(); deletePack(packIdValue, packTitle); };
             const moveBtn = document.createElement('button');
             moveBtn.type = 'button';
             moveBtn.className = 'btn btn-sm btn-primary';
-            moveBtn.textContent = 'Open';
+            moveBtn.textContent = adminT('common.open');
             moveBtn.onclick = function(e) { e.stopPropagation(); globalThis.location.href = '/admin/pack-detail?packId=' + packIdValue; };
             actions.appendChild(editBtn);
             actions.appendChild(deleteBtn);
@@ -225,10 +229,10 @@
             tableBody.appendChild(tr);
           });
         }
-        msgEl.textContent = packs.length + ' packs found';
+        msgEl.textContent = adminT('packList.count', { count: packs.length });
         msgEl.classList.add('show', 'success');
       } catch (err) {
-        msgEl.textContent = 'Error: ' + (err.message || '');
+        msgEl.textContent = adminT('common.errorPrefix', { message: err.message || '' });
         msgEl.classList.add('show', 'error');
       }
     }
@@ -236,11 +240,13 @@
     document.getElementById('loadPacksBtn').addEventListener('click', loadPacks);
     document.getElementById('filterDifficulty').addEventListener('change', () => { saveFilters(); loadPacks(); });
     document.getElementById('filterLang').addEventListener('change', () => { saveFilters(); loadPacks(); });
+    document.addEventListener('admin:language-change', loadPacks);
 
     async function deletePack(packId, title) {
-      const label = title ? ` "${title}"` : '';
-      const ok = await adminConfirm('Delete pack' + label + '? This also removes its puzzles.', {
-        confirmText: 'Delete',
+      const ok = await adminConfirm(title
+        ? adminT('packList.deleteConfirm', { title })
+        : adminT('packList.deleteConfirmNoTitle'), {
+        confirmText: adminT('common.delete'),
         danger: true
       });
       if (!ok) return;
@@ -249,13 +255,13 @@
         if (!res) return;
         const data = await res.json();
         if (!data.isSuccess) {
-          adminToast('Failed to delete pack', 'error');
+          adminToast(adminT('packList.deleteFailed'), 'error');
           return;
         }
-        adminToast('Pack deleted.', 'success');
+        adminToast(adminT('packList.deleted'), 'success');
         await loadPacks();
       } catch (err) {
-        adminToast('Error: ' + (err.message || ''), 'error');
+        adminToast(adminT('common.errorPrefix', { message: err.message || '' }), 'error');
       }
     }
 

@@ -5,9 +5,9 @@
   --admin-text: #17202a;
   --admin-muted: #526579;
   --admin-border: #d9e0e8;
-  --admin-primary: #176b5f;
-  --admin-primary-hover: #11584e;
-  --admin-accent: #2f6fed;
+  --admin-primary: #4340DB;
+  --admin-primary-hover: #3431B8;
+  --admin-accent: #4340DB;
   --admin-danger: #b42318;
   --admin-warn: #9a6700;
   --admin-shadow: 0 1px 2px rgba(20, 30, 45, 0.07);
@@ -64,6 +64,27 @@ body {
   gap: 0.5rem;
 }
 
+.admin-language-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.admin-language-control label {
+  margin: 0 !important;
+  color: var(--admin-muted) !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+}
+
+.admin-language-control select {
+  width: auto;
+  min-width: 7.25rem;
+  min-height: 2.35rem;
+  margin: 0 !important;
+  padding: 0 2rem 0 0.75rem;
+}
+
 .site-nav-wrap,
 body > .site-nav-wrap {
   margin: 0 !important;
@@ -104,7 +125,7 @@ body > .site-nav-wrap {
 }
 
 .site-nav a.active {
-  background: #e6f2ef !important;
+  background: #ecebff !important;
   color: var(--admin-primary) !important;
 }
 
@@ -205,7 +226,7 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-  outline: 2px solid rgba(47, 111, 237, 0.18);
+  outline: 2px solid rgba(67, 64, 219, 0.18);
   border-color: var(--admin-accent) !important;
 }
 
@@ -349,7 +370,7 @@ input.auto-calculated {
 }
 
 .admin-pill.primary {
-  background: #e6f2ef;
+  background: #ecebff;
   color: var(--admin-primary);
 }
 
@@ -471,7 +492,7 @@ small {
   width: 1.45rem;
   height: 1.45rem;
   border-radius: 999px;
-  background: #e6f2ef;
+  background: #ecebff;
   color: var(--admin-primary);
   font-size: 0.78rem;
   font-weight: 800;
@@ -531,7 +552,7 @@ small {
 }
 
 .gomoku-board.cache-locked {
-  border-color: #4a9eff !important;
+  border-color: #4340DB !important;
 }
 
 #packDescription {
@@ -734,6 +755,20 @@ small {
 
   .admin-shell {
     padding: 1rem 0.75rem 1.5rem;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .admin-language-control {
+    flex: 1 1 100%;
+  }
+
+  .admin-language-control select {
+    flex: 1;
+    min-width: 0;
   }
 
   .admin-page-heading,

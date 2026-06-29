@@ -3,17 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Renzzle Admin - Pack Workspace</title>
-  <link rel="stylesheet" href="/assets/admin/pages/pack-detail.css">
-  <link rel="stylesheet" href="/assets/admin/admin.css">
+  <title data-i18n="title.packWorkspace">Renzzle Admin - Pack Workspace</title>
+  <link rel="stylesheet" href="/assets/admin/pack-detail.css">
+  <link rel="stylesheet" href="/assets/admin/common.css">
+  <script src="/assets/admin/i18n.js"></script>
 </head>
 <body>
   <div class="header">
     <div>
-      <h1>Renzzle Content Admin</h1>
+      <h1 data-i18n="common.appName">Renzzle Content Admin</h1>
       <span class="user-info" th:if="${userEmail}" th:text="${userEmail}"></span>
     </div>
-    <a href="/admin/logout" class="btn">Log out</a>
+    <div class="header-actions">
+      <th:block th:replace="~{admin/fragments :: languageSelect}"></th:block>
+      <a href="/admin/logout" class="btn" data-i18n="common.logout">Log out</a>
+    </div>
   </div>
 
   <th:block th:replace="~{admin/fragments :: siteNav(true, false, false)}"></th:block>
@@ -22,29 +26,29 @@
   <main class="admin-shell">
     <div class="admin-page-heading">
       <div>
-        <h2>Pack Workspace</h2>
-        <p>Review pack information and manage the puzzles inside this pack.</p>
+        <h2 data-i18n="packDetail.heading">Pack Workspace</h2>
+        <p data-i18n="packDetail.description">Review pack information and manage the puzzles inside this pack.</p>
       </div>
       <div class="admin-actions">
-        <a href="/admin/pack-list" class="btn">Pack List</a>
-        <a th:href="@{/admin/puzzle-add(packId=${packId})}" class="btn btn-primary">Add Puzzle</a>
+        <a href="/admin/pack-list" class="btn" data-i18n="common.packList">Pack List</a>
+        <a th:href="@{/admin/puzzle-add(packId=${packId})}" class="btn btn-primary" data-i18n="common.addPuzzle">Add Puzzle</a>
       </div>
     </div>
 
     <section class="section" id="packInfoSection">
       <div class="section-title-row">
         <div>
-          <h2>Pack Info</h2>
-          <p>Title and description are shown in the selected language.</p>
+          <h2 data-i18n="packDetail.infoHeading">Pack Info</h2>
+          <p data-i18n="packDetail.infoHelp">Title and description are shown in the selected language.</p>
         </div>
         <div class="admin-actions">
-          <button type="button" class="btn btn-danger" id="deletePackBtn">Delete Pack</button>
-          <a th:href="@{/admin/pack-create(packId=${packId})}" class="btn">Edit Info</a>
+          <button type="button" class="btn btn-danger" id="deletePackBtn" data-i18n="packDetail.deletePack">Delete Pack</button>
+          <a th:href="@{/admin/pack-create(packId=${packId})}" class="btn" data-i18n="common.editInfo">Edit Info</a>
         </div>
       </div>
       <div class="admin-toolbar pack-language-toolbar">
         <div>
-          <label for="langSelect">Display Language</label>
+          <label for="langSelect" data-i18n="common.displayLanguage">Display Language</label>
           <select id="langSelect">
             <option th:each="langCode : ${langCodeNames}" th:value="${langCode}" th:text="${langCode}">EN</option>
           </select>
@@ -52,21 +56,21 @@
       </div>
       <div id="packInfoBox" class="pack-info-simple" hidden>
         <div class="pack-info-row">
-          <div class="item"><span class="label">Pack ID</span><span class="value" id="packIdText">-</span></div>
-          <div class="item"><span class="label">Difficulty</span><span class="value" id="packDifficulty">-</span></div>
-          <div class="item"><span class="label">Price</span><span class="value" id="packPrice">-</span></div>
-          <div class="item"><span class="label">Puzzles</span><span class="value" id="packPuzzleCount">-</span></div>
+          <div class="item"><span class="label" data-i18n="common.packId">Pack ID</span><span class="value" id="packIdText">-</span></div>
+          <div class="item"><span class="label" data-i18n="common.difficulty">Difficulty</span><span class="value" id="packDifficulty">-</span></div>
+          <div class="item"><span class="label" data-i18n="common.price">Price</span><span class="value" id="packPrice">-</span></div>
+          <div class="item"><span class="label" data-i18n="common.puzzles">Puzzles</span><span class="value" id="packPuzzleCount">-</span></div>
         </div>
         <div class="pack-info-block">
-          <div class="label">Title</div>
+          <div class="label" data-i18n="common.title">Title</div>
           <div class="value" id="packTitle">-</div>
         </div>
         <div class="pack-info-block">
-          <div class="label">Author</div>
+          <div class="label" data-i18n="common.author">Author</div>
           <div class="value" id="packAuthor">-</div>
         </div>
         <div class="pack-info-block">
-          <div class="label">Description</div>
+          <div class="label" data-i18n="common.description">Description</div>
           <div class="value" id="packDescription">-</div>
         </div>
       </div>
@@ -75,29 +79,29 @@
     <section class="section">
       <div class="section-title-row">
         <div>
-          <h2>Puzzles</h2>
-          <p>Select a row to open the puzzle editor.</p>
+          <h2 data-i18n="packDetail.puzzlesHeading">Puzzles</h2>
+          <p data-i18n="packDetail.puzzlesHelp">Select a row to open the puzzle editor.</p>
         </div>
-        <a th:href="@{/admin/puzzle-add(packId=${packId})}" class="btn btn-primary">Add Puzzle</a>
+        <a th:href="@{/admin/puzzle-add(packId=${packId})}" class="btn btn-primary" data-i18n="common.addPuzzle">Add Puzzle</a>
       </div>
       <div id="puzzleEmptyState" class="admin-empty" hidden>
-        <strong>No puzzles yet.</strong>
-        <span>Add the first puzzle to this pack.</span>
+        <strong data-i18n="packDetail.noPuzzlesStrong">No puzzles yet.</strong>
+        <span data-i18n="packDetail.noPuzzlesHelp">Add the first puzzle to this pack.</span>
         <div class="mt-1">
-          <a th:href="@{/admin/puzzle-add(packId=${packId})}" class="btn btn-primary">Add Puzzle</a>
+          <a th:href="@{/admin/puzzle-add(packId=${packId})}" class="btn btn-primary" data-i18n="common.addPuzzle">Add Puzzle</a>
         </div>
       </div>
       <div id="puzzleTableWrap" class="admin-table-wrap" hidden>
         <table class="admin-table">
           <thead>
           <tr>
-            <th>Order</th>
-            <th>ID</th>
-            <th>Win Color</th>
-            <th>Depth</th>
-            <th>Board</th>
-            <th>Answer Moves</th>
-            <th class="actions-col">Actions</th>
+            <th data-i18n="common.order">Order</th>
+            <th data-i18n="common.id">ID</th>
+            <th data-i18n="common.winColor">Win Color</th>
+            <th data-i18n="common.depth">Depth</th>
+            <th data-i18n="common.board">Board</th>
+            <th data-i18n="common.answerMoves">Answer Moves</th>
+            <th class="actions-col" data-i18n="common.actions">Actions</th>
           </tr>
           </thead>
           <tbody id="puzzleTableBody"></tbody>
@@ -119,7 +123,7 @@
       }
       const res = await fetch(url, { ...options, headers, credentials: 'same-origin' });
       if (res.status === 401 || res.status === 403) {
-        alert('Your session has expired or you do not have permission. Please log in again.');
+        alert(adminT('msg.sessionExpired'));
         globalThis.location.href = '/admin/logout';
         return null;
       }
@@ -141,12 +145,12 @@
       document.getElementById('packDifficulty').textContent = detail['difficulty'] || '-';
       document.getElementById('packPrice').textContent = String(detail['price'] ?? '-');
       document.getElementById('packPuzzleCount').textContent = String(detail['totalPuzzleCount'] ?? '-');
-      document.getElementById('packTitle').textContent = info['title'] || '(None)';
+      document.getElementById('packTitle').textContent = info['title'] || adminT('common.none');
       document.getElementById('packTitle').classList.toggle('empty', !info['title']);
-      document.getElementById('packAuthor').textContent = info['author'] || '(None)';
+      document.getElementById('packAuthor').textContent = info['author'] || adminT('common.none');
       document.getElementById('packAuthor').classList.toggle('empty', !info['author']);
       const descEl = document.getElementById('packDescription');
-      descEl.textContent = info['description'] || '(No description)';
+      descEl.textContent = info['description'] || adminT('common.noDescription');
       descEl.classList.toggle('empty', !info['description']);
     }
 
@@ -156,14 +160,14 @@
         if (!res) return;
         const data = await res.json();
         if (!data.isSuccess) {
-          alert('Failed to load pack.');
+          alert(adminT('packDetail.failedLoadPack'));
           globalThis.location.href = '/admin/pack-list';
           return;
         }
         packDetail = data.response;
         renderPackInfo(data.response);
       } catch (err) {
-        alert('Error: ' + (err.message || ''));
+        alert(adminT('common.errorPrefix', { message: err.message || '' }));
         globalThis.location.href = '/admin/pack-list';
       }
     }
@@ -176,7 +180,7 @@
       tableBody.innerHTML = '';
       tableWrap.hidden = true;
       emptyState.hidden = true;
-      msgEl.textContent = 'Loading...';
+      msgEl.textContent = adminT('common.loading');
       try {
         const res = await fetchWithAuth(API_BASE + '/admin/training/puzzle/' + packId);
         if (!res) return;
@@ -225,7 +229,7 @@
             const editBtn = document.createElement('a');
             editBtn.href = editUrl;
             editBtn.className = 'btn btn-edit';
-            editBtn.textContent = 'Edit';
+            editBtn.textContent = adminT('common.edit');
             editBtn.addEventListener('click', (e) => e.stopPropagation());
             actions.appendChild(editBtn);
             actionsTd.appendChild(actions);
@@ -239,21 +243,25 @@
             tr.appendChild(actionsTd);
             tableBody.appendChild(tr);
           });
-          msgEl.textContent = puzzles.length + ' puzzles';
+          msgEl.textContent = adminT('packDetail.count', { count: puzzles.length });
         }
       } catch (err) {
-        msgEl.textContent = 'Error: ' + (err.message || '');
+        msgEl.textContent = adminT('common.errorPrefix', { message: err.message || '' });
       }
     }
 
     document.getElementById('langSelect').addEventListener('change', () => {
       if (packDetail) renderPackInfo(packDetail);
     });
+    document.addEventListener('admin:language-change', async () => {
+      if (packDetail) renderPackInfo(packDetail);
+      await loadPuzzleList();
+    });
 
     document.getElementById('deletePackBtn').addEventListener('click', async () => {
       const title = document.getElementById('packTitle').textContent;
-      const ok = await adminConfirm('Delete pack "' + title + '"? This also removes its puzzles.', {
-        confirmText: 'Delete',
+      const ok = await adminConfirm(adminT('packList.deleteConfirm', { title }), {
+        confirmText: adminT('common.delete'),
         danger: true
       });
       if (!ok) return;
@@ -262,13 +270,13 @@
         if (!res) return;
         const data = await res.json();
         if (!data.isSuccess) {
-          adminToast('Failed to delete pack', 'error');
+          adminToast(adminT('packList.deleteFailed'), 'error');
           return;
         }
-        adminToast('Pack deleted.', 'success');
+        adminToast(adminT('packList.deleted'), 'success');
         setTimeout(() => { globalThis.location.href = '/admin/pack-list'; }, 500);
       } catch (err) {
-        adminToast('Error: ' + (err.message || ''), 'error');
+        adminToast(adminT('common.errorPrefix', { message: err.message || '' }), 'error');
       }
     });
 

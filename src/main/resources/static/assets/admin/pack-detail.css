@@ -29,14 +29,14 @@
       display: inline-block;
     }
     .btn:hover { background: #f0f3f7; }
-    .btn-primary { background: #176b5f; color: #fff; }
+    .btn-primary { background: #4340DB; color: #fff; }
     .btn-primary:hover { opacity: 0.95; }
     .section {
       max-width: 720px;
       margin-bottom: 2rem;
       padding: 1.5rem;
       background: #fff;
-      border-radius: 16px;
+      border-radius: 8px;
       border: 1px solid #d9e0e8;
     }
     .section h2 { margin: 0; font-size: 1.15rem; }
