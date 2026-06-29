@@ -4,3 +4,25 @@ services:
       context: .
       dockerfile: Dockerfile
     image: myapp:dev
+    environment:
+      DB_ADDRESS: db:3306/${DB_NAME}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes: !override
+      []
+
+  db:
+    restart: "no"
+    volumes: !override
+      []
+    tmpfs:
+      - /var/lib/mysql
+
+  redis:
+    volumes: !override
+      []
+    tmpfs:
+      - /data
+
+  caddy:
+    profiles:
+      - proxy

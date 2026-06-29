@@ -1,6 +1,8 @@
 package com.renzzle.backend.domain.puzzle.training.service;
 
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
+import com.renzzle.backend.domain.puzzle.cache.dao.PuzzleCacheRepository;
+import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackDetailForAdminResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackPurchaseResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackResponse;
@@ -41,6 +43,7 @@ public class TrainingService {
     private final PackRepository packRepository;
     private final PackTranslationRepository packTranslationRepository;
     private final UserPackRepository userPackRepository;
+    private final PuzzleCacheRepository puzzleCacheRepository;
     private final UserRepository userRepository;
     private final Clock clock;
 
@@ -131,6 +134,7 @@ public class TrainingService {
             userPackRepository.decreaseSolvedCount(userId, pack.getId());
         }
 
+        puzzleCacheRepository.deleteAllByPuzzleTypeAndPuzzleId(PuzzleType.TRAINING, puzzleId);
         trainingPuzzleRepository.deleteById(puzzleId);
         trainingPuzzleRepository.decreaseIndexesFrom(puzzle.get().getTrainingIndex());
 
@@ -266,6 +270,25 @@ public class TrainingService {
         packTranslationRepository.saveAll(newTranslations);
 
         return updatedPack;
+    }
+
+    @Transactional
+    public void deletePack(Long packId) {
+        Pack pack = packRepository.findById(packId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
+
+        List<Long> puzzleIds = trainingPuzzleRepository.findByPack_IdOrderByTrainingIndex(packId).stream()
+                .map(TrainingPuzzle::getId)
+                .toList();
+        if (!puzzleIds.isEmpty()) {
+            puzzleCacheRepository.deleteAllByPuzzleTypeAndPuzzleIdIn(PuzzleType.TRAINING, puzzleIds);
+        }
+
+        solvedTrainingPuzzleRepository.deleteAllByPuzzle_Pack_Id(packId);
+        trainingPuzzleRepository.deleteAllByPack_Id(packId);
+        userPackRepository.deleteAllByPack_Id(packId);
+        packTranslationRepository.deleteAllByPack_Id(packId);
+        packRepository.delete(pack);
     }
 
     // service test, repo test

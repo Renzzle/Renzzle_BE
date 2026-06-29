@@ -103,6 +103,13 @@ public class TrainingController {
         return ApiUtils.success(pack.getId());
     }
 
+    @Operation(summary = "Delete Pack", description = "Delete pack and its training puzzles & Only admins are available")
+    @DeleteMapping("/pack/{packId}")
+    public ApiResponse<Object> deleteTrainingPack(@PathVariable("packId") Long packId) {
+        trainingService.deletePack(packId);
+        return ApiUtils.success(null);
+    }
+
     @Operation(summary = "Get Training Packs", description = "Get Training Packs")
     @GetMapping("/pack")
     public ApiResponse<List<GetPackResponse>> getTrainingPack(

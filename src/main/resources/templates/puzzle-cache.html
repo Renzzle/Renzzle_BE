@@ -1,123 +1,38 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Renzzle - 퍼즐 대응 수 입력</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      margin: 0;
-      min-height: 100vh;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-      color: #e8e8e8;
-      padding: 1rem;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-    }
-    .header h1 { margin: 0; font-size: 1.35rem; }
-    .header .user-info { font-size: 0.9rem; color: #b0b0b0; margin-right: 1rem; }
-    .btn {
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 8px;
-      background: rgba(255,255,255,0.15);
-      color: #fff;
-      cursor: pointer;
-      font-size: 0.9rem;
-      text-decoration: none;
-      display: inline-block;
-    }
-    .btn:hover { background: rgba(255,255,255,0.25); }
-    .btn-primary { background: linear-gradient(90deg, #4a9eff, #357abd); }
-    .btn-primary:hover { opacity: 0.95; }
-    .section {
-      max-width: 720px;
-      margin-bottom: 2rem;
-      padding: 1.5rem;
-      background: rgba(255,255,255,0.06);
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-    .section h2 { margin: 0 0 1rem 0; font-size: 1.15rem; }
-    label { display: block; margin-bottom: 0.35rem; font-size: 0.9rem; color: #b0b0b0; }
-    input, select {
-      width: 100%;
-      padding: 0.6rem 0.8rem;
-      margin-bottom: 0.9rem;
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 8px;
-      background: rgba(0,0,0,0.2);
-      color: #fff;
-      font-size: 0.95rem;
-    }
-    .row { display: flex; gap: 1rem; align-items: flex-end; }
-    .row > * { flex: 1; }
-    .load-button-cell .btn { margin-bottom: 0.9rem; }
-    .msg { margin-top: 0.5rem; padding: 0.5rem; border-radius: 8px; font-size: 0.9rem; display: none; }
-    .msg.show { display: block; }
-    .msg.success { background: rgba(40,167,69,0.2); color: #90ee90; }
-    .msg.error { background: rgba(220,53,69,0.2); color: #f8a0a0; }
-    ul.pack-list { list-style: none; padding: 0; margin: 0; }
-    ul.pack-list li {
-      padding: 0.6rem 0.8rem;
-      margin-bottom: 0.4rem;
-      background: rgba(0,0,0,0.2);
-      border-radius: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    ul.pack-list li:hover { background: rgba(0,0,0,0.3); }
-    ul.pack-list li.selected { outline: 2px solid #4a9eff; }
-    .pack-list li .pack-info { flex: 1; }
-    .pack-list li .pack-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
-    .pack-list li .btn-sm { padding: 0.35rem 0.6rem; font-size: 0.85rem; }
-    .pack-id { font-weight: 600; color: #4a9eff; }
-    small { color: #888; font-size: 0.85rem; }
-    .subsection-title { font-size: 1rem; margin: 1.25rem 0 0.5rem 0; color: #c8c8c8; }
-    ul.puzzle-list { list-style: none; padding: 0; margin: 0; }
-    ul.puzzle-list li {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.45rem 0.6rem;
-      margin-bottom: 0.35rem;
-      background: rgba(0,0,0,0.2);
-      border-radius: 8px;
-      font-size: 0.88rem;
-    }
-    ul.puzzle-list li .puzzle-text { flex: 1; }
-    .hint { color: #888; font-size: 0.8rem; margin: 0 0 0.75rem 0; }
-  </style>
+  <title>Renzzle - Response Move Entry</title>
+  <link rel="stylesheet" href="/assets/admin/pages/puzzle-cache.css">
+  <link rel="stylesheet" href="/assets/admin/admin.css">
 </head>
 <body>
   <div class="header">
     <div>
-      <h1>퍼즐 대응 수 입력</h1>
+      <h1>Renzzle Content Admin</h1>
       <span class="user-info" th:if="${userEmail}" th:text="${userEmail}"></span>
     </div>
-    <a href="/admin/logout" class="btn">로그아웃</a>
+    <a href="/admin/logout" class="btn">Log out</a>
   </div>
 
   <th:block th:replace="~{admin/fragments :: siteNav(false, false, true)}"></th:block>
   <th:block th:replace="~{admin/fragments :: uiKit}"></th:block>
 
+  <main class="admin-shell">
+    <div class="admin-page-heading">
+      <div>
+        <h2>Response Moves</h2>
+        <p>Select a training or community puzzle, then save response moves from the board screen.</p>
+      </div>
+    </div>
+
   <section class="section">
-    <h2>트레이닝 문제집 · 문제</h2>
-    <p class="hint">문제집 목록은 어드민 문제집 목록과 동일한 방식으로 불러옵니다. 문제집을 선택한 뒤 아래에서 문제를 고르고 정답 입력 화면으로 이동하세요.</p>
+    <h2>Training Pack · Puzzle</h2>
+    <p class="hint">The pack list uses the same filters as the admin pack list. Select a pack, then choose a puzzle below and open response entry.</p>
     <div class="row">
       <div>
-        <label>난이도</label>
+        <label for="filterDifficulty">Difficulty</label>
         <select id="filterDifficulty">
           <option value="LOW">LOW</option>
           <option value="MIDDLE">MIDDLE</option>
@@ -125,34 +40,34 @@
         </select>
       </div>
       <div>
-        <label>언어</label>
+        <label for="filterLang">Language</label>
         <select id="filterLang">
           <option th:each="langCode : ${langCodeNames}" th:value="${langCode}" th:text="${langCode}">EN</option>
         </select>
       </div>
       <div class="load-button-cell">
-        <button type="button" class="btn btn-primary" id="loadPacksBtn">목록 불러오기</button>
+        <button type="button" class="btn btn-primary" id="loadPacksBtn">Load List</button>
       </div>
     </div>
-    <label class="subsection-title" style="display:block;margin-top:0.5rem;">문제집</label>
+    <h3 class="subsection-title pack-subsection-title">Pack</h3>
     <ul class="pack-list" id="packListUl"></ul>
 
-    <h3 class="subsection-title">선택한 문제집의 문제</h3>
+    <h3 class="subsection-title">Puzzles in Selected Pack</h3>
     <ul class="puzzle-list" id="puzzleListUl"></ul>
   </section>
 
   <section class="section">
-    <h2>커뮤니티 문제 (정답 입력)</h2>
-    <p class="hint">작성자는 닉네임 완전 일치일 때만 필터됩니다. 문제 id만으로 보드 화면으로 이동합니다.</p>
+    <h2>Community Puzzle Response Entry</h2>
+    <p class="hint">Author filters by exact nickname match. The board screen opens by puzzle ID.</p>
     <div class="row">
       <div>
-        <label>작성자 닉네임 (완전 일치, 비우면 미적용)</label>
-        <input type="text" id="commAuthor" maxlength="31" placeholder="닉네임" autocomplete="off">
+        <label for="commAuthor">Author Nickname (exact match, optional)</label>
+        <input type="text" id="commAuthor" maxlength="31" placeholder="Nickname" autocomplete="off">
       </div>
       <div>
-        <label>승리 색</label>
+        <label for="commStone">Win Color</label>
         <select id="commStone">
-          <option value="">(전체)</option>
+          <option value="">(All)</option>
           <option value="BLACK">BLACK</option>
           <option value="WHITE">WHITE</option>
         </select>
@@ -160,53 +75,43 @@
     </div>
     <div class="row">
       <div>
-        <label>깊이 최소</label>
+        <label for="commDepthMin">Min Depth</label>
         <input type="number" id="commDepthMin" min="1" max="225" value="1">
       </div>
       <div>
-        <label>깊이 최대</label>
+        <label for="commDepthMax">Max Depth</label>
         <input type="number" id="commDepthMax" min="1" max="225" value="225">
       </div>
       <div>
-        <label>커서 id (다음 페이지)</label>
-        <input type="number" id="commCursorId" min="1" placeholder="선택">
+        <label for="commCursorId">Cursor ID (next page)</label>
+        <input type="number" id="commCursorId" min="1" placeholder="Select">
       </div>
       <div>
-        <label>개수</label>
+        <label for="commSize">Size</label>
         <input type="number" id="commSize" min="1" max="100" value="20">
       </div>
       <div class="load-button-cell">
-        <button type="button" class="btn btn-primary" id="loadCommPuzzlesBtn">목록 불러오기</button>
+        <button type="button" class="btn btn-primary" id="loadCommPuzzlesBtn">Load List</button>
       </div>
     </div>
     <ul class="puzzle-list" id="commPuzzleListUl"></ul>
   </section>
+  </main>
 
   <script th:inline="javascript">
     const API_BASE = '';
     let selectedPackId = null;
 
-    function getCookie(name) {
-      const value = '; ' + document.cookie;
-      const parts = value.split('; ' + name + '=');
-      if (parts.length === 2) return parts.pop().split(';').shift();
-      return null;
-    }
-
     async function fetchWithAuth(url, options = {}) {
-      const token = getCookie('admin_accessToken');
-      if (!token) {
-        document.cookie = 'admin_accessToken=; path=/; max-age=0';
-        window.location.href = '/admin';
-        throw new Error('로그인이 필요합니다.');
+      const headers = { 'Content-Type': 'application/json', ...options.headers };
+      if (options.body === undefined || options.body === null) {
+        delete headers['Content-Type'];
       }
-      const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
-      const res = await fetch(url, { ...options, headers });
+      const res = await fetch(url, { ...options, headers, credentials: 'same-origin' });
       if (res.status === 401 || res.status === 403) {
-        document.cookie = 'admin_accessToken=; path=/; max-age=0';
-        alert('토큰이 만료되었거나 권한이 없습니다. 다시 로그인하세요.');
-        window.location.href = '/admin';
-        throw new Error('토큰 만료');
+        alert('Your session has expired or you do not have permission. Please log in again.');
+        globalThis.location.href = '/admin/logout';
+        return null;
       }
       return res;
     }
@@ -229,7 +134,9 @@
         const langEl = document.getElementById('filterLang');
         if (saved.difficulty && [...diffEl.options].some(o => o.value === saved.difficulty)) diffEl.value = saved.difficulty;
         if (saved.lang && [...langEl.options].some(o => o.value === saved.lang)) langEl.value = saved.lang;
-      } catch (e) { /* 무시 */ }
+      } catch {
+        // Ignore invalid saved filters.
+      }
     }
 
     async function loadPacks() {
@@ -244,42 +151,50 @@
 
       try {
         const res = await fetchWithAuth(API_BASE + '/admin/training/pack?difficulty=' + encodeURIComponent(difficulty) + '&lang=' + encodeURIComponent(lang));
+        if (!res) return;
         const data = await res.json();
         if (!data.isSuccess) {
-          showListMsg(data.errorResponse?.message || '목록 조회 실패', false);
+          showListMsg('Failed to load list', false);
           return;
         }
-        const packs = (data.response || []).filter(p => p.title && p.title.trim() !== '');
+        const packs = (data.response || []).filter(p => {
+          const title = p['title'];
+          return title && title.trim() !== '';
+        });
         if (packs.length === 0) {
           const li = document.createElement('li');
-          li.textContent = '해당 조건의 문제집이 없습니다.';
+          li.textContent = 'No packs match the current filters.';
           listEl.appendChild(li);
         } else {
           packs.forEach(p => {
+            const packIdValue = p['id'];
+            const packTitle = p['title'] || '';
+            const packPrice = p['price'] ?? 0;
+            const totalPuzzleCount = p['totalPuzzleCount'] ?? 0;
             const li = document.createElement('li');
             const info = document.createElement('span');
             info.className = 'pack-info';
             const idSpan = document.createElement('span');
             idSpan.className = 'pack-id';
-            idSpan.textContent = 'ID: ' + p.id;
+            idSpan.textContent = 'ID: ' + packIdValue;
             const meta = document.createElement('small');
-            meta.textContent = '가격:' + p.price + ' / 문제 개수:' + p.totalPuzzleCount;
-            // 제목은 서버 값이므로 textContent로 안전하게 삽입 (XSS 방지)
+            meta.textContent = 'Price:' + packPrice + ' / Puzzle Size:' + totalPuzzleCount;
+            // Server-provided titles are inserted with textContent for XSS safety
             info.appendChild(idSpan);
-            info.appendChild(document.createTextNode(' ' + (p.title || '') + ' '));
+            info.appendChild(document.createTextNode(' ' + packTitle + ' '));
             info.appendChild(meta);
             const actions = document.createElement('div');
             actions.className = 'pack-actions';
             const selectBtn = document.createElement('button');
             selectBtn.type = 'button';
             selectBtn.className = 'btn btn-sm btn-primary';
-            selectBtn.textContent = '선택';
+            selectBtn.textContent = 'Select';
             selectBtn.onclick = function(e) {
               e.stopPropagation();
               [...listEl.children].forEach(c => c.classList.remove('selected'));
               li.classList.add('selected');
-              selectedPackId = p.id;
-              loadPuzzlesForPack(p.id);
+              selectedPackId = packIdValue;
+              loadPuzzlesForPack(packIdValue);
             };
             actions.appendChild(selectBtn);
             li.appendChild(info);
@@ -287,9 +202,9 @@
             listEl.appendChild(li);
           });
         }
-        showListMsg(packs.length + '개 조회됨', true);
+        showListMsg(packs.length + ' loaded', true);
       } catch (err) {
-        showListMsg('오류: ' + (err.message || ''), false);
+        showListMsg('Error: ' + (err.message || ''), false);
       }
     }
 
@@ -298,40 +213,46 @@
       puzzleListEl.innerHTML = '';
       try {
         const res = await fetchWithAuth(API_BASE + '/admin/training/puzzle/' + packId);
+        if (!res) return;
         const data = await res.json();
         if (!data.isSuccess) {
-          showListMsg(data.errorResponse?.message || '문제 목록 실패', false);
+          showListMsg('Failed to load puzzle list', false);
           return;
         }
         const puzzles = data.response || [];
         if (puzzles.length === 0) {
-          puzzleListEl.innerHTML = '<li><span class="puzzle-text">이 문제집에 등록된 문제가 없습니다.</span></li>';
-          showListMsg('문제 0개', true);
+          puzzleListEl.innerHTML = '<li><span class="puzzle-text">This pack has no puzzles.</span></li>';
+          showListMsg('0 puzzles', true);
           return;
         }
         puzzles.forEach(p => {
+          const puzzleIdValue = p['id'];
+          const trainingIndex = p['trainingIndex'] ?? '-';
+          const depth = p['depth'] ?? '-';
+          const winColor = p['winColor'] || '-';
+          const solvedText = p['isSolved'] ? ' · Solved' : '';
           const li = document.createElement('li');
           const text = document.createElement('span');
           text.className = 'puzzle-text';
           const idxSpan = document.createElement('span');
           idxSpan.className = 'pack-id';
-          idxSpan.textContent = '#' + p.trainingIndex;
+          idxSpan.textContent = '#' + trainingIndex;
           const meta = document.createElement('small');
-          meta.textContent = 'depth ' + p.depth + ' · ' + p.winColor + (p.isSolved ? ' · 풀이됨' : '');
+          meta.textContent = 'depth ' + depth + ' · ' + winColor + solvedText;
           text.appendChild(idxSpan);
-          text.appendChild(document.createTextNode(' id ' + p.id + ' '));
+          text.appendChild(document.createTextNode(' id ' + puzzleIdValue + ' '));
           text.appendChild(meta);
           const goBtn = document.createElement('a');
           goBtn.className = 'btn btn-sm btn-primary';
-          goBtn.textContent = '정답 입력';
-          goBtn.href = '/puzzle-cache/board?puzzleType=TRAINING&packId=' + encodeURIComponent(packId) + '&puzzleId=' + encodeURIComponent(p.id);
+          goBtn.textContent = 'Response Entry';
+          goBtn.href = '/puzzle-cache/board?puzzleType=TRAINING&packId=' + encodeURIComponent(packId) + '&puzzleId=' + encodeURIComponent(puzzleIdValue);
           li.appendChild(text);
           li.appendChild(goBtn);
           puzzleListEl.appendChild(li);
         });
-        showListMsg('문제 ' + puzzles.length + '개 (팩 id ' + packId + ')', true);
+        showListMsg('Puzzle ' + puzzles.length + ' (Pack id ' + packId + ')', true);
       } catch (err) {
-        showListMsg('오류: ' + (err.message || ''), false);
+        showListMsg('Error: ' + (err.message || ''), false);
       }
     }
 
@@ -355,29 +276,34 @@
       if (cursor) qs += '&id=' + encodeURIComponent(cursor);
       try {
         const res = await fetchWithAuth(API_BASE + '/api/puzzle/cache/community-puzzles?' + qs);
+        if (!res) return;
         const data = await res.json();
         if (!data.isSuccess) {
-          showCommMsg(data.errorResponse?.message || '목록 조회 실패', false);
+          showCommMsg('Failed to load list', false);
           return;
         }
         const puzzles = data.response || [];
         if (puzzles.length === 0) {
-          listEl.innerHTML = '<li><span class="puzzle-text">조건에 맞는 커뮤니티 문제가 없습니다.</span></li>';
+          listEl.innerHTML = '<li><span class="puzzle-text">No community puzzles match the current filters.</span></li>';
         } else {
           puzzles.forEach(p => {
+            const puzzleIdValue = p['id'];
+            const authorNickname = p['authorNickname'] || '';
+            const depth = p['depth'] ?? '-';
+            const winColor = p['winColor'] || '-';
             const li = document.createElement('li');
             const text = document.createElement('span');
             text.className = 'puzzle-text';
             const idSpan = document.createElement('span');
             idSpan.className = 'pack-id';
-            idSpan.textContent = 'id ' + p.id;
+            idSpan.textContent = 'id ' + puzzleIdValue;
             const meta = document.createElement('small');
-            // 닉네임은 사용자 입력이므로 textContent로 안전하게 삽입 (XSS 방지)
-            meta.textContent = '@' + (p.authorNickname || '') + ' depth ' + p.depth + ' · ' + p.winColor;
+            // User-entered nicknames are inserted with textContent for XSS safety
+            meta.textContent = '@' + authorNickname + ' depth ' + depth + ' · ' + winColor;
             text.appendChild(idSpan);
             text.appendChild(document.createTextNode(' '));
             text.appendChild(meta);
-            const rawDesc = p.description || '';
+            const rawDesc = p['description'] || '';
             const desc = rawDesc.length > 60 ? rawDesc.slice(0, 57) + '…' : rawDesc;
             if (desc) {
               text.appendChild(document.createElement('br'));
@@ -387,25 +313,25 @@
             }
             const goBtn = document.createElement('a');
             goBtn.className = 'btn btn-sm btn-primary';
-            goBtn.textContent = '정답 입력';
-            goBtn.href = '/puzzle-cache/board?puzzleType=COMMUNITY&puzzleId=' + encodeURIComponent(p.id);
+            goBtn.textContent = 'Response Entry';
+            goBtn.href = '/puzzle-cache/board?puzzleType=COMMUNITY&puzzleId=' + encodeURIComponent(puzzleIdValue);
             li.appendChild(text);
             li.appendChild(goBtn);
             listEl.appendChild(li);
           });
         }
-        showCommMsg(puzzles.length + '개 조회됨', true);
+        showCommMsg(puzzles.length + ' loaded', true);
       } catch (err) {
-        showCommMsg('오류: ' + (err.message || ''), false);
+        showCommMsg('Error: ' + (err.message || ''), false);
       }
     });
 
-    // 진입 시: 마지막 필터 복원 후 트레이닝 문제집 목록 자동 로드
+    // On entry: restore the last filters and automatically load training packs
     document.getElementById('loadPacksBtn').addEventListener('click', loadPacks);
     document.getElementById('filterDifficulty').addEventListener('change', loadPacks);
     document.getElementById('filterLang').addEventListener('change', loadPacks);
     restorePcFilters();
-    loadPacks();
+    await loadPacks();
   </script>
 </body>
 </html>

@@ -1,0 +1,112 @@
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      background: #f5f7fa;
+      color: #17202a;
+      padding: 1rem;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #d9e0e8;
+    }
+    .header h1 { margin: 0; font-size: 1.35rem; }
+    .header .user-info { font-size: 0.9rem; color: #526579; margin-right: 1rem; }
+    .btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 8px;
+      background: #fff;
+      color: #17202a;
+      cursor: pointer;
+      font-size: 0.9rem;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn:hover { background: #f0f3f7; }
+    .btn-primary { background: #176b5f; color: #fff; }
+    .btn-primary:hover { opacity: 0.95; }
+    .section {
+      max-width: 1100px;
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid #d9e0e8;
+    }
+    .section h2 { margin: 0; font-size: 1.15rem; }
+    label { display: block; margin-bottom: 0.35rem; font-size: 0.9rem; color: #526579; }
+    input, select, textarea {
+      width: 100%;
+      padding: 0.6rem 0.8rem;
+      margin-bottom: 0.9rem;
+      border: 1px solid #d9e0e8;
+      border-radius: 8px;
+      background: #fff;
+      color: #17202a;
+      font-size: 0.95rem;
+    }
+    textarea { min-height: 72px; resize: vertical; margin-bottom: 0.75rem; }
+    .msg { margin-top: 0.5rem; padding: 0.5rem; border-radius: 8px; font-size: 0.9rem; display: none; }
+    .msg.show { display: block; }
+    .msg.success { background: #effaf4; color: #13633d; }
+    .msg.error { background: #fff0ee; color: #b42318; }
+    .hint { color: #526579; font-size: 0.8rem; margin-top: -0.5rem; margin-bottom: 0.5rem; }
+    .board-cache-row {
+      display: flex;
+      gap: 1.25rem;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    /* The board shrinks to available width up to 480px; the panel stays on the right when space allows */
+    .board-cache-row .board-viz { flex: 1 1 320px; min-width: 280px; max-width: 480px; }
+    .board-cache-row .board-viz canvas { width: 100%; max-width: 480px; height: auto; }
+    .cache-panel {
+      flex: 1 1 280px;
+      min-width: 250px;
+      max-width: 420px;
+      padding: 1rem;
+      background: #fbfcfe;
+      border-radius: 12px;
+      border: 1px solid #d9e0e8;
+    }
+    .cache-panel .btn-block { display: block; width: 100%; margin-bottom: 0.65rem; }
+    .cache-panel .label-after-btn {
+      margin-top: 1.35rem;
+      margin-bottom: 0.4rem;
+    }
+    .turn-line {
+      font-size: 0.85rem;
+      color: #526579;
+      margin: 0.5rem 0;
+    }
+    .turn-line .turn-value {
+      color: #17202a;
+      font-weight: 600;
+    }
+    .meta-line { font-size: 0.85rem; color: #526579; margin: 0 0 1rem 0; }
+    .lock-badge {
+      font-size: 0.82rem; padding: 0.45rem 0.65rem; border-radius: 8px;
+      margin: 0 0 0.65rem 0; display: none; line-height: 1.35;
+    }
+    .lock-badge.show { display: block; }
+    .lock-badge.locked { background: #e6f2ef; border: 1px solid #a7c8bd; color: #176b5f; }
+    .lock-badge.unlocked { background: #f0f3f7; border: 1px solid #d9e0e8; color: #526579; }
+    /* Response lookup result box */
+    .verify-result {
+      display: none; align-items: center; gap: 0.5rem;
+      margin-top: 0.65rem; padding: 0.55rem 0.7rem; border-radius: 8px;
+      background: #effaf4; border: 1px solid #9fd8b8;
+    }
+    .verify-result.show { display: flex; }
+    .verify-result.empty { background: #f0f3f7; border-color: #d9e0e8; }
+    .verify-result.error { background: #fff0ee; border-color: rgba(220,53,69,0.5); }
+    .verify-result .verify-label { font-size: 0.78rem; color: #526579; white-space: nowrap; }
+    .verify-result .verify-value { font-weight: 700; font-size: 1.1rem; color: #13633d; letter-spacing: 0.04em; }
+    .verify-result.empty .verify-value, .verify-result.error .verify-value { color: #17202a; font-size: 0.92rem; font-weight: 600; }
+    .verify-result .verify-clear { margin-left: auto; padding: 0.3rem 0.6rem; font-size: 0.78rem; flex-shrink: 0; }

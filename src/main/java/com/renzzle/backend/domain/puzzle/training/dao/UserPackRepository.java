@@ -16,6 +16,8 @@ public interface UserPackRepository extends JpaRepository<UserPack, Long> {
 
     Optional<UserPack> findByUserIdAndPackId(Long userId, Long id);
 
+    void deleteAllByPack_Id(Long packId);
+
     @Modifying
     @Transactional
     @Query("UPDATE UserPack u SET u.solvedCount = u.solvedCount + 1 WHERE u.user.id = :userId AND u.pack.id = :packId")

@@ -1,0 +1,110 @@
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      background: #f5f7fa;
+      color: #17202a;
+      padding: 1rem;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #d9e0e8;
+    }
+    .header h1 { margin: 0; font-size: 1.35rem; }
+    .header .user-info { font-size: 0.9rem; color: #526579; }
+    .btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 8px;
+      background: #fff;
+      color: #17202a;
+      cursor: pointer;
+      font-size: 0.9rem;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn:hover { background: #f0f3f7; }
+    .btn-primary { background: #176b5f; color: #fff; }
+    .btn-primary:hover { opacity: 0.95; }
+    .section {
+      max-width: 720px;
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid #d9e0e8;
+    }
+    .section h2 { margin: 0; font-size: 1.15rem; }
+    .section-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; gap: 1rem; }
+    label { display: block; margin-bottom: 0.35rem; font-size: 0.9rem; color: #526579; }
+    input, select {
+      width: 100%;
+      padding: 0.6rem 0.8rem;
+      margin-bottom: 0.9rem;
+      border: 1px solid #d9e0e8;
+      border-radius: 8px;
+      background: #fff;
+      color: #17202a;
+      font-size: 0.95rem;
+    }
+    input:read-only { background: #f0f3f7; cursor: not-allowed; }
+    ul.puzzle-list { list-style: none; padding: 0; margin: 0.5rem 0; }
+    ul.puzzle-list li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.6rem;
+      margin-bottom: 0.3rem;
+      background: #fbfcfe;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+    ul.puzzle-list li.puzzle-row-clickable { cursor: pointer; }
+    ul.puzzle-list li.puzzle-row-clickable:hover { background: #f0f3f7; }
+    ul.puzzle-list li .puzzle-text { flex: 1; }
+    ul.puzzle-list li .btn-edit { padding: 0.3rem 0.6rem; font-size: 0.8rem; flex-shrink: 0; }
+    .btn-edit { background: #f0f3f7; color: #17202a; }
+    .btn-edit:hover { background: #e7edf5; }
+    small { color: #526579; font-size: 0.85rem; }
+    /* Simple pack info display */
+    .pack-info-simple {
+      margin-top: 0.8rem;
+    }
+    .pack-info-row {
+      display: flex;
+      gap: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .pack-info-row .item {
+      display: flex;
+      gap: 0.4rem;
+      align-items: baseline;
+    }
+    .pack-info-row .item .label {
+      font-size: 0.9rem;
+      color: #526579;
+    }
+    .pack-info-row .item .value {
+      font-size: 0.95rem;
+      color: #17202a;
+    }
+    .pack-info-block {
+      margin-bottom: 0.5rem;
+    }
+    .pack-info-block .label {
+      font-size: 0.9rem;
+      color: #526579;
+      margin-bottom: 0.2rem;
+    }
+    .pack-info-block .value {
+      font-size: 0.95rem;
+      color: #17202a;
+      line-height: 1.4;
+    }
+    .pack-info-block .value.empty { color: #526579; font-style: italic; }

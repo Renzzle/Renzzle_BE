@@ -17,4 +17,6 @@ public interface PackTranslationRepository extends JpaRepository<PackTranslation
 
     boolean existsByPackAndLangCode(Pack pack, LangCode languageCode);
 
+    void deleteAllByPack_Id(Long packId);
+
 }

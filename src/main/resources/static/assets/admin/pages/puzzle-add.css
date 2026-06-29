@@ -1,0 +1,122 @@
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      background: #f5f7fa;
+      color: #17202a;
+      padding: 1rem;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #d9e0e8;
+    }
+    .header h1 { margin: 0; font-size: 1.35rem; }
+    .header .user-info { font-size: 0.9rem; color: #526579; margin-right: 1rem; }
+    .btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 8px;
+      background: #fff;
+      color: #17202a;
+      cursor: pointer;
+      font-size: 0.9rem;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn:hover { background: #f0f3f7; }
+    .btn-primary { background: #176b5f; color: #fff; }
+    .btn-primary:hover { opacity: 0.95; }
+    .section {
+      max-width: 800px;
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid #d9e0e8;
+    }
+    .section h2 { margin: 0; font-size: 1.15rem; }
+    label { display: block; margin-bottom: 0.35rem; font-size: 0.9rem; color: #526579; }
+    input, select, textarea {
+      width: 100%;
+      padding: 0.6rem 0.8rem;
+      margin-bottom: 0.9rem;
+      border: 1px solid #d9e0e8;
+      border-radius: 8px;
+      background: #fff;
+      color: #17202a;
+      font-size: 0.95rem;
+    }
+    textarea { min-height: 80px; resize: vertical; }
+    input:read-only { background: #f0f3f7; cursor: not-allowed; }
+    input.auto-calculated {
+      color: #a8a8a8;
+    }
+    input.auto-calculated::placeholder {
+      color: #526579;
+    }
+    .msg { margin-top: 0.5rem; padding: 0.5rem; border-radius: 8px; font-size: 0.9rem; display: none; }
+    .msg.show { display: block; }
+    .msg.success { background: #effaf4; color: #13633d; }
+    .msg.error { background: #fff0ee; color: #b42318; }
+    .hint { color: #526579; font-size: 0.8rem; margin-top: -0.5rem; margin-bottom: 0.5rem; }
+    /* Pack info, same layout as pack detail */
+    .pack-info-simple { margin-top: 0.8rem; }
+    .pack-info-row {
+      display: flex;
+      gap: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .pack-info-row .item {
+      display: flex;
+      gap: 0.4rem;
+      align-items: baseline;
+    }
+    .pack-info-row .item .label { font-size: 0.9rem; color: #526579; }
+    .pack-info-row .item .value { font-size: 0.95rem; color: #17202a; }
+    .pack-info-block { margin-bottom: 0.5rem; }
+    .pack-info-block .label { font-size: 0.9rem; color: #526579; margin-bottom: 0.2rem; }
+    .pack-info-block .value {
+      font-size: 0.95rem;
+      color: #17202a;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .pack-info-block .value.empty { color: #526579; font-style: italic; }
+    .board-btn-group { margin-bottom: 0.6rem; }
+    .board-btn-group .btn { display: block; width: 100%; margin-bottom: 0.4rem; }
+    .board-mode-slot {
+      min-height: 7.25rem;
+      margin-bottom: 0.6rem;
+    }
+    .board-mode-slot .board-btn-group { margin-bottom: 0; }
+    .board-side-panel { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .board-btn-fixed { margin-top: 1.5rem; }
+    .board-btn-fixed .btn { display: block; width: 100%; margin-bottom: 0.4rem; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    /* Answer sequence replay and display options */
+    .board-review { margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid #d9e0e8; }
+    .board-review-toggles { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.6rem; }
+    .board-review-toggles .chk {
+      display: flex; align-items: center; gap: 0.45rem;
+      font-size: 0.85rem; color: #526579; margin: 0; cursor: pointer;
+    }
+    .board-review-toggles .chk input[type="checkbox"] {
+      -webkit-appearance: checkbox; appearance: checkbox;
+      width: 16px; height: 16px; min-width: 16px;
+      margin: 0; padding: 0; border: none; background: none;
+      accent-color: #176b5f; cursor: pointer; flex-shrink: 0;
+    }
+    .board-review .btn { display: block; width: 100%; margin-bottom: 0; }
+    .playback-row { display: flex; gap: 0.3rem; margin-top: 0.5rem; }
+    .playback-row .btn { flex: 1; padding: 0.4rem 0; margin: 0; font-size: 1rem; }
+    .playback-label { font-size: 0.85rem; color: #526579; margin: 0.5rem 0 0; text-align: center; }
+    .playback-label b { color: #17202a; }

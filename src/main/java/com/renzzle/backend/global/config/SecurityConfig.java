@@ -40,6 +40,7 @@ public class SecurityConfig {
         List<RequestMatcher> permitAllRequestMatchers = Arrays.asList(
                 AntPathRequestMatcher.antMatcher("/admin"),  // Admin login page (excluded from JWT filter)
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/admin/login"),  // Admin login API (called without a token)
+                AntPathRequestMatcher.antMatcher("/assets/**"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/email"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/confirmCode"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/api/auth/duplicate/**"),
@@ -80,6 +81,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/training/puzzle").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.POST, "/api/training/pack").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.PATCH, "/api/training/pack/**").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.DELETE, "/api/training/pack/**").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.POST, "/api/training/pack/translation").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.PATCH, "/api/training/puzzle/**").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.DELETE, "/api/training/puzzle/**").hasAuthority(ADMIN_PREFIX)

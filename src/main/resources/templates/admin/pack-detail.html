@@ -1,281 +1,279 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Renzzle 어드민 - 문제집 상세정보</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      margin: 0;
-      min-height: 100vh;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-      color: #e8e8e8;
-      padding: 1rem;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-    }
-    .header h1 { margin: 0; font-size: 1.35rem; }
-    .header .user-info { font-size: 0.9rem; color: #b0b0b0; }
-    .btn {
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 8px;
-      background: rgba(255,255,255,0.15);
-      color: #fff;
-      cursor: pointer;
-      font-size: 0.9rem;
-      text-decoration: none;
-      display: inline-block;
-    }
-    .btn:hover { background: rgba(255,255,255,0.25); }
-    .btn-primary { background: linear-gradient(90deg, #4a9eff, #357abd); }
-    .btn-primary:hover { opacity: 0.95; }
-    .section {
-      max-width: 720px;
-      margin-bottom: 2rem;
-      padding: 1.5rem;
-      background: rgba(255,255,255,0.06);
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-    .section h2 { margin: 0; font-size: 1.15rem; }
-    .section-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; gap: 1rem; }
-    label { display: block; margin-bottom: 0.35rem; font-size: 0.9rem; color: #b0b0b0; }
-    input, select {
-      width: 100%;
-      padding: 0.6rem 0.8rem;
-      margin-bottom: 0.9rem;
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 8px;
-      background: rgba(0,0,0,0.2);
-      color: #fff;
-      font-size: 0.95rem;
-    }
-    input:read-only { background: rgba(0,0,0,0.3); cursor: not-allowed; }
-    ul.puzzle-list { list-style: none; padding: 0; margin: 0.5rem 0; }
-    ul.puzzle-list li {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.4rem 0.6rem;
-      margin-bottom: 0.3rem;
-      background: rgba(0,0,0,0.15);
-      border-radius: 6px;
-      font-size: 0.85rem;
-    }
-    ul.puzzle-list li.puzzle-row-clickable { cursor: pointer; }
-    ul.puzzle-list li.puzzle-row-clickable:hover { background: rgba(0,0,0,0.28); }
-    ul.puzzle-list li .puzzle-text { flex: 1; }
-    ul.puzzle-list li .btn-edit { padding: 0.3rem 0.6rem; font-size: 0.8rem; flex-shrink: 0; }
-    .btn-edit { background: rgba(150,150,150,0.5); }
-    .btn-edit:hover { background: rgba(150,150,150,0.7); }
-    small { color: #888; font-size: 0.85rem; }
-    /* 문제집 정보 간단 표시 (dashboard 스타일) */
-    .pack-info-simple {
-      margin-top: 0.8rem;
-    }
-    .pack-info-row {
-      display: flex;
-      gap: 1.5rem;
-      margin-bottom: 0.5rem;
-    }
-    .pack-info-row .item {
-      display: flex;
-      gap: 0.4rem;
-      align-items: baseline;
-    }
-    .pack-info-row .item .label {
-      font-size: 0.9rem;
-      color: #b0b0b0;
-    }
-    .pack-info-row .item .value {
-      font-size: 0.95rem;
-      color: #e8e8e8;
-    }
-    .pack-info-block {
-      margin-bottom: 0.5rem;
-    }
-    .pack-info-block .label {
-      font-size: 0.9rem;
-      color: #b0b0b0;
-      margin-bottom: 0.2rem;
-    }
-    .pack-info-block .value {
-      font-size: 0.95rem;
-      color: #e8e8e8;
-      line-height: 1.4;
-    }
-    .pack-info-block .value.empty { color: #666; font-style: italic; }
-  </style>
+  <title>Renzzle Admin - Pack Workspace</title>
+  <link rel="stylesheet" href="/assets/admin/pages/pack-detail.css">
+  <link rel="stylesheet" href="/assets/admin/admin.css">
 </head>
 <body>
   <div class="header">
     <div>
-      <h1>Renzzle 어드민 - 문제집 상세정보</h1>
+      <h1>Renzzle Content Admin</h1>
       <span class="user-info" th:if="${userEmail}" th:text="${userEmail}"></span>
     </div>
-    <a href="/admin/logout" class="btn">로그아웃</a>
+    <a href="/admin/logout" class="btn">Log out</a>
   </div>
 
-  <th:block th:replace="~{admin/fragments :: siteNav(false, false, false)}"></th:block>
+  <th:block th:replace="~{admin/fragments :: siteNav(true, false, false)}"></th:block>
+  <th:block th:replace="~{admin/fragments :: uiKit}"></th:block>
 
-  <!-- 문제집 정보 (선택한 언어 기준) -->
-  <section class="section" id="packInfoSection">
-    <div class="section-title-row">
-      <h2>문제집 정보</h2>
-      <a th:href="@{/admin/puzzle-add(packId=${packId})}" class="btn btn-primary">문제 생성</a>
-    </div>
-    <label>표시할 언어</label>
-    <select id="langSelect">
-      <option th:each="langCode : ${langCodeNames}" th:value="${langCode}" th:text="${langCode}">EN</option>
-    </select>
-    <div id="packInfoBox" class="pack-info-simple" style="display:none;">
-      <div class="pack-info-row">
-        <div class="item"><span class="label">문제집 ID</span><span class="value" id="packIdText">-</span></div>
-        <div class="item"><span class="label">작성자</span><span class="value" id="packAuthor">-</span></div>
+  <main class="admin-shell">
+    <div class="admin-page-heading">
+      <div>
+        <h2>Pack Workspace</h2>
+        <p>Review pack information and manage the puzzles inside this pack.</p>
       </div>
-      <div class="pack-info-block">
-        <div class="label">제목</div>
-        <div class="value" id="packTitle">-</div>
-      </div>
-      <div class="pack-info-block">
-        <div class="label">설명</div>
-        <div class="value" id="packDescription">-</div>
+      <div class="admin-actions">
+        <a href="/admin/pack-list" class="btn">Pack List</a>
+        <a th:href="@{/admin/puzzle-add(packId=${packId})}" class="btn btn-primary">Add Puzzle</a>
       </div>
     </div>
-  </section>
 
-  <!-- 문제집 내 문제 목록 -->
-  <section class="section">
-    <h2>문제집 내 문제 목록</h2>
-    <ul class="puzzle-list" id="puzzleListItems"></ul>
-    <div id="puzzleListMsg" style="margin-top:0.5rem; font-size:0.9rem; color:#b0b0b0;"></div>
-  </section>
+    <section class="section" id="packInfoSection">
+      <div class="section-title-row">
+        <div>
+          <h2>Pack Info</h2>
+          <p>Title and description are shown in the selected language.</p>
+        </div>
+        <div class="admin-actions">
+          <button type="button" class="btn btn-danger" id="deletePackBtn">Delete Pack</button>
+          <a th:href="@{/admin/pack-create(packId=${packId})}" class="btn">Edit Info</a>
+        </div>
+      </div>
+      <div class="admin-toolbar pack-language-toolbar">
+        <div>
+          <label for="langSelect">Display Language</label>
+          <select id="langSelect">
+            <option th:each="langCode : ${langCodeNames}" th:value="${langCode}" th:text="${langCode}">EN</option>
+          </select>
+        </div>
+      </div>
+      <div id="packInfoBox" class="pack-info-simple" hidden>
+        <div class="pack-info-row">
+          <div class="item"><span class="label">Pack ID</span><span class="value" id="packIdText">-</span></div>
+          <div class="item"><span class="label">Difficulty</span><span class="value" id="packDifficulty">-</span></div>
+          <div class="item"><span class="label">Price</span><span class="value" id="packPrice">-</span></div>
+          <div class="item"><span class="label">Puzzles</span><span class="value" id="packPuzzleCount">-</span></div>
+        </div>
+        <div class="pack-info-block">
+          <div class="label">Title</div>
+          <div class="value" id="packTitle">-</div>
+        </div>
+        <div class="pack-info-block">
+          <div class="label">Author</div>
+          <div class="value" id="packAuthor">-</div>
+        </div>
+        <div class="pack-info-block">
+          <div class="label">Description</div>
+          <div class="value" id="packDescription">-</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title-row">
+        <div>
+          <h2>Puzzles</h2>
+          <p>Select a row to open the puzzle editor.</p>
+        </div>
+        <a th:href="@{/admin/puzzle-add(packId=${packId})}" class="btn btn-primary">Add Puzzle</a>
+      </div>
+      <div id="puzzleEmptyState" class="admin-empty" hidden>
+        <strong>No puzzles yet.</strong>
+        <span>Add the first puzzle to this pack.</span>
+        <div class="mt-1">
+          <a th:href="@{/admin/puzzle-add(packId=${packId})}" class="btn btn-primary">Add Puzzle</a>
+        </div>
+      </div>
+      <div id="puzzleTableWrap" class="admin-table-wrap" hidden>
+        <table class="admin-table">
+          <thead>
+          <tr>
+            <th>Order</th>
+            <th>ID</th>
+            <th>Win Color</th>
+            <th>Depth</th>
+            <th>Board</th>
+            <th>Answer Moves</th>
+            <th class="actions-col">Actions</th>
+          </tr>
+          </thead>
+          <tbody id="puzzleTableBody"></tbody>
+        </table>
+      </div>
+      <div id="puzzleListMsg" class="muted-status"></div>
+    </section>
+  </main>
 
   <script th:inline="javascript">
     const API_BASE = '';
     const packId = /*[[${packId}]]*/ 0;
-
-    function getCookie(name) {
-      const value = '; ' + document.cookie;
-      const parts = value.split('; ' + name + '=');
-      if (parts.length === 2) return parts.pop().split(';').shift();
-      return null;
-    }
+    let packDetail = null;
 
     async function fetchWithAuth(url, options = {}) {
-      const token = getCookie('admin_accessToken');
-      if (!token) {
-        document.cookie = 'admin_accessToken=; path=/; max-age=0';
-        window.location.href = '/admin';
-        throw new Error('로그인이 필요합니다.');
+      const headers = { 'Content-Type': 'application/json', ...options.headers };
+      if (options.body === undefined || options.body === null) {
+        delete headers['Content-Type'];
       }
-      const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
-      const res = await fetch(url, { ...options, headers });
+      const res = await fetch(url, { ...options, headers, credentials: 'same-origin' });
       if (res.status === 401 || res.status === 403) {
-        document.cookie = 'admin_accessToken=; path=/; max-age=0';
-        alert('토큰이 만료되었거나 권한이 없습니다. 다시 로그인하세요.');
-        window.location.href = '/admin';
-        throw new Error('토큰 만료');
+        alert('Your session has expired or you do not have permission. Please log in again.');
+        globalThis.location.href = '/admin/logout';
+        return null;
       }
       return res;
     }
 
     function renderPackInfo(detail) {
       const lang = document.getElementById('langSelect').value;
-      const info = (detail.info || []).find(i => i.langCode === lang) || detail.info?.[0];
+      const infos = detail['info'] || [];
+      const info = infos.find(i => i['langCode'] === lang) || infos[0];
       const box = document.getElementById('packInfoBox');
       if (!info) {
-        box.style.display = 'none';
+        box.hidden = true;
         return;
       }
-      box.style.display = 'block';
-      document.getElementById('packIdText').textContent = detail.id ?? '-';
+      box.hidden = false;
+      document.getElementById('packIdText').textContent = String(detail['id'] ?? '-');
       document.getElementById('packIdText').classList.remove('empty');
-      document.getElementById('packTitle').textContent = info.title || '(없음)';
-      document.getElementById('packTitle').classList.toggle('empty', !info.title);
-      document.getElementById('packAuthor').textContent = info.author || '(없음)';
-      document.getElementById('packAuthor').classList.toggle('empty', !info.author);
+      document.getElementById('packDifficulty').textContent = detail['difficulty'] || '-';
+      document.getElementById('packPrice').textContent = String(detail['price'] ?? '-');
+      document.getElementById('packPuzzleCount').textContent = String(detail['totalPuzzleCount'] ?? '-');
+      document.getElementById('packTitle').textContent = info['title'] || '(None)';
+      document.getElementById('packTitle').classList.toggle('empty', !info['title']);
+      document.getElementById('packAuthor').textContent = info['author'] || '(None)';
+      document.getElementById('packAuthor').classList.toggle('empty', !info['author']);
       const descEl = document.getElementById('packDescription');
-      descEl.textContent = info.description || '(설명 없음)';
-      descEl.classList.toggle('empty', !info.description);
-      descEl.style.whiteSpace = 'pre-wrap';
+      descEl.textContent = info['description'] || '(No description)';
+      descEl.classList.toggle('empty', !info['description']);
     }
 
     async function loadPackDetail() {
       try {
         const res = await fetchWithAuth(API_BASE + '/admin/training/pack/' + packId);
+        if (!res) return;
         const data = await res.json();
         if (!data.isSuccess) {
-          alert(data.errorResponse?.message || '문제집 조회 실패');
-          window.location.href = '/admin/pack-list';
+          alert('Failed to load pack.');
+          globalThis.location.href = '/admin/pack-list';
           return;
         }
-        window._packDetail = data.response;
+        packDetail = data.response;
         renderPackInfo(data.response);
       } catch (err) {
-        alert('오류: ' + (err.message || ''));
-        window.location.href = '/admin/pack-list';
+        alert('Error: ' + (err.message || ''));
+        globalThis.location.href = '/admin/pack-list';
       }
     }
 
     async function loadPuzzleList() {
-      const ul = document.getElementById('puzzleListItems');
+      const tableWrap = document.getElementById('puzzleTableWrap');
+      const emptyState = document.getElementById('puzzleEmptyState');
+      const tableBody = document.getElementById('puzzleTableBody');
       const msgEl = document.getElementById('puzzleListMsg');
-      ul.innerHTML = '<li>로딩 중...</li>';
+      tableBody.innerHTML = '';
+      tableWrap.hidden = true;
+      emptyState.hidden = true;
+      msgEl.textContent = 'Loading...';
       try {
         const res = await fetchWithAuth(API_BASE + '/admin/training/puzzle/' + packId);
+        if (!res) return;
         const data = await res.json();
         if (!data.isSuccess) {
-          ul.innerHTML = '<li>문제 목록 조회 실패</li>';
+          emptyState.hidden = false;
+          msgEl.textContent = '0';
           return;
         }
         const puzzles = data.response || [];
-        ul.innerHTML = '';
         if (puzzles.length === 0) {
-          ul.innerHTML = '<li>문제가 없습니다. "문제 생성" 버튼으로 추가하세요.</li>';
-          msgEl.textContent = '0개';
+          emptyState.hidden = false;
+          msgEl.textContent = '0';
         } else {
+          tableWrap.hidden = false;
           puzzles.forEach((pz, idx) => {
-            const li = document.createElement('li');
-            li.className = 'puzzle-row-clickable';
-            const editUrl = '/admin/puzzle-edit?packId=' + packId + '&puzzleId=' + pz.id;
-            li.addEventListener('click', () => { window.location.href = editUrl; });
-            const boardShort = pz.boardStatus && pz.boardStatus.length > 15 ? pz.boardStatus.substring(0, 15) + '...' : (pz.boardStatus || '');
-            const textSpan = document.createElement('span');
-            textSpan.className = 'puzzle-text';
-            textSpan.textContent = (idx + 1) + '번: ID ' + pz.id + ' / depth ' + pz.depth + ' / ' + pz.winColor + ' / 보드: ' + boardShort;
-            li.appendChild(textSpan);
+            const puzzleIdValue = pz['id'];
+            const boardStatus = pz['boardStatus'] || '-';
+            const answer = pz['answer'] || '';
+            const editUrl = '/admin/puzzle-edit?packId=' + packId + '&puzzleId=' + puzzleIdValue;
+            const tr = document.createElement('tr');
+            tr.classList.add('clickable-row');
+            tr.addEventListener('click', () => { globalThis.location.href = editUrl; });
+
+            const indexTd = document.createElement('td');
+            indexTd.textContent = String(pz['trainingIndex'] || idx + 1);
+            const idTd = document.createElement('td');
+            const idPill = document.createElement('span');
+            idPill.className = 'admin-pill';
+            idPill.textContent = '#' + puzzleIdValue;
+            idTd.appendChild(idPill);
+            const colorTd = document.createElement('td');
+            const colorPill = document.createElement('span');
+            colorPill.className = 'admin-pill primary';
+            colorPill.textContent = pz['winColor'] || '-';
+            colorTd.appendChild(colorPill);
+            const depthTd = document.createElement('td');
+            depthTd.textContent = String(pz['depth'] ?? '-');
+            const boardTd = document.createElement('td');
+            boardTd.textContent = boardStatus.length > 22 ? boardStatus.substring(0, 22) + '...' : boardStatus;
+            const answerTd = document.createElement('td');
+            answerTd.textContent = answer ? String((answer.match(/[a-oA-O]\d{1,2}/g) || []).length) : '0';
+            const actionsTd = document.createElement('td');
+            const actions = document.createElement('div');
+            actions.className = 'admin-actions';
             const editBtn = document.createElement('a');
             editBtn.href = editUrl;
             editBtn.className = 'btn btn-edit';
-            editBtn.textContent = '편집';
+            editBtn.textContent = 'Edit';
             editBtn.addEventListener('click', (e) => e.stopPropagation());
-            li.appendChild(editBtn);
-            ul.appendChild(li);
+            actions.appendChild(editBtn);
+            actionsTd.appendChild(actions);
+
+            tr.appendChild(indexTd);
+            tr.appendChild(idTd);
+            tr.appendChild(colorTd);
+            tr.appendChild(depthTd);
+            tr.appendChild(boardTd);
+            tr.appendChild(answerTd);
+            tr.appendChild(actionsTd);
+            tableBody.appendChild(tr);
           });
-          msgEl.textContent = puzzles.length + '개';
+          msgEl.textContent = puzzles.length + ' puzzles';
         }
       } catch (err) {
-        ul.innerHTML = '<li>오류: ' + (err.message || '') + '</li>';
+        msgEl.textContent = 'Error: ' + (err.message || '');
       }
     }
 
     document.getElementById('langSelect').addEventListener('change', () => {
-      if (window._packDetail) renderPackInfo(window._packDetail);
+      if (packDetail) renderPackInfo(packDetail);
     });
 
-    loadPackDetail();
-    loadPuzzleList();
+    document.getElementById('deletePackBtn').addEventListener('click', async () => {
+      const title = document.getElementById('packTitle').textContent;
+      const ok = await adminConfirm('Delete pack "' + title + '"? This also removes its puzzles.', {
+        confirmText: 'Delete',
+        danger: true
+      });
+      if (!ok) return;
+      try {
+        const res = await fetchWithAuth(API_BASE + '/api/training/pack/' + packId, { method: 'DELETE' });
+        if (!res) return;
+        const data = await res.json();
+        if (!data.isSuccess) {
+          adminToast('Failed to delete pack', 'error');
+          return;
+        }
+        adminToast('Pack deleted.', 'success');
+        setTimeout(() => { globalThis.location.href = '/admin/pack-list'; }, 500);
+      } catch (err) {
+        adminToast('Error: ' + (err.message || ''), 'error');
+      }
+    });
+
+    await loadPackDetail();
+    await loadPuzzleList();
   </script>
 </body>
 </html>

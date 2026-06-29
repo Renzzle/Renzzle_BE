@@ -37,5 +37,7 @@ public interface SolvedTrainingPuzzleRepository extends JpaRepository<SolvedTrai
 
     List<SolvedTrainingPuzzle> findAllByPuzzleId(Long puzzleId);
 
+    void deleteAllByPuzzle_Pack_Id(Long packId);
+
 
 }

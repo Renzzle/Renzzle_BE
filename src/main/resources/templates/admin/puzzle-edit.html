@@ -1,230 +1,120 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Renzzle 어드민 - 문제 편집</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      margin: 0;
-      min-height: 100vh;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-      color: #e8e8e8;
-      padding: 1rem;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-    }
-    .header h1 { margin: 0; font-size: 1.35rem; }
-    .header .user-info { font-size: 0.9rem; color: #b0b0b0; margin-right: 1rem; }
-    .btn {
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 8px;
-      background: rgba(255,255,255,0.15);
-      color: #fff;
-      cursor: pointer;
-      font-size: 0.9rem;
-      text-decoration: none;
-      display: inline-block;
-    }
-    .btn:hover { background: rgba(255,255,255,0.25); }
-    .btn-primary { background: linear-gradient(90deg, #4a9eff, #357abd); }
-    .btn-primary:hover { opacity: 0.95; }
-    .btn-edit { background: rgba(150,150,150,0.5); }
-    .btn-edit:hover { background: rgba(150,150,150,0.7); }
-    .btn-delete { background: rgba(220,53,69,0.6); }
-    .btn-delete:hover { background: rgba(220,53,69,0.8); }
-    .section {
-      max-width: 800px;
-      margin-bottom: 2rem;
-      padding: 1.5rem;
-      background: rgba(255,255,255,0.06);
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-    .section h2 { margin: 0; font-size: 1.15rem; }
-    label { display: block; margin-bottom: 0.35rem; font-size: 0.9rem; color: #b0b0b0; }
-    input, select, textarea {
-      width: 100%;
-      padding: 0.6rem 0.8rem;
-      margin-bottom: 0.9rem;
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 8px;
-      background: rgba(0,0,0,0.2);
-      color: #fff;
-      font-size: 0.95rem;
-    }
-    textarea { min-height: 80px; resize: vertical; }
-    input:read-only { background: rgba(0,0,0,0.3); cursor: not-allowed; }
-    input.auto-calculated {
-      color: #a8a8a8;
-    }
-    input.auto-calculated::placeholder {
-      color: #6e6e6e;
-    }
-    .msg { margin-top: 0.5rem; padding: 0.5rem; border-radius: 8px; font-size: 0.9rem; display: none; }
-    .msg.show { display: block; }
-    .msg.success { background: rgba(40,167,69,0.2); color: #90ee90; }
-    .msg.error { background: rgba(220,53,69,0.2); color: #f8a0a0; }
-    .hint { color: #888; font-size: 0.8rem; margin-top: -0.5rem; margin-bottom: 0.5rem; }
-    .pack-info-simple { margin-top: 0.8rem; }
-    .pack-info-row {
-      display: flex;
-      gap: 1.5rem;
-      margin-bottom: 0.5rem;
-    }
-    .pack-info-row .item {
-      display: flex;
-      gap: 0.4rem;
-      align-items: baseline;
-    }
-    .pack-info-row .item .label { font-size: 0.9rem; color: #b0b0b0; }
-    .pack-info-row .item .value { font-size: 0.95rem; color: #e8e8e8; }
-    .pack-info-block { margin-bottom: 0.5rem; }
-    .pack-info-block .label { font-size: 0.9rem; color: #b0b0b0; margin-bottom: 0.2rem; }
-    .pack-info-block .value {
-      font-size: 0.95rem;
-      color: #e8e8e8;
-      line-height: 1.4;
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .pack-info-block .value.empty { color: #666; font-style: italic; }
-    .board-btn-group { margin-bottom: 0.6rem; }
-    .board-btn-group .btn { display: block; width: 100%; margin-bottom: 0.4rem; }
-    /* 정답 작성 모드(버튼 2줄) 기준 높이 — 문제/정답 모드 전환 시 하단 버튼 위치 유지 */
-    .board-mode-slot {
-      min-height: 7.25rem;
-      margin-bottom: 0.6rem;
-    }
-    .board-mode-slot .board-btn-group { margin-bottom: 0; }
-    .board-side-panel { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-    .board-btn-fixed { margin-top: 1.5rem; }
-    .board-btn-fixed .btn { display: block; width: 100%; margin-bottom: 0.4rem; }
-    .edit-buttons { display: flex; gap: 0.75rem; margin-top: 1rem; }
-    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    /* 정답 수순 재생 / 표시 옵션 */
-    .board-review { margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid rgba(255,255,255,0.12); }
-    .board-review-toggles { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.6rem; }
-    .board-review-toggles .chk {
-      display: flex; align-items: center; gap: 0.45rem;
-      font-size: 0.85rem; color: #cfcfcf; margin: 0; cursor: pointer;
-    }
-    .board-review-toggles .chk input[type="checkbox"] {
-      -webkit-appearance: checkbox; appearance: checkbox;
-      width: 16px; height: 16px; min-width: 16px;
-      margin: 0; padding: 0; border: none; background: none;
-      accent-color: #4a9eff; cursor: pointer; flex-shrink: 0;
-    }
-    .board-review .btn { display: block; width: 100%; margin-bottom: 0; }
-    .playback-row { display: flex; gap: 0.3rem; margin-top: 0.5rem; }
-    .playback-row .btn { flex: 1; padding: 0.4rem 0; margin: 0; font-size: 1rem; }
-    .playback-label { font-size: 0.85rem; color: #b0b0b0; margin: 0.5rem 0 0; text-align: center; }
-    .playback-label b { color: #fff; }
-  </style>
+  <title>Renzzle Admin - Edit Puzzle</title>
+  <link rel="stylesheet" href="/assets/admin/pages/puzzle-edit.css">
+  <link rel="stylesheet" href="/assets/admin/admin.css">
 </head>
 <body>
   <div class="header">
     <div>
-      <h1>Renzzle 어드민 - 문제 편집</h1>
+      <h1>Renzzle Content Admin</h1>
       <span class="user-info" th:if="${userEmail}" th:text="${userEmail}"></span>
     </div>
-    <div style="display: flex; gap: 0.5rem; align-items: center;">
-      <a th:href="@{/admin/pack-detail(packId=${packId})}" class="btn">문제집 상세정보로 돌아가기</a>
-      <a href="/admin/logout" class="btn">로그아웃</a>
+    <div class="header-actions">
+      <a th:href="@{/admin/pack-detail(packId=${packId})}" class="btn">Back to Pack</a>
+      <a href="/admin/logout" class="btn">Log out</a>
     </div>
   </div>
 
-  <th:block th:replace="~{admin/fragments :: siteNav(false, false, false)}"></th:block>
+  <th:block th:replace="~{admin/fragments :: siteNav(true, false, false)}"></th:block>
+  <th:block th:replace="~{admin/fragments :: uiKit}"></th:block>
+
+  <main class="admin-shell">
+    <div class="admin-page-heading">
+      <div>
+        <h2>Edit Puzzle</h2>
+        <p>Review the existing board, answer sequence, and calculated values before saving changes.</p>
+      </div>
+      <a th:href="@{/admin/pack-detail(packId=${packId})}" class="btn">Puzzle List</a>
+    </div>
+
+    <div class="workflow-steps">
+      <div class="workflow-step"><span class="num">1</span><div><strong>Review Existing Puzzle</strong><span>Load board and answer</span></div></div>
+      <div class="workflow-step"><span class="num">2</span><div><strong>Edit Board</strong><span>Adjust the initial position</span></div></div>
+      <div class="workflow-step"><span class="num">3</span><div><strong>Edit Answer</strong><span>Check sequence and values</span></div></div>
+      <div class="workflow-step"><span class="num">4</span><div><strong>Save or Delete</strong><span>Apply changes</span></div></div>
+    </div>
 
   <section class="section" id="packInfoSection">
-    <h2>문제집 정보</h2>
-    <div id="packInfoBox" class="pack-info-simple" style="display:none;">
+    <h2>Pack Info</h2>
+    <div id="packInfoBox" class="pack-info-simple" hidden>
       <div class="pack-info-row">
-        <div class="item"><span class="label">문제집 ID</span><span class="value" id="packIdText">-</span></div>
-        <div class="item"><span class="label">작성자</span><span class="value" id="packAuthor">-</span></div>
+        <div class="item"><span class="label">Pack ID</span><span class="value" id="packIdText">-</span></div>
+        <div class="item"><span class="label">Author</span><span class="value" id="packAuthor">-</span></div>
       </div>
       <div class="pack-info-block">
-        <div class="label">설명</div>
+        <div class="label">Description</div>
         <div class="value" id="packDescription">-</div>
       </div>
     </div>
   </section>
 
   <section class="section">
-    <h2>문제 편집</h2>
-    <label>문제 ID</label>
-    <input type="text" id="problemPuzzleId" readonly th:value="${puzzleId}" style="background: rgba(0,0,0,0.3); cursor: not-allowed;">
+    <h2>Edit Puzzle</h2>
+    <label for="problemPuzzleId">Puzzle ID</label>
+    <input type="text" id="problemPuzzleId" readonly th:value="${puzzleId}">
 
-    <label>문제 순서 (puzzleIndex) <small>비워두면 마지막 순서로 자동 추가</small></label>
-    <input type="number" id="problemPuzzleIndex" min="1" placeholder="비워두면 마지막 순서로 자동 추가">
+    <label for="problemPuzzleIndex">Puzzle Order (puzzleIndex) <small>Leave empty to append as the last order</small></label>
+    <input type="number" id="problemPuzzleIndex" min="1" placeholder="Leave empty to append as the last order">
 
-    <div style="margin: 1.5rem 0;">
-      <label>보드 상태 시각화</label>
-      <p class="hint">오목판을 클릭해서 돌을 두거나, 아래 입력 칸에 직접 입력하세요. 문제(초기 배치) 돌은 번호 없이, 정답 돌은 1·2·3… 수순 번호로 표시됩니다.</p>
-      <div class="board-viz-row" style="display: flex; gap: 1rem; align-items: flex-start;">
-        <canvas id="gomokuBoard" width="480" height="480" style="background: #DCB35C; border: 2px solid #333; cursor: default;"></canvas>
+    <div class="board-editor-block">
+      <div class="field-label">Board Visualization</div>
+      <p class="hint">Click the board to place stones, or edit the fields below directly. Initial puzzle stones are unnumbered; answer stones show sequence numbers.</p>
+      <div class="board-viz-row">
+        <canvas id="gomokuBoard" class="gomoku-board" width="480" height="480" aria-label="Interactive Gomoku board">Interactive Gomoku board.</canvas>
         <div class="board-side-panel">
           <div class="board-mode-slot">
-            <div id="problemModeButtons" class="board-btn-group" style="display:none;">
-              <button type="button" class="btn" id="problemModeBtn">문제 종료 및 정답 작성</button>
+            <div id="problemModeButtons" class="board-btn-group" hidden>
+              <button type="button" class="btn" id="problemModeBtn">Finish Initial Board and Enter Answer</button>
             </div>
             <div id="answerModeButtons" class="board-btn-group">
-              <button type="button" class="btn" id="clearAnswerBtn">정답만 초기화</button>
-              <button type="button" class="btn" id="backToProblemBtn">정답 초기화 및 문제 작성 모드 진입</button>
+              <button type="button" class="btn" id="clearAnswerBtn">Clear Answer Only</button>
+              <button type="button" class="btn" id="backToProblemBtn">Clear Answer and Edit Initial Board</button>
             </div>
           </div>
-          <p style="font-size: 0.85rem; color: #b0b0b0; margin: 0.5rem 0;">현재 모드: <span id="modeLabel" style="color: #fff; font-weight: 600;">정답 작성</span></p>
-          <p style="font-size: 0.85rem; color: #b0b0b0; margin: 0.5rem 0;">현재 차례: <span id="currentTurn" style="color: #fff; font-weight: 600;">흑</span></p>
+          <p class="board-meta-line">Current Mode: <span id="modeLabel" class="board-meta-value">Answer Entry</span></p>
+          <p class="board-meta-line">Current Turn: <span id="currentTurn" class="board-meta-value">Black</span></p>
           <div class="board-btn-fixed">
-            <button type="button" class="btn" id="undoMoveBtn">마지막 수 취소</button>
-            <button type="button" class="btn" id="clearBoardBtn">보드 초기화</button>
+            <button type="button" class="btn" id="undoMoveBtn">Undo Last Move</button>
+            <button type="button" class="btn" id="clearBoardBtn">Clear Board</button>
           </div>
           <div class="board-review">
             <div class="board-review-toggles">
-              <label class="chk"><input type="checkbox" id="toggleNumbers" checked> 정답 수순 번호</label>
-              <label class="chk"><input type="checkbox" id="toggleWinLine" checked> 5목 강조</label>
+              <label class="chk" for="toggleNumbers"><input type="checkbox" id="toggleNumbers" checked> Answer Sequence Numbers</label>
+              <label class="chk" for="toggleWinLine"><input type="checkbox" id="toggleWinLine" checked> Highlight Five-in-a-Row</label>
             </div>
-            <button type="button" class="btn" id="reviewToggleBtn">▶ 정답 수순 재생</button>
-            <div id="playbackControls" style="display:none;">
+            <button type="button" class="btn" id="reviewToggleBtn">Replay Answer Sequence</button>
+            <div id="playbackControls" hidden>
               <div class="playback-row">
-                <button type="button" class="btn" id="pbFirst" title="처음">⏮</button>
-                <button type="button" class="btn" id="pbPrev" title="이전 수">◀</button>
-                <button type="button" class="btn" id="pbNext" title="다음 수">▶</button>
-                <button type="button" class="btn" id="pbLast" title="마지막">⏭</button>
+                <button type="button" class="btn" id="pbFirst" title="First">⏮</button>
+                <button type="button" class="btn" id="pbPrev" title="Previous">◀</button>
+                <button type="button" class="btn" id="pbNext" title="Next">▶</button>
+                <button type="button" class="btn" id="pbLast" title="Last">⏭</button>
               </div>
-              <p class="playback-label">정답 <b id="pbStep">0</b> / <b id="pbTotal">0</b> 수</p>
+              <p class="playback-label">Answer <b id="pbStep">0</b> / <b id="pbTotal">0</b> moves</p>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <label>보드 상태 (boardStatus) *</label>
-    <input type="text" id="problemBoardStatus" placeholder="예: h8i7i5h5... (15x15 보드 위치, a~o+숫자)" required>
-    <p class="hint">형식: 행(a~o) + 열(1~15) 조합으로 돌 위치 나열. 예: h8i7i5h5 (오목판 클릭 시 자동 업데이트)</p>
-    <label>정답 (answer) *</label>
-    <input type="text" id="problemAnswer" placeholder="예: h8i7j6... (소문자+숫자 쌍, 정답 수)" maxlength="1023" required>
-    <p class="hint">depth = 정답 돌 개수. 승리 색상 = 보드 상태 돌 개수에 따라 자동 고정 (짝수 → BLACK, 홀수 → WHITE)</p>
-    <label>깊이 (depth)</label>
-    <input type="text" id="problemDepth" class="auto-calculated" readonly placeholder="정답 입력 시 자동 계산" style="background: rgba(0,0,0,0.3); cursor: not-allowed;">
-    <label>승리 색상 (winColor)</label>
-    <input type="text" id="problemWinColor" class="auto-calculated" readonly placeholder="정답 입력 시 자동 계산" style="background: rgba(0,0,0,0.3); cursor: not-allowed;">
+    <label for="problemBoardStatus">Board State (boardStatus) *</label>
+    <input type="text" id="problemBoardStatus" placeholder="Example: h8i7i5h5... (15x15 board positions, a-o + number)" required>
+    <p class="hint">Format: column a-o plus row 1-15 for each stone, for example h8i7i5h5. Board clicks update this automatically.</p>
+    <label for="problemAnswer">Answer (answer) *</label>
+    <input type="text" id="problemAnswer" placeholder="Example: h8i7j6... (lowercase letter + number pairs for answer moves)" maxlength="1023" required>
+    <p class="hint">Depth equals the number of answer moves. Win color is determined by the initial board move count: even → BLACK, odd → WHITE.</p>
+    <label for="problemDepth">Depth (depth)</label>
+    <input type="text" id="problemDepth" class="auto-calculated" readonly placeholder="Calculated after answer entry">
+    <label for="problemWinColor">Win Color (winColor)</label>
+    <input type="text" id="problemWinColor" class="auto-calculated" readonly placeholder="Calculated after answer entry">
 
     <div class="edit-buttons">
-      <button type="button" class="btn btn-edit" id="modifyPuzzleBtn">문제 수정</button>
-      <button type="button" class="btn btn-delete" id="deletePuzzleBtn">문제 삭제</button>
+      <button type="button" class="btn btn-edit" id="modifyPuzzleBtn">Update Puzzle</button>
+      <button type="button" class="btn btn-delete" id="deletePuzzleBtn">Puzzle Delete</button>
     </div>
     <div id="editPuzzleMsg" class="msg"></div>
   </section>
@@ -242,23 +132,21 @@
     const CANVAS_LOGICAL_SIZE = 480;
 
     (function setupCanvasScale() {
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = globalThis.devicePixelRatio || 1;
       canvas.width = CANVAS_LOGICAL_SIZE * dpr;
       canvas.height = CANVAS_LOGICAL_SIZE * dpr;
-      canvas.style.width = CANVAS_LOGICAL_SIZE + 'px';
-      canvas.style.height = CANVAS_LOGICAL_SIZE + 'px';
       ctx.scale(dpr, dpr);
     })();
     const moves = [];
     const answerMoves = [];
-    let isAnswerMode = true;  // 편집 페이지는 완성본이 들어오므로 정답 작성 모드로 시작
+    let isAnswerMode = true;  // Edit page starts in answer-entry mode because it loads a completed puzzle
     let currentPlayer = 'black';
 
-    // 표시 옵션 / 정답 수순 재생 상태
-    let showNumbers = true;   // 정답 수순 번호 표시
-    let showWinLine = true;   // 5목 강조 표시
-    let reviewMode = false;   // 정답 수순 재생 모드 (편집 일시 중지)
-    let playbackStep = 0;     // 재생 모드에서 보여줄 정답 수 개수
+    // Display options and answer sequence replay state
+    let showNumbers = true;   // Answer Sequence Numbers display
+    let showWinLine = true;   // Show five-in-a-row highlight
+    let reviewMode = false;   // Answer sequence replay mode; editing is paused
+    let playbackStep = 0;     // Visible answer move count during replay
 
     function toCanvasX(col) { return MARGIN + col * CELL_SIZE; }
     function toCanvasY(row) { return MARGIN + (14 - row) * CELL_SIZE; }
@@ -293,7 +181,7 @@
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       for (let c = 0; c < BOARD_SIZE; c++) {
-        ctx.fillText(String.fromCharCode(65 + c), toCanvasX(c), CANVAS_LOGICAL_SIZE - MARGIN / 2);
+        ctx.fillText(String.fromCodePoint(65 + c), toCanvasX(c), CANVAS_LOGICAL_SIZE - MARGIN / 2);
       }
       for (let r = 0; r < BOARD_SIZE; r++) {
         ctx.fillText(String(r + 1), MARGIN / 2, toCanvasY(r));
@@ -321,20 +209,20 @@
 
     function redrawBoard() {
       drawBoard();
-      // answerMoves가 줄어든 경우(예: 재생 중 초기화)에도 안전하도록 클램프
+      // Clamp safely if answerMoves shrinks, for example during replay reset
       const visibleAnswerCount = Math.min(reviewMode ? playbackStep : answerMoves.length, answerMoves.length);
-      // 문제(초기 배치) 돌: 번호 없이 표시
+      // Initial puzzle stones: no numbers
       moves.forEach((m) => drawStone(m.row, m.col, m.player, null));
-      // 정답 돌: 수순 번호(1..) 표시
+      // Answer stones: show sequence numbers
       for (let i = 0; i < visibleAnswerCount; i++) {
         const m = answerMoves[i];
         drawStone(m.row, m.col, m.player, showNumbers ? (i + 1) : null);
       }
-      // 재생 중 마지막으로 표시된 수 강조
+      // Highlight the last visible move during replay
       if (reviewMode && visibleAnswerCount > 0) {
         markLastMove(answerMoves[visibleAnswerCount - 1]);
       }
-      // 5목 강조 (현재 보이는 돌 기준)
+      // Highlight five-in-a-row using visible stones
       if (showWinLine) {
         const visible = [...moves, ...answerMoves.slice(0, visibleAnswerCount)];
         const line = findWinLine(visible);
@@ -343,11 +231,11 @@
       refreshReviewAvailability();
     }
 
-    // 같은 색 5개 이상 연속 라인 탐색 (가로/세로/두 대각)
+    // Find a same-color line of five or more in four directions
     function findWinLine(stones) {
       const occ = new Map();
       stones.forEach(m => occ.set(m.row + ',' + m.col, m.player));
-      // th:inline 자바스크립트에서 Thymeleaf가 이중 대괄호를 표현식으로 오해하지 않도록 줄바꿈으로 분리
+      // Split this so Thymeleaf inline JavaScript does not treat double brackets as expressions
       const dirs = [
         [0, 1], [1, 0], [1, 1], [1, -1]
       ];
@@ -391,13 +279,13 @@
       ctx.lineCap = 'butt';
     }
 
-    // 정답이 있을 때만 '정답 수순 재생' 버튼 활성화 (재생 중에는 종료 버튼이므로 항상 활성)
+    // Enable answer replay only when answer moves exist; keep enabled while replaying because it becomes the stop button
     function refreshReviewAvailability() {
       const btn = document.getElementById('reviewToggleBtn');
       if (btn) btn.disabled = (!reviewMode && answerMoves.length === 0);
     }
 
-    // 재생 모드 동안에는 편집(클릭/입력/모드 전환)을 일시 중지
+    // Pause editing, clicking, typing, and mode switching during replay
     function setEditingDisabled(disabled) {
       ['problemModeBtn', 'clearAnswerBtn', 'backToProblemBtn', 'undoMoveBtn', 'clearBoardBtn'].forEach(id => {
         const el = document.getElementById(id);
@@ -407,12 +295,12 @@
       const an = document.getElementById('problemAnswer');
       if (bs) bs.readOnly = disabled;
       if (an) an.readOnly = disabled;
-      canvas.style.cursor = disabled ? 'not-allowed' : 'default';
+      canvas.classList.toggle('is-disabled', disabled);
     }
 
     function updatePlaybackUI() {
-      document.getElementById('pbStep').textContent = playbackStep;
-      document.getElementById('pbTotal').textContent = answerMoves.length;
+      document.getElementById('pbStep').textContent = String(playbackStep);
+      document.getElementById('pbTotal').textContent = String(answerMoves.length);
       document.getElementById('pbFirst').disabled = playbackStep <= 0;
       document.getElementById('pbPrev').disabled = playbackStep <= 0;
       document.getElementById('pbNext').disabled = playbackStep >= answerMoves.length;
@@ -425,14 +313,14 @@
       const btn = document.getElementById('reviewToggleBtn');
       if (on) {
         playbackStep = 0;
-        controls.style.display = '';
-        btn.textContent = '■ 재생 종료';
+        controls.hidden = false;
+        btn.textContent = '■ Stop Replay';
         btn.classList.add('btn-primary');
         setEditingDisabled(true);
         updatePlaybackUI();
       } else {
-        controls.style.display = 'none';
-        btn.textContent = '▶ 정답 수순 재생';
+        controls.hidden = true;
+        btn.textContent = 'Replay Answer Sequence';
         btn.classList.remove('btn-primary');
         setEditingDisabled(false);
       }
@@ -456,8 +344,8 @@
       let match;
       let turnBlack = true;
       while ((match = regex.exec(boardStatus)) !== null) {
-        const col = match[1].toLowerCase().charCodeAt(0) - 'a'.charCodeAt(0);
-        const row = parseInt(match[2], 10) - 1;
+        const col = match[1].toLowerCase().codePointAt(0) - 'a'.codePointAt(0);
+        const row = Number.parseInt(match[2], 10) - 1;
         if (row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE) {
           result.push({ row, col, player: turnBlack ? 'black' : 'white' });
           turnBlack = !turnBlack;
@@ -468,7 +356,7 @@
 
     function movesToBoardStatus(arr) {
       return arr.map(m => {
-        const rowChar = String.fromCharCode('a'.charCodeAt(0) + m.col);
+        const rowChar = String.fromCodePoint('a'.codePointAt(0) + m.col);
         const colNum = m.row + 1;
         return rowChar + colNum;
       }).join('');
@@ -485,15 +373,15 @@
     }
 
     function updateModeLabel() {
-      document.getElementById('modeLabel').textContent = isAnswerMode ? '정답 작성' : '문제 작성';
-      document.getElementById('problemModeButtons').style.display = isAnswerMode ? 'none' : '';
-      document.getElementById('answerModeButtons').style.display = isAnswerMode ? '' : 'none';
+      document.getElementById('modeLabel').textContent = isAnswerMode ? 'Answer Entry' : 'Initial Board';
+      document.getElementById('problemModeButtons').hidden = isAnswerMode;
+      document.getElementById('answerModeButtons').hidden = !isAnswerMode;
     }
 
     function syncCurrentPlayer() {
       const total = moves.length + answerMoves.length;
       currentPlayer = total % 2 === 0 ? 'black' : 'white';
-      document.getElementById('currentTurn').textContent = currentPlayer === 'black' ? '흑' : '백';
+      document.getElementById('currentTurn').textContent = currentPlayer === 'black' ? 'Black' : 'White';
     }
 
     function countMovesInBoardString(str) {
@@ -502,7 +390,7 @@
       let count = 0;
       let match;
       while ((match = regex.exec(str)) !== null) {
-        const num = parseInt(match[2], 10);
+        const num = Number.parseInt(match[2], 10);
         if (num >= 1 && num <= 15) count++;
       }
       return count;
@@ -515,10 +403,16 @@
       const answerMovesCount = countMovesInBoardString(answer);
       const depthEl = document.getElementById('problemDepth');
       const winColorEl = document.getElementById('problemWinColor');
-      depthEl.value = answerMovesCount > 0 ? answerMovesCount : '';
-      winColorEl.value = (boardMoves > 0 && (isAnswerMode || answerMovesCount > 0))
-        ? ((boardMoves % 2 === 0) ? 'BLACK' : 'WHITE')
-        : '';
+      let depthValue = '';
+      if (answerMovesCount > 0) {
+        depthValue = String(answerMovesCount);
+      }
+      depthEl.value = depthValue;
+      let winColor = '';
+      if (boardMoves > 0 && (isAnswerMode || answerMovesCount > 0)) {
+        winColor = boardMoves % 2 === 0 ? 'BLACK' : 'WHITE';
+      }
+      winColorEl.value = winColor;
     }
 
     function isOccupied(row, col) {
@@ -527,7 +421,7 @@
     }
 
     canvas.addEventListener('click', (e) => {
-      if (reviewMode) return;  // 재생 모드 중에는 착수 비활성화
+      if (reviewMode) return;  // Disable placing moves during replay
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
@@ -545,7 +439,7 @@
       }
       redrawBoard();
       currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
-      document.getElementById('currentTurn').textContent = currentPlayer === 'black' ? '흑' : '백';
+      document.getElementById('currentTurn').textContent = currentPlayer === 'black' ? 'Black' : 'White';
     });
 
     document.getElementById('problemModeBtn').addEventListener('click', () => {
@@ -577,7 +471,7 @@
       isAnswerMode = false;
       currentPlayer = 'black';
       updateModeLabel();
-      document.getElementById('currentTurn').textContent = '흑';
+      document.getElementById('currentTurn').textContent = 'Black';
       redrawBoard();
       updateBoardStatusInput();
       updateAnswerInput();
@@ -621,32 +515,21 @@
       updateDepthAndWinColor();
     });
 
-    // 초기 보드는 API/편집 버튼 바인딩보다 먼저 렌더링한다.
-    // (하단 바인딩 단계에서 에러가 나더라도 캔버스 렌더가 깨지지 않도록)
+    // Render the initial board before API and edit button bindings.
+    // (Keep canvas rendering intact even if later binding fails.)
     drawBoard();
     updateModeLabel();
 
-    function getCookie(name) {
-      const value = '; ' + document.cookie;
-      const parts = value.split('; ' + name + '=');
-      if (parts.length === 2) return parts.pop().split(';').shift();
-      return null;
-    }
-
     async function fetchWithAuth(url, options = {}) {
-      const token = getCookie('admin_accessToken');
-      if (!token) {
-        document.cookie = 'admin_accessToken=; path=/; max-age=0';
-        window.location.href = '/admin';
-        throw new Error('로그인이 필요합니다.');
+      const headers = { 'Content-Type': 'application/json', ...options.headers };
+      if (options.body === undefined || options.body === null) {
+        delete headers['Content-Type'];
       }
-      const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
-      const res = await fetch(url, { ...options, headers });
+      const res = await fetch(url, { ...options, headers, credentials: 'same-origin' });
       if (res.status === 401 || res.status === 403) {
-        document.cookie = 'admin_accessToken=; path=/; max-age=0';
-        alert('토큰이 만료되었거나 권한이 없습니다. 다시 로그인하세요.');
-        window.location.href = '/admin';
-        throw new Error('토큰 만료');
+        alert('Your session has expired or you do not have permission. Please log in again.');
+        globalThis.location.href = '/admin/logout';
+        return null;
       }
       return res;
     }
@@ -654,43 +537,46 @@
     async function loadPackDetail() {
       try {
         const res = await fetchWithAuth(API_BASE + '/admin/training/pack/' + packId);
+        if (!res) return;
         const data = await res.json();
         if (!data.isSuccess) {
-          alert(data.errorResponse?.message || '문제집 조회 실패');
-          window.location.href = '/admin/pack-detail?packId=' + packId;
+          alert('Failed to load pack.');
+          globalThis.location.href = '/admin/pack-detail?packId=' + packId;
           return;
         }
         const detail = data.response;
-        const info = (detail.info || [])[0] || {};
-        document.getElementById('packInfoBox').style.display = 'block';
-        document.getElementById('packIdText').textContent = detail.id ?? '-';
-        document.getElementById('packAuthor').textContent = info.author || '(없음)';
-        document.getElementById('packDescription').textContent = info.description || '(설명 없음)';
+        const info = (detail['info'] || [])[0] || {};
+        document.getElementById('packInfoBox').hidden = false;
+        document.getElementById('packIdText').textContent = String(detail['id'] ?? '-');
+        document.getElementById('packAuthor').textContent = info['author'] || '(None)';
+        document.getElementById('packDescription').textContent = info['description'] || '(Description None)';
       } catch (err) {
-        alert('오류: ' + (err.message || ''));
+        alert('Error: ' + (err.message || ''));
       }
     }
 
     async function loadPuzzleDetail() {
       try {
         const res = await fetchWithAuth(API_BASE + '/admin/training/puzzle-detail/' + puzzleId);
+        if (!res) return;
         const data = await res.json();
         if (!data.isSuccess) {
-          alert(data.errorResponse?.message || '문제 조회 실패');
-          window.location.href = '/admin/pack-detail?packId=' + packId;
+          alert('Failed to load puzzle.');
+          globalThis.location.href = '/admin/pack-detail?packId=' + packId;
           return;
         }
 
         const puzzle = data.response || {};
-        const boardStatus = (puzzle.boardStatus || '').trim();
-        const answer = (puzzle.answer || '').trim();
+        const boardStatus = (puzzle['boardStatus'] || '').trim();
+        const answer = (puzzle['answer'] || '').trim();
 
-        document.getElementById('problemPuzzleId').value = puzzle.id ?? puzzleId;
-        document.getElementById('problemPuzzleIndex').value = puzzle.trainingIndex ?? '';
+        document.getElementById('problemPuzzleId').value = String(puzzle['id'] ?? puzzleId);
+        document.getElementById('problemPuzzleIndex').value = puzzle['trainingIndex'] == null ? '' : String(puzzle['trainingIndex']);
         document.getElementById('problemBoardStatus').value = boardStatus;
         document.getElementById('problemAnswer').value = answer;
-        document.getElementById('problemDepth').value = (puzzle.depth ?? '') === 0 ? '' : (puzzle.depth ?? '');
-        document.getElementById('problemWinColor').value = puzzle.winColor || '';
+        const puzzleDepth = String(puzzle['depth'] ?? '');
+        document.getElementById('problemDepth').value = puzzleDepth === '0' ? '' : puzzleDepth;
+        document.getElementById('problemWinColor').value = puzzle['winColor'] || '';
 
         moves.length = 0;
         moves.push(...boardStatusToMoves(boardStatus));
@@ -702,12 +588,12 @@
           answerMoves.push({ ...m, player });
         });
 
-        isAnswerMode = true;  // 편집 페이지: 완성본 로드 시 정답 작성 모드 유지
+        isAnswerMode = true;  // Keep answer-entry mode when the completed puzzle is loaded.
         updateModeLabel();
         syncCurrentPlayer();
         redrawBoard();
       } catch (err) {
-        alert('오류: ' + (err.message || ''));
+        alert('Error: ' + (err.message || ''));
       }
     }
 
@@ -716,19 +602,19 @@
       const msgEl = document.getElementById('editPuzzleMsg');
       msgEl.classList.remove('show', 'success', 'error');
       const puzzleIndexVal = document.getElementById('problemPuzzleIndex').value.trim();
-      const puzzleIndex = puzzleIndexVal ? parseInt(puzzleIndexVal, 10) : null;
+      const puzzleIndex = puzzleIndexVal ? Number.parseInt(puzzleIndexVal, 10) : null;
       const boardStatus = document.getElementById('problemBoardStatus').value.trim();
       const answer = document.getElementById('problemAnswer').value.trim();
       const depthVal = document.getElementById('problemDepth').value.trim();
       const winColor = document.getElementById('problemWinColor').value.trim();
-      const depth = depthVal ? parseInt(depthVal, 10) : null;
+      const depth = depthVal ? Number.parseInt(depthVal, 10) : null;
       if (!boardStatus || !answer) {
-        msgEl.textContent = '보드 상태와 정답을 입력하세요.';
+        msgEl.textContent = 'Enter both board state and answer.';
         msgEl.classList.add('show', 'error');
         return;
       }
       if (depth === 0 || !winColor) {
-        msgEl.textContent = '정답 형식이 올바르지 않습니다. (소문자+숫자 쌍, 예: h8i7)';
+        msgEl.textContent = 'Invalid answer format. Use lowercase letter + number pairs, for example h8i7.';
         msgEl.classList.add('show', 'error');
         return;
       }
@@ -739,39 +625,43 @@
           method: 'PATCH',
           body: JSON.stringify(body)
         });
+        if (!res) return;
         const data = await res.json();
         if (!data.isSuccess) {
-          msgEl.textContent = data.errorResponse?.message || '문제 수정 실패';
+          msgEl.textContent = 'Failed to update puzzle';
           msgEl.classList.add('show', 'error');
           return;
         }
-        msgEl.textContent = '문제 수정 완료. 문제집 상세정보로 이동합니다.';
+        msgEl.textContent = 'Puzzle updated. Opening the pack workspace.';
         msgEl.classList.add('show', 'success');
-        setTimeout(() => { window.location.href = '/admin/pack-detail?packId=' + packId; }, 500);
+        setTimeout(() => { globalThis.location.href = '/admin/pack-detail?packId=' + packId; }, 500);
       } catch (err) {
-        msgEl.textContent = '오류: ' + (err.message || '');
+        msgEl.textContent = 'Error: ' + (err.message || '');
         msgEl.classList.add('show', 'error');
       }
     });
 
     const deletePuzzleBtn = document.getElementById('deletePuzzleBtn');
     if (deletePuzzleBtn) deletePuzzleBtn.addEventListener('click', async () => {
-      if (!confirm('정말로 삭제하시겠습니까?')) return;
+      const ok = await adminConfirm('Delete this puzzle?', { confirmText: 'Delete', danger: true });
+      if (!ok) return;
       try {
         const res = await fetchWithAuth(API_BASE + '/api/training/puzzle/' + puzzleId, { method: 'DELETE' });
+        if (!res) return;
         const data = await res.json();
         if (!data.isSuccess) {
-          alert(data.errorResponse?.message || '삭제 실패');
+          alert('Delete failed');
           return;
         }
-        window.location.href = '/admin/pack-detail?packId=' + packId;
+        globalThis.location.href = '/admin/pack-detail?packId=' + packId;
       } catch (err) {
-        alert('오류: ' + (err.message || ''));
+        alert('Error: ' + (err.message || ''));
       }
     });
 
-    loadPackDetail();
-    loadPuzzleDetail();
+    await loadPackDetail();
+    await loadPuzzleDetail();
   </script>
+  </main>
 </body>
 </html>
