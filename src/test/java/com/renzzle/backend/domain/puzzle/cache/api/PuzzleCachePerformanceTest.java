@@ -20,7 +20,9 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.util.StopWatch;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
                 "logging.level.org.hibernate.orm.jdbc.bind=WARN"
         }
 )
+@ActiveProfiles("test")
 @ContextConfiguration(initializers = TestContainersConfig.class)
 class PuzzleCachePerformanceTest {
 
@@ -171,18 +174,18 @@ class PuzzleCachePerformanceTest {
         // warmup
         restTemplate.exchange(url, HttpMethod.GET, entity, String.class, TYPE.name(), puzzleId, TEST_BOARD_STATE);
 
-        long totalNanos = 0;
+        StopWatch stopWatch = new StopWatch();
         for (int i = 0; i < MEASURE_ITERATIONS; i++) {
-            long start = System.nanoTime();
+            stopWatch.start();
             ResponseEntity<String> response = restTemplate.exchange(
                     url, HttpMethod.GET, entity, String.class,
                     TYPE.name(), puzzleId, TEST_BOARD_STATE
             );
-            totalNanos += System.nanoTime() - start;
+            stopWatch.stop();
 
             assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
         }
 
-        return (totalNanos / (double) MEASURE_ITERATIONS) / 1_000_000.0;
+        return (stopWatch.getTotalTimeNanos() / (double) MEASURE_ITERATIONS) / 1_000_000.0;
     }
 }

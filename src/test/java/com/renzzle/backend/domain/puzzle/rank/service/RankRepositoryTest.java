@@ -17,10 +17,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+import static com.renzzle.backend.support.TestTime.FIXED_INSTANT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTestWithInitContainers
@@ -60,7 +60,7 @@ class RankRepositoryTest {
                 .boardStatus(training.getBoardStatus())
                 .answer(training.getAnswer())
                 .winColor(training.getWinColor())
-                .assignedAt(Instant.now())
+                .assignedAt(FIXED_INSTANT)
                 .isSolved(false)
                 .build();
         latestRankPuzzleRepository.save(latest);
@@ -89,7 +89,7 @@ class RankRepositoryTest {
                         .boardStatus(community.getBoardStatus())
                         .answer(community.getAnswer())
                         .winColor(community.getWinColor())
-                        .assignedAt(Instant.now())
+                        .assignedAt(FIXED_INSTANT)
                         .isSolved(false)
                         .build()
         );

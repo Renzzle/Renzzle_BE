@@ -56,6 +56,7 @@ public class JwtProvider {
         try {
             return Jwts.parser()
                     .verifyWith(secretKey)
+                    .clock(() -> Date.from(clock.instant()))
                     .build()
                     .parseSignedClaims(token);
         } catch (ExpiredJwtException e) {

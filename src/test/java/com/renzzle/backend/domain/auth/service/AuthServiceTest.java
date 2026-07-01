@@ -4,7 +4,6 @@ import com.renzzle.backend.domain.auth.api.request.ReissueTokenRequest;
 import com.renzzle.backend.domain.auth.api.response.LoginResponse;
 import com.renzzle.backend.domain.auth.dao.RefreshTokenRedisRepository;
 import com.renzzle.backend.domain.auth.domain.RefreshTokenEntity;
-import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -109,7 +108,6 @@ class AuthServiceTest {
         String invalidRefreshToken = "invalid-refresh-token";
         ReissueTokenRequest request = new ReissueTokenRequest(invalidRefreshToken);
 
-        UserEntity user = mock(UserEntity.class);
         when(jwtProvider.getUserId(invalidRefreshToken)).thenReturn(userId);
         when(refreshTokenRepository.findById(userId)).thenReturn(Optional.empty());
 

@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.time.Instant;
 import java.util.Optional;
 
+import static com.renzzle.backend.support.TestTime.FIXED_INSTANT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTestWithInitContainers
@@ -100,7 +101,7 @@ class UserRepositoryTest {
 
     @Test
     void isLastAccessBeforeToday_WhenLastAccessedYesterday_ThenReturnTrue() {
-        Instant yesterday = Instant.now().minusSeconds(86400);
+        Instant yesterday = FIXED_INSTANT.minusSeconds(86400);
         var user = TestUserEntityBuilder.builder().withLastAccessedAt(yesterday).save(userRepository);
 
         Boolean result = userRepository.isLastAccessBeforeToday(user.getId());

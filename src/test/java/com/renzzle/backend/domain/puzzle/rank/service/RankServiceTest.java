@@ -34,6 +34,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import static com.renzzle.backend.support.TestTime.FIXED_INSTANT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.*;
@@ -358,7 +359,7 @@ class RankServiceTest {
                 .answer("a3")
                 .isSolved(true)
                 .winColor(WinColor.getWinColor("WHITE"))
-                .assignedAt(Instant.now())
+                .assignedAt(FIXED_INSTANT)
                 .build();
 
         LatestRankPuzzle puzzle2 = LatestRankPuzzle.builder()
@@ -367,7 +368,7 @@ class RankServiceTest {
                 .answer("b3")
                 .isSolved(false)
                 .winColor(WinColor.getWinColor("BLACK"))
-                .assignedAt(Instant.now().plusSeconds(10))
+                .assignedAt(FIXED_INSTANT.plusSeconds(10))
                 .build();
 
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));

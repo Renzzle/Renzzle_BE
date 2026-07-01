@@ -18,6 +18,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static com.renzzle.backend.domain.puzzle.shared.domain.WinColor.getWinColor;
+import static com.renzzle.backend.support.TestTime.FIXED_INSTANT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTestWithInitContainers
@@ -152,7 +153,7 @@ class CommunityPuzzleRepositoryTest {
         CommunityPuzzle puzzle2 = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
         CommunityPuzzle puzzle3 = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
 
-        Instant now = Instant.now();
+        Instant now = FIXED_INSTANT;
 
         TestUserCommunityPuzzleBuilder.builder(user, puzzle1)
                 .withLiked(true)
@@ -188,7 +189,7 @@ class CommunityPuzzleRepositoryTest {
         CommunityPuzzle puzzle2 = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
         CommunityPuzzle puzzle3 = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
 
-        Instant now = Instant.now();
+        Instant now = FIXED_INSTANT;
 
         TestUserCommunityPuzzleBuilder.builder(user, puzzle1)
                 .withLiked(true)
