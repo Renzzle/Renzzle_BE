@@ -25,94 +25,60 @@
   <th:block th:replace="~{admin/fragments :: uiKit}"></th:block>
 
   <main class="admin-shell">
-    <div class="admin-page-heading">
-      <div>
-        <h2 data-i18n="puzzleForm.editHeading">Edit Puzzle</h2>
-        <p data-i18n="puzzleForm.editDescription">Review the existing board, answer sequence, and calculated values before saving changes.</p>
+    <div id="packInfoBox" class="pack-context-bar" hidden>
+      <div class="pack-context-main">
+        <div class="pack-context-kicker" data-i18n="puzzleForm.packInfo">Pack Info</div>
+        <h2 class="pack-context-title" id="packTitle">-</h2>
+        <div class="pack-context-meta" aria-label="Pack metadata">
+          <span class="pack-context-meta-item"><span data-i18n="common.author">Author</span><strong id="packAuthor">-</strong></span>
+          <span class="pack-context-meta-item"><span data-i18n="common.difficulty">Difficulty</span><strong id="packDifficulty">-</strong></span>
+          <span class="pack-context-meta-item"><span data-i18n="common.price">Price</span><strong id="packPrice">-</strong></span>
+        </div>
+        <p class="pack-context-description" id="packDescription">-</p>
       </div>
       <a th:href="@{/admin/pack-detail(packId=${packId})}" class="btn" data-i18n="common.puzzleList">Puzzle List</a>
     </div>
 
-    <div class="workflow-steps">
-      <div class="workflow-step"><span class="num">1</span><div><strong data-i18n="puzzleForm.stepEdit1Title">Review Existing Puzzle</strong><span data-i18n="puzzleForm.stepEdit1Text">Load board and answer</span></div></div>
-      <div class="workflow-step"><span class="num">2</span><div><strong data-i18n="puzzleForm.stepEdit2Title">Edit Board</strong><span data-i18n="puzzleForm.stepEdit2Text">Adjust the initial position</span></div></div>
-      <div class="workflow-step"><span class="num">3</span><div><strong data-i18n="puzzleForm.stepEdit3Title">Edit Answer</strong><span data-i18n="puzzleForm.stepEdit3Text">Check sequence and values</span></div></div>
-      <div class="workflow-step"><span class="num">4</span><div><strong data-i18n="puzzleForm.stepEdit4Title">Save or Delete</strong><span data-i18n="puzzleForm.stepEdit4Text">Apply changes</span></div></div>
-    </div>
-
-  <section class="section" id="packInfoSection">
-    <h2 data-i18n="puzzleForm.packInfo">Pack Info</h2>
-    <div id="packInfoBox" class="pack-info-simple" hidden>
-      <div class="pack-info-row">
-        <div class="item"><span class="label" data-i18n="common.packId">Pack ID</span><span class="value" id="packIdText">-</span></div>
-        <div class="item"><span class="label" data-i18n="common.author">Author</span><span class="value" id="packAuthor">-</span></div>
-      </div>
-      <div class="pack-info-block">
-        <div class="label" data-i18n="common.description">Description</div>
-        <div class="value" id="packDescription">-</div>
-      </div>
-    </div>
-  </section>
-
   <section class="section">
     <h2 data-i18n="puzzleForm.editHeading">Edit Puzzle</h2>
-    <label for="problemPuzzleId" data-i18n="puzzleForm.puzzleId">Puzzle ID</label>
-    <input type="text" id="problemPuzzleId" readonly th:value="${puzzleId}">
+    <input type="hidden" id="problemPuzzleId" th:value="${puzzleId}">
 
-    <label for="problemPuzzleIndex"><span data-i18n="puzzleForm.orderLabel">Puzzle Order (puzzleIndex)</span> <small data-i18n="puzzleForm.orderHelp">Leave empty to append as the last order</small></label>
+    <label for="problemPuzzleIndex"><span data-i18n="puzzleForm.orderLabel">Puzzle Order</span> <small data-i18n="puzzleForm.orderHelp">Leave empty to append as the last order</small></label>
     <input type="number" id="problemPuzzleIndex" min="1" data-i18n-placeholder="puzzleForm.orderPlaceholder" placeholder="Leave empty to append as the last order">
 
     <div class="board-editor-block">
-      <div class="field-label" data-i18n="puzzleForm.boardVisualization">Board Visualization</div>
-      <p class="hint" data-i18n="puzzleForm.boardHint">Click the board to place stones, or edit the fields below directly. Initial puzzle stones are unnumbered; answer stones show sequence numbers.</p>
       <div class="board-viz-row">
-        <canvas id="gomokuBoard" class="gomoku-board" width="480" height="480" aria-label="Interactive Gomoku board" data-i18n="puzzleForm.canvasLabel" data-i18n-aria-label="puzzleForm.canvasLabel">Interactive Gomoku board.</canvas>
-        <div class="board-side-panel">
-          <div class="board-mode-slot">
-            <div id="problemModeButtons" class="board-btn-group" hidden>
-              <button type="button" class="btn" id="problemModeBtn" data-i18n="puzzleForm.finishInitial">Finish Initial Board and Enter Answer</button>
-            </div>
-            <div id="answerModeButtons" class="board-btn-group">
-              <button type="button" class="btn" id="clearAnswerBtn" data-i18n="puzzleForm.clearAnswer">Clear Answer Only</button>
-              <button type="button" class="btn" id="backToProblemBtn" data-i18n="puzzleForm.backToInitial">Clear Answer and Edit Initial Board</button>
-            </div>
+        <div class="board-main-panel">
+          <canvas id="gomokuBoard" class="gomoku-board" width="480" height="480" aria-label="Interactive Gomoku board" data-i18n="puzzleForm.canvasLabel" data-i18n-aria-label="puzzleForm.canvasLabel">Interactive Gomoku board.</canvas>
+          <div class="board-toolbar" aria-label="Board controls">
+            <button type="button" class="btn board-icon-btn" id="undoMoveBtn" title="Previous Move" aria-label="Previous Move" data-i18n-title="puzzleForm.previousMove" data-i18n-aria-label="puzzleForm.previousMove">◀</button>
+            <button type="button" class="btn board-icon-btn" id="clearBoardBtn" title="Reset" aria-label="Reset" data-i18n-title="puzzleForm.clearBoard" data-i18n-aria-label="puzzleForm.clearBoard">↺</button>
+            <button type="button" class="btn board-icon-btn" id="redoMoveBtn" title="Next Move" aria-label="Next Move" data-i18n-title="puzzleForm.nextMove" data-i18n-aria-label="puzzleForm.nextMove">▶</button>
+            <button type="button" class="btn board-icon-btn" id="toggleModeBtn" title="Change Mode" aria-label="Change Mode" data-i18n-title="puzzleForm.toggleMode" data-i18n-aria-label="puzzleForm.toggleMode">⇄</button>
           </div>
-          <p class="board-meta-line"><span data-i18n="common.currentMode">Current Mode</span>: <span id="modeLabel" class="board-meta-value">Answer Entry</span></p>
-          <p class="board-meta-line"><span data-i18n="common.currentTurn">Current Turn</span>: <span id="currentTurn" class="board-meta-value">Black</span></p>
-          <div class="board-btn-fixed">
-            <button type="button" class="btn" id="undoMoveBtn" data-i18n="puzzleForm.undo">Undo Last Move</button>
-            <button type="button" class="btn" id="clearBoardBtn" data-i18n="puzzleForm.clearBoard">Clear Board</button>
+        </div>
+        <div class="board-side-panel board-compact-panel">
+          <div class="board-status-strip">
+            <div><span data-i18n="common.currentMode">Current Mode</span><strong id="modeLabel">Answer Input</strong></div>
+            <div><span data-i18n="common.currentTurn">Current Turn</span><strong id="currentTurn">Black</strong></div>
           </div>
-          <div class="board-review">
-            <div class="board-review-toggles">
-              <label class="chk" for="toggleNumbers"><input type="checkbox" id="toggleNumbers" checked> <span data-i18n="puzzleForm.answerNumbers">Answer Sequence Numbers</span></label>
-              <label class="chk" for="toggleWinLine"><input type="checkbox" id="toggleWinLine" checked> <span data-i18n="puzzleForm.highlightLine">Highlight Five-in-a-Row</span></label>
+          <label for="problemBoardStatus" data-i18n="puzzleForm.boardStateLabel">Board State *</label>
+          <input type="text" id="problemBoardStatus" class="compact-input" data-i18n-placeholder="puzzleForm.boardPlaceholder" placeholder="h8h9i8..." required>
+          <label for="problemAnswer" data-i18n="puzzleForm.answerLabel">Answer *</label>
+          <input type="text" id="problemAnswer" class="compact-input" data-i18n-placeholder="puzzleForm.answerPlaceholder" placeholder="h8h9i8..." maxlength="1023" required>
+          <div class="board-field-grid">
+            <div>
+              <label for="problemDepth" data-i18n="puzzleForm.depthLabel">Depth</label>
+              <input type="text" id="problemDepth" class="auto-calculated compact-input" readonly>
             </div>
-            <button type="button" class="btn" id="reviewToggleBtn" data-i18n="puzzleForm.replay">Replay Answer Sequence</button>
-            <div id="playbackControls" hidden>
-              <div class="playback-row">
-                <button type="button" class="btn" id="pbFirst" title="First" data-i18n-title="puzzleForm.first">⏮</button>
-                <button type="button" class="btn" id="pbPrev" title="Previous" data-i18n-title="puzzleForm.previous">◀</button>
-                <button type="button" class="btn" id="pbNext" title="Next" data-i18n-title="puzzleForm.next">▶</button>
-                <button type="button" class="btn" id="pbLast" title="Last" data-i18n-title="puzzleForm.last">⏭</button>
-              </div>
-              <p class="playback-label"><span data-i18n="common.answer">Answer</span> <b id="pbStep">0</b> / <b id="pbTotal">0</b> <span data-i18n="puzzleForm.moves">moves</span></p>
+            <div>
+              <label for="problemWinColor" data-i18n="puzzleForm.winColorLabel">Win Color</label>
+              <input type="text" id="problemWinColor" class="auto-calculated compact-input" readonly>
             </div>
           </div>
         </div>
       </div>
     </div>
-
-    <label for="problemBoardStatus" data-i18n="puzzleForm.boardStateLabel">Board State (boardStatus) *</label>
-    <input type="text" id="problemBoardStatus" data-i18n-placeholder="puzzleForm.boardPlaceholder" placeholder="Example: h8i7i5h5... (15x15 board positions, a-o + number)" required>
-    <p class="hint" data-i18n="puzzleForm.boardFormat">Format: column a-o plus row 1-15 for each stone, for example h8i7i5h5. Board clicks update this automatically.</p>
-    <label for="problemAnswer" data-i18n="puzzleForm.answerLabel">Answer (answer) *</label>
-    <input type="text" id="problemAnswer" data-i18n-placeholder="puzzleForm.answerPlaceholder" placeholder="Example: h8i7j6... (lowercase letter + number pairs for answer moves)" maxlength="1023" required>
-    <p class="hint" data-i18n="puzzleForm.answerHelp">Depth equals the number of answer moves. Win color is determined by the initial board move count: even → BLACK, odd → WHITE.</p>
-    <label for="problemDepth" data-i18n="puzzleForm.depthLabel">Depth (depth)</label>
-    <input type="text" id="problemDepth" class="auto-calculated" readonly data-i18n-placeholder="puzzleForm.calculatedPlaceholder" placeholder="Calculated after answer entry">
-    <label for="problemWinColor" data-i18n="puzzleForm.winColorLabel">Win Color (winColor)</label>
-    <input type="text" id="problemWinColor" class="auto-calculated" readonly data-i18n-placeholder="puzzleForm.calculatedPlaceholder" placeholder="Calculated after answer entry">
 
     <div class="edit-buttons">
       <button type="button" class="btn btn-edit" id="modifyPuzzleBtn" data-i18n="common.updatePuzzle">Update Puzzle</button>
@@ -121,10 +87,11 @@
     <div id="editPuzzleMsg" class="msg"></div>
   </section>
 
-  <script th:inline="javascript">
+  <script type="module" th:inline="javascript">
     const API_BASE = '';
     const packId = /*[[${packId}]]*/ 0;
     const puzzleId = /*[[${puzzleId}]]*/ 0;
+    let currentPackDetail = null;
 
     const canvas = document.getElementById('gomokuBoard');
     const ctx = canvas.getContext('2d');
@@ -141,22 +108,18 @@
     })();
     const moves = [];
     const answerMoves = [];
+    const redoMoves = [];
+    const redoAnswerMoves = [];
     let isAnswerMode = true;  // Edit page starts in answer-entry mode because it loads a completed puzzle
     let currentPlayer = 'black';
-
-    // Display options and answer sequence replay state
-    let showNumbers = true;   // Answer Sequence Numbers display
-    let showWinLine = true;   // Show five-in-a-row highlight
-    let reviewMode = false;   // Answer sequence replay mode; editing is paused
-    let playbackStep = 0;     // Visible answer move count during replay
 
     function toCanvasX(col) { return MARGIN + col * CELL_SIZE; }
     function toCanvasY(row) { return MARGIN + (14 - row) * CELL_SIZE; }
 
     function drawBoard() {
-      ctx.fillStyle = '#DCB35C';
+      ctx.fillStyle = '#F1DCA7';
       ctx.fillRect(0, 0, CANVAS_LOGICAL_SIZE, CANVAS_LOGICAL_SIZE);
-      ctx.strokeStyle = '#000';
+      ctx.strokeStyle = '#6F5432';
       ctx.lineWidth = 1;
       for (let i = 0; i < BOARD_SIZE; i++) {
         const pos = MARGIN + i * CELL_SIZE;
@@ -173,12 +136,12 @@
       starPoints.forEach(([row, col]) => {
         const x = toCanvasX(col);
         const y = toCanvasY(row);
-        ctx.fillStyle = '#000';
+        ctx.fillStyle = '#5E472A';
         ctx.beginPath();
         ctx.arc(x, y, 3, 0, Math.PI * 2);
         ctx.fill();
       });
-      ctx.fillStyle = '#000';
+      ctx.fillStyle = '#5E472A';
       ctx.font = '14px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -211,26 +174,17 @@
 
     function redrawBoard() {
       drawBoard();
-      // Clamp safely if answerMoves shrinks, for example during replay reset
-      const visibleAnswerCount = Math.min(reviewMode ? playbackStep : answerMoves.length, answerMoves.length);
       // Initial puzzle stones: no numbers
       moves.forEach((m) => drawStone(m.row, m.col, m.player, null));
       // Answer stones: show sequence numbers
-      for (let i = 0; i < visibleAnswerCount; i++) {
+      for (let i = 0; i < answerMoves.length; i++) {
         const m = answerMoves[i];
-        drawStone(m.row, m.col, m.player, showNumbers ? (i + 1) : null);
-      }
-      // Highlight the last visible move during replay
-      if (reviewMode && visibleAnswerCount > 0) {
-        markLastMove(answerMoves[visibleAnswerCount - 1]);
+        drawStone(m.row, m.col, m.player, i + 1);
       }
       // Highlight five-in-a-row using visible stones
-      if (showWinLine) {
-        const visible = [...moves, ...answerMoves.slice(0, visibleAnswerCount)];
-        const line = findWinLine(visible);
-        if (line) highlightWinLine(line);
-      }
-      refreshReviewAvailability();
+      const visible = [...moves, ...answerMoves];
+      const line = findWinLine(visible);
+      if (line) highlightWinLine(line);
     }
 
     // Find a same-color line of five or more in four directions
@@ -254,15 +208,6 @@
       return null;
     }
 
-    function markLastMove(m) {
-      const x = toCanvasX(m.col), y = toCanvasY(m.row);
-      ctx.strokeStyle = '#ff4d4d';
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.arc(x, y, CELL_SIZE / 2 - 1, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-
     function highlightWinLine(line) {
       const first = line[0], last = line[line.length - 1];
       ctx.strokeStyle = 'rgba(255,77,77,0.9)';
@@ -280,64 +225,6 @@
       });
       ctx.lineCap = 'butt';
     }
-
-    // Enable answer replay only when answer moves exist; keep enabled while replaying because it becomes the stop button
-    function refreshReviewAvailability() {
-      const btn = document.getElementById('reviewToggleBtn');
-      if (btn) btn.disabled = (!reviewMode && answerMoves.length === 0);
-    }
-
-    // Pause editing, clicking, typing, and mode switching during replay
-    function setEditingDisabled(disabled) {
-      ['problemModeBtn', 'clearAnswerBtn', 'backToProblemBtn', 'undoMoveBtn', 'clearBoardBtn'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.disabled = disabled;
-      });
-      const bs = document.getElementById('problemBoardStatus');
-      const an = document.getElementById('problemAnswer');
-      if (bs) bs.readOnly = disabled;
-      if (an) an.readOnly = disabled;
-      canvas.classList.toggle('is-disabled', disabled);
-    }
-
-    function updatePlaybackUI() {
-      document.getElementById('pbStep').textContent = String(playbackStep);
-      document.getElementById('pbTotal').textContent = String(answerMoves.length);
-      document.getElementById('pbFirst').disabled = playbackStep <= 0;
-      document.getElementById('pbPrev').disabled = playbackStep <= 0;
-      document.getElementById('pbNext').disabled = playbackStep >= answerMoves.length;
-      document.getElementById('pbLast').disabled = playbackStep >= answerMoves.length;
-    }
-
-    function setReviewMode(on) {
-      reviewMode = on;
-      const controls = document.getElementById('playbackControls');
-      const btn = document.getElementById('reviewToggleBtn');
-      if (on) {
-        playbackStep = 0;
-        controls.hidden = false;
-        adminSetText(btn, 'puzzleForm.stopReplay');
-        btn.classList.add('btn-primary');
-        setEditingDisabled(true);
-        updatePlaybackUI();
-      } else {
-        controls.hidden = true;
-        adminSetText(btn, 'puzzleForm.replay');
-        btn.classList.remove('btn-primary');
-        setEditingDisabled(false);
-      }
-      redrawBoard();
-    }
-
-    document.getElementById('toggleNumbers').addEventListener('change', (e) => { showNumbers = e.target.checked; redrawBoard(); });
-    document.getElementById('toggleWinLine').addEventListener('change', (e) => { showWinLine = e.target.checked; redrawBoard(); });
-    document.getElementById('reviewToggleBtn').addEventListener('click', () => { setReviewMode(!reviewMode); });
-    document.getElementById('pbFirst').addEventListener('click', () => { playbackStep = 0; updatePlaybackUI(); redrawBoard(); });
-    document.getElementById('pbPrev').addEventListener('click', () => { if (playbackStep > 0) { playbackStep--; updatePlaybackUI(); redrawBoard(); } });
-    document.getElementById('pbNext').addEventListener('click', () => { if (playbackStep < answerMoves.length) { playbackStep++; updatePlaybackUI(); redrawBoard(); } });
-    document.getElementById('pbLast').addEventListener('click', () => { playbackStep = answerMoves.length; updatePlaybackUI(); redrawBoard(); });
-
-    refreshReviewAvailability();
 
     function boardStatusToMoves(boardStatus) {
       const result = [];
@@ -376,8 +263,17 @@
 
     function updateModeLabel() {
       document.getElementById('modeLabel').textContent = isAnswerMode ? adminT('puzzleForm.answerEntry') : adminT('puzzleForm.initialBoard');
-      document.getElementById('problemModeButtons').hidden = isAnswerMode;
-      document.getElementById('answerModeButtons').hidden = !isAnswerMode;
+      updateToolbarState();
+    }
+
+    function updateToolbarState() {
+      document.getElementById('undoMoveBtn').disabled = isAnswerMode ? answerMoves.length === 0 : moves.length === 0;
+      document.getElementById('redoMoveBtn').disabled = isAnswerMode ? redoAnswerMoves.length === 0 : redoMoves.length === 0;
+    }
+
+    function clearRedoHistory() {
+      redoMoves.length = 0;
+      redoAnswerMoves.length = 0;
     }
 
     function syncCurrentPlayer() {
@@ -423,7 +319,6 @@
     }
 
     canvas.addEventListener('click', (e) => {
-      if (reviewMode) return;  // Disable placing moves during replay
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
@@ -434,42 +329,54 @@
       const newMove = { row, col, player: currentPlayer };
       if (isAnswerMode) {
         answerMoves.push(newMove);
+        redoAnswerMoves.length = 0;
         updateAnswerInput();
       } else {
         moves.push(newMove);
+        redoMoves.length = 0;
         updateBoardStatusInput();
       }
       redrawBoard();
-      currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
-      document.getElementById('currentTurn').textContent = currentPlayer === 'black' ? adminT('common.black') : adminT('common.white');
+      syncCurrentPlayer();
+      updateToolbarState();
     });
 
-    document.getElementById('problemModeBtn').addEventListener('click', () => {
-      isAnswerMode = true;
-      updateModeLabel();
-      updateDepthAndWinColor();
-    });
-
-    document.getElementById('backToProblemBtn').addEventListener('click', () => {
+    async function switchToProblemMode() {
+      const hasAnswer = answerMoves.length > 0 || document.getElementById('problemAnswer').value.trim() !== '';
+      if (hasAnswer) {
+        const ok = await adminConfirm(adminT('puzzleForm.answerResetConfirm'), {
+          confirmText: adminT('common.check'),
+          danger: true
+        });
+        if (!ok) return;
+      }
       answerMoves.length = 0;
+      redoAnswerMoves.length = 0;
       document.getElementById('problemAnswer').value = '';
       isAnswerMode = false;
       updateModeLabel();
       redrawBoard();
       updateDepthAndWinColor();
       syncCurrentPlayer();
-    });
+      updateToolbarState();
+    }
 
-    document.getElementById('clearAnswerBtn').addEventListener('click', () => {
-      answerMoves.length = 0;
-      updateAnswerInput();
-      redrawBoard();
+    document.getElementById('toggleModeBtn').addEventListener('click', async () => {
+      if (isAnswerMode) {
+        await switchToProblemMode();
+        return;
+      }
+      isAnswerMode = true;
+      updateModeLabel();
+      updateDepthAndWinColor();
       syncCurrentPlayer();
+      updateToolbarState();
     });
 
     document.getElementById('clearBoardBtn').addEventListener('click', () => {
       moves.length = 0;
       answerMoves.length = 0;
+      clearRedoHistory();
       isAnswerMode = false;
       currentPlayer = 'black';
       updateModeLabel();
@@ -477,18 +384,37 @@
       redrawBoard();
       updateBoardStatusInput();
       updateAnswerInput();
+      updateToolbarState();
     });
 
     document.getElementById('undoMoveBtn').addEventListener('click', () => {
-      if (answerMoves.length > 0) {
-        answerMoves.pop();
+      if (isAnswerMode && answerMoves.length > 0) {
+        redoAnswerMoves.push(answerMoves.pop());
         updateAnswerInput();
-      } else if (moves.length > 0) {
-        moves.pop();
+      } else if (!isAnswerMode && moves.length > 0) {
+        redoMoves.push(moves.pop());
         updateBoardStatusInput();
       } else return;
       redrawBoard();
       syncCurrentPlayer();
+      updateToolbarState();
+    });
+
+    document.getElementById('redoMoveBtn').addEventListener('click', () => {
+      const redoStack = isAnswerMode ? redoAnswerMoves : redoMoves;
+      const targetMoves = isAnswerMode ? answerMoves : moves;
+      const nextMove = redoStack.pop();
+      if (!nextMove) return;
+      if (isOccupied(nextMove.row, nextMove.col)) {
+        updateToolbarState();
+        return;
+      }
+      targetMoves.push(nextMove);
+      if (isAnswerMode) updateAnswerInput();
+      else updateBoardStatusInput();
+      redrawBoard();
+      syncCurrentPlayer();
+      updateToolbarState();
     });
 
     document.getElementById('problemBoardStatus').addEventListener('input', (e) => {
@@ -496,6 +422,7 @@
       moves.length = 0;
       moves.push(...newMoves);
       answerMoves.length = 0;
+      clearRedoHistory();
       document.getElementById('problemAnswer').value = '';
       isAnswerMode = false;
       updateModeLabel();
@@ -508,6 +435,7 @@
       const answerStr = e.target.value.trim();
       const parsed = boardStatusToMoves(answerStr);
       answerMoves.length = 0;
+      redoAnswerMoves.length = 0;
       parsed.forEach((m, i) => {
         const player = (moves.length + i) % 2 === 0 ? 'black' : 'white';
         answerMoves.push({ ...m, player });
@@ -515,6 +443,7 @@
       syncCurrentPlayer();
       redrawBoard();
       updateDepthAndWinColor();
+      updateToolbarState();
     });
 
     // Render the initial board before API and edit button bindings.
@@ -522,6 +451,7 @@
     drawBoard();
     updateModeLabel();
     syncCurrentPlayer();
+    updateToolbarState();
 
     async function fetchWithAuth(url, options = {}) {
       const headers = { 'Content-Type': 'application/json', ...options.headers };
@@ -537,6 +467,30 @@
       return res;
     }
 
+    function getLocalizedPackInfo(detail) {
+      const infos = detail['info'] || [];
+      const currentLang = (globalThis.adminGetLanguage ? globalThis.adminGetLanguage() : 'en').toUpperCase();
+      return infos.find(info => String(info['langCode'] || '').toUpperCase() === currentLang) || infos[0] || {};
+    }
+
+    function formatPackPrice(price) {
+      if (price === null || price === undefined || price === '') return '-';
+      const numericPrice = Number(price);
+      return Number.isFinite(numericPrice) ? numericPrice.toLocaleString() : String(price);
+    }
+
+    function renderPackContext(detail) {
+      const info = getLocalizedPackInfo(detail);
+      document.getElementById('packInfoBox').hidden = false;
+      document.getElementById('packTitle').textContent = info['title'] || adminT('common.untitled');
+      document.getElementById('packAuthor').textContent = info['author'] || adminT('common.none');
+      document.getElementById('packDifficulty').textContent = detail['difficulty'] || '-';
+      document.getElementById('packPrice').textContent = formatPackPrice(detail['price']);
+      const descEl = document.getElementById('packDescription');
+      descEl.textContent = info['description'] || adminT('common.noDescription');
+      descEl.classList.toggle('empty', !info['description']);
+    }
+
     async function loadPackDetail() {
       try {
         const res = await fetchWithAuth(API_BASE + '/admin/training/pack/' + packId);
@@ -548,11 +502,8 @@
           return;
         }
         const detail = data.response;
-        const info = (detail['info'] || [])[0] || {};
-        document.getElementById('packInfoBox').hidden = false;
-        document.getElementById('packIdText').textContent = String(detail['id'] ?? '-');
-        document.getElementById('packAuthor').textContent = info['author'] || adminT('common.none');
-        document.getElementById('packDescription').textContent = info['description'] || adminT('common.descriptionNone');
+        currentPackDetail = detail;
+        renderPackContext(detail);
       } catch (err) {
         alert(adminT('common.errorPrefix', { message: err.message || '' }));
       }
@@ -590,11 +541,13 @@
           const player = (moves.length + i) % 2 === 0 ? 'black' : 'white';
           answerMoves.push({ ...m, player });
         });
+        clearRedoHistory();
 
         isAnswerMode = true;  // Keep answer-entry mode when the completed puzzle is loaded.
         updateModeLabel();
         syncCurrentPlayer();
         redrawBoard();
+        updateToolbarState();
       } catch (err) {
         alert(adminT('common.errorPrefix', { message: err.message || '' }));
       }
@@ -665,8 +618,7 @@
     document.addEventListener('admin:language-change', () => {
       updateModeLabel();
       document.getElementById('currentTurn').textContent = currentPlayer === 'black' ? adminT('common.black') : adminT('common.white');
-      const reviewBtn = document.getElementById('reviewToggleBtn');
-      adminSetText(reviewBtn, reviewMode ? 'puzzleForm.stopReplay' : 'puzzleForm.replay');
+      if (currentPackDetail) renderPackContext(currentPackDetail);
     });
 
     await loadPackDetail();

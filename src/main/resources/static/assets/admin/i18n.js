@@ -22,7 +22,7 @@
         puzzleList: 'Puzzle List',
         backToPack: 'Back to Pack',
         backToList: 'Back to List',
-        responseEntryList: 'Response Entry List',
+        responseEntryList: 'AI Response List',
         training: 'Training',
         community: 'Community',
         newPack: 'New Pack',
@@ -66,18 +66,18 @@
       title: {
         login: 'Renzzle Admin Login',
         error: 'Renzzle Admin - Error',
-        packList: 'Renzzle Admin - Packs',
+        packList: 'Renzzle Admin - Training Puzzles',
         packForm: 'Renzzle Admin - Pack Form',
         packWorkspace: 'Renzzle Admin - Pack Workspace',
         puzzleAdd: 'Renzzle Admin - Add Puzzle',
         puzzleEdit: 'Renzzle Admin - Edit Puzzle',
-        responseMoves: 'Renzzle - Response Move Entry',
-        responseBoard: 'Renzzle - Response Board Entry'
+        responseMoves: 'Renzzle - AI Response Entry',
+        responseBoard: 'Renzzle - AI Response Board'
       },
       nav: {
-        packs: 'Pack',
+        packs: 'Training Puzzles',
         newPack: 'New Pack',
-        responseMoves: 'Response Moves'
+        responseMoves: 'AI Responses'
       },
       login: {
         heading: 'Renzzle Admin',
@@ -97,14 +97,24 @@
         backToLogin: 'Back to Login'
       },
       packList: {
-        heading: 'Packs',
-        description: 'Select a pack first, then create or edit puzzles inside it.',
+        heading: 'Training Puzzle',
+        description: 'Manage training puzzles.',
         selectPack: 'Select Pack',
         autoRefresh: 'The list refreshes automatically when filters change.',
-        noPacksStrong: 'No packs match the current filters.',
-        noPacksHelp: 'Create a pack, then add puzzles from the pack workspace.',
+        createHeading: 'Create Pack',
+        createDescription: 'Fill one or more language sections.',
+        translationOptional: 'Optional',
+        creating: 'Creating pack...',
+        created: 'Pack created. Opening the pack workspace.',
+        createFailed: 'Failed to create pack',
+        createNeedTranslation: 'Enter at least one language title and author.',
+        createNeedTitleAuthor: 'For each language you use, enter both title and author.',
+        noPacks: 'No packs found.',
+        noPacksStrong: 'No packs found.',
+        noPacksHelp: '',
         count: '{count} packs found',
         zero: '0 packs found',
+        unknownCount: '- packs found',
         failedLoad: 'Failed to load packs',
         metaAuthor: 'Author: {author}',
         deleteConfirm: 'Delete pack "{title}"? This also removes its puzzles.',
@@ -122,17 +132,17 @@
         languageHelpPrefix: "Select a language code, then use 'Add Translation' to add each language title, author, and description. Available language codes:",
         languageCode: 'Language Code',
         addTranslation: 'Add Translation',
-        priceLabel: 'Price (price)',
-        difficultyLabel: 'Difficulty (difficulty)',
+        priceLabel: 'Price',
+        difficultyLabel: 'Difficulty',
         createPack: 'Create Pack',
         updatePack: 'Update Pack',
         languageNumber: 'Language {index} ({code})',
         languageAdded: '{code} (added)',
-        titleLabel: 'Title (title)',
+        titleLabel: 'Title',
         titlePlaceholder: 'Pack Title',
-        authorLabel: 'Author (author)',
+        authorLabel: 'Author',
         authorPlaceholder: 'Author name',
-        descriptionLabel: 'Description (description, optional)',
+        descriptionLabel: 'Description',
         descriptionPlaceholder: 'Pack Description',
         deleteLanguage: 'Delete Language',
         selectLanguageCode: 'Select a language code.',
@@ -153,11 +163,13 @@
         infoHeading: 'Pack Info',
         infoHelp: 'Title and description are shown in the selected language.',
         deletePack: 'Delete Pack',
-        puzzlesHeading: 'Puzzles',
+        puzzlesHeading: 'Puzzle List',
         puzzlesHelp: 'Select a row to open the puzzle editor.',
         noPuzzlesStrong: 'No puzzles yet.',
         noPuzzlesHelp: 'Add the first puzzle to this pack.',
         failedLoadPack: 'Failed to load pack.',
+        puzzleNumber: 'No.{number}',
+        openPuzzle: 'Open puzzle {number}',
         count: '{count} puzzles'
       },
       puzzleForm: {
@@ -167,19 +179,23 @@
         editDescription: 'Review the existing board, answer sequence, and calculated values before saving changes.',
         packInfo: 'Pack Info',
         puzzleId: 'Puzzle ID',
-        orderLabel: 'Puzzle Order (puzzleIndex)',
-        orderHelp: 'Leave empty to append as the last order',
-        orderPlaceholder: 'Leave empty to append as the last order',
+        orderLabel: 'Puzzle Order',
+        orderHelp: '(Leave empty to append as the last order)',
+        orderPlaceholder: '(Leave empty to append as the last order)',
         boardVisualization: 'Board Visualization',
         boardHint: 'Click the board to place stones, or edit the fields below directly. Initial puzzle stones are unnumbered; answer stones show sequence numbers.',
         canvasLabel: 'Interactive Gomoku board',
-        finishInitial: 'Finish Initial Board and Enter Answer',
+        finishInitial: 'Go to Answer Input',
         clearAnswer: 'Clear Answer Only',
-        backToInitial: 'Clear Answer and Edit Initial Board',
-        initialBoard: 'Initial Board',
-        answerEntry: 'Answer Entry',
-        undo: 'Undo Last Move',
-        clearBoard: 'Clear Board',
+        backToInitial: 'Switch to Problem Input',
+        initialBoard: 'Problem Input',
+        answerEntry: 'Answer Input',
+        undo: 'Back',
+        previousMove: 'Previous Move',
+        nextMove: 'Next Move',
+        toggleMode: 'Change Mode',
+        clearBoard: 'Reset',
+        answerResetConfirm: 'Switching to problem input will clear the answer you entered. Continue?',
         answerNumbers: 'Answer Sequence Numbers',
         highlightLine: 'Highlight Five-in-a-Row',
         replay: 'Replay Answer Sequence',
@@ -190,15 +206,15 @@
         last: 'Last',
         moves: 'moves',
         playback: 'Answer {step} / {total} moves',
-        boardStateLabel: 'Board State (boardStatus) *',
-        boardPlaceholder: 'Example: h8i7i5h5... (15x15 board positions, a-o + number)',
-        boardFormat: 'Format: column a-o plus row 1-15 for each stone, for example h8i7i5h5. Board clicks update this automatically.',
-        answerLabel: 'Answer (answer) *',
-        answerPlaceholder: 'Example: h8i7j6... (lowercase letter + number pairs for answer moves)',
-        answerHelp: 'Depth equals the number of answer moves. Win color is determined by the initial board move count: even -> BLACK, odd -> WHITE.',
-        depthLabel: 'Depth (depth)',
-        winColorLabel: 'Win Color (winColor)',
-        calculatedPlaceholder: 'Calculated after answer entry',
+        boardStateLabel: 'Board State *',
+        boardPlaceholder: 'h8h9i8...',
+        boardFormat: 'h8h9i8...',
+        answerLabel: 'Answer *',
+        answerPlaceholder: 'h8h9i8...',
+        answerHelp: '',
+        depthLabel: 'Depth',
+        winColorLabel: 'Win Color',
+        calculatedPlaceholder: '',
         stepAdd1Title: 'Puzzle Board',
         stepAdd1Text: 'Enter the initial position',
         stepAdd2Title: 'Answer Sequence',
@@ -216,9 +232,9 @@
         stepEdit4Title: 'Save or Delete',
         stepEdit4Text: 'Apply changes',
         needBoardAnswer: 'Enter both board state and answer.',
-        invalidAnswer: 'Invalid answer format. Use lowercase letter + number pairs, for example h8i7.',
+        invalidAnswer: 'Invalid answer format. Example: h8h9i8.',
         addFailed: 'Failed to add puzzle',
-        added: 'Puzzle added. Puzzle ID: {id}{suffix}',
+        added: 'Puzzle added.{suffix}',
         appendedSuffix: ' (appended as the last order)',
         updateFailed: 'Failed to update puzzle',
         updated: 'Puzzle updated. Opening the pack workspace.',
@@ -227,13 +243,13 @@
         failedLoadPuzzle: 'Failed to load puzzle.'
       },
       cacheList: {
-        heading: 'Response Moves',
-        description: 'Select a training or community puzzle, then save response moves from the board screen.',
+        heading: 'AI Responses',
+        description: 'Select a training or community puzzle, then save AI responses from the board screen.',
         trainingHeading: 'Training Pack · Puzzle',
-        trainingHelp: 'The pack list uses the same filters as the admin pack list. Select a pack, then choose a puzzle below and open response entry.',
+        trainingHelp: 'The pack list uses the same filters as the admin pack list. Select a pack, then choose a puzzle below and open AI response entry.',
         packSubheading: 'Pack',
         puzzlesSubheading: 'Puzzles in Selected Pack',
-        communityHeading: 'Community Puzzle Response Entry',
+        communityHeading: 'Community Puzzle AI Response Entry',
         communityHelp: 'Author filters by exact nickname match. The board screen opens by puzzle ID.',
         authorNickname: 'Author Nickname (exact match, optional)',
         nicknamePlaceholder: 'Nickname',
@@ -243,7 +259,7 @@
         cursorPlaceholder: 'Select',
         noPacks: 'No packs match the current filters.',
         packMeta: 'Price: {price} / Puzzle Size: {count}',
-        responseEntry: 'Response Entry',
+        responseEntry: 'AI Response Entry',
         failedLoadList: 'Failed to load list',
         failedLoadPuzzleList: 'Failed to load puzzle list',
         noPuzzles: 'This pack has no puzzles.',
@@ -253,33 +269,33 @@
         communityMeta: '@{author} depth {depth} · {winColor}'
       },
       cacheBoard: {
-        heading: 'Response Board',
-        description: 'Save or look up the next response for the selected puzzle board state.',
+        heading: 'AI Response Board',
+        description: 'Save or look up the next AI response for the selected puzzle board state.',
         boardSave: 'Board · Answer Save',
         trainingMeta: 'Training · Pack {packId} · Puzzle {puzzleId}',
         communityMeta: 'Community · Puzzle {puzzleId}',
         boardVisualization: 'Board Visualization',
-        boardHint: 'Initial puzzle stones are unnumbered, answer stones show sequence numbers, and the response being entered is marked with a red ring. After locking currentBoard, only one next move can be placed.',
-        canvasLabel: 'Interactive Gomoku response board',
+        boardHint: 'Initial puzzle stones are unnumbered, answer stones show sequence numbers, and the AI response being entered is marked with a red ring. After locking currentBoard, only one next move can be placed.',
+        canvasLabel: 'Interactive Gomoku AI response board',
         resetBoard: 'Reset to Default Board',
         setCurrentBoard: 'Set Current Board',
         cancelCurrentBoard: 'Cancel Current Board',
         currentBoardString: 'Current Board String',
         filledByButton: 'Filled by button',
-        responseMove: 'Response Move',
+        responseMove: 'AI Response',
         responsePlaceholder: 'Click one move on the board',
         answerSave: 'Answer Save',
-        lookup: 'Lookup Board Response',
+        lookup: 'Lookup AI Response',
         aiResponse: 'AI Response',
         close: 'Close',
-        locked: 'Current board is set. Place exactly one response move.',
+        locked: 'Current board is set. Place exactly one AI response.',
         unlocked: 'Not set. Match the board, then click Set Current Board.',
-        needCurrentBoard: 'Set currentBoard and enter a response move.',
+        needCurrentBoard: 'Set currentBoard and enter an AI response.',
         saveFailed: 'Save failed',
         saved: 'Saved. The board remains unchanged.',
         setCurrentBoardFirst: 'Set currentBoard first',
         lookupFailed: 'Failed to lookup',
-        noResponse: 'No response move'
+        noResponse: 'No AI response'
       },
       msg: {
         sessionExpired: 'Your session has expired or you do not have permission. Please log in again.'
@@ -304,7 +320,7 @@
         puzzleList: '문제 목록',
         backToPack: '문제집으로',
         backToList: '목록으로',
-        responseEntryList: '응답 입력 목록',
+        responseEntryList: 'AI 대응 목록',
         training: '트레이닝',
         community: '커뮤니티',
         newPack: '새 문제집',
@@ -330,7 +346,7 @@
         author: '작성자',
         description: '설명',
         packId: '문제집 ID',
-        depth: '수순',
+        depth: '깊이',
         board: '보드',
         answer: '정답',
         answerMoves: '정답 수',
@@ -348,18 +364,18 @@
       title: {
         login: 'Renzzle 관리자 로그인',
         error: 'Renzzle 관리자 - 오류',
-        packList: 'Renzzle 관리자 - 문제집',
+        packList: 'Renzzle 관리자 - 트레이닝 문제',
         packForm: 'Renzzle 관리자 - 문제집 폼',
         packWorkspace: 'Renzzle 관리자 - 문제집 작업공간',
         puzzleAdd: 'Renzzle 관리자 - 문제 추가',
         puzzleEdit: 'Renzzle 관리자 - 문제 편집',
-        responseMoves: 'Renzzle - 응답 수 입력',
-        responseBoard: 'Renzzle - 응답 보드 입력'
+        responseMoves: 'Renzzle - AI 대응 입력',
+        responseBoard: 'Renzzle - AI 대응 보드'
       },
       nav: {
-        packs: '문제집',
+        packs: '트레이닝 문제',
         newPack: '새 문제집',
-        responseMoves: '응답 수'
+        responseMoves: 'AI 대응'
       },
       login: {
         heading: 'Renzzle Admin',
@@ -379,14 +395,24 @@
         backToLogin: '로그인으로 돌아가기'
       },
       packList: {
-        heading: '문제집',
-        description: '먼저 문제집을 선택한 뒤, 그 안에서 문제를 생성하거나 편집합니다.',
+        heading: '트레이닝 문제',
+        description: '트레이닝 문제를 관리합니다.',
         selectPack: '문제집 선택',
         autoRefresh: '필터를 변경하면 목록이 자동으로 새로고침됩니다.',
-        noPacksStrong: '현재 필터에 맞는 문제집이 없습니다.',
-        noPacksHelp: '문제집을 만든 뒤 작업공간에서 문제를 추가하세요.',
+        createHeading: '문제집 생성',
+        createDescription: '사용할 언어의 제목과 작성자를 입력하세요.',
+        translationOptional: '선택',
+        creating: '문제집을 생성하는 중...',
+        created: '문제집을 생성했습니다. 작업공간으로 이동합니다.',
+        createFailed: '문제집 생성에 실패했습니다.',
+        createNeedTranslation: '하나 이상의 언어에 제목과 작성자를 입력하세요.',
+        createNeedTitleAuthor: '사용할 언어마다 제목과 작성자를 모두 입력하세요.',
+        noPacks: '문제집이 없습니다.',
+        noPacksStrong: '문제집이 없습니다.',
+        noPacksHelp: '',
         count: '문제집 {count}개',
         zero: '문제집 0개',
+        unknownCount: '문제집 -개',
         failedLoad: '문제집을 불러오지 못했습니다.',
         metaAuthor: '작성자: {author}',
         deleteConfirm: '"{title}" 문제집을 삭제할까요? 포함된 문제도 함께 삭제됩니다.',
@@ -404,17 +430,17 @@
         languageHelpPrefix: "언어 코드를 선택한 뒤 '번역 추가'로 각 언어의 제목, 작성자, 설명을 추가하세요. 사용 가능한 언어 코드:",
         languageCode: '언어 코드',
         addTranslation: '번역 추가',
-        priceLabel: '가격 (price)',
-        difficultyLabel: '난이도 (difficulty)',
+        priceLabel: '가격',
+        difficultyLabel: '난이도',
         createPack: '문제집 생성',
         updatePack: '문제집 수정',
         languageNumber: '언어 {index} ({code})',
         languageAdded: '{code} (추가됨)',
-        titleLabel: '제목 (title)',
+        titleLabel: '제목',
         titlePlaceholder: '문제집 제목',
-        authorLabel: '작성자 (author)',
+        authorLabel: '작성자',
         authorPlaceholder: '작성자 이름',
-        descriptionLabel: '설명 (description, 선택)',
+        descriptionLabel: '설명',
         descriptionPlaceholder: '문제집 설명',
         deleteLanguage: '언어 삭제',
         selectLanguageCode: '언어 코드를 선택하세요.',
@@ -435,11 +461,13 @@
         infoHeading: '문제집 정보',
         infoHelp: '제목과 설명은 선택한 언어 기준으로 표시됩니다.',
         deletePack: '문제집 삭제',
-        puzzlesHeading: '문제',
+        puzzlesHeading: '문제 목록',
         puzzlesHelp: '행을 선택하면 문제 편집 화면으로 이동합니다.',
         noPuzzlesStrong: '아직 문제가 없습니다.',
         noPuzzlesHelp: '이 문제집에 첫 문제를 추가하세요.',
         failedLoadPack: '문제집을 불러오지 못했습니다.',
+        puzzleNumber: '{number}번',
+        openPuzzle: '{number}번 문제 편집',
         count: '문제 {count}개'
       },
       puzzleForm: {
@@ -449,19 +477,23 @@
         editDescription: '저장하기 전에 기존 보드, 정답 순서, 계산값을 확인합니다.',
         packInfo: '문제집 정보',
         puzzleId: '문제 ID',
-        orderLabel: '문제 순서 (puzzleIndex)',
-        orderHelp: '비워두면 마지막 순서로 추가됩니다.',
-        orderPlaceholder: '비워두면 마지막 순서로 추가됩니다.',
+        orderLabel: '문제 순서',
+        orderHelp: '(비워두면 마지막 순서로 추가됩니다.)',
+        orderPlaceholder: '(비워두면 마지막 순서로 추가됩니다.)',
         boardVisualization: '보드 시각화',
         boardHint: '보드를 클릭해 돌을 놓거나 아래 필드를 직접 편집하세요. 초기 문제 돌에는 번호가 없고, 정답 돌에는 순서 번호가 표시됩니다.',
         canvasLabel: '대화형 오목 보드',
-        finishInitial: '초기 보드 완료 후 정답 입력',
+        finishInitial: '정답 입력으로 이동',
         clearAnswer: '정답만 지우기',
-        backToInitial: '정답 지우고 초기 보드 편집',
-        initialBoard: '초기 보드',
+        backToInitial: '문제 입력으로 전환',
+        initialBoard: '문제 입력',
         answerEntry: '정답 입력',
-        undo: '마지막 수 되돌리기',
-        clearBoard: '보드 지우기',
+        undo: '뒤로가기',
+        previousMove: '이전 수',
+        nextMove: '다음 수',
+        toggleMode: '모드 변경',
+        clearBoard: '초기화',
+        answerResetConfirm: '문제 입력으로 전환하면 지금 입력해둔 정답이 삭제될 수 있습니다. 계속할까요?',
         answerNumbers: '정답 순서 번호',
         highlightLine: '5목 라인 강조',
         replay: '정답 순서 재생',
@@ -472,21 +504,21 @@
         last: '마지막',
         moves: '수',
         playback: '정답 {step} / {total}수',
-        boardStateLabel: '보드 상태 (boardStatus) *',
-        boardPlaceholder: '예: h8i7i5h5... (15x15 보드 위치, a-o + 숫자)',
-        boardFormat: '형식: 각 돌은 a-o 열과 1-15 행으로 입력합니다. 예: h8i7i5h5. 보드 클릭 시 자동으로 갱신됩니다.',
-        answerLabel: '정답 (answer) *',
-        answerPlaceholder: '예: h8i7j6... (정답 수는 소문자 열 + 숫자 쌍)',
-        answerHelp: '수순은 정답 수 개수입니다. 승리 색상은 초기 보드 수 개수로 결정됩니다: 짝수 -> BLACK, 홀수 -> WHITE.',
-        depthLabel: '수순 (depth)',
-        winColorLabel: '승리 색상 (winColor)',
-        calculatedPlaceholder: '정답 입력 후 계산됩니다',
+        boardStateLabel: '보드 상태 *',
+        boardPlaceholder: 'h8h9i8...',
+        boardFormat: 'h8h9i8...',
+        answerLabel: '정답 *',
+        answerPlaceholder: 'h8h9i8...',
+        answerHelp: '',
+        depthLabel: '깊이',
+        winColorLabel: '승리 색상',
+        calculatedPlaceholder: '',
         stepAdd1Title: '문제 보드',
         stepAdd1Text: '초기 배치를 입력',
         stepAdd2Title: '정답 순서',
         stepAdd2Text: '정답 수 순서 입력',
         stepAdd3Title: '자동 계산',
-        stepAdd3Text: '수순과 승리 색상 확인',
+        stepAdd3Text: '깊이와 승리 색상 확인',
         stepAdd4Title: '저장',
         stepAdd4Text: '문제집에 추가',
         stepEdit1Title: '기존 문제 확인',
@@ -498,9 +530,9 @@
         stepEdit4Title: '저장 또는 삭제',
         stepEdit4Text: '변경사항 적용',
         needBoardAnswer: '보드 상태와 정답을 모두 입력하세요.',
-        invalidAnswer: '정답 형식이 올바르지 않습니다. 예: h8i7처럼 소문자 열 + 숫자 쌍을 사용하세요.',
+        invalidAnswer: '정답 형식이 올바르지 않습니다. 예: h8h9i8.',
         addFailed: '문제 추가에 실패했습니다.',
-        added: '문제를 추가했습니다. 문제 ID: {id}{suffix}',
+        added: '문제를 추가했습니다.{suffix}',
         appendedSuffix: ' (마지막 순서로 추가됨)',
         updateFailed: '문제 수정에 실패했습니다.',
         updated: '문제를 수정했습니다. 문제집 작업공간으로 이동합니다.',
@@ -509,59 +541,59 @@
         failedLoadPuzzle: '문제를 불러오지 못했습니다.'
       },
       cacheList: {
-        heading: '응답 수',
-        description: '트레이닝 또는 커뮤니티 문제를 선택한 뒤 보드 화면에서 응답 수를 저장합니다.',
+        heading: 'AI 대응',
+        description: '트레이닝 또는 커뮤니티 문제를 선택한 뒤 보드 화면에서 AI 대응을 저장합니다.',
         trainingHeading: '트레이닝 문제집 · 문제',
-        trainingHelp: '문제집 목록과 같은 필터를 사용합니다. 문제집을 선택한 뒤 아래에서 문제를 고르고 응답 입력을 엽니다.',
+        trainingHelp: '문제집 목록과 같은 필터를 사용합니다. 문제집을 선택한 뒤 아래에서 문제를 고르고 AI 대응 입력을 엽니다.',
         packSubheading: '문제집',
         puzzlesSubheading: '선택한 문제집의 문제',
-        communityHeading: '커뮤니티 문제 응답 입력',
+        communityHeading: '커뮤니티 문제 AI 대응 입력',
         communityHelp: '작성자 필터는 닉네임 완전 일치로 검색합니다. 보드 화면은 문제 ID 기준으로 열립니다.',
         authorNickname: '작성자 닉네임 (완전 일치, 선택)',
         nicknamePlaceholder: '닉네임',
-        minDepth: '최소 수순',
-        maxDepth: '최대 수순',
+        minDepth: '최소 깊이',
+        maxDepth: '최대 깊이',
         cursor: '커서 ID (다음 페이지)',
         cursorPlaceholder: '선택',
         noPacks: '현재 필터에 맞는 문제집이 없습니다.',
         packMeta: '가격: {price} / 문제 수: {count}',
-        responseEntry: '응답 입력',
+        responseEntry: 'AI 대응 입력',
         failedLoadList: '목록을 불러오지 못했습니다.',
         failedLoadPuzzleList: '문제 목록을 불러오지 못했습니다.',
         noPuzzles: '이 문제집에는 문제가 없습니다.',
-        puzzleMeta: '수순 {depth} · {winColor}{solved}',
+        puzzleMeta: '깊이 {depth} · {winColor}{solved}',
         solved: ' · 해결됨',
         noCommunity: '현재 필터에 맞는 커뮤니티 문제가 없습니다.',
-        communityMeta: '@{author} 수순 {depth} · {winColor}'
+        communityMeta: '@{author} 깊이 {depth} · {winColor}'
       },
       cacheBoard: {
-        heading: '응답 보드',
-        description: '선택한 문제 보드 상태의 다음 응답 수를 저장하거나 조회합니다.',
+        heading: 'AI 대응 보드',
+        description: '선택한 문제 보드 상태의 다음 AI 대응을 저장하거나 조회합니다.',
         boardSave: '보드 · 정답 저장',
         trainingMeta: '트레이닝 · 문제집 {packId} · 문제 {puzzleId}',
         communityMeta: '커뮤니티 · 문제 {puzzleId}',
         boardVisualization: '보드 시각화',
-        boardHint: '초기 문제 돌에는 번호가 없고, 정답 돌에는 순서 번호가 표시됩니다. 입력 중인 응답 수는 빨간 원으로 표시됩니다. currentBoard를 잠그면 다음 수 하나만 둘 수 있습니다.',
-        canvasLabel: '대화형 오목 응답 보드',
+        boardHint: '초기 문제 돌에는 번호가 없고, 정답 돌에는 순서 번호가 표시됩니다. 입력 중인 AI 대응은 빨간 원으로 표시됩니다. currentBoard를 잠그면 다음 수 하나만 둘 수 있습니다.',
+        canvasLabel: '대화형 오목 AI 대응 보드',
         resetBoard: '기본 보드로 초기화',
         setCurrentBoard: '현재 보드 설정',
         cancelCurrentBoard: '현재 보드 취소',
         currentBoardString: '현재 보드 문자열',
         filledByButton: '버튼으로 채워집니다',
-        responseMove: '응답 수',
+        responseMove: 'AI 대응',
         responsePlaceholder: '보드에서 수 하나를 클릭하세요',
         answerSave: '정답 저장',
-        lookup: '보드 응답 조회',
-        aiResponse: 'AI 응답',
+        lookup: 'AI 대응 조회',
+        aiResponse: 'AI 대응',
         close: '닫기',
-        locked: '현재 보드가 설정되었습니다. 응답 수 하나만 놓으세요.',
+        locked: '현재 보드가 설정되었습니다. AI 대응 하나만 놓으세요.',
         unlocked: '설정되지 않았습니다. 보드를 맞춘 뒤 현재 보드 설정을 클릭하세요.',
-        needCurrentBoard: 'currentBoard를 설정하고 응답 수를 입력하세요.',
+        needCurrentBoard: 'currentBoard를 설정하고 AI 대응을 입력하세요.',
         saveFailed: '저장에 실패했습니다.',
         saved: '저장했습니다. 보드는 그대로 유지됩니다.',
         setCurrentBoardFirst: 'currentBoard를 먼저 설정하세요.',
         lookupFailed: '조회에 실패했습니다.',
-        noResponse: '응답 수가 없습니다.'
+        noResponse: 'AI 대응이 없습니다.'
       },
       msg: {
         sessionExpired: '세션이 만료되었거나 권한이 없습니다. 다시 로그인하세요.'
@@ -635,6 +667,7 @@
     document.querySelectorAll('[data-admin-language-select]').forEach(function (select) {
       select.value = currentLanguage;
     });
+    syncAllCustomSelects();
   }
 
   function setLanguage(lang) {
@@ -661,12 +694,228 @@
     el.textContent = t(key, vars);
   }
 
+  let customSelectId = 0;
+
+  function getSelectedOption(select) {
+    return select.selectedOptions?.[0] || select.options[select.selectedIndex] || select.options[0] || null;
+  }
+
+  function getOptionLabel(option) {
+    return option ? (option.textContent || option.value || '').trim() : '';
+  }
+
+  function closeCustomSelect(wrapper) {
+    if (!wrapper) return;
+    wrapper.classList.remove('is-open');
+    wrapper.querySelector('.admin-custom-select-button')?.setAttribute('aria-expanded', 'false');
+  }
+
+  function closeAllCustomSelects(except) {
+    document.querySelectorAll('.admin-custom-select.is-open').forEach(function (wrapper) {
+      if (wrapper !== except) {
+        closeCustomSelect(wrapper);
+      }
+    });
+  }
+
+  function syncCustomSelect(select) {
+    const wrapper = select.closest('.admin-custom-select');
+    if (!wrapper) return;
+
+    const button = wrapper.querySelector('.admin-custom-select-button');
+    const menu = wrapper.querySelector('.admin-custom-select-menu');
+    if (!button || !menu) return;
+
+    const selectedOption = getSelectedOption(select);
+    button.textContent = getOptionLabel(selectedOption) || select.getAttribute('aria-label') || '';
+    button.disabled = select.disabled;
+
+    menu.innerHTML = '';
+    Array.from(select.options).forEach(function (option, index) {
+      if (option.hidden) return;
+      const optionButton = document.createElement('button');
+      optionButton.type = 'button';
+      optionButton.className = 'admin-custom-select-option';
+      optionButton.role = 'option';
+      optionButton.textContent = getOptionLabel(option);
+      optionButton.disabled = option.disabled;
+      optionButton.setAttribute('aria-selected', String(option.selected));
+      if (option.selected) {
+        optionButton.classList.add('is-selected');
+      }
+      optionButton.addEventListener('click', function () {
+        if (option.disabled) return;
+        select.selectedIndex = index;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        syncCustomSelect(select);
+        closeCustomSelect(wrapper);
+        button.focus();
+      });
+      optionButton.addEventListener('keydown', function (event) {
+        const enabledOptions = Array.from(menu.querySelectorAll('.admin-custom-select-option:not(:disabled)'));
+        const currentIndex = enabledOptions.indexOf(optionButton);
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          closeCustomSelect(wrapper);
+          button.focus();
+        } else if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          enabledOptions[Math.min(currentIndex + 1, enabledOptions.length - 1)]?.focus();
+        } else if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          enabledOptions[Math.max(currentIndex - 1, 0)]?.focus();
+        } else if (event.key === 'Home') {
+          event.preventDefault();
+          enabledOptions[0]?.focus();
+        } else if (event.key === 'End') {
+          event.preventDefault();
+          enabledOptions.at(-1)?.focus();
+        }
+      });
+      menu.appendChild(optionButton);
+    });
+  }
+
+  function focusSelectedCustomOption(wrapper) {
+    const selected = wrapper.querySelector('.admin-custom-select-option.is-selected:not(:disabled)');
+    const firstEnabled = wrapper.querySelector('.admin-custom-select-option:not(:disabled)');
+    (selected || firstEnabled)?.focus();
+  }
+
+  function openCustomSelect(wrapper, focusMenu) {
+    const select = wrapper.querySelector('select');
+    const button = wrapper.querySelector('.admin-custom-select-button');
+    if (!select || !button || select.disabled) return;
+    closeAllCustomSelects(wrapper);
+    syncCustomSelect(select);
+    wrapper.classList.add('is-open');
+    button.setAttribute('aria-expanded', 'true');
+    if (focusMenu) {
+      requestAnimationFrame(function () {
+        focusSelectedCustomOption(wrapper);
+      });
+    }
+  }
+
+  function installSelectValueSync(select) {
+    const valueDescriptor = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+    const indexDescriptor = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'selectedIndex');
+    if (valueDescriptor?.configurable && !Object.hasOwn(select, 'value')) {
+      Object.defineProperty(select, 'value', {
+        configurable: true,
+        enumerable: true,
+        get: function () {
+          return valueDescriptor.get.call(this);
+        },
+        set: function (value) {
+          valueDescriptor.set.call(this, value);
+          queueMicrotask(() => syncCustomSelect(this));
+        }
+      });
+    }
+    if (indexDescriptor?.configurable && !Object.hasOwn(select, 'selectedIndex')) {
+      Object.defineProperty(select, 'selectedIndex', {
+        configurable: true,
+        enumerable: true,
+        get: function () {
+          return indexDescriptor.get.call(this);
+        },
+        set: function (value) {
+          indexDescriptor.set.call(this, value);
+          queueMicrotask(() => syncCustomSelect(this));
+        }
+      });
+    }
+  }
+
+  function enhanceCustomSelect(select) {
+    if (!select || select.dataset.adminSelectEnhanced === 'true' || select.multiple) return;
+    select.dataset.adminSelectEnhanced = 'true';
+    installSelectValueSync(select);
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'admin-custom-select';
+    if (Object.hasOwn(select.dataset, 'adminLanguageSelect')) {
+      wrapper.classList.add('admin-custom-select-language');
+    }
+    if (select.classList.contains('pack-language-select')) {
+      wrapper.classList.add('admin-custom-select-compact');
+    }
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'admin-custom-select-button';
+    button.setAttribute('aria-haspopup', 'listbox');
+    button.setAttribute('aria-expanded', 'false');
+
+    const menu = document.createElement('div');
+    const menuId = 'adminCustomSelectMenu' + (++customSelectId);
+    menu.id = menuId;
+    menu.className = 'admin-custom-select-menu';
+    menu.role = 'listbox';
+    button.setAttribute('aria-controls', menuId);
+
+    select.parentNode.insertBefore(wrapper, select);
+    wrapper.appendChild(select);
+    wrapper.appendChild(button);
+    wrapper.appendChild(menu);
+    select.classList.add('admin-native-select');
+    if (select.id) {
+      button.id = select.id + 'CustomButton';
+    }
+
+    button.addEventListener('click', function () {
+      if (wrapper.classList.contains('is-open')) {
+        closeCustomSelect(wrapper);
+      } else {
+        openCustomSelect(wrapper, false);
+      }
+    });
+    button.addEventListener('keydown', function (event) {
+      if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openCustomSelect(wrapper, true);
+      } else if (event.key === 'Escape') {
+        closeCustomSelect(wrapper);
+      }
+    });
+    select.addEventListener('change', function () {
+      syncCustomSelect(select);
+    });
+    select.addEventListener('focus', function () {
+      button.focus();
+    });
+    new MutationObserver(function () {
+      syncCustomSelect(select);
+    }).observe(select, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled', 'label', 'selected', 'value'] });
+    syncCustomSelect(select);
+  }
+
+  function enhanceCustomSelects(root) {
+    const scope = root || document;
+    const selects = scope.querySelectorAll ? scope.querySelectorAll('select') : [];
+    selects.forEach(enhanceCustomSelect);
+  }
+
+  function syncAllCustomSelects() {
+    document.querySelectorAll('select[data-admin-select-enhanced="true"]').forEach(syncCustomSelect);
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
+    enhanceCustomSelects(document);
     applyI18n(document);
     document.querySelectorAll('[data-admin-language-select]').forEach(function (select) {
       select.addEventListener('change', function () {
         setLanguage(select.value);
       });
+    });
+    document.addEventListener('click', function (event) {
+      if (!event.target.closest('.admin-custom-select')) {
+        closeAllCustomSelects();
+      }
+    });
+    globalThis.addEventListener('resize', function () {
+      closeAllCustomSelects();
     });
   });
 
@@ -676,4 +925,6 @@
   globalThis.adminGetLanguage = function () { return currentLanguage; };
   globalThis.adminApplyI18n = applyI18n;
   globalThis.adminSetText = setText;
+  globalThis.adminEnhanceSelects = enhanceCustomSelects;
+  globalThis.adminRefreshSelects = syncAllCustomSelects;
 })();

@@ -4,7 +4,6 @@ import com.renzzle.backend.domain.auth.api.request.LoginRequest;
 import com.renzzle.backend.domain.auth.dao.AdminRepository;
 import com.renzzle.backend.domain.auth.service.AccountService;
 import com.renzzle.backend.domain.auth.service.JwtProvider;
-import com.renzzle.backend.domain.puzzle.training.api.request.GetTrainingPackRequest;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackDetailForAdminResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleForAdminResponse;
@@ -152,9 +151,13 @@ public class AdminController {
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/pack-create")
     public String packCreate(
+            @RequestParam(value = PACK_ID, required = false) Long packId,
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Parameter(hidden = true) Model model
     ) {
+        if (packId == null) {
+            return "redirect:/admin/pack-list";
+        }
         model.addAttribute(USER_EMAIL, userDetails.getUser().getEmail());
         model.addAttribute(LANG_CODE_NAMES, LangCode.LangCodeName.values());
         return "admin/pack-create";
@@ -193,10 +196,11 @@ public class AdminController {
     @GetMapping("/training/pack")
     @ResponseBody
     public ApiResponse<List<GetPackResponse>> getTrainingPackForAdmin(
-            @Valid @ModelAttribute GetTrainingPackRequest request,
+            @RequestParam(defaultValue = "LOW") String difficulty,
+            @RequestParam(defaultValue = "EN") String lang,
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        List<GetPackResponse> packs = trainingService.getTrainingPackList(userDetails.getUser(), request);
+        List<GetPackResponse> packs = trainingService.getTrainingPackListForAdmin(userDetails.getUser(), difficulty, lang);
         return ApiUtils.success(packs);
     }
 

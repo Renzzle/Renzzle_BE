@@ -10,8 +10,7 @@
   <nav class="site-nav-wrap" aria-label="Main menu">
     <div class="site-nav">
       <a th:classappend="${hidePackList} ? 'active'" th:href="@{/admin/pack-list}" data-i18n="nav.packs">Pack</a>
-      <a th:classappend="${hidePackCreate} ? 'active'" th:href="@{/admin/pack-create}" data-i18n="nav.newPack">New Pack</a>
-      <a th:classappend="${hidePuzzleCache} ? 'active'" th:href="@{/puzzle-cache}" data-i18n="nav.responseMoves">Response Moves</a>
+      <a th:classappend="${hidePuzzleCache} ? 'active'" th:href="@{/puzzle-cache}" data-i18n="nav.responseMoves">AI Responses</a>
     </div>
   </nav>
 </th:block>

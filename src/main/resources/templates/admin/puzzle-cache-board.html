@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="title.responseBoard">Renzzle - Response Board Entry</title>
+  <title data-i18n="title.responseBoard">Renzzle - AI Response Board</title>
   <link rel="stylesheet" href="/assets/admin/puzzle-cache-board.css">
   <link rel="stylesheet" href="/assets/admin/common.css">
   <script src="/assets/admin/i18n.js"></script>
@@ -15,7 +15,7 @@
       <span class="user-info" th:if="${userEmail}" th:text="${userEmail}"></span>
     </div>
     <div class="header-actions">
-      <a href="/puzzle-cache" class="btn" data-i18n="common.responseEntryList">Response Entry List</a>
+      <a href="/puzzle-cache" class="btn" data-i18n="common.responseEntryList">AI Response List</a>
       <th:block th:replace="~{admin/fragments :: languageSelect}"></th:block>
       <a href="/admin/logout" class="btn" data-i18n="common.logout">Log out</a>
     </div>
@@ -26,8 +26,8 @@
   <main class="admin-shell">
     <div class="admin-page-heading">
       <div>
-        <h2 data-i18n="cacheBoard.heading">Response Board</h2>
-        <p data-i18n="cacheBoard.description">Save or look up the next response for the selected puzzle board state.</p>
+        <h2 data-i18n="cacheBoard.heading">AI Response Board</h2>
+        <p data-i18n="cacheBoard.description">Save or look up the next AI response for the selected puzzle board state.</p>
       </div>
       <a href="/puzzle-cache" class="btn" data-i18n="common.backToList">Back to List</a>
     </div>
@@ -47,8 +47,8 @@
     <div class="board-cache-row">
       <div class="board-viz">
         <div class="field-label" data-i18n="cacheBoard.boardVisualization">Board Visualization</div>
-        <p class="hint" data-i18n="cacheBoard.boardHint">Initial puzzle stones are unnumbered, answer stones show sequence numbers, and the response being entered is marked with a red ring. After locking currentBoard, only one next move can be placed.</p>
-        <canvas id="gomokuBoard" class="gomoku-board" width="480" height="480" aria-label="Interactive Gomoku response board" data-i18n="cacheBoard.canvasLabel" data-i18n-aria-label="cacheBoard.canvasLabel">Interactive Gomoku response board.</canvas>
+        <p class="hint" data-i18n="cacheBoard.boardHint">Initial puzzle stones are unnumbered, answer stones show sequence numbers, and the AI response being entered is marked with a red ring. After locking currentBoard, only one next move can be placed.</p>
+        <canvas id="gomokuBoard" class="gomoku-board" width="480" height="480" aria-label="Interactive Gomoku AI response board" data-i18n="cacheBoard.canvasLabel" data-i18n-aria-label="cacheBoard.canvasLabel">Interactive Gomoku AI response board.</canvas>
       </div>
 
       <div class="cache-panel">
@@ -64,12 +64,12 @@
         <p class="turn-line"><span data-i18n="common.currentTurn">Current Turn</span>: <span class="turn-value" id="currentTurn">Black</span></p>
         <button type="button" class="btn btn-block" id="cacheUndoBtn" data-i18n="puzzleForm.undo">Undo Last Move</button>
 
-        <label for="answerPuzzle" data-i18n="cacheBoard.responseMove">Response Move</label>
+        <label for="answerPuzzle" data-i18n="cacheBoard.responseMove">AI Response</label>
         <input type="text" id="answerPuzzle" class="compact-input" readonly data-i18n-placeholder="cacheBoard.responsePlaceholder" placeholder="Click one move on the board" maxlength="3" autocomplete="off">
 
         <div class="inline-actions-wrap">
           <button type="button" class="btn btn-primary" id="saveCacheBtn" data-i18n="cacheBoard.answerSave">Answer Save</button>
-          <button type="button" class="btn" id="verifyCacheBtn" data-i18n="cacheBoard.lookup">Lookup Board Response</button>
+          <button type="button" class="btn" id="verifyCacheBtn" data-i18n="cacheBoard.lookup">Lookup AI Response</button>
         </div>
         <div id="cacheMsg" class="msg"></div>
         <div id="verifyResult" class="verify-result">
@@ -82,7 +82,7 @@
   </section>
   </main>
 
-  <script th:inline="javascript">
+  <script type="module" th:inline="javascript">
     const API_BASE = '';
     const puzzleType = /*[[${puzzleType}]]*/ 'TRAINING';
     const puzzleId = /*[[${puzzleId}]]*/ 0;
@@ -113,9 +113,9 @@
     function toCanvasY(row) { return MARGIN + (14 - row) * CELL_SIZE; }
 
     function drawBoard() {
-      ctx.fillStyle = '#DCB35C';
+      ctx.fillStyle = '#F1DCA7';
       ctx.fillRect(0, 0, CANVAS_LOGICAL_SIZE, CANVAS_LOGICAL_SIZE);
-      ctx.strokeStyle = '#000';
+      ctx.strokeStyle = '#6F5432';
       ctx.lineWidth = 1;
       for (let i = 0; i < BOARD_SIZE; i++) {
         const pos = MARGIN + i * CELL_SIZE;
@@ -132,12 +132,12 @@
       starPoints.forEach(([row, col]) => {
         const x = toCanvasX(col);
         const y = toCanvasY(row);
-        ctx.fillStyle = '#000';
+        ctx.fillStyle = '#5E472A';
         ctx.beginPath();
         ctx.arc(x, y, 3, 0, Math.PI * 2);
         ctx.fill();
       });
-      ctx.fillStyle = '#000';
+      ctx.fillStyle = '#5E472A';
       ctx.font = '14px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';

@@ -31,47 +31,30 @@
       </div>
       <div class="admin-actions">
         <a href="/admin/pack-list" class="btn" data-i18n="common.packList">Pack List</a>
-        <a th:href="@{/admin/puzzle-add(packId=${packId})}" class="btn btn-primary" data-i18n="common.addPuzzle">Add Puzzle</a>
       </div>
     </div>
 
-    <section class="section" id="packInfoSection">
-      <div class="section-title-row">
-        <div>
-          <h2 data-i18n="packDetail.infoHeading">Pack Info</h2>
-          <p data-i18n="packDetail.infoHelp">Title and description are shown in the selected language.</p>
-        </div>
-        <div class="admin-actions">
-          <button type="button" class="btn btn-danger" id="deletePackBtn" data-i18n="packDetail.deletePack">Delete Pack</button>
-          <a th:href="@{/admin/pack-create(packId=${packId})}" class="btn" data-i18n="common.editInfo">Edit Info</a>
-        </div>
-      </div>
-      <div class="admin-toolbar pack-language-toolbar">
-        <div>
-          <label for="langSelect" data-i18n="common.displayLanguage">Display Language</label>
-          <select id="langSelect">
+    <section class="pack-context-bar pack-workspace-context" id="packInfoSection">
+      <div id="packInfoBox" class="pack-context-main" hidden>
+        <div class="pack-context-heading-row">
+          <div class="pack-context-kicker" data-i18n="packDetail.infoHeading">Pack Info</div>
+          <select id="langSelect" class="pack-language-select" aria-label="Display Language" data-i18n-aria-label="common.displayLanguage">
             <option th:each="langCode : ${langCodeNames}" th:value="${langCode}" th:text="${langCode}">EN</option>
           </select>
         </div>
+        <h2 class="pack-context-title" id="packTitle">-</h2>
+        <div class="pack-context-meta" aria-label="Pack metadata">
+          <span class="pack-context-meta-item"><span data-i18n="common.author">Author</span><strong id="packAuthor">-</strong></span>
+          <span class="pack-context-meta-item"><span data-i18n="common.difficulty">Difficulty</span><strong id="packDifficulty">-</strong></span>
+          <span class="pack-context-meta-item"><span data-i18n="common.price">Price</span><strong id="packPrice">-</strong></span>
+          <span class="pack-context-meta-item"><span data-i18n="common.puzzles">Puzzles</span><strong id="packPuzzleCount">-</strong></span>
+        </div>
+        <p class="pack-context-description" id="packDescription">-</p>
       </div>
-      <div id="packInfoBox" class="pack-info-simple" hidden>
-        <div class="pack-info-row">
-          <div class="item"><span class="label" data-i18n="common.packId">Pack ID</span><span class="value" id="packIdText">-</span></div>
-          <div class="item"><span class="label" data-i18n="common.difficulty">Difficulty</span><span class="value" id="packDifficulty">-</span></div>
-          <div class="item"><span class="label" data-i18n="common.price">Price</span><span class="value" id="packPrice">-</span></div>
-          <div class="item"><span class="label" data-i18n="common.puzzles">Puzzles</span><span class="value" id="packPuzzleCount">-</span></div>
-        </div>
-        <div class="pack-info-block">
-          <div class="label" data-i18n="common.title">Title</div>
-          <div class="value" id="packTitle">-</div>
-        </div>
-        <div class="pack-info-block">
-          <div class="label" data-i18n="common.author">Author</div>
-          <div class="value" id="packAuthor">-</div>
-        </div>
-        <div class="pack-info-block">
-          <div class="label" data-i18n="common.description">Description</div>
-          <div class="value" id="packDescription">-</div>
+      <div class="pack-context-side">
+        <div class="admin-actions pack-context-actions">
+          <button type="button" class="btn btn-danger" id="deletePackBtn" data-i18n="packDetail.deletePack">Delete Pack</button>
+          <a th:href="@{/admin/pack-create(packId=${packId})}" class="btn" data-i18n="common.editInfo">Edit Info</a>
         </div>
       </div>
     </section>
@@ -79,39 +62,20 @@
     <section class="section">
       <div class="section-title-row">
         <div>
-          <h2 data-i18n="packDetail.puzzlesHeading">Puzzles</h2>
-          <p data-i18n="packDetail.puzzlesHelp">Select a row to open the puzzle editor.</p>
+          <h2 data-i18n="packDetail.puzzlesHeading">Puzzle List</h2>
+          <div id="puzzleListMsg" class="pack-list-count muted-status"></div>
         </div>
         <a th:href="@{/admin/puzzle-add(packId=${packId})}" class="btn btn-primary" data-i18n="common.addPuzzle">Add Puzzle</a>
       </div>
       <div id="puzzleEmptyState" class="admin-empty" hidden>
         <strong data-i18n="packDetail.noPuzzlesStrong">No puzzles yet.</strong>
         <span data-i18n="packDetail.noPuzzlesHelp">Add the first puzzle to this pack.</span>
-        <div class="mt-1">
-          <a th:href="@{/admin/puzzle-add(packId=${packId})}" class="btn btn-primary" data-i18n="common.addPuzzle">Add Puzzle</a>
-        </div>
       </div>
-      <div id="puzzleTableWrap" class="admin-table-wrap" hidden>
-        <table class="admin-table">
-          <thead>
-          <tr>
-            <th data-i18n="common.order">Order</th>
-            <th data-i18n="common.id">ID</th>
-            <th data-i18n="common.winColor">Win Color</th>
-            <th data-i18n="common.depth">Depth</th>
-            <th data-i18n="common.board">Board</th>
-            <th data-i18n="common.answerMoves">Answer Moves</th>
-            <th class="actions-col" data-i18n="common.actions">Actions</th>
-          </tr>
-          </thead>
-          <tbody id="puzzleTableBody"></tbody>
-        </table>
-      </div>
-      <div id="puzzleListMsg" class="muted-status"></div>
+      <div id="puzzleGrid" class="puzzle-preview-grid" hidden></div>
     </section>
   </main>
 
-  <script th:inline="javascript">
+  <script type="module" th:inline="javascript">
     const API_BASE = '';
     const packId = /*[[${packId}]]*/ 0;
     let packDetail = null;
@@ -140,10 +104,18 @@
         return;
       }
       box.hidden = false;
-      document.getElementById('packIdText').textContent = String(detail['id'] ?? '-');
-      document.getElementById('packIdText').classList.remove('empty');
       document.getElementById('packDifficulty').textContent = detail['difficulty'] || '-';
-      document.getElementById('packPrice').textContent = String(detail['price'] ?? '-');
+      const price = detail['price'];
+      const numericPrice = Number(price);
+      let priceText = '-';
+      if (price != null) {
+        if (Number.isFinite(numericPrice)) {
+          priceText = numericPrice.toLocaleString();
+        } else {
+          priceText = String(price);
+        }
+      }
+      document.getElementById('packPrice').textContent = priceText;
       document.getElementById('packPuzzleCount').textContent = String(detail['totalPuzzleCount'] ?? '-');
       document.getElementById('packTitle').textContent = info['title'] || adminT('common.none');
       document.getElementById('packTitle').classList.toggle('empty', !info['title']);
@@ -152,6 +124,123 @@
       const descEl = document.getElementById('packDescription');
       descEl.textContent = info['description'] || adminT('common.noDescription');
       descEl.classList.toggle('empty', !info['description']);
+    }
+
+    function boardStatusToMoves(boardStatus) {
+      const result = [];
+      if (!boardStatus || boardStatus === '-') return result;
+      const regex = /([a-oA-O])(\d{1,2})/g;
+      let match;
+      let turnBlack = true;
+      while ((match = regex.exec(boardStatus)) !== null) {
+        const col = match[1].toLowerCase().codePointAt(0) - 'a'.codePointAt(0);
+        const row = Number.parseInt(match[2], 10) - 1;
+        if (row >= 0 && row < 15 && col >= 0 && col < 15) {
+          result.push({ row, col, player: turnBlack ? 'black' : 'white' });
+          turnBlack = !turnBlack;
+        }
+      }
+      return result;
+    }
+
+    function drawPuzzlePreview(canvas, boardStatus) {
+      const logicalSize = 180;
+      const dpr = globalThis.devicePixelRatio || 1;
+      canvas.width = logicalSize * dpr;
+      canvas.height = logicalSize * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+      ctx.fillStyle = '#F1DCA7';
+      ctx.fillRect(0, 0, logicalSize, logicalSize);
+
+      const padding = 14;
+      const cell = (logicalSize - padding * 2) / 14;
+      const toX = (col) => padding + col * cell;
+      const toY = (row) => padding + (14 - row) * cell;
+
+      ctx.strokeStyle = '#6F5432';
+      ctx.lineWidth = 0.8;
+      for (let i = 0; i < 15; i++) {
+        const pos = padding + i * cell;
+        ctx.beginPath();
+        ctx.moveTo(pos, padding);
+        ctx.lineTo(pos, logicalSize - padding);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(padding, pos);
+        ctx.lineTo(logicalSize - padding, pos);
+        ctx.stroke();
+      }
+
+      const starPoints = [
+        [3, 3], [3, 11], [7, 7], [11, 3], [11, 11]
+      ];
+      starPoints.forEach(([row, col]) => {
+        ctx.fillStyle = '#5E472A';
+        ctx.beginPath();
+        ctx.arc(toX(col), toY(row), 1.7, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      boardStatusToMoves(boardStatus).forEach((move) => {
+        const x = toX(move.col);
+        const y = toY(move.row);
+        ctx.fillStyle = move.player === 'black' ? '#111827' : '#ffffff';
+        ctx.beginPath();
+        ctx.arc(x, y, cell * 0.38, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = move.player === 'black' ? '#111827' : '#9ca3af';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      });
+    }
+
+    function createPuzzleCard(pz, idx) {
+      const puzzleIdValue = pz['id'];
+      const rawPuzzleIndex = pz['trainingIndex'];
+      let parsedPuzzleIndex = Number.NaN;
+      if (rawPuzzleIndex != null) {
+        parsedPuzzleIndex = Number(rawPuzzleIndex);
+      }
+      let puzzleNumber = idx + 1;
+      if (Number.isFinite(parsedPuzzleIndex)) {
+        puzzleNumber = parsedPuzzleIndex + 1;
+      }
+      const boardStatus = pz['boardStatus'] || '-';
+      const winColor = pz['winColor'] || '-';
+      const editUrl = '/admin/puzzle-edit?packId=' + packId + '&puzzleId=' + puzzleIdValue;
+
+      const card = document.createElement('a');
+      card.href = editUrl;
+      card.className = 'puzzle-preview-card';
+      card.setAttribute('aria-label', adminT('packDetail.openPuzzle', { number: puzzleNumber }));
+
+      const header = document.createElement('div');
+      header.className = 'puzzle-preview-header';
+      const number = document.createElement('span');
+      number.className = 'puzzle-preview-number';
+      number.textContent = adminT('packDetail.puzzleNumber', { number: puzzleNumber });
+      const color = document.createElement('span');
+      const normalizedColor = String(winColor).toLowerCase();
+      let colorClassName = 'puzzle-preview-color';
+      if (normalizedColor === 'black') {
+        colorClassName += ' is-black';
+      } else if (normalizedColor === 'white') {
+        colorClassName += ' is-white';
+      }
+      color.className = colorClassName;
+      color.textContent = winColor;
+      header.appendChild(number);
+      header.appendChild(color);
+
+      const canvas = document.createElement('canvas');
+      canvas.className = 'puzzle-preview-board';
+      canvas.setAttribute('aria-hidden', 'true');
+      drawPuzzlePreview(canvas, boardStatus);
+
+      card.appendChild(header);
+      card.appendChild(canvas);
+      return card;
     }
 
     async function loadPackDetail() {
@@ -173,12 +262,11 @@
     }
 
     async function loadPuzzleList() {
-      const tableWrap = document.getElementById('puzzleTableWrap');
+      const puzzleGrid = document.getElementById('puzzleGrid');
       const emptyState = document.getElementById('puzzleEmptyState');
-      const tableBody = document.getElementById('puzzleTableBody');
       const msgEl = document.getElementById('puzzleListMsg');
-      tableBody.innerHTML = '';
-      tableWrap.hidden = true;
+      puzzleGrid.innerHTML = '';
+      puzzleGrid.hidden = true;
       emptyState.hidden = true;
       msgEl.textContent = adminT('common.loading');
       try {
@@ -187,63 +275,18 @@
         const data = await res.json();
         if (!data.isSuccess) {
           emptyState.hidden = false;
-          msgEl.textContent = '0';
+          msgEl.textContent = adminT('packDetail.count', { count: 0 });
           return;
         }
         const puzzles = data.response || [];
+        msgEl.textContent = adminT('packDetail.count', { count: puzzles.length });
         if (puzzles.length === 0) {
           emptyState.hidden = false;
-          msgEl.textContent = '0';
         } else {
-          tableWrap.hidden = false;
+          puzzleGrid.hidden = false;
           puzzles.forEach((pz, idx) => {
-            const puzzleIdValue = pz['id'];
-            const boardStatus = pz['boardStatus'] || '-';
-            const answer = pz['answer'] || '';
-            const editUrl = '/admin/puzzle-edit?packId=' + packId + '&puzzleId=' + puzzleIdValue;
-            const tr = document.createElement('tr');
-            tr.classList.add('clickable-row');
-            tr.addEventListener('click', () => { globalThis.location.href = editUrl; });
-
-            const indexTd = document.createElement('td');
-            indexTd.textContent = String(pz['trainingIndex'] || idx + 1);
-            const idTd = document.createElement('td');
-            const idPill = document.createElement('span');
-            idPill.className = 'admin-pill';
-            idPill.textContent = '#' + puzzleIdValue;
-            idTd.appendChild(idPill);
-            const colorTd = document.createElement('td');
-            const colorPill = document.createElement('span');
-            colorPill.className = 'admin-pill primary';
-            colorPill.textContent = pz['winColor'] || '-';
-            colorTd.appendChild(colorPill);
-            const depthTd = document.createElement('td');
-            depthTd.textContent = String(pz['depth'] ?? '-');
-            const boardTd = document.createElement('td');
-            boardTd.textContent = boardStatus.length > 22 ? boardStatus.substring(0, 22) + '...' : boardStatus;
-            const answerTd = document.createElement('td');
-            answerTd.textContent = answer ? String((answer.match(/[a-oA-O]\d{1,2}/g) || []).length) : '0';
-            const actionsTd = document.createElement('td');
-            const actions = document.createElement('div');
-            actions.className = 'admin-actions';
-            const editBtn = document.createElement('a');
-            editBtn.href = editUrl;
-            editBtn.className = 'btn btn-edit';
-            editBtn.textContent = adminT('common.edit');
-            editBtn.addEventListener('click', (e) => e.stopPropagation());
-            actions.appendChild(editBtn);
-            actionsTd.appendChild(actions);
-
-            tr.appendChild(indexTd);
-            tr.appendChild(idTd);
-            tr.appendChild(colorTd);
-            tr.appendChild(depthTd);
-            tr.appendChild(boardTd);
-            tr.appendChild(answerTd);
-            tr.appendChild(actionsTd);
-            tableBody.appendChild(tr);
+            puzzleGrid.appendChild(createPuzzleCard(pz, idx));
           });
-          msgEl.textContent = adminT('packDetail.count', { count: puzzles.length });
         }
       } catch (err) {
         msgEl.textContent = adminT('common.errorPrefix', { message: err.message || '' });

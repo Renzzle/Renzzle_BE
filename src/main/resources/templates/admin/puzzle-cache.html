@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title data-i18n="title.responseMoves">Renzzle - Response Move Entry</title>
+  <title data-i18n="title.responseMoves">Renzzle - AI Response Entry</title>
   <link rel="stylesheet" href="/assets/admin/puzzle-cache.css">
   <link rel="stylesheet" href="/assets/admin/common.css">
   <script src="/assets/admin/i18n.js"></script>
@@ -26,14 +26,14 @@
   <main class="admin-shell">
     <div class="admin-page-heading">
       <div>
-        <h2 data-i18n="cacheList.heading">Response Moves</h2>
-        <p data-i18n="cacheList.description">Select a training or community puzzle, then save response moves from the board screen.</p>
+        <h2 data-i18n="cacheList.heading">AI Responses</h2>
+        <p data-i18n="cacheList.description">Select a training or community puzzle, then save AI responses from the board screen.</p>
       </div>
     </div>
 
   <section class="section">
     <h2 data-i18n="cacheList.trainingHeading">Training Pack · Puzzle</h2>
-    <p class="hint" data-i18n="cacheList.trainingHelp">The pack list uses the same filters as the admin pack list. Select a pack, then choose a puzzle below and open response entry.</p>
+    <p class="hint" data-i18n="cacheList.trainingHelp">The pack list uses the same filters as the admin pack list. Select a pack, then choose a puzzle below and open AI response entry.</p>
     <div class="row">
       <div>
         <label for="filterDifficulty" data-i18n="common.difficulty">Difficulty</label>
@@ -61,7 +61,7 @@
   </section>
 
   <section class="section">
-    <h2 data-i18n="cacheList.communityHeading">Community Puzzle Response Entry</h2>
+    <h2 data-i18n="cacheList.communityHeading">Community Puzzle AI Response Entry</h2>
     <p class="hint" data-i18n="cacheList.communityHelp">Author filters by exact nickname match. The board screen opens by puzzle ID.</p>
     <div class="row">
       <div>
@@ -102,7 +102,7 @@
   </section>
   </main>
 
-  <script th:inline="javascript">
+  <script type="module" th:inline="javascript">
     const API_BASE = '';
     let selectedPackId = null;
 

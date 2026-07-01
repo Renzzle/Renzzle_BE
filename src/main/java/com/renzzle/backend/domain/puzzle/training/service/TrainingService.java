@@ -366,6 +366,75 @@ public class TrainingService {
         return result;
     }
 
+    @Transactional(readOnly = true)
+    public List<GetPackResponse> getTrainingPackListForAdmin(UserEntity user, String difficulty, String preferredLang) {
+        List<Pack> packs = packRepository.findByDifficulty(Difficulty.getDifficulty(difficulty));
+
+        if (packs.isEmpty()) {
+            throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACKS);
+        }
+
+        List<Long> packIds = packs.stream().map(Pack::getId).toList();
+        LangCode requestedLangCode = LangCode.getLangCode(preferredLang);
+        LangCode defaultLangCode = LangCode.getLangCode(LangCode.LangCodeName.EN);
+
+        Map<Long, List<PackTranslation>> translationsByPack = packTranslationRepository.findAllByPack_IdIn(packIds).stream()
+                .collect(Collectors.groupingBy(t -> t.getPack().getId()));
+
+        Long userId = user.getId();
+        List<UserPack> userPacks = userPackRepository.findAllByUserIdAndPackIdIn(userId, packIds);
+        Map<Long, UserPack> userPackMap = userPacks.stream()
+                .collect(Collectors.toMap(up -> up.getPack().getId(), up -> up));
+
+        List<GetPackResponse> result = new ArrayList<>();
+        for (Pack pack : packs) {
+            PackTranslation translation = selectAdminPackTranslation(
+                    translationsByPack.get(pack.getId()),
+                    requestedLangCode,
+                    defaultLangCode
+            );
+
+            UserPack up = userPackMap.get(pack.getId());
+            boolean locked = (up == null);
+            int solvedCount = (up != null) ? up.getSolvedCount() : 0;
+
+            GetPackResponse dto = new GetPackResponse(
+                    pack.getId(),
+                    translation != null ? translation.getTitle() : null,
+                    translation != null ? translation.getAuthor() : null,
+                    translation != null ? translation.getDescription() : null,
+                    pack.getPrice(),
+                    pack.getPuzzleCount(),
+                    solvedCount,
+                    locked
+            );
+            result.add(dto);
+        }
+
+        return result;
+    }
+
+    private PackTranslation selectAdminPackTranslation(
+            List<PackTranslation> translations,
+            LangCode requestedLangCode,
+            LangCode defaultLangCode
+    ) {
+        if (translations == null || translations.isEmpty()) {
+            return null;
+        }
+        for (PackTranslation translation : translations) {
+            if (translation.getLangCode().getName().equals(requestedLangCode.getName())) {
+                return translation;
+            }
+        }
+        for (PackTranslation translation : translations) {
+            if (translation.getLangCode().getName().equals(defaultLangCode.getName())) {
+                return translation;
+            }
+        }
+        return translations.get(0);
+    }
+
     // service test, repo test
     @Transactional
     public GetPackPurchaseResponse purchaseTrainingPack(UserEntity user, PurchaseTrainingPackRequest request) {

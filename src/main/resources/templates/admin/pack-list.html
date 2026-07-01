@@ -29,65 +29,102 @@
         <h2 data-i18n="packList.heading">Packs</h2>
         <p data-i18n="packList.description">Select a pack first, then create or edit puzzles inside it.</p>
       </div>
-      <a href="/admin/pack-create" class="btn btn-primary" data-i18n="common.newPack">New Pack</a>
+      <button type="button" class="btn btn-primary" id="toggleInlineCreateBtn" aria-haspopup="dialog" aria-controls="inlinePackCreateDialog" aria-expanded="false" data-i18n="common.newPack">New Pack</button>
     </div>
 
     <section class="section">
       <div class="section-title-row">
         <div>
           <h2 data-i18n="packList.selectPack">Select Pack</h2>
-          <p data-i18n="packList.autoRefresh">The list refreshes automatically when filters change.</p>
+          <div id="packListMsg" class="pack-list-count muted-status"></div>
+        </div>
+        <div class="section-controls">
+          <fieldset class="difficulty-segment">
+            <legend class="admin-visually-hidden" data-i18n="common.difficulty">Difficulty</legend>
+            <button type="button" class="difficulty-option" data-difficulty="LOW" aria-pressed="true">LOW</button>
+            <button type="button" class="difficulty-option" data-difficulty="MIDDLE" aria-pressed="false">MIDDLE</button>
+            <button type="button" class="difficulty-option" data-difficulty="HIGH" aria-pressed="false">HIGH</button>
+          </fieldset>
         </div>
       </div>
 
-      <div class="admin-toolbar">
-        <div>
-          <label for="filterDifficulty" data-i18n="common.difficulty">Difficulty</label>
-          <select id="filterDifficulty">
-            <option value="LOW">LOW</option>
-            <option value="MIDDLE">MIDDLE</option>
-            <option value="HIGH">HIGH</option>
-          </select>
+      <dialog id="inlinePackCreateDialog" class="pack-create-dialog" aria-labelledby="inlineCreateTitle">
+      <form id="inlinePackCreateForm" class="pack-inline-create" novalidate>
+        <div class="inline-create-heading">
+          <div>
+            <h3 id="inlineCreateTitle" data-i18n="packList.createHeading">Create Pack</h3>
+            <p data-i18n="packList.createDescription">Fill one or more language sections. A title and author are required for each language you use.</p>
+          </div>
+          <button type="button" class="btn btn-secondary" id="closeInlineCreateBtn" data-i18n="common.cancel">Cancel</button>
         </div>
-        <div>
-          <label for="filterLang" data-i18n="common.language">Language</label>
-          <select id="filterLang">
-            <option th:each="langCode : ${langCodeNames}" th:value="${langCode}" th:text="${langCode}">EN</option>
-          </select>
+
+        <div class="inline-pack-basics">
+          <div>
+            <label for="inlinePackPrice" data-i18n="common.price">Price</label>
+            <input type="number" id="inlinePackPrice" min="0" value="0" required>
+          </div>
+          <fieldset class="difficulty-segment inline-create-difficulty">
+            <legend class="admin-visually-hidden" data-i18n="common.difficulty">Difficulty</legend>
+            <button type="button" class="difficulty-option" data-create-difficulty="LOW" aria-pressed="true">LOW</button>
+            <button type="button" class="difficulty-option" data-create-difficulty="MIDDLE" aria-pressed="false">MIDDLE</button>
+            <button type="button" class="difficulty-option" data-create-difficulty="HIGH" aria-pressed="false">HIGH</button>
+          </fieldset>
         </div>
-        <div class="load-button-cell">
-          <button type="button" class="btn" id="loadPacksBtn" data-i18n="common.refresh">Refresh</button>
+
+        <div class="inline-translation-grid" id="inlineTranslationGrid">
+          <section class="inline-translation-card" data-lang-code="EN" th:data-lang-code="${langCode}" th:each="langCode : ${langCodeNames}">
+            <div class="inline-translation-header">
+              <strong th:text="${langCode}">EN</strong>
+              <span data-i18n="packList.translationOptional">Optional</span>
+            </div>
+            <label class="inline-field-label">
+              <span data-i18n="common.title">Title</span>
+              <input type="text" class="inline-pack-title" data-i18n-placeholder="packCreate.titlePlaceholder" placeholder="Pack Title" maxlength="225">
+            </label>
+            <label class="inline-field-label">
+              <span data-i18n="common.author">Author</span>
+              <input type="text" class="inline-pack-author" data-i18n-placeholder="packCreate.authorPlaceholder" placeholder="Author name" maxlength="127">
+            </label>
+            <label class="inline-field-label">
+              <span data-i18n="common.description">Description</span>
+              <textarea class="inline-pack-description" data-i18n-placeholder="packCreate.descriptionPlaceholder" placeholder="Pack Description" maxlength="1023"></textarea>
+            </label>
+          </section>
         </div>
-      </div>
+        <div class="inline-create-footer">
+          <div id="inlineCreatePackMsg" class="inline-form-status muted-status" aria-live="polite"></div>
+          <button type="submit" class="btn btn-primary" id="inlineCreatePackBtn" data-i18n="common.newPack">New Pack</button>
+        </div>
+      </form>
+      </dialog>
 
       <div id="packEmptyState" class="admin-empty" hidden>
-        <strong data-i18n="packList.noPacksStrong">No packs match the current filters.</strong>
-        <span data-i18n="packList.noPacksHelp">Create a pack, then add puzzles from the pack workspace.</span>
-        <div class="mt-1">
-          <a href="/admin/pack-create" class="btn btn-primary" data-i18n="common.newPack">New Pack</a>
-        </div>
+        <span data-i18n="packList.noPacks">No packs found.</span>
       </div>
 
       <div id="packTableWrap" class="admin-table-wrap" hidden>
-        <table class="admin-table">
+        <table class="admin-table pack-list-table">
+          <colgroup>
+            <col class="pack-list-col-main">
+            <col class="pack-list-col-meta">
+            <col class="pack-list-col-meta">
+            <col class="pack-list-col-meta">
+          </colgroup>
           <thead>
           <tr>
-            <th data-i18n="common.id">ID</th>
-            <th data-i18n="common.pack">Pack</th>
-            <th data-i18n="common.difficulty">Difficulty</th>
-            <th data-i18n="common.price">Price</th>
-            <th data-i18n="common.puzzles">Puzzles</th>
-            <th class="actions-col" data-i18n="common.actions">Actions</th>
+            <th class="pack-list-main-col" data-i18n="common.pack">Pack</th>
+            <th class="pack-list-center-col" data-i18n="common.difficulty">Difficulty</th>
+            <th class="pack-list-center-col" data-i18n="common.price">Price</th>
+            <th class="pack-list-center-col" data-i18n="common.puzzles">Puzzles</th>
           </tr>
           </thead>
           <tbody id="packTableBody"></tbody>
         </table>
       </div>
-      <div id="packListMsg" class="msg"></div>
     </section>
   </main>
 
-  <script th:inline="javascript">
+  <script type="module" th:inline="javascript">
     const API_BASE = '';
 
     async function fetchWithAuth(url, options = {}) {
@@ -105,38 +142,182 @@
     }
 
     const FILTER_KEY = 'admin_packlist_filter';
+    const DIFFICULTIES = new Set(['LOW', 'MIDDLE', 'HIGH']);
+    let selectedDifficulty = 'LOW';
+    let createDifficulty = 'LOW';
 
     function saveFilters() {
-      localStorage.setItem(FILTER_KEY, JSON.stringify({
-        difficulty: document.getElementById('filterDifficulty').value,
-        lang: document.getElementById('filterLang').value
-      }));
+      localStorage.setItem(FILTER_KEY, selectedDifficulty);
     }
 
     function restoreFilters() {
+      const stored = localStorage.getItem(FILTER_KEY);
+      if (!stored) return;
+      if (DIFFICULTIES.has(stored)) {
+        selectedDifficulty = stored;
+        return;
+      }
+
+      const legacyMatch = stored.match(/"difficulty"\s*:\s*"([^"]+)"/);
+      const legacyDifficulty = legacyMatch?.[1];
+      if (DIFFICULTIES.has(legacyDifficulty)) {
+        selectedDifficulty = legacyDifficulty;
+      } else {
+        localStorage.removeItem(FILTER_KEY);
+      }
+    }
+
+    function getDisplayLang() {
+      const languageSelect = document.querySelector('[data-admin-language-select]');
+      const lang = languageSelect?.value || document.documentElement.lang || 'en';
+      return String(lang).toUpperCase().startsWith('KO') ? 'KO' : 'EN';
+    }
+
+    function syncDifficultyButtons() {
+      document.querySelectorAll('[data-difficulty]').forEach(button => {
+        const active = button.dataset.difficulty === selectedDifficulty;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
+    }
+
+    function syncCreateDifficultyButtons() {
+      document.querySelectorAll('[data-create-difficulty]').forEach(button => {
+        const active = button.dataset.createDifficulty === createDifficulty;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
+    }
+
+    function setInlineCreateMessage(message, state) {
+      const msgEl = document.getElementById('inlineCreatePackMsg');
+      msgEl.textContent = message || '';
+      msgEl.classList.toggle('error', state === 'error');
+      msgEl.classList.toggle('success', state === 'success');
+    }
+
+    function collectInlineTranslations() {
+      const info = [];
+      let hasPartialTranslation = false;
+      document.querySelectorAll('.inline-translation-card').forEach(card => {
+        const langCode = card.dataset.langCode;
+        const title = card.querySelector('.inline-pack-title')?.value.trim() || '';
+        const author = card.querySelector('.inline-pack-author')?.value.trim() || '';
+        const description = card.querySelector('.inline-pack-description')?.value.trim() || '';
+        const hasAnyText = Boolean(title || author || description);
+        if (!hasAnyText) return;
+        if (!title || !author) {
+          hasPartialTranslation = true;
+          return;
+        }
+        info.push({
+          langCode,
+          title,
+          author,
+          description: description || null
+        });
+      });
+      return { info, hasPartialTranslation };
+    }
+
+    function resetInlineCreateForm() {
+      document.getElementById('inlinePackPrice').value = '0';
+      document.querySelectorAll('.inline-translation-card input[type="text"], .inline-translation-card textarea').forEach(field => {
+        field.value = '';
+      });
+      createDifficulty = 'LOW';
+      syncCreateDifficultyButtons();
+      setInlineCreateMessage('', null);
+    }
+
+    function setInlineCreateOpen(open, focusFirstField = true) {
+      const dialog = document.getElementById('inlinePackCreateDialog');
+      const toggleBtn = document.getElementById('toggleInlineCreateBtn');
+      if (open && !dialog.open) {
+        if (typeof dialog.showModal === 'function') {
+          dialog.showModal();
+        } else {
+          dialog.setAttribute('open', '');
+        }
+      } else if (!open && dialog.open) {
+        if (typeof dialog.close === 'function') {
+          dialog.close();
+        } else {
+          dialog.removeAttribute('open');
+        }
+      }
+      toggleBtn.setAttribute('aria-expanded', String(open));
+      toggleBtn.dataset.i18n = 'common.newPack';
+      toggleBtn.textContent = adminT('common.newPack');
+
+      if (open && focusFirstField) {
+        requestAnimationFrame(() => {
+          const preferredLang = getDisplayLang();
+          const preferredCard = document.querySelector(`.inline-translation-card[data-lang-code="${preferredLang}"]`);
+          const firstTitle = preferredCard?.querySelector('.inline-pack-title')
+                  || document.querySelector('.inline-pack-title');
+          firstTitle?.focus();
+        });
+      }
+    }
+
+    async function createPackInline(event) {
+      event.preventDefault();
+      const submitBtn = document.getElementById('inlineCreatePackBtn');
+      const { info, hasPartialTranslation } = collectInlineTranslations();
+      if (hasPartialTranslation) {
+        setInlineCreateMessage(adminT('packList.createNeedTitleAuthor'), 'error');
+        return;
+      }
+      if (info.length === 0) {
+        setInlineCreateMessage(adminT('packList.createNeedTranslation'), 'error');
+        return;
+      }
+
+      let price = Number.parseInt(document.getElementById('inlinePackPrice').value, 10);
+      if (!Number.isFinite(price) || price < 0) {
+        price = 0;
+      }
+      const submittedDifficulty = createDifficulty;
+
+      submitBtn.disabled = true;
+      setInlineCreateMessage(adminT('packList.creating'), null);
       try {
-        const saved = JSON.parse(localStorage.getItem(FILTER_KEY) || '{}');
-        const diffEl = document.getElementById('filterDifficulty');
-        const langEl = document.getElementById('filterLang');
-        if (saved.difficulty && [...diffEl.options].some(o => o.value === saved.difficulty)) diffEl.value = saved.difficulty;
-        if (saved.lang && [...langEl.options].some(o => o.value === saved.lang)) langEl.value = saved.lang;
-      } catch {
-        // Ignore invalid saved filters.
+        const res = await fetchWithAuth(API_BASE + '/api/training/pack', {
+          method: 'POST',
+          body: JSON.stringify({ info, price, difficulty: submittedDifficulty })
+        });
+        if (!res) return;
+        const data = await res.json();
+        if (!data.isSuccess) {
+          setInlineCreateMessage(adminT('packList.createFailed'), 'error');
+          return;
+        }
+        resetInlineCreateForm();
+        selectedDifficulty = submittedDifficulty;
+        syncDifficultyButtons();
+        await loadPacks();
+        setInlineCreateMessage(adminT('packList.created'), 'success');
+        setTimeout(() => { globalThis.location.href = '/admin/pack-detail?packId=' + data.response; }, 350);
+      } catch (err) {
+        setInlineCreateMessage(adminT('common.errorPrefix', { message: err.message || '' }), 'error');
+      } finally {
+        submitBtn.disabled = false;
       }
     }
 
     async function loadPacks() {
-      const difficulty = document.getElementById('filterDifficulty').value;
-      const lang = document.getElementById('filterLang').value;
+      const difficulty = selectedDifficulty;
+      const lang = getDisplayLang();
       const msgEl = document.getElementById('packListMsg');
       const tableWrap = document.getElementById('packTableWrap');
       const emptyState = document.getElementById('packEmptyState');
       const tableBody = document.getElementById('packTableBody');
       saveFilters();
-      msgEl.classList.remove('show', 'success', 'error');
       tableBody.innerHTML = '';
       tableWrap.hidden = true;
       emptyState.hidden = true;
+      msgEl.textContent = adminT('packList.unknownCount');
 
       try {
         const res = await fetchWithAuth(API_BASE + '/admin/training/pack?difficulty=' + encodeURIComponent(difficulty) + '&lang=' + encodeURIComponent(lang));
@@ -146,11 +327,9 @@
           if (res.status === 404) {
             emptyState.hidden = false;
             msgEl.textContent = adminT('packList.zero');
-            msgEl.classList.add('show', 'success');
             return;
           }
-          msgEl.textContent = adminT('packList.failedLoad');
-          msgEl.classList.add('show', 'error');
+          msgEl.textContent = adminT('packList.unknownCount');
           return;
         }
         const packs = (data.response || []).filter(p => {
@@ -159,6 +338,7 @@
         });
         if (packs.length === 0) {
           emptyState.hidden = false;
+          msgEl.textContent = adminT('packList.zero');
         } else {
           tableWrap.hidden = false;
           packs.forEach(p => {
@@ -169,13 +349,8 @@
             tr.addEventListener('click', () => { globalThis.location.href = '/admin/pack-detail?packId=' + packIdValue; });
             tr.classList.add('clickable-row');
 
-            const idTd = document.createElement('td');
-            const idPill = document.createElement('span');
-            idPill.className = 'admin-pill';
-            idPill.textContent = '#' + packIdValue;
-            idTd.appendChild(idPill);
-
             const titleTd = document.createElement('td');
+            titleTd.className = 'pack-list-main-col';
             const title = document.createElement('strong');
             title.textContent = packTitle;
             titleTd.appendChild(title);
@@ -185,88 +360,79 @@
             titleTd.appendChild(meta);
 
             const diffTd = document.createElement('td');
+            diffTd.className = 'pack-list-center-col';
             const diffPill = document.createElement('span');
             diffPill.className = 'admin-pill primary';
             diffPill.textContent = difficulty;
             diffTd.appendChild(diffPill);
 
             const priceTd = document.createElement('td');
+            priceTd.className = 'pack-list-center-col';
             priceTd.textContent = String(p['price'] ?? 0);
 
             const countTd = document.createElement('td');
+            countTd.className = 'pack-list-center-col';
             countTd.textContent = String(p['totalPuzzleCount'] ?? 0);
 
-            const actionsTd = document.createElement('td');
-            const actions = document.createElement('div');
-            actions.className = 'pack-actions';
-            actions.classList.add('admin-actions');
-            const editBtn = document.createElement('button');
-            editBtn.type = 'button';
-            editBtn.className = 'btn btn-sm';
-            editBtn.textContent = adminT('common.editInfo');
-            editBtn.onclick = function(e) { e.stopPropagation(); globalThis.location.href = '/admin/pack-create?packId=' + packIdValue; };
-            const deleteBtn = document.createElement('button');
-            deleteBtn.type = 'button';
-            deleteBtn.className = 'btn btn-sm btn-danger';
-            deleteBtn.textContent = adminT('common.delete');
-            deleteBtn.onclick = function(e) { e.stopPropagation(); deletePack(packIdValue, packTitle); };
-            const moveBtn = document.createElement('button');
-            moveBtn.type = 'button';
-            moveBtn.className = 'btn btn-sm btn-primary';
-            moveBtn.textContent = adminT('common.open');
-            moveBtn.onclick = function(e) { e.stopPropagation(); globalThis.location.href = '/admin/pack-detail?packId=' + packIdValue; };
-            actions.appendChild(editBtn);
-            actions.appendChild(deleteBtn);
-            actions.appendChild(moveBtn);
-            actionsTd.appendChild(actions);
-
-            tr.appendChild(idTd);
             tr.appendChild(titleTd);
             tr.appendChild(diffTd);
             tr.appendChild(priceTd);
             tr.appendChild(countTd);
-            tr.appendChild(actionsTd);
             tableBody.appendChild(tr);
           });
         }
-        msgEl.textContent = adminT('packList.count', { count: packs.length });
-        msgEl.classList.add('show', 'success');
-      } catch (err) {
-        msgEl.textContent = adminT('common.errorPrefix', { message: err.message || '' });
-        msgEl.classList.add('show', 'error');
-      }
-    }
-
-    document.getElementById('loadPacksBtn').addEventListener('click', loadPacks);
-    document.getElementById('filterDifficulty').addEventListener('change', () => { saveFilters(); loadPacks(); });
-    document.getElementById('filterLang').addEventListener('change', () => { saveFilters(); loadPacks(); });
-    document.addEventListener('admin:language-change', loadPacks);
-
-    async function deletePack(packId, title) {
-      const ok = await adminConfirm(title
-        ? adminT('packList.deleteConfirm', { title })
-        : adminT('packList.deleteConfirmNoTitle'), {
-        confirmText: adminT('common.delete'),
-        danger: true
-      });
-      if (!ok) return;
-      try {
-        const res = await fetchWithAuth(API_BASE + '/api/training/pack/' + packId, { method: 'DELETE' });
-        if (!res) return;
-        const data = await res.json();
-        if (!data.isSuccess) {
-          adminToast(adminT('packList.deleteFailed'), 'error');
-          return;
+        if (packs.length > 0) {
+          msgEl.textContent = adminT('packList.count', { count: packs.length });
         }
-        adminToast(adminT('packList.deleted'), 'success');
-        await loadPacks();
       } catch (err) {
-        adminToast(adminT('common.errorPrefix', { message: err.message || '' }), 'error');
+        msgEl.dataset.loadError = err instanceof Error ? err.message : String(err);
+        msgEl.textContent = adminT('packList.unknownCount');
       }
     }
+
+    document.querySelectorAll('[data-difficulty]').forEach(button => {
+      button.addEventListener('click', () => {
+        if (button.dataset.difficulty === selectedDifficulty) return;
+        selectedDifficulty = button.dataset.difficulty;
+        saveFilters();
+        syncDifficultyButtons();
+        loadPacks();
+      });
+    });
+    document.querySelectorAll('[data-create-difficulty]').forEach(button => {
+      button.addEventListener('click', () => {
+        if (button.dataset.createDifficulty === createDifficulty) return;
+        createDifficulty = button.dataset.createDifficulty;
+        syncCreateDifficultyButtons();
+      });
+    });
+    document.getElementById('toggleInlineCreateBtn').addEventListener('click', () => {
+      const dialog = document.getElementById('inlinePackCreateDialog');
+      setInlineCreateOpen(!dialog.open);
+    });
+    document.getElementById('closeInlineCreateBtn').addEventListener('click', () => {
+      setInlineCreateOpen(false, false);
+    });
+    document.getElementById('inlinePackCreateDialog').addEventListener('click', (event) => {
+      if (event.target === event.currentTarget) {
+        setInlineCreateOpen(false, false);
+      }
+    });
+    document.getElementById('inlinePackCreateDialog').addEventListener('close', () => {
+      document.getElementById('toggleInlineCreateBtn').setAttribute('aria-expanded', 'false');
+    });
+    document.getElementById('inlinePackCreateForm').addEventListener('submit', createPackInline);
+    document.addEventListener('admin:language-change', () => {
+      loadPacks();
+      setInlineCreateOpen(document.getElementById('inlinePackCreateDialog').open, false);
+    });
 
     // Restore the last filters and load the list on entry.
     restoreFilters();
+    createDifficulty = selectedDifficulty;
+    syncDifficultyButtons();
+    syncCreateDifficultyButtons();
+    setInlineCreateOpen(false, false);
     await loadPacks();
   </script>
 </body>

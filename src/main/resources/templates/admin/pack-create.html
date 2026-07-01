@@ -55,11 +55,11 @@
 
     <div class="row">
       <div>
-        <label for="packPrice" data-i18n="packCreate.priceLabel">Price (price)</label>
+        <label for="packPrice" data-i18n="packCreate.priceLabel">Price</label>
         <input type="number" id="packPrice" min="0" value="0" required>
       </div>
       <div>
-        <label for="packDifficulty" data-i18n="packCreate.difficultyLabel">Difficulty (difficulty)</label>
+        <label for="packDifficulty" data-i18n="packCreate.difficultyLabel">Difficulty</label>
         <select id="packDifficulty">
           <option value="LOW">LOW</option>
           <option value="MIDDLE">MIDDLE</option>
@@ -104,6 +104,7 @@
       if ((!current || current.disabled) && firstEnabled >= 0) select.selectedIndex = firstEnabled;
       const addBtn = document.getElementById('addTranslationBtn');
       if (addBtn) addBtn.disabled = (firstEnabled < 0);
+      globalThis.adminRefreshSelects?.();
     }
 
     function addLangBlock(langCode, titleVal, authorVal, descVal) {
@@ -123,11 +124,11 @@
       block.innerHTML = `
         <h4>Language ${idx + 1} (${escapeHtml(code)})</h4>
         <input type="hidden" name="langCode_${idx}" value="${escapeHtml(code)}">
-        <label for="title_${idx}" data-i18n="packCreate.titleLabel">Title (title)</label>
+        <label for="title_${idx}" data-i18n="packCreate.titleLabel">Title</label>
         <input type="text" id="title_${idx}" name="title_${idx}" data-i18n-placeholder="packCreate.titlePlaceholder" placeholder="Pack Title" value="${escapeHtml(titleVal || '')}" required>
-        <label for="author_${idx}" data-i18n="packCreate.authorLabel">Author (author)</label>
+        <label for="author_${idx}" data-i18n="packCreate.authorLabel">Author</label>
         <input type="text" id="author_${idx}" name="author_${idx}" data-i18n-placeholder="packCreate.authorPlaceholder" placeholder="Author name" value="${escapeHtml(authorVal || '')}" required>
-        <label for="description_${idx}" data-i18n="packCreate.descriptionLabel">Description (description, optional)</label>
+        <label for="description_${idx}" data-i18n="packCreate.descriptionLabel">Description</label>
         <div class="desc-with-delete">
           <textarea id="description_${idx}" name="description_${idx}" data-i18n-placeholder="packCreate.descriptionPlaceholder" placeholder="Pack Description">${escapeHtml(descVal || '')}</textarea>
           <div class="lang-delete-row">
