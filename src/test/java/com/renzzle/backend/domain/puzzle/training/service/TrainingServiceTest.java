@@ -1,6 +1,7 @@
 package com.renzzle.backend.domain.puzzle.training.service;
 
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
+import com.renzzle.backend.domain.puzzle.shared.util.RatingUtil;
 import com.renzzle.backend.domain.puzzle.training.api.request.*;
 import com.renzzle.backend.domain.puzzle.training.api.response.*;
 import com.renzzle.backend.domain.puzzle.training.dao.*;
@@ -276,7 +277,7 @@ public class TrainingServiceTest {
                     .boardStatus(boardStatus)
                     .boardKey("generatedKey")
                     .depth(depth)
-                    .rating(depth * 200) // TODO: manage the rating calculation formula via RatingUtils
+                    .rating(RatingUtil.puzzleRating(depth, WinColor.getWinColor(winColorStr)))
                     .winColor(WinColor.getWinColor(winColorStr))
                     .build();
 
@@ -293,7 +294,7 @@ public class TrainingServiceTest {
             assertEquals(boardStatus, result.getBoardStatus());
             assertEquals("generatedKey", result.getBoardKey());
             assertEquals(depth, result.getDepth());
-            assertEquals(600.0, result.getRating());
+            assertEquals(RatingUtil.puzzleRating(depth, WinColor.getWinColor(winColorStr)), result.getRating());
 
             verify(trainingPuzzleRepository, times(1)).findTopIndex(packId);
             verify(packRepository, times(1)).findById(packId);

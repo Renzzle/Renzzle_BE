@@ -18,6 +18,7 @@ import com.renzzle.backend.global.common.domain.LangCode;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import com.renzzle.backend.domain.puzzle.shared.util.BoardUtils;
+import com.renzzle.backend.domain.puzzle.shared.util.RatingUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +30,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static com.renzzle.backend.global.common.constant.DoubleConstant.DEFAULT_PUZZLE_RATING;
 import static com.renzzle.backend.global.common.constant.ItemPrice.*;
 
 @Service
@@ -58,7 +58,8 @@ public class TrainingService {
             trainingPuzzleRepository.increaseIndexesFrom(request.packId(), index);
         }
 
-        double rating = request.depth() * DEFAULT_PUZZLE_RATING;
+        WinColor winColor = WinColor.getWinColor(request.winColor());
+        double rating = RatingUtil.puzzleRating(request.depth(), winColor);
 
         // increase puzzle_count
         packRepository.increasePuzzleCount(request.packId());
@@ -71,7 +72,7 @@ public class TrainingService {
                 .boardKey(boardKey)
                 .depth(request.depth())
                 .rating(rating)
-                .winColor(WinColor.getWinColor(request.winColor()))
+                .winColor(winColor)
                 .build();
 
         return trainingPuzzleRepository.save(puzzle);
@@ -104,12 +105,21 @@ public class TrainingService {
         if (request.answer() != null) {
             puzzleBuilder.answer(request.answer());
         }
-        if (request.depth() != null) {
+        boolean depthChanged = request.depth() != null;
+        boolean winColorChanged = request.winColor() != null;
+        if (depthChanged) {
             puzzleBuilder.depth(request.depth());
-            puzzleBuilder.rating(request.depth() * DEFAULT_PUZZLE_RATING);
         }
-        if (request.winColor() != null) {
+        if (winColorChanged) {
             puzzleBuilder.winColor(WinColor.getWinColor(request.winColor()));
+        }
+        // rating은 depth·winColor 양쪽에 의존하므로 둘 중 하나라도 바뀌면 재계산
+        if (depthChanged || winColorChanged) {
+            int effectiveDepth = depthChanged ? request.depth() : puzzle.getDepth();
+            WinColor effectiveWinColor = winColorChanged
+                    ? WinColor.getWinColor(request.winColor())
+                    : puzzle.getWinColor();
+            puzzleBuilder.rating(RatingUtil.puzzleRating(effectiveDepth, effectiveWinColor));
         }
 
         return trainingPuzzleRepository.save(puzzleBuilder.build());
