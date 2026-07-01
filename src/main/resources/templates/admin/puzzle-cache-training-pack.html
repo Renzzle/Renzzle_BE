@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="cacheTraining.title">Renzzle - Training AI Responses</title>
+  <link rel="stylesheet" href="/assets/admin/puzzle-cache.css">
+  <link rel="stylesheet" href="/assets/admin/common.css">
+  <script src="/assets/admin/i18n.js"></script>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>Renzzle Admin</h1>
+      <span class="user-info" th:if="${userEmail}" th:text="${userEmail}"></span>
+    </div>
+    <div class="header-actions">
+      <a href="/puzzle-cache" class="btn" data-i18n="common.responseEntryList">AI Response List</a>
+      <th:block th:replace="~{admin/fragments :: languageSelect}"></th:block>
+      <a href="/admin/logout" class="btn" data-i18n="common.logout">Log out</a>
+    </div>
+  </div>
+
+  <th:block th:replace="~{admin/fragments :: siteNav(false, false, true)}"></th:block>
+  <th:block th:replace="~{admin/fragments :: uiKit}"></th:block>
+
+  <main class="admin-shell">
+    <div class="admin-page-heading">
+      <div>
+        <h2 data-i18n="cacheTraining.heading">Training AI Responses</h2>
+        <p data-i18n="cacheTraining.description">Choose a puzzle from this pack.</p>
+      </div>
+      <a href="/puzzle-cache" class="btn" data-i18n="common.backToList">Back to List</a>
+    </div>
+
+    <section class="section">
+      <div class="section-title-row">
+        <div>
+          <h2 id="cachePackTitle">Loading...</h2>
+          <p id="cachePackMeta" class="muted-status"></p>
+        </div>
+        <div id="puzzleListMsg" class="pack-list-count muted-status" aria-live="polite"></div>
+      </div>
+
+      <div id="puzzleEmptyState" class="admin-empty" hidden>
+        <span data-i18n="cacheTraining.noPuzzles">No puzzles in this pack.</span>
+      </div>
+
+      <div id="puzzleGrid" class="puzzle-preview-grid"></div>
+    </section>
+  </main>
+
+  <script type="module" th:inline="javascript">
+    const API_BASE = '';
+    const packId = /*[[${packId}]]*/ 0;
+
+    async function fetchWithAuth(url, options = {}) {
+      const headers = { 'Content-Type': 'application/json', ...options.headers };
+      if (options.body === undefined || options.body === null) {
+        delete headers['Content-Type'];
+      }
+      const res = await fetch(url, { ...options, headers, credentials: 'same-origin' });
+      if (res.status === 401 || res.status === 403) {
+        alert(adminT('msg.sessionExpired'));
+        globalThis.location.href = '/admin/logout';
+        return null;
+      }
+      return res;
+    }
+
+    function getDisplayLang() {
+      const currentLanguage = globalThis.adminGetLanguage?.();
+      const languageSelect = document.querySelector('[data-admin-language-select]');
+      const lang = currentLanguage || languageSelect?.value || document.documentElement.lang || 'en';
+      return String(lang).toUpperCase().startsWith('KO') ? 'KO' : 'EN';
+    }
+
+    function boardStatusToMoves(boardStatus) {
+      const result = [];
+      if (!boardStatus || boardStatus === '-') return result;
+      const regex = /([a-oA-O])(\d{1,2})/g;
+      let match;
+      let turnBlack = true;
+      while ((match = regex.exec(boardStatus)) !== null) {
+        const col = match[1].toLowerCase().codePointAt(0) - 'a'.codePointAt(0);
+        const row = Number.parseInt(match[2], 10) - 1;
+        if (row >= 0 && row < 15 && col >= 0 && col < 15) {
+          result.push({ row, col, player: turnBlack ? 'black' : 'white' });
+          turnBlack = !turnBlack;
+        }
+      }
+      return result;
+    }
+
+    function drawPuzzlePreview(canvas, boardStatus) {
+      const logicalSize = 180;
+      const dpr = globalThis.devicePixelRatio || 1;
+      canvas.width = logicalSize * dpr;
+      canvas.height = logicalSize * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+      ctx.fillStyle = '#F1DCA7';
+      ctx.fillRect(0, 0, logicalSize, logicalSize);
+
+      const padding = 14;
+      const cell = (logicalSize - padding * 2) / 14;
+      const toX = (col) => padding + col * cell;
+      const toY = (row) => padding + (14 - row) * cell;
+
+      ctx.strokeStyle = '#6F5432';
+      ctx.lineWidth = 0.8;
+      for (let i = 0; i < 15; i++) {
+        const pos = padding + i * cell;
+        ctx.beginPath();
+        ctx.moveTo(pos, padding);
+        ctx.lineTo(pos, logicalSize - padding);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(padding, pos);
+        ctx.lineTo(logicalSize - padding, pos);
+        ctx.stroke();
+      }
+
+      const starPoints = [
+        [3, 3], [3, 11], [7, 7], [11, 3], [11, 11]
+      ];
+      starPoints.forEach(([row, col]) => {
+        ctx.fillStyle = '#5E472A';
+        ctx.beginPath();
+        ctx.arc(toX(col), toY(row), 1.7, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      boardStatusToMoves(boardStatus).forEach((move) => {
+        const x = toX(move.col);
+        const y = toY(move.row);
+        ctx.fillStyle = move.player === 'black' ? '#111827' : '#ffffff';
+        ctx.beginPath();
+        ctx.arc(x, y, cell * 0.38, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = move.player === 'black' ? '#111827' : '#9ca3af';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      });
+    }
+
+    function getPuzzleNumber(pz, fallbackIndex) {
+      const rawPuzzleIndex = pz['trainingIndex'];
+      let parsedPuzzleIndex = Number.NaN;
+      if (rawPuzzleIndex != null) {
+        parsedPuzzleIndex = Number(rawPuzzleIndex);
+      }
+      if (Number.isFinite(parsedPuzzleIndex)) {
+        return parsedPuzzleIndex + 1;
+      }
+      return fallbackIndex + 1;
+    }
+
+    function createPuzzleCard(pz, idx) {
+      const puzzleIdValue = pz['id'];
+      const puzzleNumber = getPuzzleNumber(pz, idx);
+      const boardStatus = pz['boardStatus'] || '-';
+      const winColor = pz['winColor'] || '-';
+      const href = '/puzzle-cache/board?puzzleType=TRAINING&packId=' + encodeURIComponent(packId) + '&puzzleId=' + encodeURIComponent(puzzleIdValue);
+
+      const card = document.createElement('a');
+      card.href = href;
+      card.className = 'puzzle-preview-card';
+      card.setAttribute('aria-label', adminT('cacheList.openResponsePuzzle', { number: puzzleNumber }));
+
+      const header = document.createElement('div');
+      header.className = 'puzzle-preview-header';
+
+      const number = document.createElement('span');
+      number.className = 'puzzle-preview-number';
+      number.textContent = adminT('packDetail.puzzleNumber', { number: puzzleNumber });
+
+      const color = document.createElement('span');
+      let colorClassName = 'puzzle-preview-color';
+      if (winColor === 'BLACK') {
+        colorClassName += ' is-black';
+      } else if (winColor === 'WHITE') {
+        colorClassName += ' is-white';
+      }
+      color.className = colorClassName;
+      color.textContent = winColor;
+
+      header.appendChild(number);
+      header.appendChild(color);
+
+      const canvas = document.createElement('canvas');
+      canvas.className = 'puzzle-preview-board';
+      canvas.setAttribute('aria-hidden', 'true');
+      drawPuzzlePreview(canvas, boardStatus);
+
+      card.appendChild(header);
+      card.appendChild(canvas);
+      return card;
+    }
+
+    function renderPackInfo(detail) {
+      const infos = detail['info'] || [];
+      const lang = getDisplayLang();
+      const info = infos.find(i => i['langCode'] === lang) || infos[0];
+      document.getElementById('cachePackTitle').textContent = info?.['title'] || adminT('common.untitled');
+      const author = info?.['author'] || adminT('common.noAuthor');
+      const difficulty = detail['difficulty'] || '-';
+      const price = detail['price'] ?? '-';
+      const count = detail['totalPuzzleCount'] ?? '-';
+      document.getElementById('cachePackMeta').textContent = author + ' · ' + difficulty + ' · ' + adminT('cacheList.packMeta', { price, count });
+    }
+
+    async function loadPackDetail() {
+      try {
+        const res = await fetchWithAuth(API_BASE + '/admin/training/pack/' + packId);
+        if (!res) return;
+        const data = await res.json();
+        if (!data.isSuccess) {
+          adminToast(adminT('packDetail.failedLoadPack'), 'error');
+          globalThis.location.href = '/puzzle-cache';
+          return;
+        }
+        renderPackInfo(data.response);
+      } catch (err) {
+        adminToast(adminT('common.errorPrefix', { message: err.message || '' }), 'error');
+      }
+    }
+
+    async function loadPuzzleList() {
+      const puzzleGrid = document.getElementById('puzzleGrid');
+      const emptyState = document.getElementById('puzzleEmptyState');
+      const msgEl = document.getElementById('puzzleListMsg');
+      puzzleGrid.innerHTML = '';
+      emptyState.hidden = true;
+      msgEl.textContent = adminT('packDetail.count', { count: '-' });
+      try {
+        const res = await fetchWithAuth(API_BASE + '/admin/training/puzzle/' + packId);
+        if (!res) return;
+        const data = await res.json();
+        if (!data.isSuccess) {
+          emptyState.hidden = false;
+          msgEl.textContent = adminT('packDetail.count', { count: 0 });
+          return;
+        }
+        const puzzles = data.response || [];
+        msgEl.textContent = adminT('packDetail.count', { count: puzzles.length });
+        if (puzzles.length === 0) {
+          emptyState.hidden = false;
+          return;
+        }
+        puzzles.forEach((pz, idx) => {
+          puzzleGrid.appendChild(createPuzzleCard(pz, idx));
+        });
+      } catch (err) {
+        msgEl.textContent = adminT('packDetail.count', { count: '-' });
+        adminToast(adminT('common.errorPrefix', { message: err.message || '' }), 'error');
+      }
+    }
+
+    document.addEventListener('admin:language-change', async () => {
+      await loadPackDetail();
+      await loadPuzzleList();
+    });
+
+    await loadPackDetail();
+    await loadPuzzleList();
+  </script>
+</body>
+</html>

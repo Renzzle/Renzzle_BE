@@ -15,68 +15,48 @@
       <span class="user-info" th:if="${userEmail}" th:text="${userEmail}"></span>
     </div>
     <div class="header-actions">
-      <a href="/puzzle-cache" class="btn" data-i18n="common.responseEntryList">AI Response List</a>
+      <a th:if="${puzzleType == 'TRAINING' and packId != null}" th:href="@{/puzzle-cache/training-pack(packId=${packId})}" class="btn" data-i18n="common.responseEntryList">AI Response List</a>
+      <a th:unless="${puzzleType == 'TRAINING' and packId != null}" th:href="@{/puzzle-cache}" class="btn" data-i18n="common.responseEntryList">AI Response List</a>
       <th:block th:replace="~{admin/fragments :: languageSelect}"></th:block>
       <a href="/admin/logout" class="btn" data-i18n="common.logout">Log out</a>
     </div>
   </div>
 
   <th:block th:replace="~{admin/fragments :: siteNav(false, false, true)}"></th:block>
+  <th:block th:replace="~{admin/fragments :: uiKit}"></th:block>
 
   <main class="admin-shell">
     <div class="admin-page-heading">
       <div>
         <h2 data-i18n="cacheBoard.heading">AI Response Board</h2>
-        <p data-i18n="cacheBoard.description">Save or look up the next AI response for the selected puzzle board state.</p>
       </div>
-      <a href="/puzzle-cache" class="btn" data-i18n="common.backToList">Back to List</a>
+      <a th:if="${puzzleType == 'TRAINING' and packId != null}" th:href="@{/puzzle-cache/training-pack(packId=${packId})}" class="btn" data-i18n="common.backToList">Back to List</a>
+      <a th:unless="${puzzleType == 'TRAINING' and packId != null}" th:href="@{/puzzle-cache}" class="btn" data-i18n="common.backToList">Back to List</a>
     </div>
 
   <section class="section">
-    <h2 data-i18n="cacheBoard.boardSave">Board · Answer Save</h2>
-    <p class="meta-line" th:if="${puzzleType == 'TRAINING'}"><span data-i18n="common.training">Training</span> · <span data-i18n="common.pack">Pack</span> <strong th:text="${packId != null ? packId : '—'}">-</strong> · <span data-i18n="common.puzzle">Puzzle</span> <strong th:text="${puzzleId}">-</strong></p>
-    <p class="meta-line" th:if="${puzzleType == 'COMMUNITY'}"><span data-i18n="common.community">Community</span> · <span data-i18n="common.puzzle">Puzzle</span> <strong th:text="${puzzleId}">-</strong></p>
-
     <input type="hidden" id="problemPuzzleId" th:value="${puzzleId}">
     <input type="hidden" id="problemPuzzleIndex">
     <input type="hidden" id="problemBoardStatus">
     <input type="hidden" id="problemAnswer">
     <input type="hidden" id="problemDepth">
     <input type="hidden" id="problemWinColor">
+    <input type="hidden" id="currentBoardState">
+    <input type="hidden" id="answerPuzzle">
 
     <div class="board-cache-row">
       <div class="board-viz">
-        <div class="field-label" data-i18n="cacheBoard.boardVisualization">Board Visualization</div>
-        <p class="hint" data-i18n="cacheBoard.boardHint">Initial puzzle stones are unnumbered, answer stones show sequence numbers, and the AI response being entered is marked with a red ring. After locking currentBoard, only one next move can be placed.</p>
         <canvas id="gomokuBoard" class="gomoku-board" width="480" height="480" aria-label="Interactive Gomoku AI response board" data-i18n="cacheBoard.canvasLabel" data-i18n-aria-label="cacheBoard.canvasLabel">Interactive Gomoku AI response board.</canvas>
+        <div class="board-toolbar" aria-label="Board controls">
+          <button type="button" class="btn board-icon-btn" id="cacheUndoBtn" title="Previous Move" aria-label="Previous Move" data-i18n-title="puzzleForm.previousMove" data-i18n-aria-label="puzzleForm.previousMove">◀</button>
+          <button type="button" class="btn board-icon-btn" id="cacheResetBoardBtn" title="Reset" aria-label="Reset" data-i18n-title="puzzleForm.clearBoard" data-i18n-aria-label="puzzleForm.clearBoard">↺</button>
+          <button type="button" class="btn board-icon-btn" id="cacheRedoBtn" title="Next Move" aria-label="Next Move" data-i18n-title="puzzleForm.nextMove" data-i18n-aria-label="puzzleForm.nextMove">▶</button>
+        </div>
       </div>
 
-      <div class="cache-panel">
-        <button type="button" class="btn btn-primary btn-block" id="cacheResetBoardBtn" data-i18n="cacheBoard.resetBoard">Reset to Default Board</button>
-        <button type="button" class="btn btn-primary btn-block" id="setCurrentBoardBtn" data-i18n="cacheBoard.setCurrentBoard">Set Current Board</button>
-        <button type="button" class="btn btn-block" id="cancelCurrentBoardBtn" hidden data-i18n="cacheBoard.cancelCurrentBoard">Cancel Current Board</button>
-
-        <p id="lockBadge" class="lock-badge"></p>
-
-        <label class="label-after-btn" for="currentBoardState" data-i18n="cacheBoard.currentBoardString">Current Board String</label>
-        <textarea id="currentBoardState" readonly rows="2" data-i18n-placeholder="cacheBoard.filledByButton" placeholder="Filled by button"></textarea>
-
-        <p class="turn-line"><span data-i18n="common.currentTurn">Current Turn</span>: <span class="turn-value" id="currentTurn">Black</span></p>
-        <button type="button" class="btn btn-block" id="cacheUndoBtn" data-i18n="puzzleForm.undo">Undo Last Move</button>
-
-        <label for="answerPuzzle" data-i18n="cacheBoard.responseMove">AI Response</label>
-        <input type="text" id="answerPuzzle" class="compact-input" readonly data-i18n-placeholder="cacheBoard.responsePlaceholder" placeholder="Click one move on the board" maxlength="3" autocomplete="off">
-
-        <div class="inline-actions-wrap">
-          <button type="button" class="btn btn-primary" id="saveCacheBtn" data-i18n="cacheBoard.answerSave">Answer Save</button>
-          <button type="button" class="btn" id="verifyCacheBtn" data-i18n="cacheBoard.lookup">Lookup AI Response</button>
-        </div>
-        <div id="cacheMsg" class="msg"></div>
-        <div id="verifyResult" class="verify-result">
-          <span class="verify-label" data-i18n="cacheBoard.aiResponse">AI Response</span>
-          <span class="verify-value" id="verifyValue">—</span>
-          <button type="button" class="btn verify-clear" id="clearVerifyBtn" data-i18n="cacheBoard.close">Close</button>
-        </div>
+      <div class="cache-actions">
+        <button type="button" class="btn btn-primary btn-block" id="toggleResponseInputBtn" data-i18n="cacheBoard.startResponseInput">Input AI Response</button>
+        <button type="button" class="btn btn-primary btn-block" id="saveCacheBtn" data-i18n="cacheBoard.answerSave" hidden disabled>Save</button>
       </div>
     </div>
   </section>
@@ -107,7 +87,14 @@
     })();
     const moves = [];
     const answerMoves = [];
+    const cacheRedoStack = [];
     let currentPlayer = 'black';
+    let baseBoardMoveCount = 0;
+    let puzzleWinColor = '';
+    let puzzleLoaded = false;
+    let autoLookupTimer = null;
+    let autoLookupSequence = 0;
+    let lastAutoLookupBoardState = '';
 
     function toCanvasX(col) { return MARGIN + col * CELL_SIZE; }
     function toCanvasY(row) { return MARGIN + (14 - row) * CELL_SIZE; }
@@ -191,21 +178,11 @@
       ctx.stroke();
     }
 
-    // Show currentBoard lock state with the badge and canvas border
+    // Show currentBoard lock state with the canvas border.
     function updateLockUI() {
-      const cancelBtn = document.getElementById('cancelCurrentBoardBtn');
-      if (cancelBtn) cancelBtn.hidden = !cacheLocked;
-      const badge = document.getElementById('lockBadge');
-      if (!badge) return;
       if (cacheLocked) {
-        badge.textContent = '🔒 ' + adminT('cacheBoard.locked');
-        badge.classList.remove('unlocked');
-        badge.classList.add('show', 'locked');
         canvas.classList.add('cache-locked');
       } else {
-        badge.textContent = adminT('cacheBoard.unlocked');
-        badge.classList.remove('locked');
-        badge.classList.add('show', 'unlocked');
         canvas.classList.remove('cache-locked');
       }
     }
@@ -238,16 +215,11 @@
     }
 
     function showVerifyResult(text, type) {
-      const box = document.getElementById('verifyResult');
-      document.getElementById('verifyValue').textContent = text;
-      box.classList.remove('empty', 'error');
-      if (type === 'empty') box.classList.add('empty');
-      if (type === 'error') box.classList.add('error');
-      box.classList.add('show');
+      if (type !== 'error') return;
+      showCacheMsg(text, false);
     }
 
     function hideVerifyResult(redraw) {
-      document.getElementById('verifyResult').classList.remove('show');
       if (redraw) redrawBoard();
     }
 
@@ -293,7 +265,33 @@
     function syncCurrentPlayer() {
       const total = moves.length + answerMoves.length + (cacheExtraMove ? 1 : 0);
       currentPlayer = total % 2 === 0 ? 'black' : 'white';
-      document.getElementById('currentTurn').textContent = currentPlayer === 'black' ? adminT('common.black') : adminT('common.white');
+      syncCacheToolbar();
+      syncResponseInputWorkflow();
+      syncSaveButton();
+    }
+
+    function cloneMove(move) {
+      return { row: move.row, col: move.col, player: move.player };
+    }
+
+    function syncCacheToolbar() {
+      const undoBtn = document.getElementById('cacheUndoBtn');
+      const redoBtn = document.getElementById('cacheRedoBtn');
+      const canUndo = cacheLocked
+              ? Boolean(cacheExtraMove)
+              : answerMoves.length > 0 || moves.length > baseBoardMoveCount;
+      if (undoBtn) undoBtn.disabled = !canUndo;
+      if (redoBtn) redoBtn.disabled = cacheRedoStack.length === 0;
+    }
+
+    function clearCacheRedoStack() {
+      cacheRedoStack.length = 0;
+      syncCacheToolbar();
+    }
+
+    function rememberUndoneMove(kind, move) {
+      cacheRedoStack.push({ kind, move: cloneMove(move) });
+      syncCacheToolbar();
     }
 
     function countMovesInBoardString(str) {
@@ -308,23 +306,166 @@
       return count;
     }
 
+    function normalizeWinColor(value) {
+      const upper = String(value || '').toUpperCase();
+      return upper === 'BLACK' || upper === 'WHITE' ? upper : '';
+    }
+
+    function setPuzzleWinColor(value) {
+      puzzleWinColor = normalizeWinColor(value);
+      document.getElementById('problemWinColor').value = puzzleWinColor;
+    }
+
+    function getUserPlayer() {
+      const color = normalizeWinColor(puzzleWinColor || document.getElementById('problemWinColor').value);
+      if (color === 'BLACK') return 'black';
+      if (color === 'WHITE') return 'white';
+      return null;
+    }
+
+    function getAiResponsePlayer() {
+      const userPlayer = getUserPlayer();
+      if (userPlayer === 'black') return 'white';
+      if (userPlayer === 'white') return 'black';
+      return null;
+    }
+
+    function nextPlayerForMoveCount(moveCount) {
+      return moveCount % 2 === 0 ? 'black' : 'white';
+    }
+
+    function nextPlayerForBoardState(boardState) {
+      return nextPlayerForMoveCount(countMovesInBoardString(boardState));
+    }
+
+    function canEnterAiResponseForBoardState(boardState) {
+      const responsePlayer = getAiResponsePlayer();
+      if (!responsePlayer) return true;
+      return nextPlayerForBoardState(boardState) === responsePlayer;
+    }
+
+    function showResponseTurnError() {
+      showCacheMsg(adminT('cacheBoard.responseTurnOnly'), false);
+    }
+
+    function setResponseToggleButton(button, key, primary, disabled) {
+      button.dataset.i18n = key;
+      button.textContent = adminT(key);
+      button.classList.toggle('btn-primary', primary);
+      button.classList.toggle('btn-secondary', !primary);
+      button.disabled = disabled;
+    }
+
+    function canSaveAiResponse() {
+      const currentBoardState = document.getElementById('currentBoardState').value.trim();
+      const answerPuzzle = document.getElementById('answerPuzzle').value.trim();
+      const expectedResponsePlayer = getAiResponsePlayer();
+      return cacheLocked &&
+             Boolean(cacheExtraMove) &&
+             Boolean(currentBoardState) &&
+             Boolean(answerPuzzle) &&
+             canEnterAiResponseForBoardState(currentBoardState) &&
+             (!expectedResponsePlayer || cacheExtraMove.player === expectedResponsePlayer);
+    }
+
+    function syncSaveButton() {
+      const saveBtn = document.getElementById('saveCacheBtn');
+      if (!saveBtn) return;
+      saveBtn.hidden = !cacheLocked;
+      saveBtn.disabled = !canSaveAiResponse();
+    }
+
+    function getCurrentBoardSnapshot() {
+      return fullBoardStatusForSnapshot();
+    }
+
+    function clearAutoLookup() {
+      if (autoLookupTimer) {
+        clearTimeout(autoLookupTimer);
+        autoLookupTimer = null;
+      }
+      autoLookupSequence += 1;
+    }
+
+    async function lookupAiResponseForBoardState(currentBoardState) {
+      if (!currentBoardState || !canEnterAiResponseForBoardState(currentBoardState)) return;
+      const sequence = ++autoLookupSequence;
+      lastAutoLookupBoardState = currentBoardState;
+      try {
+        const q = 'puzzleType=' + encodeURIComponent(selectedPuzzleType)
+          + '&puzzleId=' + encodeURIComponent(selectedPuzzleId)
+          + '&currentBoardState=' + encodeURIComponent(currentBoardState);
+        const res = await fetchWithAuth(API_BASE + '/api/puzzle/cache/ai-response?' + q);
+        if (!res || sequence !== autoLookupSequence) return;
+        const data = await res.json();
+        if (sequence !== autoLookupSequence) return;
+        if (!data.isSuccess) {
+          showVerifyResult(adminT('cacheBoard.lookupFailed'), 'error');
+          return;
+        }
+        const pos = (data.response && data.response.position != null) ? String(data.response.position) : '';
+        if (!pos) {
+          showVerifyResult(adminT('cacheBoard.noResponse'), 'empty');
+          redrawBoard();
+          return;
+        }
+        showVerifyResult(pos.toUpperCase(), 'ok');
+        drawVerifyPreview(pos, currentBoardState);
+      } catch (err) {
+        if (sequence === autoLookupSequence) {
+          showVerifyResult(adminT('common.errorPrefix', { message: err.message || '' }), 'error');
+        }
+      }
+    }
+
+    function scheduleAutoLookup(currentBoardState) {
+      if (!currentBoardState || cacheLocked || lastAutoLookupBoardState === currentBoardState) return;
+      if (autoLookupTimer) clearTimeout(autoLookupTimer);
+      autoLookupTimer = setTimeout(() => {
+        autoLookupTimer = null;
+        lookupAiResponseForBoardState(currentBoardState);
+      }, 180);
+    }
+
+    function syncResponseInputWorkflow(options = {}) {
+      const toggleBtn = document.getElementById('toggleResponseInputBtn');
+      const currentBoardEl = document.getElementById('currentBoardState');
+      if (!toggleBtn || !currentBoardEl) return;
+      if (!puzzleLoaded) {
+        setResponseToggleButton(toggleBtn, 'cacheBoard.startResponseInput', true, true);
+        return;
+      }
+      if (cacheLocked) {
+        setResponseToggleButton(toggleBtn, 'cacheBoard.cancelResponseInput', false, false);
+        return;
+      }
+
+      const currentBoardState = getCurrentBoardSnapshot();
+      const readyForResponse = Boolean(currentBoardState) && canEnterAiResponseForBoardState(currentBoardState);
+      setResponseToggleButton(toggleBtn, 'cacheBoard.startResponseInput', true, !readyForResponse);
+      currentBoardEl.value = readyForResponse ? currentBoardState : '';
+
+      if (!readyForResponse) {
+        clearAutoLookup();
+        lastAutoLookupBoardState = '';
+        hideVerifyResult(false);
+        return;
+      }
+      if (options.lookup !== false) {
+        scheduleAutoLookup(currentBoardState);
+      }
+    }
+
     function updateDepthAndWinColor() {
-      const boardStatus = document.getElementById('problemBoardStatus').value.trim();
       const answer = document.getElementById('problemAnswer').value.trim();
-      const boardMoves = countMovesInBoardString(boardStatus);
       const answerMovesCount = countMovesInBoardString(answer);
       const depthEl = document.getElementById('problemDepth');
-      const winColorEl = document.getElementById('problemWinColor');
       let depthValue = '';
       if (answerMovesCount > 0) {
         depthValue = String(answerMovesCount);
       }
       depthEl.value = depthValue;
-      let winColor = '';
-      if (boardMoves > 0 && answerMovesCount > 0) {
-        winColor = boardMoves % 2 === 0 ? 'BLACK' : 'WHITE';
-      }
-      winColorEl.value = winColor;
+      document.getElementById('problemWinColor').value = puzzleWinColor;
     }
 
     function isBaseOccupied(row, col) {
@@ -340,6 +481,7 @@
 
     function applyClearAnswerOnly() {
       answerMoves.length = 0;
+      clearCacheRedoStack();
       updateAnswerInput();
       redrawBoard();
       syncCurrentPlayer();
@@ -357,9 +499,17 @@
       if (cacheLocked) {
         if (cacheExtraMove && cacheExtraMove.row === row && cacheExtraMove.col === col) return;
         if (isBaseOccupied(row, col)) return;
-        const allowed = (moves.length + answerMoves.length) % 2 === 0 ? 'black' : 'white';
+        const currentBoardState = document.getElementById('currentBoardState').value.trim() || fullBoardStatusForSnapshot();
+        if (!canEnterAiResponseForBoardState(currentBoardState)) {
+          showResponseTurnError();
+          return;
+        }
+        const allowed = getAiResponsePlayer() || nextPlayerForBoardState(currentBoardState);
+        clearCacheRedoStack();
+        clearAutoLookup();
         cacheExtraMove = { row, col, player: allowed };
         document.getElementById('answerPuzzle').value = movesToBoardStatus([cacheExtraMove]).toLowerCase();
+        hideVerifyResult(false);
         redrawBoard();
         syncCurrentPlayer();
         return;
@@ -367,6 +517,7 @@
 
       if (isOccupied(row, col)) return;
       const newMove = { row, col, player: currentPlayer };
+      clearCacheRedoStack();
       answerMoves.push(newMove);
       updateAnswerInput();
       redrawBoard();
@@ -377,7 +528,9 @@
       const newMoves = boardStatusToMoves(e.target.value);
       moves.length = 0;
       moves.push(...newMoves);
+      baseBoardMoveCount = moves.length;
       answerMoves.length = 0;
+      clearCacheRedoStack();
       document.getElementById('problemAnswer').value = '';
       cacheLocked = false;
       cacheExtraMove = null;
@@ -396,6 +549,7 @@
         const player = (moves.length + i) % 2 === 0 ? 'black' : 'white';
         answerMoves.push({ ...m, player });
       });
+      clearCacheRedoStack();
       cacheExtraMove = null;
       syncCurrentPlayer();
       redrawBoard();
@@ -423,20 +577,21 @@
     function clearCacheFormFields() {
       document.getElementById('currentBoardState').value = '';
       document.getElementById('answerPuzzle').value = '';
-      document.getElementById('verifyResult').classList.remove('show');
-      const msg = document.getElementById('cacheMsg');
-      msg.classList.remove('show', 'success', 'error');
     }
 
-    function showCacheMsg(el, text, ok) {
-      el.textContent = text;
-      el.classList.add('show');
-      el.classList.toggle('success', ok);
-      el.classList.toggle('error', !ok);
+    function showCacheMsg(text, ok) {
+      if (globalThis.adminToast) {
+        globalThis.adminToast(text, ok ? 'success' : 'error');
+        return;
+      }
+      alert(text);
     }
 
     async function loadPuzzleDetail() {
       try {
+        puzzleLoaded = false;
+        clearAutoLookup();
+        lastAutoLookupBoardState = '';
         const detailPath = puzzleType === 'COMMUNITY'
             ? '/admin/community/puzzle-detail/'
             : '/admin/training/puzzle-detail/';
@@ -460,10 +615,11 @@
         document.getElementById('problemAnswer').value = answer;
         const puzzleDepth = String(puzzle['depth'] ?? '');
         document.getElementById('problemDepth').value = puzzleDepth === '0' ? '' : puzzleDepth;
-        document.getElementById('problemWinColor').value = puzzle['winColor'] || '';
+        setPuzzleWinColor(puzzle['winColor'] || '');
 
         moves.length = 0;
         moves.push(...boardStatusToMoves(boardStatus));
+        baseBoardMoveCount = moves.length;
 
         answerMoves.length = 0;
         const parsedAnswerMoves = boardStatusToMoves(answer);
@@ -474,10 +630,13 @@
 
         cacheExtraMove = null;
         cacheLocked = false;
+        clearCacheRedoStack();
         applyClearAnswerOnly();
         clearCacheFormFields();
         syncCurrentPlayer();
         updateLockUI();
+        puzzleLoaded = true;
+        syncCurrentPlayer();
       } catch (err) {
         alert(adminT('common.errorPrefix', { message: err.message || '' }));
       }
@@ -487,23 +646,34 @@
       loadPuzzleDetail();
     });
 
-    document.getElementById('setCurrentBoardBtn').addEventListener('click', () => {
-      cacheExtraMove = null;
-      document.getElementById('answerPuzzle').value = '';
-      document.getElementById('currentBoardState').value = fullBoardStatusForSnapshot();
-      cacheLocked = true;
-      updateLockUI();
-      hideVerifyResult(false);  // Clear previous lookup results when a new currentBoard is set
-      redrawBoard();
-      syncCurrentPlayer();
-    });
+    document.getElementById('toggleResponseInputBtn').addEventListener('click', () => {
+      if (cacheLocked) {
+        cacheExtraMove = null;
+        cacheLocked = false;
+        clearCacheRedoStack();
+        clearAutoLookup();
+        lastAutoLookupBoardState = '';
+        document.getElementById('currentBoardState').value = '';
+        document.getElementById('answerPuzzle').value = '';
+        updateLockUI();
+        hideVerifyResult(false);
+        redrawBoard();
+        syncCurrentPlayer();
+        return;
+      }
 
-    // Cancel currentBoard and return to free edit mode while keeping board stones
-    document.getElementById('cancelCurrentBoardBtn').addEventListener('click', () => {
+      const currentBoardState = getCurrentBoardSnapshot();
+      if (!canEnterAiResponseForBoardState(currentBoardState)) {
+        showResponseTurnError();
+        return;
+      }
       cacheExtraMove = null;
-      cacheLocked = false;
-      document.getElementById('currentBoardState').value = '';
+      clearCacheRedoStack();
+      clearAutoLookup();
+      lastAutoLookupBoardState = currentBoardState;
       document.getElementById('answerPuzzle').value = '';
+      document.getElementById('currentBoardState').value = currentBoardState;
+      cacheLocked = true;
       updateLockUI();
       hideVerifyResult(false);
       redrawBoard();
@@ -513,45 +683,78 @@
     document.getElementById('cacheUndoBtn').addEventListener('click', () => {
       if (cacheLocked) {
         if (cacheExtraMove) {
+          rememberUndoneMove('extra', cacheExtraMove);
           cacheExtraMove = null;
           document.getElementById('answerPuzzle').value = '';
           redrawBoard();
           syncCurrentPlayer();
           return;
         }
-        if (answerMoves.length > 0) {
-          answerMoves.pop();
-          updateAnswerInput();
-          redrawBoard();
-          syncCurrentPlayer();
-          return;
-        }
-        if (moves.length > 0) {
-          moves.pop();
-          updateBoardStatusInput();
-          redrawBoard();
-          syncCurrentPlayer();
-        }
         return;
       }
       if (answerMoves.length > 0) {
-        answerMoves.pop();
+        const undone = answerMoves.pop();
+        rememberUndoneMove('answer', undone);
         updateAnswerInput();
-      } else if (moves.length > 0) {
-        moves.pop();
+      } else if (moves.length > baseBoardMoveCount) {
+        const undone = moves.pop();
+        rememberUndoneMove('board', undone);
         updateBoardStatusInput();
       } else return;
       redrawBoard();
       syncCurrentPlayer();
     });
 
+    document.getElementById('cacheRedoBtn').addEventListener('click', () => {
+      const entry = cacheRedoStack.pop();
+      if (!entry) {
+        syncCacheToolbar();
+        return;
+      }
+      const move = cloneMove(entry.move);
+      if (entry.kind === 'extra') {
+        const currentBoardState = document.getElementById('currentBoardState').value.trim() || fullBoardStatusForSnapshot();
+        const expectedResponsePlayer = getAiResponsePlayer();
+        if (!cacheLocked || isBaseOccupied(move.row, move.col) || !canEnterAiResponseForBoardState(currentBoardState) ||
+            (expectedResponsePlayer && move.player !== expectedResponsePlayer)) {
+          syncCurrentPlayer();
+          return;
+        }
+        cacheExtraMove = move;
+        document.getElementById('answerPuzzle').value = movesToBoardStatus([cacheExtraMove]).toLowerCase();
+      } else if (entry.kind === 'answer') {
+        if (isOccupied(move.row, move.col)) {
+          syncCurrentPlayer();
+          return;
+        }
+        answerMoves.push(move);
+        updateAnswerInput();
+      } else if (entry.kind === 'board') {
+        if (isOccupied(move.row, move.col)) {
+          syncCurrentPlayer();
+          return;
+        }
+        moves.push(move);
+        updateBoardStatusInput();
+      }
+      redrawBoard();
+      syncCurrentPlayer();
+    });
+
     document.getElementById('saveCacheBtn').addEventListener('click', async () => {
-      const msg = document.getElementById('cacheMsg');
-      msg.classList.remove('show', 'success', 'error');
       const currentBoardState = document.getElementById('currentBoardState').value.trim();
       const answerPuzzle = document.getElementById('answerPuzzle').value.trim().toLowerCase();
       if (!currentBoardState || !answerPuzzle) {
-        showCacheMsg(msg, adminT('cacheBoard.needCurrentBoard'), false);
+        showCacheMsg(adminT('cacheBoard.needCurrentBoard'), false);
+        return;
+      }
+      if (!canEnterAiResponseForBoardState(currentBoardState)) {
+        showCacheMsg(adminT('cacheBoard.responseTurnOnly'), false);
+        return;
+      }
+      const expectedResponsePlayer = getAiResponsePlayer();
+      if (expectedResponsePlayer && (!cacheExtraMove || cacheExtraMove.player !== expectedResponsePlayer)) {
+        showCacheMsg(adminT('cacheBoard.responseTurnOnly'), false);
         return;
       }
       try {
@@ -567,52 +770,17 @@
         if (!res) return;
         const data = await res.json();
         if (!data.isSuccess) {
-          showCacheMsg(msg, adminT('cacheBoard.saveFailed'), false);
+          showCacheMsg(adminT('cacheBoard.saveFailed'), false);
           return;
         }
-        showCacheMsg(msg, adminT('cacheBoard.saved'), true);
+        showCacheMsg(adminT('cacheBoard.saved'), true);
       } catch (err) {
-        showCacheMsg(msg, adminT('common.errorPrefix', { message: err.message || '' }), false);
+        showCacheMsg(adminT('common.errorPrefix', { message: err.message || '' }), false);
       }
-    });
-
-    document.getElementById('verifyCacheBtn').addEventListener('click', async () => {
-      const currentBoardState = document.getElementById('currentBoardState').value.trim();
-      if (!currentBoardState) {
-        showVerifyResult(adminT('cacheBoard.setCurrentBoardFirst'), 'error');
-        return;
-      }
-      try {
-        const q = 'puzzleType=' + encodeURIComponent(selectedPuzzleType)
-          + '&puzzleId=' + encodeURIComponent(selectedPuzzleId)
-          + '&currentBoardState=' + encodeURIComponent(currentBoardState);
-        const res = await fetchWithAuth(API_BASE + '/api/puzzle/cache/ai-response?' + q);
-        if (!res) return;
-        const data = await res.json();
-        if (!data.isSuccess) {
-          showVerifyResult(adminT('cacheBoard.lookupFailed'), 'error');
-          return;
-        }
-        const pos = (data.response && data.response.position != null) ? String(data.response.position) : '';
-        if (!pos) {
-          showVerifyResult(adminT('cacheBoard.noResponse'), 'empty');
-          redrawBoard();  // Remove previous preview
-          return;
-        }
-        showVerifyResult(pos.toUpperCase(), 'ok');
-        drawVerifyPreview(pos, currentBoardState);  // Temporarily show predicted move on the board
-      } catch (err) {
-        showVerifyResult(adminT('common.errorPrefix', { message: err.message || '' }), 'error');
-      }
-    });
-
-    document.getElementById('clearVerifyBtn').addEventListener('click', () => {
-      hideVerifyResult(true);  // Remove the result box and board preview
     });
 
     document.addEventListener('admin:language-change', () => {
       updateLockUI();
-      document.getElementById('currentTurn').textContent = currentPlayer === 'black' ? adminT('common.black') : adminT('common.white');
     });
 
     await loadPuzzleDetail();

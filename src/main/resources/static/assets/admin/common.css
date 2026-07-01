@@ -339,8 +339,41 @@ body > section.section {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--admin-space-2);
+}
+
+.title-search-control {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 13.5rem;
+  width: 13.5rem;
+  min-width: 0;
+  margin: 0 !important;
+}
+
+.title-search-control input {
+  width: 100%;
+  height: var(--admin-control-height);
+  margin: 0 !important;
+}
+
+.title-search-icon {
+  position: absolute;
+  left: 0.8rem;
+  top: 50%;
+  z-index: 1;
+  width: 1rem;
+  height: 1rem;
+  color: var(--admin-muted);
+  pointer-events: none;
+  transform: translateY(-50%);
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
 }
 
 label {
@@ -379,6 +412,27 @@ textarea {
 input:not([type="checkbox"]):not([type="radio"]),
 select {
   height: var(--admin-control-height);
+}
+
+.title-search-control input:not([type="checkbox"]):not([type="radio"]) {
+  height: var(--admin-control-height);
+  min-height: var(--admin-control-height);
+  margin: 0 !important;
+  padding: 0 0.75rem 0 2.65rem !important;
+}
+
+.title-search-control input[type="search"] {
+  -webkit-appearance: textfield;
+  appearance: textfield;
+}
+
+.title-search-control input[type="search"]::-webkit-search-decoration,
+.title-search-control input[type="search"]::-webkit-search-cancel-button,
+.title-search-control input[type="search"]::-webkit-search-results-button,
+.title-search-control input[type="search"]::-webkit-search-results-decoration {
+  display: none;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 select {
@@ -678,6 +732,7 @@ ul.puzzle-list li .btn-edit,
   display: inline-flex;
   align-items: center;
   flex: 0 0 auto;
+  height: var(--admin-control-height);
   min-height: var(--admin-control-height);
   margin: 0;
   padding: 0.2rem;
@@ -689,7 +744,7 @@ ul.puzzle-list li .btn-edit,
 
 .difficulty-option {
   min-width: 4.25rem;
-  height: 2rem;
+  height: calc(var(--admin-control-height) - 0.4rem);
   padding: 0 0.75rem;
   border: 0;
   border-radius: 6px;
@@ -1641,6 +1696,12 @@ ul.puzzle-list li .puzzle-text {
 
   .section-controls {
     justify-content: stretch;
+    flex-wrap: wrap;
+  }
+
+  .title-search-control {
+    flex: 1 1 100%;
+    width: 100%;
   }
 
   .section-controls > .btn,
@@ -1699,4 +1760,9 @@ ul.puzzle-list li .puzzle-text {
     margin: var(--admin-space-4) !important;
     padding: var(--admin-space-6) !important;
   }
+}
+
+[hidden],
+.btn[hidden] {
+  display: none !important;
 }

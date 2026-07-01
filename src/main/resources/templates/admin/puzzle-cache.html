@@ -27,84 +27,89 @@
     <div class="admin-page-heading">
       <div>
         <h2 data-i18n="cacheList.heading">AI Responses</h2>
-        <p data-i18n="cacheList.description">Select a training or community puzzle, then save AI responses from the board screen.</p>
+        <p data-i18n="cacheList.description">Choose training or community puzzles first.</p>
       </div>
+      <fieldset class="difficulty-segment ai-mode-segment">
+        <legend class="admin-visually-hidden" data-i18n="cacheList.targetType">Target Type</legend>
+        <button type="button" class="difficulty-option" data-cache-mode="TRAINING" aria-pressed="true" data-i18n="cacheList.trainingTab">Training</button>
+        <button type="button" class="difficulty-option" data-cache-mode="COMMUNITY" aria-pressed="false" data-i18n="cacheList.communityTab">Community</button>
+      </fieldset>
     </div>
 
-  <section class="section">
-    <h2 data-i18n="cacheList.trainingHeading">Training Pack · Puzzle</h2>
-    <p class="hint" data-i18n="cacheList.trainingHelp">The pack list uses the same filters as the admin pack list. Select a pack, then choose a puzzle below and open AI response entry.</p>
-    <div class="row">
-      <div>
-        <label for="filterDifficulty" data-i18n="common.difficulty">Difficulty</label>
-        <select id="filterDifficulty">
-          <option value="LOW">LOW</option>
-          <option value="MIDDLE">MIDDLE</option>
-          <option value="HIGH">HIGH</option>
-        </select>
+    <section class="section ai-response-section" id="trainingResponseSection" data-cache-panel="TRAINING">
+      <div class="section-title-row">
+        <div>
+          <h2 data-i18n="packList.selectPack">Select Pack</h2>
+          <div id="trainingPackCount" class="pack-list-count muted-status" aria-live="polite"></div>
+        </div>
+        <div class="section-controls">
+          <label class="title-search-control" for="cachePackTitleSearch">
+            <span class="admin-visually-hidden" data-i18n="packList.searchTitle">Search Title</span>
+            <svg class="title-search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <circle cx="11" cy="11" r="7"></circle>
+              <path d="m16.5 16.5 4 4"></path>
+            </svg>
+            <input type="search" id="cachePackTitleSearch" data-i18n-placeholder="packList.titleSearchPlaceholder" placeholder="Pack title" autocomplete="off">
+          </label>
+          <fieldset class="difficulty-segment">
+            <legend class="admin-visually-hidden" data-i18n="common.difficulty">Difficulty</legend>
+            <button type="button" class="difficulty-option" data-cache-difficulty="LOW" aria-pressed="true">LOW</button>
+            <button type="button" class="difficulty-option" data-cache-difficulty="MIDDLE" aria-pressed="false">MIDDLE</button>
+            <button type="button" class="difficulty-option" data-cache-difficulty="HIGH" aria-pressed="false">HIGH</button>
+          </fieldset>
+        </div>
       </div>
-      <div>
-        <label for="filterLang" data-i18n="common.language">Language</label>
-        <select id="filterLang">
-          <option th:each="langCode : ${langCodeNames}" th:value="${langCode}" th:text="${langCode}">EN</option>
-        </select>
-      </div>
-      <div class="load-button-cell">
-        <button type="button" class="btn btn-primary" id="loadPacksBtn" data-i18n="common.loadList">Load List</button>
-      </div>
-    </div>
-    <h3 class="subsection-title pack-subsection-title" data-i18n="cacheList.packSubheading">Pack</h3>
-    <ul class="pack-list" id="packListUl"></ul>
 
-    <h3 class="subsection-title" data-i18n="cacheList.puzzlesSubheading">Puzzles in Selected Pack</h3>
-    <ul class="puzzle-list" id="puzzleListUl"></ul>
-  </section>
+      <div id="cachePackEmptyState" class="admin-empty" hidden>
+        <span data-i18n="packList.noPacks">No packs found.</span>
+      </div>
 
-  <section class="section">
-    <h2 data-i18n="cacheList.communityHeading">Community Puzzle AI Response Entry</h2>
-    <p class="hint" data-i18n="cacheList.communityHelp">Author filters by exact nickname match. The board screen opens by puzzle ID.</p>
-    <div class="row">
-      <div>
-        <label for="commAuthor" data-i18n="cacheList.authorNickname">Author Nickname (exact match, optional)</label>
-        <input type="text" id="commAuthor" maxlength="31" data-i18n-placeholder="cacheList.nicknamePlaceholder" placeholder="Nickname" autocomplete="off">
+      <div id="cachePackTableWrap" class="admin-table-wrap" hidden>
+        <table class="admin-table pack-list-table">
+          <colgroup>
+            <col class="pack-list-col-main">
+            <col class="pack-list-col-meta">
+            <col class="pack-list-col-meta">
+            <col class="pack-list-col-meta">
+          </colgroup>
+          <thead>
+          <tr>
+            <th class="pack-list-main-col" data-i18n="common.pack">Pack</th>
+            <th class="pack-list-center-col" data-i18n="common.difficulty">Difficulty</th>
+            <th class="pack-list-center-col" data-i18n="common.price">Price</th>
+            <th class="pack-list-center-col" data-i18n="common.puzzles">Puzzles</th>
+          </tr>
+          </thead>
+          <tbody id="cachePackTableBody"></tbody>
+        </table>
       </div>
-      <div>
-        <label for="commStone" data-i18n="common.winColor">Win Color</label>
-        <select id="commStone">
-          <option value="" data-i18n="common.all">(All)</option>
-          <option value="BLACK">BLACK</option>
-          <option value="WHITE">WHITE</option>
-        </select>
+    </section>
+
+    <section class="section ai-response-section" id="communityResponseSection" data-cache-panel="COMMUNITY" hidden>
+      <div class="section-title-row ai-community-title-row">
+        <div>
+          <h2 data-i18n="cacheList.communityHeading">Community Puzzles</h2>
+          <p data-i18n="cacheList.communityHelp">Search by puzzle number, then open it to manage its AI response.</p>
+        </div>
+        <form class="community-search-form" id="communitySearchForm">
+          <label for="commPuzzleId">
+            <span class="admin-visually-hidden" data-i18n="cacheList.puzzleNumber">Puzzle Number</span>
+            <input type="number" id="commPuzzleId" min="1" data-i18n-placeholder="cacheList.puzzleNumberPlaceholder" placeholder="Puzzle number" autocomplete="off">
+          </label>
+          <button type="submit" class="btn btn-primary community-load-btn" id="loadCommPuzzlesBtn" data-i18n="common.search">Search</button>
+        </form>
       </div>
-    </div>
-    <div class="row">
-      <div>
-        <label for="commDepthMin" data-i18n="cacheList.minDepth">Min Depth</label>
-        <input type="number" id="commDepthMin" min="1" max="225" value="1">
-      </div>
-      <div>
-        <label for="commDepthMax" data-i18n="cacheList.maxDepth">Max Depth</label>
-        <input type="number" id="commDepthMax" min="1" max="225" value="225">
-      </div>
-      <div>
-        <label for="commCursorId" data-i18n="cacheList.cursor">Cursor ID (next page)</label>
-        <input type="number" id="commCursorId" min="1" data-i18n-placeholder="cacheList.cursorPlaceholder" placeholder="Select">
-      </div>
-      <div>
-        <label for="commSize" data-i18n="common.size">Size</label>
-        <input type="number" id="commSize" min="1" max="100" value="20">
-      </div>
-      <div class="load-button-cell">
-        <button type="button" class="btn btn-primary" id="loadCommPuzzlesBtn" data-i18n="common.loadList">Load List</button>
-      </div>
-    </div>
-    <ul class="puzzle-list" id="commPuzzleListUl"></ul>
-  </section>
+
+      <div id="commPuzzleStatus" class="community-search-status" aria-live="polite" hidden></div>
+    </section>
   </main>
 
   <script type="module" th:inline="javascript">
     const API_BASE = '';
-    let selectedPackId = null;
+    let selectedCacheMode = 'TRAINING';
+    let selectedCacheDifficulty = 'LOW';
+    const CACHE_DIFFICULTIES = new Set(['LOW', 'MIDDLE', 'HIGH']);
+    const CACHE_MODES = new Set(['TRAINING', 'COMMUNITY']);
 
     async function fetchWithAuth(url, options = {}) {
       const headers = { 'Content-Type': 'application/json', ...options.headers };
@@ -125,140 +130,171 @@
     }
 
     const PC_FILTER_KEY = 'admin_puzzlecache_filter';
+
+    function getTrainingLang() {
+      const currentLanguage = globalThis.adminGetLanguage?.();
+      const languageSelect = document.querySelector('[data-admin-language-select]');
+      const lang = currentLanguage || languageSelect?.value || document.documentElement.lang || 'en';
+      return String(lang).toUpperCase().startsWith('KO') ? 'KO' : 'EN';
+    }
+
+    function getCachePackTitleQuery() {
+      return document.getElementById('cachePackTitleSearch').value.trim().toLowerCase();
+    }
+
     function savePcFilters() {
       localStorage.setItem(PC_FILTER_KEY, JSON.stringify({
-        difficulty: document.getElementById('filterDifficulty').value,
-        lang: document.getElementById('filterLang').value
+        mode: selectedCacheMode,
+        difficulty: selectedCacheDifficulty
       }));
     }
+
     function restorePcFilters() {
-      try {
-        const saved = JSON.parse(localStorage.getItem(PC_FILTER_KEY) || '{}');
-        const diffEl = document.getElementById('filterDifficulty');
-        const langEl = document.getElementById('filterLang');
-        if (saved.difficulty && [...diffEl.options].some(o => o.value === saved.difficulty)) diffEl.value = saved.difficulty;
-        if (saved.lang && [...langEl.options].some(o => o.value === saved.lang)) langEl.value = saved.lang;
-      } catch {
-        // Ignore invalid saved filters.
+      const stored = localStorage.getItem(PC_FILTER_KEY);
+      if (!stored) return;
+
+      const difficultyMatch = stored.match(/"difficulty"\s*:\s*"([^"]+)"/);
+      const modeMatch = stored.match(/"mode"\s*:\s*"([^"]+)"/);
+      const savedDifficulty = difficultyMatch?.[1] || stored;
+      const savedMode = modeMatch?.[1];
+
+      if (CACHE_DIFFICULTIES.has(savedDifficulty)) {
+        selectedCacheDifficulty = savedDifficulty;
+      }
+      if (CACHE_MODES.has(savedMode)) {
+        selectedCacheMode = savedMode;
       }
     }
 
-    async function loadPacks() {
-      const difficulty = document.getElementById('filterDifficulty').value;
-      const lang = document.getElementById('filterLang').value;
-      const listEl = document.getElementById('packListUl');
-      const puzzleListEl = document.getElementById('puzzleListUl');
+    function syncCacheModeButtons() {
+      document.querySelectorAll('[data-cache-mode]').forEach(button => {
+        const active = button.dataset.cacheMode === selectedCacheMode;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
+    }
+
+    function syncCachePanels() {
+      document.querySelectorAll('[data-cache-panel]').forEach(panel => {
+        panel.hidden = panel.dataset.cachePanel !== selectedCacheMode;
+      });
+    }
+
+    function setCacheMode(mode) {
+      if (!CACHE_MODES.has(mode) || mode === selectedCacheMode) return;
+      selectedCacheMode = mode;
       savePcFilters();
-      listEl.innerHTML = '';
-      puzzleListEl.innerHTML = '';
-      selectedPackId = null;
+      syncCacheModeButtons();
+      syncCachePanels();
+      if (selectedCacheMode === 'TRAINING') {
+        loadPacks();
+      }
+    }
+
+    function syncCacheDifficultyButtons() {
+      document.querySelectorAll('[data-cache-difficulty]').forEach(button => {
+        const active = button.dataset.cacheDifficulty === selectedCacheDifficulty;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
+    }
+
+    function setPackCount(count) {
+      const countEl = document.getElementById('trainingPackCount');
+      countEl.textContent = count === null
+              ? adminT('packList.unknownCount')
+              : adminT('packList.count', { count });
+    }
+
+    function showCommunityStatus(text) {
+      const statusEl = document.getElementById('commPuzzleStatus');
+      statusEl.textContent = text;
+      statusEl.hidden = !text;
+    }
+
+    async function loadPacks() {
+      const difficulty = selectedCacheDifficulty;
+      const lang = getTrainingLang();
+      const tableWrap = document.getElementById('cachePackTableWrap');
+      const emptyState = document.getElementById('cachePackEmptyState');
+      const tableBody = document.getElementById('cachePackTableBody');
+      savePcFilters();
+      tableBody.innerHTML = '';
+      tableWrap.hidden = true;
+      emptyState.hidden = true;
+      setPackCount(null);
 
       try {
         const res = await fetchWithAuth(API_BASE + '/admin/training/pack?difficulty=' + encodeURIComponent(difficulty) + '&lang=' + encodeURIComponent(lang));
         if (!res) return;
         const data = await res.json();
         if (!data.isSuccess) {
+          if (res.status === 404) {
+            setPackCount(0);
+            emptyState.hidden = false;
+            return;
+          }
           showListError(adminT('cacheList.failedLoadList'));
           return;
         }
+        const titleQuery = getCachePackTitleQuery();
         const packs = (data.response || []).filter(p => {
           const title = p['title'];
-          return title && title.trim() !== '';
+          if (!title || title.trim() === '') return false;
+          return !titleQuery || title.toLowerCase().includes(titleQuery);
         });
+        setPackCount(packs.length);
         if (packs.length === 0) {
-          const li = document.createElement('li');
-          li.textContent = adminT('cacheList.noPacks');
-          listEl.appendChild(li);
+          emptyState.hidden = false;
         } else {
+          tableWrap.hidden = false;
           packs.forEach(p => {
             const packIdValue = p['id'];
-            const packTitle = p['title'] || '';
+            const packTitle = p['title'] || adminT('common.untitled');
+            const packAuthor = p['author'];
             const packPrice = p['price'] ?? 0;
             const totalPuzzleCount = p['totalPuzzleCount'] ?? 0;
-            const li = document.createElement('li');
-            const info = document.createElement('span');
-            info.className = 'pack-info';
-            const idSpan = document.createElement('span');
-            idSpan.className = 'pack-id';
-            idSpan.textContent = adminT('common.id') + ': ' + packIdValue;
-            const meta = document.createElement('small');
-            meta.textContent = adminT('cacheList.packMeta', { price: packPrice, count: totalPuzzleCount });
-            // Server-provided titles are inserted with textContent for XSS safety
-            info.appendChild(idSpan);
-            info.appendChild(document.createTextNode(' ' + packTitle + ' '));
-            info.appendChild(meta);
-            const actions = document.createElement('div');
-            actions.className = 'pack-actions';
-            const selectBtn = document.createElement('button');
-            selectBtn.type = 'button';
-            selectBtn.className = 'btn btn-sm btn-primary';
-            selectBtn.textContent = adminT('common.select');
-            selectBtn.onclick = function(e) {
-              e.stopPropagation();
-              [...listEl.children].forEach(c => c.classList.remove('selected'));
-              li.classList.add('selected');
-              selectedPackId = packIdValue;
-              loadPuzzlesForPack(packIdValue);
-            };
-            actions.appendChild(selectBtn);
-            li.appendChild(info);
-            li.appendChild(actions);
-            listEl.appendChild(li);
+            const tr = document.createElement('tr');
+            tr.classList.add('clickable-row');
+            tr.addEventListener('click', function() {
+              globalThis.location.href = '/puzzle-cache/training-pack?packId=' + encodeURIComponent(packIdValue);
+            });
+
+            const titleTd = document.createElement('td');
+            titleTd.className = 'pack-list-main-col';
+            const title = document.createElement('strong');
+            title.textContent = packTitle;
+            titleTd.appendChild(title);
+            const meta = document.createElement('div');
+            meta.className = 'pack-row-meta';
+            meta.textContent = packAuthor ? adminT('packList.metaAuthor', { author: packAuthor }) : adminT('common.noAuthor');
+            titleTd.appendChild(meta);
+
+            const diffTd = document.createElement('td');
+            diffTd.className = 'pack-list-center-col';
+            const diffPill = document.createElement('span');
+            diffPill.className = 'admin-pill primary';
+            diffPill.textContent = difficulty;
+            diffTd.appendChild(diffPill);
+
+            const priceTd = document.createElement('td');
+            priceTd.className = 'pack-list-center-col';
+            priceTd.textContent = String(packPrice);
+
+            const countTd = document.createElement('td');
+            countTd.className = 'pack-list-center-col';
+            countTd.textContent = String(totalPuzzleCount);
+
+            tr.appendChild(titleTd);
+            tr.appendChild(diffTd);
+            tr.appendChild(priceTd);
+            tr.appendChild(countTd);
+            tableBody.appendChild(tr);
           });
         }
       } catch (err) {
         showListError(adminT('common.errorPrefix', { message: err.message || '' }));
-      }
-    }
-
-    async function loadPuzzlesForPack(packId) {
-      const puzzleListEl = document.getElementById('puzzleListUl');
-      puzzleListEl.innerHTML = '';
-      try {
-        const res = await fetchWithAuth(API_BASE + '/admin/training/puzzle/' + packId);
-        if (!res) return;
-        const data = await res.json();
-        if (!data.isSuccess) {
-          showListError(adminT('cacheList.failedLoadPuzzleList'));
-          return;
-        }
-        const puzzles = data.response || [];
-        if (puzzles.length === 0) {
-          const li = document.createElement('li');
-          const text = document.createElement('span');
-          text.className = 'puzzle-text';
-          text.textContent = adminT('cacheList.noPuzzles');
-          li.appendChild(text);
-          puzzleListEl.appendChild(li);
-          return;
-        }
-        puzzles.forEach(p => {
-          const puzzleIdValue = p['id'];
-          const trainingIndex = p['trainingIndex'] ?? '-';
-          const depth = p['depth'] ?? '-';
-          const winColor = p['winColor'] || '-';
-          const solvedText = p['isSolved'] ? adminT('cacheList.solved') : '';
-          const li = document.createElement('li');
-          const text = document.createElement('span');
-          text.className = 'puzzle-text';
-          const idxSpan = document.createElement('span');
-          idxSpan.className = 'pack-id';
-          idxSpan.textContent = '#' + trainingIndex;
-          const meta = document.createElement('small');
-          meta.textContent = adminT('cacheList.puzzleMeta', { depth, winColor, solved: solvedText });
-          text.appendChild(idxSpan);
-          text.appendChild(document.createTextNode(' ' + adminT('common.id').toLowerCase() + ' ' + puzzleIdValue + ' '));
-          text.appendChild(meta);
-          const goBtn = document.createElement('a');
-          goBtn.className = 'btn btn-sm btn-primary';
-          goBtn.textContent = adminT('cacheList.responseEntry');
-          goBtn.href = '/puzzle-cache/board?puzzleType=TRAINING&packId=' + encodeURIComponent(packId) + '&puzzleId=' + encodeURIComponent(puzzleIdValue);
-          li.appendChild(text);
-          li.appendChild(goBtn);
-          puzzleListEl.appendChild(li);
-        });
-      } catch (err) {
-        showListError(adminT('common.errorPrefix', { message: err.message || '' }));
+        setPackCount(null);
       }
     }
 
@@ -266,88 +302,73 @@
       adminToast(text, 'error');
     }
 
-    document.getElementById('loadCommPuzzlesBtn').addEventListener('click', async () => {
-      const listEl = document.getElementById('commPuzzleListUl');
-      listEl.innerHTML = '';
-      const author = document.getElementById('commAuthor').value.trim();
-      const stone = document.getElementById('commStone').value;
-      const depthMin = document.getElementById('commDepthMin').value;
-      const depthMax = document.getElementById('commDepthMax').value;
-      const cursor = document.getElementById('commCursorId').value.trim();
-      const size = document.getElementById('commSize').value;
-      let qs = 'depthMin=' + encodeURIComponent(depthMin) + '&depthMax=' + encodeURIComponent(depthMax)
-          + '&size=' + encodeURIComponent(size);
-      if (author) qs += '&authorNickname=' + encodeURIComponent(author);
-      if (stone) qs += '&stone=' + encodeURIComponent(stone);
-      if (cursor) qs += '&id=' + encodeURIComponent(cursor);
+    async function loadCommunityPuzzleById(event) {
+      event?.preventDefault();
+      showCommunityStatus('');
+      const puzzleIdValue = document.getElementById('commPuzzleId').value.trim();
+      if (!puzzleIdValue) {
+        showCommunityStatus(adminT('cacheList.noCommunity'));
+        return;
+      }
+      const loadButton = document.getElementById('loadCommPuzzlesBtn');
+      loadButton.disabled = true;
       try {
-        const res = await fetchWithAuth(API_BASE + '/api/puzzle/cache/community-puzzles?' + qs);
+        const res = await fetchWithAuth(API_BASE + '/admin/community/puzzle-detail/' + encodeURIComponent(puzzleIdValue));
         if (!res) return;
         const data = await res.json();
-        if (!data.isSuccess) {
-          showCommError(adminT('cacheList.failedLoadList'));
+        if (!res.ok || !data.isSuccess || !data.response) {
+          showCommunityStatus(adminT('cacheList.noCommunity'));
           return;
         }
-        const puzzles = data.response || [];
-        if (puzzles.length === 0) {
-          const li = document.createElement('li');
-          const text = document.createElement('span');
-          text.className = 'puzzle-text';
-          text.textContent = adminT('cacheList.noCommunity');
-          li.appendChild(text);
-          listEl.appendChild(li);
-        } else {
-          puzzles.forEach(p => {
-            const puzzleIdValue = p['id'];
-            const authorNickname = p['authorNickname'] || '';
-            const depth = p['depth'] ?? '-';
-            const winColor = p['winColor'] || '-';
-            const li = document.createElement('li');
-            const text = document.createElement('span');
-            text.className = 'puzzle-text';
-            const idSpan = document.createElement('span');
-            idSpan.className = 'pack-id';
-            idSpan.textContent = adminT('common.id').toLowerCase() + ' ' + puzzleIdValue;
-            const meta = document.createElement('small');
-            // User-entered nicknames are inserted with textContent for XSS safety
-            meta.textContent = adminT('cacheList.communityMeta', { author: authorNickname, depth, winColor });
-            text.appendChild(idSpan);
-            text.appendChild(document.createTextNode(' '));
-            text.appendChild(meta);
-            const rawDesc = p['description'] || '';
-            const desc = rawDesc.length > 60 ? rawDesc.slice(0, 57) + '…' : rawDesc;
-            if (desc) {
-              text.appendChild(document.createElement('br'));
-              const descSmall = document.createElement('small');
-              descSmall.textContent = desc;
-              text.appendChild(descSmall);
-            }
-            const goBtn = document.createElement('a');
-            goBtn.className = 'btn btn-sm btn-primary';
-            goBtn.textContent = adminT('cacheList.responseEntry');
-            goBtn.href = '/puzzle-cache/board?puzzleType=COMMUNITY&puzzleId=' + encodeURIComponent(puzzleIdValue);
-            li.appendChild(text);
-            li.appendChild(goBtn);
-            listEl.appendChild(li);
-          });
-        }
+        const puzzle = data.response;
+        const href = '/puzzle-cache/board?puzzleType=COMMUNITY&puzzleId=' + encodeURIComponent(puzzle['id'] ?? puzzleIdValue);
+        globalThis.location.href = href;
       } catch (err) {
         showCommError(adminT('common.errorPrefix', { message: err.message || '' }));
+      } finally {
+        loadButton.disabled = false;
       }
-    });
+    }
+
+    document.getElementById('communitySearchForm').addEventListener('submit', loadCommunityPuzzleById);
 
     // On entry: restore the last filters and automatically load training packs
-    document.getElementById('loadPacksBtn').addEventListener('click', loadPacks);
-    document.getElementById('filterDifficulty').addEventListener('change', loadPacks);
-    document.getElementById('filterLang').addEventListener('change', loadPacks);
+    document.querySelectorAll('[data-cache-mode]').forEach(button => {
+      button.addEventListener('click', () => {
+        setCacheMode(button.dataset.cacheMode);
+      });
+    });
+    document.querySelectorAll('[data-cache-difficulty]').forEach(button => {
+      button.addEventListener('click', () => {
+        if (button.dataset.cacheDifficulty === selectedCacheDifficulty) return;
+        selectedCacheDifficulty = button.dataset.cacheDifficulty;
+        savePcFilters();
+        syncCacheDifficultyButtons();
+        loadPacks();
+      });
+    });
+    let cachePackTitleSearchTimer = null;
+    document.getElementById('cachePackTitleSearch').addEventListener('input', () => {
+      clearTimeout(cachePackTitleSearchTimer);
+      cachePackTitleSearchTimer = setTimeout(loadPacks, 180);
+    });
     document.addEventListener('admin:language-change', () => {
-      loadPacks();
-      if (document.getElementById('commPuzzleListUl').children.length > 0) {
-        document.getElementById('loadCommPuzzlesBtn').click();
+      syncCacheModeButtons();
+      syncCachePanels();
+      syncCacheDifficultyButtons();
+      if (selectedCacheMode === 'TRAINING') {
+        loadPacks();
+      } else if (!document.getElementById('commPuzzleStatus').hidden) {
+        showCommunityStatus(adminT('cacheList.noCommunity'));
       }
     });
     restorePcFilters();
-    await loadPacks();
+    syncCacheModeButtons();
+    syncCachePanels();
+    syncCacheDifficultyButtons();
+    if (selectedCacheMode === 'TRAINING') {
+      await loadPacks();
+    }
   </script>
 </body>
 </html>

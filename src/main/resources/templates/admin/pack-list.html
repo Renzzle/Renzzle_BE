@@ -39,6 +39,14 @@
           <div id="packListMsg" class="pack-list-count muted-status"></div>
         </div>
         <div class="section-controls">
+          <label class="title-search-control" for="packTitleSearch">
+            <span class="admin-visually-hidden" data-i18n="packList.searchTitle">Search Title</span>
+            <svg class="title-search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <circle cx="11" cy="11" r="7"></circle>
+              <path d="m16.5 16.5 4 4"></path>
+            </svg>
+            <input type="search" id="packTitleSearch" data-i18n-placeholder="packList.titleSearchPlaceholder" placeholder="Pack title" autocomplete="off">
+          </label>
           <fieldset class="difficulty-segment">
             <legend class="admin-visually-hidden" data-i18n="common.difficulty">Difficulty</legend>
             <button type="button" class="difficulty-option" data-difficulty="LOW" aria-pressed="true">LOW</button>
@@ -168,9 +176,14 @@
     }
 
     function getDisplayLang() {
+      const currentLanguage = globalThis.adminGetLanguage?.();
       const languageSelect = document.querySelector('[data-admin-language-select]');
-      const lang = languageSelect?.value || document.documentElement.lang || 'en';
+      const lang = currentLanguage || languageSelect?.value || document.documentElement.lang || 'en';
       return String(lang).toUpperCase().startsWith('KO') ? 'KO' : 'EN';
+    }
+
+    function getPackTitleQuery() {
+      return document.getElementById('packTitleSearch').value.trim().toLowerCase();
     }
 
     function syncDifficultyButtons() {
@@ -332,9 +345,11 @@
           msgEl.textContent = adminT('packList.unknownCount');
           return;
         }
+        const titleQuery = getPackTitleQuery();
         const packs = (data.response || []).filter(p => {
           const title = p['title'];
-          return title && title.trim() !== '';
+          if (!title || title.trim() === '') return false;
+          return !titleQuery || title.toLowerCase().includes(titleQuery);
         });
         if (packs.length === 0) {
           emptyState.hidden = false;
@@ -398,6 +413,11 @@
         syncDifficultyButtons();
         loadPacks();
       });
+    });
+    let packTitleSearchTimer = null;
+    document.getElementById('packTitleSearch').addEventListener('input', () => {
+      clearTimeout(packTitleSearchTimer);
+      packTitleSearchTimer = setTimeout(loadPacks, 180);
     });
     document.querySelectorAll('[data-create-difficulty]').forEach(button => {
       button.addEventListener('click', () => {
