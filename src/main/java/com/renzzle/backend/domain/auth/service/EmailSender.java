@@ -1,5 +1,8 @@
 package com.renzzle.backend.domain.auth.service;
 
+import com.renzzle.backend.global.exception.CustomException;
+import com.renzzle.backend.global.exception.ErrorCode;
+import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +29,7 @@ public class EmailSender {
 
         try {
             message.setFrom(senderEmail);
-            message.setRecipients(MimeMessage.RecipientType.TO, address);
+            message.setRecipients(Message.RecipientType.TO, address);
             message.setSubject("[Renzzle] Email Verification");
 
             Context context = new Context();
@@ -35,7 +38,7 @@ public class EmailSender {
 
             message.setText(htmlContent, "UTF-8", "html");
         } catch (MessagingException e) {
-            throw new RuntimeException(e);
+            throw new CustomException(e.getMessage(), ErrorCode.INTERNAL_SERVER_ERROR);
         }
 
         javaMailSender.send(message);

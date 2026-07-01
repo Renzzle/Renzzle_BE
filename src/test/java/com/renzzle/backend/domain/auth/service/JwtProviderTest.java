@@ -23,7 +23,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 @ContextConfiguration(classes = JwtProvider.class)
 @TestPropertySource(properties = JWT_TEST_PROPERTY)
-public class JwtProviderTest {
+class JwtProviderTest {
 
     public static final String JWT_TEST_PROPERTY = "spring.jwt.secret=ad3sf2sf98a7sd9f87a0ds98f70a98sd7f098asd70f98";
 
@@ -41,7 +41,7 @@ public class JwtProviderTest {
     private String authVerityToken;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         when(clock.instant()).thenReturn(Instant.now());
         when(clock.getZone()).thenReturn(ZoneId.systemDefault());
 
@@ -55,37 +55,37 @@ public class JwtProviderTest {
     }
 
     @Test
-    public void createAccessToken_ShouldReturnValidToken() {
+    void createAccessToken_ShouldReturnValidToken() {
         assertNotNull(accessToken);
         assertNotEquals(accessToken, jwtProvider.createAccessToken(testUserId));
     }
 
     @Test
-    public void createRefreshToken_ShouldReturnValidToken() {
+    void createRefreshToken_ShouldReturnValidToken() {
         assertNotNull(refreshToken);
         assertNotEquals(refreshToken, jwtProvider.createRefreshToken(testUserId));
     }
 
     @Test
-    public void createAuthVerityToken_ShouldReturnValidToken() {
+    void createAuthVerityToken_ShouldReturnValidToken() {
         assertNotNull(authVerityToken);
         assertNotEquals(authVerityToken, jwtProvider.createAuthVerityToken(testEmail));
     }
 
     @Test
-    public void getUserId_ShouldReturnCorrectUserId() {
+    void getUserId_ShouldReturnCorrectUserId() {
         long extractedUserId = jwtProvider.getUserId(accessToken);
         assertEquals(testUserId, extractedUserId);
     }
 
     @Test
-    public void getEmail_ShouldReturnCorrectEmail() {
+    void getEmail_ShouldReturnCorrectEmail() {
         String extractedEmail = jwtProvider.getEmail(authVerityToken);
         assertEquals(testEmail, extractedEmail);
     }
 
     @Test
-    public void parseToken_WithMalformedToken_ShouldThrowException() {
+    void parseToken_WithMalformedToken_ShouldThrowException() {
         String malformedToken = "this.is.not.a.valid.jwt";
 
         CustomException exception = assertThrows(CustomException.class, () -> {
@@ -96,7 +96,7 @@ public class JwtProviderTest {
     }
 
     @Test
-    public void parseToken_WithEmptyToken_ShouldThrowException() {
+    void parseToken_WithEmptyToken_ShouldThrowException() {
         CustomException exception = assertThrows(CustomException.class, () -> {
             jwtProvider.getUserId("");
         });

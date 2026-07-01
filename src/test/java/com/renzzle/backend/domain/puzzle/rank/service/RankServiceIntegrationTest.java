@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = TestContainersConfig.class)
 @Transactional
-public class RankServiceIntegrationTest {
+class RankServiceIntegrationTest {
 
     @Autowired private RankService rankService;
     @Autowired private UserRepository userRepository;
@@ -75,7 +75,7 @@ public class RankServiceIntegrationTest {
 
     @Test
     void rankingFlow_WhenTrainingAndCommunityPuzzlesGiven_ThenCompleteSuccessfully() {
-        // Given - 사용자 및 Redis Key 설정
+        // Given - set up user and Redis Key
         Long userId = testUser.getId();
         String redisKey = String.valueOf(userId);
 
@@ -92,7 +92,7 @@ public class RankServiceIntegrationTest {
         assertThat(resultResponse.boardStatus()).isNotBlank();
         assertThat(resultResponse.winColor()).isNotBlank();
 
-        // 세션 상태 확인
+        // Check session state
         RankSessionData session = redisTemplate.opsForValue().get(redisKey);
         assertThat(session).isNotNull();
         assertThat(session.isStarted()).isTrue();
@@ -102,7 +102,7 @@ public class RankServiceIntegrationTest {
 
         assertThat(endResponse.rating()).isGreaterThanOrEqualTo(0.0);
 
-        // 세션 제거 확인
+        // Check session removal
         assertThat(redisTemplate.opsForValue().get(redisKey)).isNull();
     }
 
@@ -123,7 +123,7 @@ public class RankServiceIntegrationTest {
 
         Thread.sleep(1000);
 
-        // result API 호출 - 문제가 정답이라고 가정
+        // Call result API - assume the problem is answered correctly
         RankResultRequest resultRequest = new RankResultRequest(true);
         RankResultResponse resultResponse = rankService.resultRankGame(beforeUser, resultRequest);
 
@@ -139,7 +139,7 @@ public class RankServiceIntegrationTest {
         em.flush();
         em.clear();
 
-        // end API 호출
+        // Call end API
         RankEndResponse endResponse = rankService.endRankGame(testUser);
         assertEquals(testUser.getRating(), endResponse.rating(), 0.01);
 
@@ -182,7 +182,7 @@ public class RankServiceIntegrationTest {
 
         // Then
         assertThat(response.rating()).isEqualTo(testUser.getRating());
-        assertThat(response.reward()).isEqualTo(40); // 2개 정답 * 20
+        assertThat(response.reward()).isEqualTo(40); // 2 correct answers * 20
     }
 
     @Test
@@ -196,7 +196,7 @@ public class RankServiceIntegrationTest {
         NextPuzzleResult firstResult = rankService.getNextPuzzle(testUser.getMmr(), targetWinProb, testUser);
         LatestRankPuzzle firstPuzzle = firstResult.latestPuzzle();
 
-        // 저장 → 중복 방지를 위해
+        // Save -> to prevent duplicates
         LatestRankPuzzle solved = LatestRankPuzzle.builder()
                 .user(testUser)
                 .boardStatus(firstPuzzle.getBoardStatus())
@@ -223,6 +223,6 @@ public class RankServiceIntegrationTest {
         assertNotEquals(firstPuzzle.getBoardStatus(), secondPuzzle.getBoardStatus(), "같은 문제 다시 출제되면 안 됨");
 
 //        double diff = Math.abs(secondResult.rating() - ELOUtils.getProblemRatingForTargetWinProbability(testUser.getMmr(), targetWinProb - 0.05));
-//        assertTrue(diff <= 200, "두 번째 문제의 레이팅은 기대값 근처여야 함");
+//        assertTrue(diff <= 200, "the second problem's rating should be near the expected value");
     }
 }

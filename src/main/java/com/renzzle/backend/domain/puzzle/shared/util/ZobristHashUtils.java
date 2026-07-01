@@ -8,6 +8,7 @@ public final class ZobristHashUtils {
     private static final int TOTAL_CELLS = BOARD_SIZE * BOARD_SIZE;
     private static final int BLACK = 0;
     private static final int WHITE = 1;
+    private static final String INVALID_BOARD_STATUS = "Invalid board status string: ";
     private static final long[][] ZOBRIST_TABLE = initZobristTable();
 
     private ZobristHashUtils() {
@@ -37,17 +38,17 @@ public final class ZobristHashUtils {
     private static int parseBoardPosition(String boardStatus, int index) {
         char charPart = boardStatus.charAt(index);
         if (charPart < 'a' || charPart > 'o') {
-            throw new IllegalArgumentException("Invalid board status string: " + boardStatus);
+            throw new IllegalArgumentException(INVALID_BOARD_STATUS + boardStatus);
         }
 
         int rowBase = (charPart - 'a') * BOARD_SIZE;
         if (index + 1 >= boardStatus.length()) {
-            throw new IllegalArgumentException("Invalid board status string: " + boardStatus);
+            throw new IllegalArgumentException(INVALID_BOARD_STATUS + boardStatus);
         }
 
         char firstDigit = boardStatus.charAt(index + 1);
         if (firstDigit < '1' || firstDigit > '9') {
-            throw new IllegalArgumentException("Invalid board status string: " + boardStatus);
+            throw new IllegalArgumentException(INVALID_BOARD_STATUS + boardStatus);
         }
 
         int digitsNum = 0;
@@ -61,7 +62,7 @@ public final class ZobristHashUtils {
 
         int col = Integer.parseInt(boardStatus.substring(index + 1, index + 1 + digitsNum));
         if (col < 1 || col > BOARD_SIZE) {
-            throw new IllegalArgumentException("Invalid board status string: " + boardStatus);
+            throw new IllegalArgumentException(INVALID_BOARD_STATUS + boardStatus);
         }
 
         return rowBase + col;

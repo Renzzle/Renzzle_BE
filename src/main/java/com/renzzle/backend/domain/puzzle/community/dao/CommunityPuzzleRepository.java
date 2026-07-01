@@ -2,7 +2,6 @@ package com.renzzle.backend.domain.puzzle.community.dao;
 
 import com.renzzle.backend.domain.puzzle.community.dao.query.CommunityPuzzleQueryRepository;
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
-import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;

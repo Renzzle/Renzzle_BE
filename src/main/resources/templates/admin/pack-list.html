@@ -152,11 +152,31 @@
       return res;
     }
 
-    document.getElementById('loadPacksBtn').addEventListener('click', async () => {
+    const FILTER_KEY = 'admin_packlist_filter';
+
+    function saveFilters() {
+      localStorage.setItem(FILTER_KEY, JSON.stringify({
+        difficulty: document.getElementById('filterDifficulty').value,
+        lang: document.getElementById('filterLang').value
+      }));
+    }
+
+    function restoreFilters() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(FILTER_KEY) || '{}');
+        const diffEl = document.getElementById('filterDifficulty');
+        const langEl = document.getElementById('filterLang');
+        if (saved.difficulty && [...diffEl.options].some(o => o.value === saved.difficulty)) diffEl.value = saved.difficulty;
+        if (saved.lang && [...langEl.options].some(o => o.value === saved.lang)) langEl.value = saved.lang;
+      } catch (e) { /* 무시 */ }
+    }
+
+    async function loadPacks() {
       const difficulty = document.getElementById('filterDifficulty').value;
       const lang = document.getElementById('filterLang').value;
       const msgEl = document.getElementById('packListMsg');
       const listEl = document.getElementById('packListUl');
+      saveFilters();
       msgEl.classList.remove('show', 'success', 'error');
       listEl.innerHTML = '';
 
@@ -176,18 +196,26 @@
             const li = document.createElement('li');
             const info = document.createElement('span');
             info.className = 'pack-info';
-            info.innerHTML = '<span class="pack-id">ID: ' + p.id + '</span> ' + (p.title || '') + ' <small>가격:' + p.price + ' / 문제 개수:' + p.totalPuzzleCount + '</small>';
+            const idSpan = document.createElement('span');
+            idSpan.className = 'pack-id';
+            idSpan.textContent = 'ID: ' + p.id;
+            const meta = document.createElement('small');
+            meta.textContent = '가격:' + p.price + ' / 문제 개수:' + p.totalPuzzleCount;
+            // 제목은 서버 값이므로 textContent로 안전하게 삽입 (XSS 방지)
+            info.appendChild(idSpan);
+            info.appendChild(document.createTextNode(' ' + (p.title || '') + ' '));
+            info.appendChild(meta);
             const actions = document.createElement('div');
             actions.className = 'pack-actions';
             const editBtn = document.createElement('button');
             editBtn.type = 'button';
             editBtn.className = 'btn btn-sm';
-            editBtn.textContent = '편집';
+            editBtn.textContent = '정보 편집';
             editBtn.onclick = function(e) { e.stopPropagation(); window.location.href = '/admin/pack-create?packId=' + p.id; };
             const moveBtn = document.createElement('button');
             moveBtn.type = 'button';
             moveBtn.className = 'btn btn-sm btn-primary';
-            moveBtn.textContent = '이동';
+            moveBtn.textContent = '문제 관리';
             moveBtn.onclick = function(e) { e.stopPropagation(); window.location.href = '/admin/pack-detail?packId=' + p.id; };
             actions.appendChild(editBtn);
             actions.appendChild(moveBtn);
@@ -202,7 +230,15 @@
         msgEl.textContent = '오류: ' + (err.message || '');
         msgEl.classList.add('show', 'error');
       }
-    });
+    }
+
+    document.getElementById('loadPacksBtn').addEventListener('click', loadPacks);
+    document.getElementById('filterDifficulty').addEventListener('change', () => { saveFilters(); loadPacks(); });
+    document.getElementById('filterLang').addEventListener('change', () => { saveFilters(); loadPacks(); });
+
+    // 진입 시: 마지막 필터 복원 후 자동으로 목록 로드
+    restoreFilters();
+    loadPacks();
   </script>
 </body>
 </html>

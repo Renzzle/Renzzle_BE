@@ -15,7 +15,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Clock;
 import java.util.Optional;
 
 @Service
@@ -50,21 +49,20 @@ public class AccountService {
         }
 
         UserEntity user = createNewUser(request.email(), request.password(), request.nickname(), request.deviceId());
-        // 회원가입 시 packId = 1 자동 지급
+        // Automatically grant packId = 1 on sign-up
         trainingService.grantPackToUser(user, 1L);
         return authService.createAuthTokens(user.getId());
     }
 
-    @Transactional
-    public UserEntity createNewUser(String email, String password, String nickname, String deviceId) {
+    private UserEntity createNewUser(String email, String password, String nickname, String deviceId) {
         // validate email
-        if(isDuplicatedEmail(email))
+        if(userRepository.existsByEmail(email))
             throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
         // validate nickname
-        if(isDuplicateNickname(nickname))
+        if(userRepository.existsByNickname(nickname))
             throw new CustomException(ErrorCode.DUPLICATE_NICKNAME);
         // validate duplicate sign-up
-        if(isDuplicateSignUp(deviceId))
+        if(userRepository.existsByDeviceId(deviceId))
             throw new CustomException(ErrorCode.DUPLICATE_DEVICE);
 
         String encodedPassword = passwordEncoder.encode(password);

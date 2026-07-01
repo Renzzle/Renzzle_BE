@@ -60,6 +60,7 @@
   </div>
 
   <th:block th:replace="~{admin/fragments :: siteNav(false, true, false)}"></th:block>
+  <th:block th:replace="~{admin/fragments :: uiKit}"></th:block>
 
   <section class="section">
     <h2 id="sectionTitle">문제집 생성</h2>
@@ -107,10 +108,36 @@
       return div.innerHTML;
     }
 
+    function getUsedLangCodes() {
+      return Array.from(document.querySelectorAll('#langBlocks input[type="hidden"]'))
+        .map(i => (i.value || '').toUpperCase());
+    }
+
+    // 추가된 언어는 드롭다운에서 비활성화 + '세부 번역 추가' 버튼 상태 갱신
+    function refreshLangOptions() {
+      const used = getUsedLangCodes();
+      const select = document.getElementById('newLangCode');
+      let firstEnabled = -1;
+      Array.from(select.options).forEach((opt, i) => {
+        const isUsed = used.includes((opt.value || '').toUpperCase());
+        opt.disabled = isUsed;
+        opt.textContent = isUsed ? (opt.value + ' (추가됨)') : opt.value;
+        if (!isUsed && firstEnabled < 0) firstEnabled = i;
+      });
+      const current = select.options[select.selectedIndex];
+      if ((!current || current.disabled) && firstEnabled >= 0) select.selectedIndex = firstEnabled;
+      const addBtn = document.getElementById('addTranslationBtn');
+      if (addBtn) addBtn.disabled = (firstEnabled < 0);
+    }
+
     function addLangBlock(langCode, titleVal, authorVal, descVal) {
       const code = (langCode || '').trim().toUpperCase();
       if (!code) {
-        alert('언어 코드를 입력하세요.');
+        adminToast('언어 코드를 선택하세요.', 'warn');
+        return;
+      }
+      if (getUsedLangCodes().includes(code)) {
+        adminToast('이미 추가된 언어입니다: ' + code, 'warn');
         return;
       }
       const idx = langBlockCount++;
@@ -132,12 +159,15 @@
           </div>
         </div>
       `;
-      block.querySelector('.lang-delete-btn').addEventListener('click', () => {
+      block.querySelector('.lang-delete-btn').addEventListener('click', async () => {
+        const ok = await adminConfirm('이 언어 번역을 삭제하시겠습니까?\n(' + code + ')', { confirmText: '삭제', danger: true });
+        if (!ok) return;
         block.remove();
+        refreshLangOptions();
         if (editPackId) updateEditSubmitState();
       });
       document.getElementById('langBlocks').appendChild(block);
-      document.getElementById('newLangCode').selectedIndex = 0;
+      refreshLangOptions();
       if (!titleVal) document.getElementById('newLangCode').focus();
       if (editPackId) updateEditSubmitState();
     }
@@ -199,8 +229,8 @@
           const res = await fetchWithAuth(API_BASE + '/admin/training/pack/' + editPackId);
           const data = await res.json();
           if (!data.isSuccess || !data.response) {
-            alert('문제집 정보를 불러올 수 없습니다.');
-            window.location.href = '/admin/pack-list';
+            adminToast('문제집 정보를 불러올 수 없습니다.', 'error');
+            setTimeout(() => { window.location.href = '/admin/pack-list'; }, 1200);
             return;
           }
           const pack = data.response;
@@ -215,8 +245,8 @@
           }
           document.getElementById('submitPackBtn').disabled = false;
         } catch (err) {
-          alert('오류: ' + (err.message || '') + '\n문제집 목록으로 이동합니다.');
-          window.location.href = '/admin/pack-list';
+          adminToast('오류: ' + (err.message || '') + ' — 목록으로 이동합니다.', 'error');
+          setTimeout(() => { window.location.href = '/admin/pack-list'; }, 1200);
         }
       })();
     }

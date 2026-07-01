@@ -128,11 +128,11 @@ public class CommunityPuzzleQueryRepositoryImpl implements CommunityPuzzleQueryR
         }
 
         return switch (sortOption) {
-            case LATEST -> new OrderSpecifier[]{
+            case LATEST -> new OrderSpecifier<?>[]{
                     communityPuzzle.createdAt.desc(),
                     communityPuzzle.id.asc()
             };
-            case LIKE -> new OrderSpecifier[]{
+            case LIKE -> new OrderSpecifier<?>[]{
                     communityPuzzle.likeCount.desc(),
                     communityPuzzle.id.asc()
             };

@@ -15,15 +15,11 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
     open-in-view: true
-    show-sql: true
     hibernate:
       ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
-        show_sql: true
-        format_sql: true
-        use_sql_comments: true
 
   data:
     redis:
@@ -64,14 +60,6 @@ iap:
     shared-secret: ${APPLE_APP_SHARED_SECRET:}
     production-url: https://buy.itunes.apple.com/verifyReceipt
     sandbox-url: https://sandbox.itunes.apple.com/verifyReceipt
-
-backup:
-  datasource:
-    # Aiven용 JDBC URL (SSL 옵션 포함)
-    url: ${BACKUP_DB_URL}
-    username: ${BACKUP_DB_USER}
-    password: ${BACKUP_DB_PASSWORD}
-    driver-class-name: com.mysql.cj.jdbc.Driver
 
 springdoc:
   packages-to-scan: com.renzzle.backend

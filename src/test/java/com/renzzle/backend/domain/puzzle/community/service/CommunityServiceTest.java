@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class CommunityServiceTest {
+class CommunityServiceTest {
 
     @Mock
     private Clock clock;
@@ -52,7 +52,7 @@ public class CommunityServiceTest {
     private CommunityService communityService;
 
     @Test
-    public void addCommunityPuzzle_WhenValidInput_ThenSavesAndReturnsPuzzleId() {
+    void addCommunityPuzzle_WhenValidInput_ThenSavesAndReturnsPuzzleId() {
         // Given
         UserEntity user = TestUserEntityBuilder.builder().build();
 
@@ -163,9 +163,9 @@ public class CommunityServiceTest {
         when(communityPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
 
         // When
-        CustomException exception = assertThrows(CustomException.class, () ->
-                communityService.getCommunityPuzzleAnswer(puzzle.getId(), user)
-        );
+        Long puzzleId = puzzle.getId();
+        CustomException exception = assertThrows(CustomException.class,
+                () -> communityService.getCommunityPuzzleAnswer(puzzleId, user));
 
         // Then
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INSUFFICIENT_CURRENCY);

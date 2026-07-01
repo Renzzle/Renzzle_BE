@@ -58,12 +58,6 @@ jobs:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-
-          # 백업 DB 환경변수
-          BACKUP_DB_URL: ${{ secrets.BACKUP_DB_URL}}
-          BACKUP_DB_USER: ${{ secrets.BACKUP_DB_USER }}
-          BACKUP_DB_PASSWORD: ${{ secrets.BACKUP_DB_PASSWORD }}
-
         run: ./gradlew build -x test --stacktrace
 
       - name: Login to Docker Hub
@@ -97,12 +91,11 @@ jobs:
           echo "GMAIL_PASSWORD=${{ secrets.GMAIL_PASSWORD }}" >> .env
           echo "GMAIL_ADDRESS=\"${{ secrets.GMAIL_ADDRESS }}\"" >> .env
           echo "JWT_SECRET_KEY=\"${{ secrets.JWT_SECRET_KEY }}\"" >> .env
-          echo "BACKUP_DB_URL=${{ secrets.BACKUP_DB_URL }}" >> .env
-          echo "BACKUP_DB_USER=\"${{ secrets.BACKUP_DB_USER }}\"" >> .env
-          echo "BACKUP_DB_PASSWORD=\"${{ secrets.BACKUP_DB_PASSWORD }}\"" >> .env
           echo "LOKI_TOKEN=${{ secrets.LOKI_TOKEN }}" >> .env
           echo "GOOGLE_PLAY_PACKAGE_NAME=com.renzzle_fe" >> .env
           echo "GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/google-play-service-account.json" >> .env
+          echo "ACME_EMAIL=${{ secrets.ACME_EMAIL }}" >> .env
+          echo "ACTUATOR_TOKEN=${{ secrets.ACTUATOR_TOKEN }}" >> .env
 
       - name: Create Google Play service account file
         run: |
@@ -118,6 +111,24 @@ jobs:
           username: ${{ secrets.TEST_USERNAME }}
           key: ${{ secrets.TEST_PRIVATE_KEY }}
           source: "./docker-compose.yml,./docker-compose.test.yml,./.env,./secrets/google-play-service-account.json"
+          target: "/home/${{ secrets.TEST_USERNAME }}/app/"
+          overwrite: true
+
+      - name: Remove existing caddy dir on Home Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.TEST_HOST }}
+          username: ${{ secrets.TEST_USERNAME }}
+          key: ${{ secrets.TEST_PRIVATE_KEY }}
+          script: sudo rm -rf /home/${{ secrets.TEST_USERNAME }}/app/caddy
+
+      - name: Copy Caddy config to Home Server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.TEST_HOST }}
+          username: ${{ secrets.TEST_USERNAME }}
+          key: ${{ secrets.TEST_PRIVATE_KEY }}
+          source: './caddy'
           target: "/home/${{ secrets.TEST_USERNAME }}/app/"
           overwrite: true
 

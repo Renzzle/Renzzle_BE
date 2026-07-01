@@ -33,11 +33,11 @@ public class LatestRankPuzzle {
     @Column(name = "answer", length = 1023, nullable = false)
     private String answer;
 
-    // 풀었는지 여부
+    // Whether it has been solved
     @Column(name = "is_solved", nullable = false)
     private Boolean isSolved;
 
-    // 출제 시간
+    // Time assigned
     @CreationTimestamp
     @Column(name = "assigned_at", nullable = false, updatable = false)
     private Instant assignedAt;

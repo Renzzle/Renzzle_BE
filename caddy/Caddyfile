@@ -1,0 +1,24 @@
+{
+	email {$ACME_EMAIL}
+}
+
+renzzle.com, www.renzzle.com {
+	handle /app-ads.txt {
+		header Content-Type text/plain
+		respond "google.com, pub-8517144519151386, DIRECT, f08c47fec0942fa0" 200
+	}
+
+	@actuator_unauth {
+		path /actuator/*
+		not header Authorization "Bearer {$ACTUATOR_TOKEN}"
+	}
+	handle @actuator_unauth {
+		respond 403
+	}
+
+	handle {
+		reverse_proxy app:9001 {
+			header_up X-Real-IP {remote_host}
+		}
+	}
+}

@@ -90,9 +90,6 @@ jobs:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-          BACKUP_DB_URL: ${{ secrets.BACKUP_DB_URL }}
-          BACKUP_DB_USER: ${{ secrets.BACKUP_DB_USER }}
-          BACKUP_DB_PASSWORD: ${{ secrets.BACKUP_DB_PASSWORD }}
           GOOGLE_PLAY_PACKAGE_NAME: com.renzzle_fe
           GOOGLE_APPLICATION_CREDENTIALS: secrets/google-play-service-account.json
           DOCKER_HOST: ${{ steps.docker_host.outputs.docker_host }}

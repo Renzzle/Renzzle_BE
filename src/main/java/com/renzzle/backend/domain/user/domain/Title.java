@@ -48,13 +48,18 @@ public class Title {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof Title) {
-            return Objects.equals(this.name, ((Title) obj).name);
-        } else if (obj instanceof TitleType) {
-            return Objects.equals(this.name, ((TitleType) obj).name());
+        if (obj instanceof Title title) {
+            return Objects.equals(this.name, title.name);
+        } else if (obj instanceof TitleType titleType) {
+            return Objects.equals(this.name, titleType.name());
         } else {
             return false;
         }
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(name);
     }
 
 }

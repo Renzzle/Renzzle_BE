@@ -1,22 +1,20 @@
 package com.renzzle.backend.global.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.renzzle.backend.domain.auth.dao.AdminRepository;
 import com.renzzle.backend.domain.auth.domain.GrantType;
 import com.renzzle.backend.domain.auth.service.JwtProvider;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
-import com.renzzle.backend.global.common.response.ApiResponse;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
-import com.renzzle.backend.global.exception.ErrorResponse;
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -25,11 +23,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import static com.renzzle.backend.domain.auth.domain.Admin.ADMIN;
+import static com.renzzle.backend.domain.auth.domain.Admin.ADMIN_PREFIX;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -46,19 +43,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(@Nonnull HttpServletRequest request, @Nonnull HttpServletResponse response, @Nonnull FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(@Nonnull HttpServletRequest request, @Nonnull HttpServletResponse response, @Nonnull FilterChain filterChain) {
         try {
             String accessToken = resolveToken(request);
             Long userId = jwtProvider.getUserId(accessToken);
+            MDC.put("userId", String.valueOf(userId));
             UserDetails userDetails = loadUserByUserId(userId);
             Authentication authentication = UsernamePasswordAuthenticationToken.authenticated(userDetails, userDetails.getPassword(), userDetails.getAuthorities());
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
             filterChain.doFilter(request, response);
         } catch(CustomException e) {
-            handleException(response, e.getErrorCode());
+            log.warn("Authentication failed: [{}] {}: {}", e.getErrorCode(), e.getClass().getSimpleName(), e.getMessage());
+            SecurityErrorResponder.writeJsonError(response, e.getErrorCode());
         } catch(Exception e) {
-            handleException(response, ErrorCode.INTERNAL_SERVER_ERROR);
+            log.error("Unexpected error during authentication", e);
+            SecurityErrorResponder.writeJsonError(response, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -69,58 +69,40 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         List<String> authorities = new ArrayList<>();
         if(adminRepository.existsByUser(user.get()))
-            authorities.add(ADMIN);
+            authorities.add(ADMIN_PREFIX);
 
         return new UserDetailsImpl(user.get(), user.get().getPassword(), authorities);
     }
 
     private String resolveToken(HttpServletRequest request) {
-        // 1. Authorization 헤더에서 Bearer 토큰 확인
         String bearerToken = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if(StringUtils.hasText(bearerToken) && bearerToken.startsWith(GrantType.BEARER.getType())) {
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(GrantType.BEARER.getType())) {
             return bearerToken.substring(7);
         }
-        
-        // 2. 쿠키: 일반 사용자 액세스 토큰 (퍼즐 캐시 HTML 등)
-        if (request.getCookies() != null) {
-            for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
-                if ("accessToken".equals(cookie.getName())) {
-                    String tokenFromCookie = cookie.getValue();
-                    if (StringUtils.hasText(tokenFromCookie)) {
-                        return tokenFromCookie;
-                    }
-                }
-            }
+
+        String accessToken = resolveTokenFromCookie(request, "accessToken");
+        if (accessToken != null) {
+            return accessToken;
         }
 
-        // 3. 쿠키에서 admin_accessToken 확인 (어드민 브라우저 접속용)
-        if (request.getCookies() != null) {
-            for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
-                if ("admin_accessToken".equals(cookie.getName())) {
-                    String tokenFromCookie = cookie.getValue();
-                    if (StringUtils.hasText(tokenFromCookie)) {
-                        return tokenFromCookie;
-                    }
-                }
-            }
+        String adminAccessToken = resolveTokenFromCookie(request, "admin_accessToken");
+        if (adminAccessToken != null) {
+            return adminAccessToken;
         }
-        
-        // 4. 모두 없으면 예외
+
         throw new CustomException(ErrorCode.ILLEGAL_TOKEN);
     }
 
-    private void handleException(HttpServletResponse response, ErrorCode errorCode) {
-        response.setStatus(errorCode.getStatus().value());
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-        try {
-            ErrorResponse errorResponse = ErrorResponse.of(errorCode);
-            ApiResponse<Object> objectApiResponse = ApiResponse.create(false, null, errorResponse);
-            String responseBody = new ObjectMapper().writeValueAsString(objectApiResponse);
-            response.getWriter().write(responseBody);
-        } catch(Exception e) {
-            log.error(e.getMessage());
+    private String resolveTokenFromCookie(HttpServletRequest request, String cookieName) {
+        if (request.getCookies() == null) {
+            return null;
         }
+        for (Cookie cookie : request.getCookies()) {
+            if (cookieName.equals(cookie.getName()) && StringUtils.hasText(cookie.getValue())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
     }
 
 }

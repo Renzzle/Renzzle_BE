@@ -15,7 +15,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
-import static com.renzzle.backend.global.util.ErrorUtils.getErrorMessages;
 
 @RestController
 @RequestMapping("/api/training")
@@ -118,7 +117,7 @@ public class TrainingController {
 
     @Operation(summary = "Purchase Training Pack", description = "Purchase Training Pack")
     @PostMapping("/pack/purchase")
-    public ApiResponse<GetPackPurchaseResponse> PurchaseTrainingPack(
+    public ApiResponse<GetPackPurchaseResponse> purchaseTrainingPack(
             @Valid @RequestBody PurchaseTrainingPackRequest request,
             @AuthenticationPrincipal UserDetailsImpl user
     ){
@@ -130,7 +129,7 @@ public class TrainingController {
 
     @Operation(summary = "Purchase Training Puzzle Answer", description = "Purchase Training Puzzle Answer")
     @PostMapping("/puzzle/{puzzleId}/answer")
-    public ApiResponse<GetTrainingPuzzleAnswerResponse> PurchaseTrainingPuzzleAnswer(
+    public ApiResponse<GetTrainingPuzzleAnswerResponse> purchaseTrainingPuzzleAnswer(
             @PathVariable Long puzzleId,
             @AuthenticationPrincipal UserDetailsImpl user
     ){

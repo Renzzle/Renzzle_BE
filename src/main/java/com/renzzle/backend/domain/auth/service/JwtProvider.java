@@ -27,16 +27,16 @@ public class JwtProvider {
     public static final int REFRESH_TOKEN_VALID_MINUTE = 60 * 24 * 14; // 2 weeks
     public static final int AUTH_VERITY_TOKEN_VALID_MINUTE = 5; // 5 minute
 
-    private final String CLAIM_USER_ID_KEY = "userId";
-    private final String CLAIM_EMAIL_KEY = "email";
+    private static final String CLAIM_USER_ID_KEY = "userId";
+    private static final String CLAIM_EMAIL_KEY = "email";
 
     @Value("${spring.jwt.secret}")
-    private String JWT_SECRET_KEY;
+    private String jwtSecretKey;
     private SecretKey secretKey;
 
     @PostConstruct
     public void init() {
-        this.secretKey = Keys.hmacShaKeyFor(JWT_SECRET_KEY.getBytes(StandardCharsets.UTF_8));
+        this.secretKey = Keys.hmacShaKeyFor(jwtSecretKey.getBytes(StandardCharsets.UTF_8));
     }
 
     private String createToken(Map<String, Object> claims, int validMin) {
@@ -45,10 +45,10 @@ public class JwtProvider {
         Date validity = Date.from(now.plus(validMin, ChronoUnit.MINUTES));
 
         return Jwts.builder()
-                .setIssuedAt(issuedAt)
-                .setExpiration(validity)
-                .addClaims(claims)
-                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .issuedAt(issuedAt)
+                .expiration(validity)
+                .claims().add(claims).and()
+                .signWith(secretKey, Jwts.SIG.HS256)
                 .compact();
     }
 
@@ -89,12 +89,12 @@ public class JwtProvider {
 
     public long getUserId(String token) {
         Jws<Claims> claims = parseToken(token);
-        Object userId = claims.getBody().get(CLAIM_USER_ID_KEY);
+        Object userId = claims.getPayload().get(CLAIM_USER_ID_KEY);
 
-        if (userId instanceof Integer) {
-            return ((Integer) userId).longValue();
-        } else if (userId instanceof Long) {
-            return (Long) userId;
+        if (userId instanceof Integer i) {
+            return i.longValue();
+        } else if (userId instanceof Long l) {
+            return l;
         } else {
             throw new CustomException(ErrorCode.ILLEGAL_TOKEN);
         }
@@ -102,10 +102,10 @@ public class JwtProvider {
 
     public String getEmail(String token) {
         Jws<Claims> claims = parseToken(token);
-        Object email = claims.getBody().get(CLAIM_EMAIL_KEY);
+        Object email = claims.getPayload().get(CLAIM_EMAIL_KEY);
 
-        if(email instanceof String) {
-            return (String) email;
+        if (email instanceof String s) {
+            return s;
         } else {
             throw new CustomException(ErrorCode.ILLEGAL_TOKEN);
         }

@@ -12,13 +12,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTestWithInitContainers
-public class UserRepositoryTest {
+class UserRepositoryTest {
 
     @Autowired
     private EntityManager entityManager;
@@ -128,8 +127,7 @@ public class UserRepositoryTest {
 
         Optional<Title> title = userRepository.getUserTitle(user.getId());
 
-        assertThat(title).isPresent();
-        assertThat(title.get()).isEqualTo(user.getTitle());
+        assertThat(title).isPresent().contains(user.getTitle());
     }
 
     @Test

@@ -95,7 +95,7 @@ public class CommunityService {
     }
 
     /**
-     * 어드민 캐시 입력용: 보드·정답 전체. 조회수 증가 없음.
+     * For admin cache entry: full board and answer. Does not increment the view count.
      */
     @Transactional(readOnly = true)
     public GetTrainingPuzzleForAdminResponse getCommunityPuzzleForAdminDetail(Long puzzleId) {
@@ -194,7 +194,7 @@ public class CommunityService {
 
         persistedUser.purchase(HINT.getPrice());
 
-        solveCommunityPuzzle(puzzleId, persistedUser);
+        applySolveCommunityPuzzle(puzzleId, persistedUser);
 
         return GetCommunityPuzzleAnswerResponse.builder()
                 .answer(puzzle.getAnswer())
@@ -204,6 +204,10 @@ public class CommunityService {
 
     @Transactional
     public void solveCommunityPuzzle(Long puzzleId, UserEntity user) {
+        applySolveCommunityPuzzle(puzzleId, user);
+    }
+
+    private void applySolveCommunityPuzzle(Long puzzleId, UserEntity user) {
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
 

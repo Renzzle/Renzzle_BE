@@ -17,7 +17,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
-import static com.renzzle.backend.domain.auth.domain.Admin.ADMIN;
+import static com.renzzle.backend.domain.auth.domain.Admin.ADMIN_PREFIX;
 
 @Slf4j
 @Component
@@ -51,13 +51,13 @@ public class DataInitializer implements CommandLineRunner {
 
     private void addAdminAccount() {
         try {
-            if(!userRepository.existsByNickname(ADMIN)) {
+            if(!userRepository.existsByNickname(ADMIN_PREFIX)) {
                 String adminDeviceId = "admin_device127";
                 String encodedPassword = new BCryptPasswordEncoder().encode(adminPassword);
                 UserEntity user = UserEntity.builder()
                         .email(adminEmail)
                         .password(encodedPassword)
-                        .nickname(ADMIN)
+                        .nickname(ADMIN_PREFIX)
                         .deviceId(adminDeviceId)
                         .build();
                 UserEntity admin = userRepository.save(user);
