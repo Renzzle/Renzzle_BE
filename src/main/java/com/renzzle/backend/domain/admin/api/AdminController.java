@@ -4,6 +4,8 @@ import com.renzzle.backend.domain.auth.api.request.LoginRequest;
 import com.renzzle.backend.domain.auth.dao.AdminRepository;
 import com.renzzle.backend.domain.auth.service.AccountService;
 import com.renzzle.backend.domain.auth.service.JwtProvider;
+import com.renzzle.backend.domain.puzzle.community.api.request.UpdateCommunityPuzzleVerificationRequest;
+import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlesResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackDetailForAdminResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleForAdminResponse;
@@ -271,6 +273,17 @@ public class AdminController {
         return "admin/puzzle-edit";
     }
 
+    @Operation(summary = "Admin community puzzle management page", description = "Search and manage community puzzle verification")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/community-puzzles")
+    public String communityPuzzles(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @Parameter(hidden = true) Model model
+    ) {
+        model.addAttribute(USER_EMAIL, userDetails.getUser().getEmail());
+        return "admin/community-puzzles";
+    }
+
     /**
      * Admin-only problem list (for the dashboard)
      * - Returns an empty list even for empty packs (used by pack-detail, puzzle-add)
@@ -305,6 +318,32 @@ public class AdminController {
             @PathVariable Long puzzleId
     ) {
         GetTrainingPuzzleForAdminResponse puzzle = communityService.getCommunityPuzzleForAdminDetail(puzzleId);
+        return ApiUtils.success(puzzle);
+    }
+
+    @Operation(summary = "Get community puzzle for admin management", description = "Admin-only lookup without increasing views")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/community/puzzle-manage/{puzzleId}")
+    @ResponseBody
+    public ApiResponse<GetCommunityPuzzlesResponse> getCommunityPuzzleForAdminManagement(
+            @PathVariable Long puzzleId
+    ) {
+        GetCommunityPuzzlesResponse puzzle = communityService.getCommunityPuzzleForAdminManagement(puzzleId);
+        return ApiUtils.success(puzzle);
+    }
+
+    @Operation(summary = "Update community puzzle verification", description = "Admin-only isVerified update")
+    @SecurityRequirement(name = "Authorization")
+    @PatchMapping("/community/puzzle-manage/{puzzleId}/verification")
+    @ResponseBody
+    public ApiResponse<GetCommunityPuzzlesResponse> updateCommunityPuzzleVerification(
+            @PathVariable Long puzzleId,
+            @Valid @RequestBody UpdateCommunityPuzzleVerificationRequest request
+    ) {
+        GetCommunityPuzzlesResponse puzzle = communityService.updateCommunityPuzzleVerificationForAdmin(
+                puzzleId,
+                request.isVerified()
+        );
         return ApiUtils.success(puzzle);
     }
 

@@ -19,6 +19,7 @@
         refresh: 'Refresh',
         loadList: 'Load List',
         search: 'Search',
+        save: 'Save',
         packList: 'Pack List',
         puzzleList: 'Puzzle List',
         backToPack: 'Back to Pack',
@@ -73,12 +74,14 @@
         puzzleAdd: 'Renzzle Admin - Add Puzzle',
         puzzleEdit: 'Renzzle Admin - Edit Puzzle',
         responseMoves: 'Renzzle - AI Response Entry',
-        responseBoard: 'Renzzle - AI Response Board'
+        responseBoard: 'Renzzle - AI Response Board',
+        communityPuzzles: 'Renzzle Admin - Community Puzzles'
       },
       nav: {
         packs: 'Training Puzzles',
         newPack: 'New Pack',
-        responseMoves: 'AI Responses'
+        responseMoves: 'AI Responses',
+        communityPuzzles: 'Community Puzzles'
       },
       login: {
         heading: 'Renzzle Admin',
@@ -283,6 +286,25 @@
         description: 'Choose a puzzle from this pack.',
         noPuzzles: 'No puzzles in this pack.'
       },
+      communityPuzzles: {
+        heading: 'Community Puzzles',
+        description: 'Search a community puzzle by number and update its verification status.',
+        searchPlaceholder: 'Puzzle number',
+        detailHeading: 'Puzzle Information',
+        noPuzzle: 'No community puzzle found.',
+        verified: 'Verified',
+        unverified: 'Unverified',
+        verification: 'Verification Status',
+        saveVerification: 'Save Verification',
+        saved: 'Verification status saved.',
+        saveFailed: 'Failed to save verification status.',
+        metaLine: 'Depth {depth} · {winColor}',
+        authorLine: 'Author: {author}',
+        countLine: 'Views {views} · Likes {likes} · Solved {solved}',
+        createdAtLabel: 'Created',
+        countsLabel: 'Activity',
+        createdAt: 'Created: {createdAt}'
+      },
       cacheBoard: {
         heading: 'AI Response Board',
         description: 'Save or look up the next AI response for the selected puzzle board state.',
@@ -335,6 +357,7 @@
         refresh: '새로고침',
         loadList: '목록 불러오기',
         search: '검색',
+        save: '저장',
         packList: '문제집 목록',
         puzzleList: '문제 목록',
         backToPack: '문제집으로',
@@ -389,12 +412,14 @@
         puzzleAdd: 'Renzzle 관리자 - 문제 추가',
         puzzleEdit: 'Renzzle 관리자 - 문제 편집',
         responseMoves: 'Renzzle - AI 대응 입력',
-        responseBoard: 'Renzzle - AI 대응 보드'
+        responseBoard: 'Renzzle - AI 대응 보드',
+        communityPuzzles: 'Renzzle 관리자 - 커뮤니티 문제'
       },
       nav: {
         packs: '트레이닝 문제',
         newPack: '새 문제집',
-        responseMoves: 'AI 대응'
+        responseMoves: 'AI 대응',
+        communityPuzzles: '커뮤니티 문제'
       },
       login: {
         heading: 'Renzzle Admin',
@@ -598,6 +623,25 @@
         heading: '트레이닝 AI 대응',
         description: '이 문제집에서 문제를 선택하세요.',
         noPuzzles: '이 문제집에는 문제가 없습니다.'
+      },
+      communityPuzzles: {
+        heading: '커뮤니티 문제',
+        description: '문제 번호로 커뮤니티 문제를 검색하고 검증 상태를 수정합니다.',
+        searchPlaceholder: '문제 번호',
+        detailHeading: '문제 정보',
+        noPuzzle: '커뮤니티 문제가 없습니다.',
+        verified: '검증됨',
+        unverified: '미검증',
+        verification: '검증 상태',
+        saveVerification: '검증 상태 저장',
+        saved: '검증 상태를 저장했습니다.',
+        saveFailed: '검증 상태 저장에 실패했습니다.',
+        metaLine: '깊이 {depth} · {winColor}',
+        authorLine: '작성자: {author}',
+        countLine: '조회 {views} · 좋아요 {likes} · 해결 {solved}',
+        createdAtLabel: '생성일',
+        countsLabel: '활동',
+        createdAt: '생성일: {createdAt}'
       },
       cacheBoard: {
         heading: 'AI 대응 보드',

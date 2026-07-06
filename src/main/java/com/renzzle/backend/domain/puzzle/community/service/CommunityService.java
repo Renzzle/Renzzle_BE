@@ -112,6 +112,42 @@ public class CommunityService {
     }
 
     @Transactional(readOnly = true)
+    public GetCommunityPuzzlesResponse getCommunityPuzzleForAdminManagement(Long puzzleId) {
+        CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
+        return toAdminCommunityPuzzleResponse(puzzle);
+    }
+
+    @Transactional
+    public GetCommunityPuzzlesResponse updateCommunityPuzzleVerificationForAdmin(Long puzzleId, Boolean isVerified) {
+        if (isVerified == null) {
+            throw new CustomException("검증 여부 정보가 없습니다.", ErrorCode.VALIDATION_ERROR);
+        }
+        CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
+        puzzle.updateVerification(isVerified);
+        return toAdminCommunityPuzzleResponse(puzzle);
+    }
+
+    private GetCommunityPuzzlesResponse toAdminCommunityPuzzleResponse(CommunityPuzzle puzzle) {
+        return GetCommunityPuzzlesResponse.builder()
+                .id(puzzle.getId())
+                .boardStatus(puzzle.getBoardStatus())
+                .authorId(puzzle.getUser().getId())
+                .authorName(puzzle.getUser().getNickname())
+                .description(puzzle.getDescription())
+                .depth(puzzle.getDepth())
+                .winColor(puzzle.getWinColor().getName())
+                .solvedCount(puzzle.getSolvedCount())
+                .views(puzzle.getView())
+                .likeCount(puzzle.getLikeCount())
+                .createdAt(puzzle.getCreatedAt().toString())
+                .isSolved(false)
+                .isVerified(Boolean.TRUE.equals(puzzle.getIsVerified()))
+                .build();
+    }
+
+    @Transactional(readOnly = true)
     public List<CommunityPuzzleCachePickerResponse> getCommunityPuzzlesForCachePicker(GetCommunityPuzzlesForCacheRequest request) {
         int depthMin = request.depthMin() != null ? request.depthMin() : 1;
         int depthMax = request.depthMax() != null ? request.depthMax() : 225;

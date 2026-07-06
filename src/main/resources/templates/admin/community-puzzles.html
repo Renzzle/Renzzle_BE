@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="title.communityPuzzles">Renzzle Admin - Community Puzzles</title>
+  <link rel="stylesheet" href="/assets/admin/community-puzzles.css">
+  <link rel="stylesheet" href="/assets/admin/common.css">
+  <script src="/assets/admin/i18n.js"></script>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>Renzzle Admin</h1>
+      <span class="user-info" th:if="${userEmail}" th:text="${userEmail}"></span>
+    </div>
+    <div class="header-actions">
+      <th:block th:replace="~{admin/fragments :: languageSelect}"></th:block>
+      <a href="/admin/logout" class="btn" data-i18n="common.logout">Log out</a>
+    </div>
+  </div>
+
+  <th:block th:replace="~{admin/fragments :: siteNav(false, false, false, true)}"></th:block>
+  <th:block th:replace="~{admin/fragments :: uiKit}"></th:block>
+
+  <main class="admin-shell">
+    <div class="admin-page-heading">
+      <div>
+        <h2 data-i18n="communityPuzzles.heading">Community Puzzles</h2>
+        <p data-i18n="communityPuzzles.description">Search a community puzzle by number and update its verification status.</p>
+      </div>
+    </div>
+
+    <section class="section">
+      <div class="section-title-row community-title-row">
+        <div>
+          <h2 data-i18n="communityPuzzles.detailHeading">Puzzle Information</h2>
+        </div>
+        <form class="community-management-search" id="communitySearchForm">
+          <label for="communityPuzzleId">
+            <span class="admin-visually-hidden" data-i18n="cacheList.puzzleNumber">Puzzle Number</span>
+            <input type="number" id="communityPuzzleId" min="1" data-i18n-placeholder="communityPuzzles.searchPlaceholder" placeholder="Puzzle number" autocomplete="off">
+          </label>
+          <button type="submit" class="btn btn-primary community-search-btn" id="communitySearchBtn" data-i18n="common.search">Search</button>
+        </form>
+      </div>
+
+      <div id="communityPuzzleStatus" class="community-search-status" aria-live="polite" hidden></div>
+
+      <div id="communityPuzzlePanel" class="community-puzzle-panel" hidden>
+        <div class="community-puzzle-heading">
+          <div>
+            <strong id="communityPuzzleNumber">No.-</strong>
+            <span id="communityPuzzleMeta"></span>
+          </div>
+          <span id="communityVerifiedBadge" class="admin-pill primary"></span>
+        </div>
+
+        <dl class="community-puzzle-meta">
+          <div>
+            <dt data-i18n="common.author">Author</dt>
+            <dd id="communityPuzzleAuthor">-</dd>
+          </div>
+          <div>
+            <dt data-i18n="common.description">Description</dt>
+            <dd id="communityPuzzleDescription">-</dd>
+          </div>
+          <div>
+            <dt data-i18n="communityPuzzles.createdAtLabel">Created</dt>
+            <dd id="communityPuzzleCreatedAt">-</dd>
+          </div>
+          <div>
+            <dt data-i18n="communityPuzzles.countsLabel">Activity</dt>
+            <dd id="communityPuzzleCounts">-</dd>
+          </div>
+        </dl>
+
+        <form id="communityVerificationForm" class="verification-form">
+          <label class="verification-toggle" for="communityIsVerified">
+            <input type="checkbox" id="communityIsVerified">
+            <span data-i18n="communityPuzzles.verification">Verification Status</span>
+          </label>
+          <button type="submit" class="btn btn-primary" id="saveCommunityVerificationBtn" data-i18n="communityPuzzles.saveVerification">Save Verification</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    const API_BASE = '';
+    let currentPuzzle = null;
+
+    async function fetchWithAuth(url, options = {}) {
+      const headers = { 'Content-Type': 'application/json', ...options.headers };
+      if (options.body === undefined || options.body === null) {
+        delete headers['Content-Type'];
+      }
+      const res = await fetch(url, { ...options, headers, credentials: 'same-origin' });
+      if (res.status === 401 || res.status === 403) {
+        alert(adminT('msg.sessionExpired'));
+        globalThis.location.href = '/admin/logout';
+        return null;
+      }
+      return res;
+    }
+
+    function setStatus(message) {
+      const status = document.getElementById('communityPuzzleStatus');
+      status.textContent = message;
+      status.hidden = !message;
+    }
+
+    function verificationText(value) {
+      return value ? adminT('communityPuzzles.verified') : adminT('communityPuzzles.unverified');
+    }
+
+    function formatDate(value) {
+      if (!value) return '-';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value);
+      return date.toLocaleString();
+    }
+
+    function renderPuzzle(puzzle) {
+      currentPuzzle = puzzle;
+      document.getElementById('communityPuzzlePanel').hidden = false;
+      document.getElementById('communityPuzzleNumber').textContent = adminT('packDetail.puzzleNumber', { number: puzzle.id });
+      document.getElementById('communityPuzzleMeta').textContent = adminT('communityPuzzles.metaLine', {
+        depth: puzzle.depth ?? '-',
+        winColor: puzzle.winColor || '-'
+      });
+      document.getElementById('communityVerifiedBadge').textContent = verificationText(Boolean(puzzle.isVerified));
+      document.getElementById('communityPuzzleAuthor').textContent = puzzle.authorName || adminT('common.noAuthor');
+      document.getElementById('communityPuzzleDescription').textContent = puzzle.description || adminT('common.noDescription');
+      document.getElementById('communityPuzzleCreatedAt').textContent = formatDate(puzzle.createdAt);
+      document.getElementById('communityPuzzleCounts').textContent = adminT('communityPuzzles.countLine', {
+        views: puzzle.views ?? 0,
+        likes: puzzle.likeCount ?? 0,
+        solved: puzzle.solvedCount ?? 0
+      });
+      document.getElementById('communityIsVerified').checked = Boolean(puzzle.isVerified);
+    }
+
+    async function searchPuzzle(event) {
+      event.preventDefault();
+      setStatus('');
+      document.getElementById('communityPuzzlePanel').hidden = true;
+      const puzzleId = document.getElementById('communityPuzzleId').value.trim();
+      if (!puzzleId) {
+        setStatus(adminT('communityPuzzles.noPuzzle'));
+        return;
+      }
+      const button = document.getElementById('communitySearchBtn');
+      button.disabled = true;
+      try {
+        const res = await fetchWithAuth(API_BASE + '/admin/community/puzzle-manage/' + encodeURIComponent(puzzleId));
+        if (!res) return;
+        const data = await res.json();
+        if (!res.ok || !data.isSuccess || !data.response) {
+          setStatus(adminT('communityPuzzles.noPuzzle'));
+          return;
+        }
+        renderPuzzle(data.response);
+      } catch (err) {
+        adminToast(adminT('common.errorPrefix', { message: err.message || '' }), 'error');
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function saveVerification(event) {
+      event.preventDefault();
+      if (!currentPuzzle) return;
+      const button = document.getElementById('saveCommunityVerificationBtn');
+      button.disabled = true;
+      try {
+        const res = await fetchWithAuth(API_BASE + '/admin/community/puzzle-manage/' + encodeURIComponent(currentPuzzle.id) + '/verification', {
+          method: 'PATCH',
+          body: JSON.stringify({
+            isVerified: document.getElementById('communityIsVerified').checked
+          })
+        });
+        if (!res) return;
+        const data = await res.json();
+        if (!res.ok || !data.isSuccess || !data.response) {
+          adminToast(adminT('communityPuzzles.saveFailed'), 'error');
+          return;
+        }
+        renderPuzzle(data.response);
+        adminToast(adminT('communityPuzzles.saved'), 'success');
+      } catch (err) {
+        adminToast(adminT('common.errorPrefix', { message: err.message || '' }), 'error');
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    document.getElementById('communitySearchForm').addEventListener('submit', searchPuzzle);
+    document.getElementById('communityVerificationForm').addEventListener('submit', saveVerification);
+    document.addEventListener('admin:language-change', () => {
+      if (currentPuzzle) {
+        renderPuzzle(currentPuzzle);
+      } else if (!document.getElementById('communityPuzzleStatus').hidden) {
+        setStatus(adminT('communityPuzzles.noPuzzle'));
+      }
+    });
+  </script>
+</body>
+</html>
