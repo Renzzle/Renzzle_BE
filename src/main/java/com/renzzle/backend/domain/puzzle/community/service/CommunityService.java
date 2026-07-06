@@ -5,6 +5,7 @@ import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzl
 import com.renzzle.backend.domain.puzzle.community.api.response.AddCommunityPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.cache.api.request.GetCommunityPuzzlesForCacheRequest;
 import com.renzzle.backend.domain.puzzle.cache.api.response.CommunityPuzzleCachePickerResponse;
+import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleForAdminResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleAnswerResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlesResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetSingleCommunityPuzzleResponse;
@@ -112,14 +113,14 @@ public class CommunityService {
     }
 
     @Transactional(readOnly = true)
-    public GetCommunityPuzzlesResponse getCommunityPuzzleForAdminManagement(Long puzzleId) {
+    public GetCommunityPuzzleForAdminResponse getCommunityPuzzleForAdminManagement(Long puzzleId) {
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
         return toAdminCommunityPuzzleResponse(puzzle);
     }
 
     @Transactional
-    public GetCommunityPuzzlesResponse updateCommunityPuzzleVerificationForAdmin(Long puzzleId, Boolean isVerified) {
+    public GetCommunityPuzzleForAdminResponse updateCommunityPuzzleVerificationForAdmin(Long puzzleId, Boolean isVerified) {
         if (isVerified == null) {
             throw new CustomException("검증 여부 정보가 없습니다.", ErrorCode.VALIDATION_ERROR);
         }
@@ -129,11 +130,11 @@ public class CommunityService {
         return toAdminCommunityPuzzleResponse(puzzle);
     }
 
-    private GetCommunityPuzzlesResponse toAdminCommunityPuzzleResponse(CommunityPuzzle puzzle) {
-        return GetCommunityPuzzlesResponse.builder()
+    private GetCommunityPuzzleForAdminResponse toAdminCommunityPuzzleResponse(CommunityPuzzle puzzle) {
+        return GetCommunityPuzzleForAdminResponse.builder()
                 .id(puzzle.getId())
                 .boardStatus(puzzle.getBoardStatus())
-                .authorId(puzzle.getUser().getId())
+                .answer(puzzle.getAnswer())
                 .authorName(puzzle.getUser().getNickname())
                 .description(puzzle.getDescription())
                 .depth(puzzle.getDepth())
@@ -142,7 +143,6 @@ public class CommunityService {
                 .views(puzzle.getView())
                 .likeCount(puzzle.getLikeCount())
                 .createdAt(puzzle.getCreatedAt().toString())
-                .isSolved(false)
                 .isVerified(Boolean.TRUE.equals(puzzle.getIsVerified()))
                 .build();
     }

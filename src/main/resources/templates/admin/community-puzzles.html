@@ -48,40 +48,27 @@
       <div id="communityPuzzleStatus" class="community-search-status" aria-live="polite" hidden></div>
 
       <div id="communityPuzzlePanel" class="community-puzzle-panel" hidden>
-        <div class="community-puzzle-heading">
-          <div>
-            <strong id="communityPuzzleNumber">No.-</strong>
-            <span id="communityPuzzleMeta"></span>
+        <div class="community-board-layout">
+          <div class="community-board-wrap">
+            <canvas id="communityBoardCanvas" width="360" height="360" aria-label="Community puzzle board" data-i18n-aria-label="communityPuzzles.boardLabel"></canvas>
+            <div class="community-answer-toolbar" aria-label="Answer move navigation" data-i18n-aria-label="communityPuzzles.answerNavigation">
+              <button type="button" class="btn board-icon-btn" id="communityAnswerPrevBtn" title="Previous answer move" aria-label="Previous answer move" data-i18n-title="communityPuzzles.previousAnswerMove" data-i18n-aria-label="communityPuzzles.previousAnswerMove">◀</button>
+              <span id="communityAnswerStep" class="community-answer-step">0 / 0</span>
+              <button type="button" class="btn board-icon-btn" id="communityAnswerNextBtn" title="Next answer move" aria-label="Next answer move" data-i18n-title="communityPuzzles.nextAnswerMove" data-i18n-aria-label="communityPuzzles.nextAnswerMove">▶</button>
+            </div>
           </div>
-          <span id="communityVerifiedBadge" class="admin-pill primary"></span>
+
+          <div class="community-puzzle-controls">
+            <div class="community-verification-card">
+              <span class="community-verification-label" data-i18n="communityPuzzles.verification">Verification Status</span>
+              <label class="community-switch" for="communityIsVerified">
+                <span class="admin-visually-hidden" data-i18n="communityPuzzles.verification">Verification Status</span>
+                <input type="checkbox" id="communityIsVerified">
+                <span class="community-switch-track" aria-hidden="true"></span>
+              </label>
+            </div>
+          </div>
         </div>
-
-        <dl class="community-puzzle-meta">
-          <div>
-            <dt data-i18n="common.author">Author</dt>
-            <dd id="communityPuzzleAuthor">-</dd>
-          </div>
-          <div>
-            <dt data-i18n="common.description">Description</dt>
-            <dd id="communityPuzzleDescription">-</dd>
-          </div>
-          <div>
-            <dt data-i18n="communityPuzzles.createdAtLabel">Created</dt>
-            <dd id="communityPuzzleCreatedAt">-</dd>
-          </div>
-          <div>
-            <dt data-i18n="communityPuzzles.countsLabel">Activity</dt>
-            <dd id="communityPuzzleCounts">-</dd>
-          </div>
-        </dl>
-
-        <form id="communityVerificationForm" class="verification-form">
-          <label class="verification-toggle" for="communityIsVerified">
-            <input type="checkbox" id="communityIsVerified">
-            <span data-i18n="communityPuzzles.verification">Verification Status</span>
-          </label>
-          <button type="submit" class="btn btn-primary" id="saveCommunityVerificationBtn" data-i18n="communityPuzzles.saveVerification">Save Verification</button>
-        </form>
       </div>
     </section>
   </main>
@@ -89,6 +76,7 @@
   <script type="module">
     const API_BASE = '';
     let currentPuzzle = null;
+    let currentAnswerStep = 0;
 
     async function fetchWithAuth(url, options = {}) {
       const headers = { 'Content-Type': 'application/json', ...options.headers };
@@ -110,35 +98,122 @@
       status.hidden = !message;
     }
 
-    function verificationText(value) {
-      return value ? adminT('communityPuzzles.verified') : adminT('communityPuzzles.unverified');
+    function boardStatusToMoves(boardStatus, startMoveIndex = 0) {
+      const result = [];
+      const regex = /([a-oA-O])([1-9]|1[0-5])/g;
+      let match;
+      let moveIndex = startMoveIndex;
+      while ((match = regex.exec(boardStatus || '')) !== null) {
+        const col = match[1].toLowerCase().charCodeAt(0) - 97;
+        const row = Number(match[2]) - 1;
+        result.push({
+          row,
+          col,
+          player: moveIndex % 2 === 0 ? 'black' : 'white'
+        });
+        moveIndex += 1;
+      }
+      return result;
     }
 
-    function formatDate(value) {
-      if (!value) return '-';
-      const date = new Date(value);
-      if (Number.isNaN(date.getTime())) return String(value);
-      return date.toLocaleString();
+    function getAnswerMoves(puzzle) {
+      if (!puzzle) return [];
+      const baseMoveCount = boardStatusToMoves(puzzle.boardStatus || '').length;
+      return boardStatusToMoves(puzzle.answer || '', baseMoveCount);
     }
 
-    function renderPuzzle(puzzle) {
+    function drawCommunityBoard(boardStatus, answer, answerStep) {
+      const canvas = document.getElementById('communityBoardCanvas');
+      const logicalSize = 360;
+      const dpr = globalThis.devicePixelRatio || 1;
+      canvas.width = logicalSize * dpr;
+      canvas.height = logicalSize * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, logicalSize, logicalSize);
+      ctx.fillStyle = '#f2d391';
+      ctx.fillRect(0, 0, logicalSize, logicalSize);
+
+      const padding = 28;
+      const cell = (logicalSize - padding * 2) / 14;
+      const toX = (col) => padding + col * cell;
+      const toY = (row) => padding + (14 - row) * cell;
+
+      ctx.strokeStyle = '#6d5736';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 15; i += 1) {
+        const pos = padding + i * cell;
+        ctx.beginPath();
+        ctx.moveTo(pos, padding);
+        ctx.lineTo(pos, logicalSize - padding);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(padding, pos);
+        ctx.lineTo(logicalSize - padding, pos);
+        ctx.stroke();
+      }
+
+      Array.of([3, 3], [3, 11], [7, 7], [11, 3], [11, 11]).forEach(([row, col]) => {
+        ctx.fillStyle = '#3f3424';
+        ctx.beginPath();
+        ctx.arc(toX(col), toY(row), 2.8, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      function drawStone(move, number) {
+        const x = toX(move.col);
+        const y = toY(move.row);
+        const isBlack = move.player === 'black';
+        ctx.fillStyle = isBlack ? '#111827' : '#ffffff';
+        ctx.beginPath();
+        ctx.arc(x, y, cell * 0.38, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = isBlack ? '#111827' : '#9ca3af';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        if (number != null) {
+          ctx.fillStyle = isBlack ? '#ffffff' : '#111827';
+          ctx.font = '700 12px system-ui, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(String(number), x, y);
+        }
+      }
+
+      const baseMoves = boardStatusToMoves(boardStatus);
+      baseMoves.forEach((move) => drawStone(move, null));
+      const answerMoves = boardStatusToMoves(answer, baseMoves.length);
+      const visibleAnswerStep = Number.isFinite(answerStep)
+        ? Math.max(0, Math.min(answerStep, answerMoves.length))
+        : answerMoves.length;
+      answerMoves.slice(0, visibleAnswerStep).forEach((move, index) => {
+        drawStone(move, index + 1);
+      });
+    }
+
+    function updateAnswerNavigation() {
+      const answerMoves = getAnswerMoves(currentPuzzle);
+      const total = answerMoves.length;
+      currentAnswerStep = Math.max(0, Math.min(currentAnswerStep, total));
+      document.getElementById('communityAnswerStep').textContent = adminT('communityPuzzles.answerProgress', {
+        current: currentAnswerStep,
+        total
+      });
+      document.getElementById('communityAnswerPrevBtn').disabled = currentAnswerStep <= 0;
+      document.getElementById('communityAnswerNextBtn').disabled = currentAnswerStep >= total;
+      drawCommunityBoard(currentPuzzle?.boardStatus || '', currentPuzzle?.answer || '', currentAnswerStep);
+    }
+
+    function renderPuzzle(puzzle, options = {}) {
       currentPuzzle = puzzle;
+      const shouldKeepAnswerStep = options.keepAnswerStep === true;
+      const totalAnswerMoves = getAnswerMoves(puzzle).length;
+      currentAnswerStep = shouldKeepAnswerStep
+        ? Math.min(currentAnswerStep, totalAnswerMoves)
+        : totalAnswerMoves;
       document.getElementById('communityPuzzlePanel').hidden = false;
-      document.getElementById('communityPuzzleNumber').textContent = adminT('packDetail.puzzleNumber', { number: puzzle.id });
-      document.getElementById('communityPuzzleMeta').textContent = adminT('communityPuzzles.metaLine', {
-        depth: puzzle.depth ?? '-',
-        winColor: puzzle.winColor || '-'
-      });
-      document.getElementById('communityVerifiedBadge').textContent = verificationText(Boolean(puzzle.isVerified));
-      document.getElementById('communityPuzzleAuthor').textContent = puzzle.authorName || adminT('common.noAuthor');
-      document.getElementById('communityPuzzleDescription').textContent = puzzle.description || adminT('common.noDescription');
-      document.getElementById('communityPuzzleCreatedAt').textContent = formatDate(puzzle.createdAt);
-      document.getElementById('communityPuzzleCounts').textContent = adminT('communityPuzzles.countLine', {
-        views: puzzle.views ?? 0,
-        likes: puzzle.likeCount ?? 0,
-        solved: puzzle.solvedCount ?? 0
-      });
       document.getElementById('communityIsVerified').checked = Boolean(puzzle.isVerified);
+      updateAnswerNavigation();
     }
 
     async function searchPuzzle(event) {
@@ -168,38 +243,49 @@
       }
     }
 
-    async function saveVerification(event) {
-      event.preventDefault();
+    async function saveVerification() {
       if (!currentPuzzle) return;
-      const button = document.getElementById('saveCommunityVerificationBtn');
-      button.disabled = true;
+      const verificationInput = document.getElementById('communityIsVerified');
+      const previousValue = Boolean(currentPuzzle.isVerified);
+      const nextValue = verificationInput.checked;
+      verificationInput.disabled = true;
       try {
         const res = await fetchWithAuth(API_BASE + '/admin/community/puzzle-manage/' + encodeURIComponent(currentPuzzle.id) + '/verification', {
           method: 'PATCH',
           body: JSON.stringify({
-            isVerified: document.getElementById('communityIsVerified').checked
+            isVerified: nextValue
           })
         });
         if (!res) return;
         const data = await res.json();
         if (!res.ok || !data.isSuccess || !data.response) {
+          verificationInput.checked = previousValue;
           adminToast(adminT('communityPuzzles.saveFailed'), 'error');
           return;
         }
-        renderPuzzle(data.response);
+        renderPuzzle(data.response, { keepAnswerStep: true });
         adminToast(adminT('communityPuzzles.saved'), 'success');
       } catch (err) {
+        verificationInput.checked = previousValue;
         adminToast(adminT('common.errorPrefix', { message: err.message || '' }), 'error');
       } finally {
-        button.disabled = false;
+        verificationInput.disabled = false;
       }
     }
 
     document.getElementById('communitySearchForm').addEventListener('submit', searchPuzzle);
-    document.getElementById('communityVerificationForm').addEventListener('submit', saveVerification);
+    document.getElementById('communityIsVerified').addEventListener('change', saveVerification);
+    document.getElementById('communityAnswerPrevBtn').addEventListener('click', () => {
+      currentAnswerStep -= 1;
+      updateAnswerNavigation();
+    });
+    document.getElementById('communityAnswerNextBtn').addEventListener('click', () => {
+      currentAnswerStep += 1;
+      updateAnswerNavigation();
+    });
     document.addEventListener('admin:language-change', () => {
       if (currentPuzzle) {
-        renderPuzzle(currentPuzzle);
+        renderPuzzle(currentPuzzle, { keepAnswerStep: true });
       } else if (!document.getElementById('communityPuzzleStatus').hidden) {
         setStatus(adminT('communityPuzzles.noPuzzle'));
       }

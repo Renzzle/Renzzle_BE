@@ -5,7 +5,7 @@ import com.renzzle.backend.domain.auth.dao.AdminRepository;
 import com.renzzle.backend.domain.auth.service.AccountService;
 import com.renzzle.backend.domain.auth.service.JwtProvider;
 import com.renzzle.backend.domain.puzzle.community.api.request.UpdateCommunityPuzzleVerificationRequest;
-import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlesResponse;
+import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleForAdminResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackDetailForAdminResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleForAdminResponse;
@@ -325,10 +325,10 @@ public class AdminController {
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/community/puzzle-manage/{puzzleId}")
     @ResponseBody
-    public ApiResponse<GetCommunityPuzzlesResponse> getCommunityPuzzleForAdminManagement(
+    public ApiResponse<GetCommunityPuzzleForAdminResponse> getCommunityPuzzleForAdminManagement(
             @PathVariable Long puzzleId
     ) {
-        GetCommunityPuzzlesResponse puzzle = communityService.getCommunityPuzzleForAdminManagement(puzzleId);
+        GetCommunityPuzzleForAdminResponse puzzle = communityService.getCommunityPuzzleForAdminManagement(puzzleId);
         return ApiUtils.success(puzzle);
     }
 
@@ -336,11 +336,11 @@ public class AdminController {
     @SecurityRequirement(name = "Authorization")
     @PatchMapping("/community/puzzle-manage/{puzzleId}/verification")
     @ResponseBody
-    public ApiResponse<GetCommunityPuzzlesResponse> updateCommunityPuzzleVerification(
+    public ApiResponse<GetCommunityPuzzleForAdminResponse> updateCommunityPuzzleVerification(
             @PathVariable Long puzzleId,
             @Valid @RequestBody UpdateCommunityPuzzleVerificationRequest request
     ) {
-        GetCommunityPuzzlesResponse puzzle = communityService.updateCommunityPuzzleVerificationForAdmin(
+        GetCommunityPuzzleForAdminResponse puzzle = communityService.updateCommunityPuzzleVerificationForAdmin(
                 puzzleId,
                 request.isVerified()
         );
