@@ -141,4 +141,8 @@ public class UserEntity {
         purchase(ItemPrice.CHANGE_NICKNAME.getPrice());
         this.nickname = nickname;
     }
+
+    public void changePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
 }

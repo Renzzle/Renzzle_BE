@@ -57,6 +57,13 @@ public class AuthController {
         return ApiUtils.success(accountService.login(request));
     }
 
+    @Operation(summary = "Change password", description = "Verify the current password and change it to a new password")
+    @PatchMapping("/password")
+    public ApiResponse<Long> changePassword(@AuthenticationPrincipal UserDetailsImpl userDetails,
+                                            @Valid @RequestBody ChangePasswordRequest request) {
+        return ApiUtils.success(accountService.changePassword(userDetails.getUser(), request));
+    }
+
     @Operation(summary = "Logout to service", description = "Delete the refresh token to prevent reissuing the authentication tokens")
     @PostMapping("/logout")
     public ApiResponse<Long> logout(@AuthenticationPrincipal UserDetailsImpl userDetails) {

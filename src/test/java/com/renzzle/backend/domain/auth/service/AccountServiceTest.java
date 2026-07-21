@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.auth.service;
 
+import com.renzzle.backend.domain.auth.api.request.ChangePasswordRequest;
 import com.renzzle.backend.domain.auth.api.request.LoginRequest;
 import com.renzzle.backend.domain.auth.api.request.SignupRequest;
 import com.renzzle.backend.domain.auth.api.response.LoginResponse;
@@ -130,6 +131,43 @@ class AccountServiceTest {
         CustomException ex = assertThrows(CustomException.class, () -> accountService.login(validLoginRequest));
 
         assertEquals(ErrorCode.INVALID_PASSWORD, ex.getErrorCode());
+    }
+
+    @Test
+    void changePassword_ShouldChangePassword_WhenCurrentPasswordMatches() {
+        UserEntity user = UserEntity.builder()
+                .id(1L)
+                .email(email)
+                .password(new BCryptPasswordEncoder().encode(password))
+                .nickname(nickname)
+                .deviceId(deviceId)
+                .build();
+        ChangePasswordRequest request = new ChangePasswordRequest(password, "newPassword123");
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        Long changedUserId = accountService.changePassword(user, request);
+
+        assertEquals(1L, changedUserId);
+        assertTrue(new BCryptPasswordEncoder().matches(request.newPassword(), user.getPassword()));
+    }
+
+    @Test
+    void changePassword_ShouldThrowException_WhenCurrentPasswordMismatch() {
+        UserEntity user = UserEntity.builder()
+                .id(1L)
+                .email(email)
+                .password(new BCryptPasswordEncoder().encode(password))
+                .nickname(nickname)
+                .deviceId(deviceId)
+                .build();
+        ChangePasswordRequest request = new ChangePasswordRequest("wrongPassword", "newPassword123");
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        CustomException ex = assertThrows(CustomException.class,
+                () -> accountService.changePassword(user, request));
+
+        assertEquals(ErrorCode.INVALID_PASSWORD, ex.getErrorCode());
+        assertTrue(new BCryptPasswordEncoder().matches(password, user.getPassword()));
     }
 
 }
