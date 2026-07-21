@@ -11,10 +11,14 @@ import java.util.Optional;
 public interface PackTranslationRepository extends JpaRepository<PackTranslation, Long> {
     List<PackTranslation> findAllByPack_Id(Long packId);
 
+    List<PackTranslation> findAllByPack_IdIn(List<Long> packIds);
+
     List<PackTranslation> findAllByPack_IdInAndLangCode(List<Long> packIds, LangCode languageCode);
 
     Optional<PackTranslation> findByPackAndLangCode(Pack pack, LangCode langCode);
 
     boolean existsByPackAndLangCode(Pack pack, LangCode languageCode);
+
+    void deleteAllByPack_Id(Long packId);
 
 }

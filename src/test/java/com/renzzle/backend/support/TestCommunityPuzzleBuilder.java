@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static com.renzzle.backend.global.common.constant.TimeConstant.CONST_FUTURE_INSTANT;
+import static com.renzzle.backend.support.TestTime.FIXED_INSTANT;
 
 public class TestCommunityPuzzleBuilder {
 
@@ -156,8 +157,8 @@ public class TestCommunityPuzzleBuilder {
         if (repository == null || Mockito.mockingDetails(repository).isMock()) {
             id = (id == null) ? ++idx : id;
             status = (status == null) ? Status.getDefaultStatus() : status;
-            createdAt = (createdAt == null) ? Instant.now() : createdAt;
-            updatedAt = (updatedAt == null) ? Instant.now() : updatedAt;
+            createdAt = (createdAt == null) ? FIXED_INSTANT : createdAt;
+            updatedAt = (updatedAt == null) ? FIXED_INSTANT : updatedAt;
             deletedAt = (deletedAt == null) ? CONST_FUTURE_INSTANT : deletedAt;
             return build();
         } else {

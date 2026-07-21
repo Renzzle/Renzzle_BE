@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.lang.annotation.*;
@@ -20,5 +21,6 @@ import java.lang.annotation.*;
 @ImportAutoConfiguration(JdbcTemplateAutoConfiguration.class)
 @ContextConfiguration(initializers = TestContainersConfig.class)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ActiveProfiles("test")
 public @interface DataJpaTestWithInitContainers {
 }

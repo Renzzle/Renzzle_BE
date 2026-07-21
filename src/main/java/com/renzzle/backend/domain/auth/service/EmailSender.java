@@ -34,7 +34,7 @@ public class EmailSender {
 
             Context context = new Context();
             context.setVariable("verificationCode", code);
-            String htmlContent = templateEngine.process("verification_email", context);
+            String htmlContent = templateEngine.process("email/verification", context);
 
             message.setText(htmlContent, "UTF-8", "html");
         } catch (MessagingException e) {

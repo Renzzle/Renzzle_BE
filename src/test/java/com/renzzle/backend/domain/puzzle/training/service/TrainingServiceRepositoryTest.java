@@ -1,6 +1,5 @@
 package com.renzzle.backend.domain.puzzle.training.service;
 
-import com.renzzle.backend.config.TestContainersConfig;
 import com.renzzle.backend.domain.puzzle.training.domain.Difficulty;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.puzzle.training.api.request.CreateTrainingPackRequest;
@@ -20,11 +19,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static com.renzzle.backend.support.TestTime.FIXED_INSTANT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTestWithInitContainers
@@ -62,8 +61,8 @@ class TrainingServiceRepositoryTest {
                 .password("password")
                 .nickname("testUser")
                 .deviceId("device123")
-                .lastAccessedAt(Instant.now())
-                .deletedAt(Instant.now().plusSeconds(3600))
+                .lastAccessedAt(FIXED_INSTANT)
+                .deletedAt(FIXED_INSTANT.plusSeconds(3600))
                 // status is not set here because its default value is assigned in @PrePersist
                 .build();
         entityManager.persist(user);
@@ -85,15 +84,15 @@ class TrainingServiceRepositoryTest {
                 .build();
         Pack savedPack = packRepository.save(pack);
 
-        TrainingPuzzle p1 = TrainingPuzzle.builder().pack(pack).trainingIndex(0)
+        TrainingPuzzle p1 = TrainingPuzzle.builder().pack(savedPack).trainingIndex(0)
                 .boardStatus("s1").boardKey("k1").answer("a1").depth(1).rating(100).winColor(winColor).build();
-        TrainingPuzzle p2 = TrainingPuzzle.builder().pack(pack).trainingIndex(1)
+        TrainingPuzzle p2 = TrainingPuzzle.builder().pack(savedPack).trainingIndex(1)
                 .boardStatus("s2").boardKey("k2").answer("a2").depth(1).rating(100).winColor(winColor).build();
 
         trainingPuzzleRepository.saveAll(List.of(p1, p2));
 
         // When
-        trainingPuzzleRepository.increaseIndexesFrom(pack.getId(), 0);
+        trainingPuzzleRepository.increaseIndexesFrom(savedPack.getId(), 0);
         entityManager.flush();
         entityManager.clear();
         // Then
@@ -382,10 +381,8 @@ class TrainingServiceRepositoryTest {
     void PurchaseTrainingPack() {
         // Given
         Difficulty difficulty = Difficulty.getDifficulty("LOW");
-//        entityManager.persist(difficulty);
 
         Status defaultStatus = Status.getDefaultStatus();
-//        entityManager.persist(defaultStatus);
 
         Pack pack = Pack.builder()
                 .price(1000)
@@ -400,8 +397,8 @@ class TrainingServiceRepositoryTest {
                 .nickname("testUser")
                 .deviceId("device123")
                 .status(defaultStatus)
-                .lastAccessedAt(Instant.now())
-                .deletedAt(Instant.now().plusSeconds(3600))
+                .lastAccessedAt(FIXED_INSTANT)
+                .deletedAt(FIXED_INSTANT.plusSeconds(3600))
                 .currency(2000)
                 .build();
 
@@ -435,10 +432,8 @@ class TrainingServiceRepositoryTest {
     void PurchaseTrainingPuzzleAnswer_WhenEnoughCurrent_ThenReturnRemainCurrent() {
         // Given
         Difficulty difficulty = Difficulty.getDifficulty("LOW");
-//        entityManager.persist(difficulty);
 
         Status defaultStatus = Status.getDefaultStatus();
-//        entityManager.persist(defaultStatus);
 
         Pack pack = Pack.builder()
                 .price(1000)
@@ -452,8 +447,8 @@ class TrainingServiceRepositoryTest {
                 .password("password")
                 .nickname("user1")
                 .deviceId("device1")
-                .lastAccessedAt(Instant.now())
-                .deletedAt(Instant.now().plusSeconds(3600))
+                .lastAccessedAt(FIXED_INSTANT)
+                .deletedAt(FIXED_INSTANT.plusSeconds(3600))
                 .status(defaultStatus)
                 .currency(500)
                 .build();

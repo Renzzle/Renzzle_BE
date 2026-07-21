@@ -8,7 +8,6 @@ import com.renzzle.backend.domain.puzzle.training.service.TrainingService;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
-import com.renzzle.backend.support.TestUserEntityBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,9 +16,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -29,8 +25,6 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class AccountServiceTest {
 
-    @Mock
-    private Clock clock;
     @Mock
     private UserRepository userRepository;
     @Mock
@@ -80,9 +74,7 @@ class AccountServiceTest {
         when(authService.verifyAuthVerityToken(authVerityToken, email)).thenReturn(true);
         when(userRepository.existsByEmail(email)).thenReturn(true);
 
-        CustomException ex = assertThrows(CustomException.class, () -> {
-            accountService.signUp(validSignupRequest);
-        });
+        CustomException ex = assertThrows(CustomException.class, () -> accountService.signUp(validSignupRequest));
 
         assertEquals(ErrorCode.DUPLICATE_EMAIL, ex.getErrorCode());
     }
@@ -91,9 +83,7 @@ class AccountServiceTest {
     void signUp_ShouldThrowException_WhenInvalidAuthToken() {
         when(authService.verifyAuthVerityToken(authVerityToken, email)).thenReturn(false);
 
-        CustomException ex = assertThrows(CustomException.class, () -> {
-            accountService.signUp(validSignupRequest);
-        });
+        CustomException ex = assertThrows(CustomException.class, () -> accountService.signUp(validSignupRequest));
 
         assertEquals(ErrorCode.INVALID_AUTH_VERITY_TOKEN, ex.getErrorCode());
     }
@@ -120,9 +110,7 @@ class AccountServiceTest {
     void login_ShouldThrowException_WhenEmailNotFound() {
         when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
 
-        CustomException ex = assertThrows(CustomException.class, () -> {
-            accountService.login(validLoginRequest);
-        });
+        CustomException ex = assertThrows(CustomException.class, () -> accountService.login(validLoginRequest));
 
         assertEquals(ErrorCode.INVALID_EMAIL, ex.getErrorCode());
     }
@@ -139,9 +127,7 @@ class AccountServiceTest {
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
 
-        CustomException ex = assertThrows(CustomException.class, () -> {
-            accountService.login(validLoginRequest);
-        });
+        CustomException ex = assertThrows(CustomException.class, () -> accountService.login(validLoginRequest));
 
         assertEquals(ErrorCode.INVALID_PASSWORD, ex.getErrorCode());
     }

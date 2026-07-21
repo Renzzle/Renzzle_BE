@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="title.responseMoves">Renzzle - AI Response Entry</title>
+  <link rel="stylesheet" href="/assets/admin/puzzle-cache.css">
+  <link rel="stylesheet" href="/assets/admin/common.css">
+  <script src="/assets/admin/i18n.js"></script>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>Renzzle Admin</h1>
+      <span class="user-info" th:if="${userEmail}" th:text="${userEmail}"></span>
+    </div>
+    <div class="header-actions">
+      <th:block th:replace="~{admin/fragments :: languageSelect}"></th:block>
+      <a href="/admin/logout" class="btn" data-i18n="common.logout">Log out</a>
+    </div>
+  </div>
+
+  <th:block th:replace="~{admin/fragments :: siteNav(false, false, true, false)}"></th:block>
+  <th:block th:replace="~{admin/fragments :: uiKit}"></th:block>
+
+  <main class="admin-shell">
+    <div class="admin-page-heading">
+      <div>
+        <h2 data-i18n="cacheList.heading">AI Responses</h2>
+        <p data-i18n="cacheList.description">Choose training or community puzzles first.</p>
+      </div>
+      <fieldset class="difficulty-segment ai-mode-segment">
+        <legend class="admin-visually-hidden" data-i18n="cacheList.targetType">Target Type</legend>
+        <button type="button" class="difficulty-option" data-cache-mode="TRAINING" aria-pressed="true" data-i18n="cacheList.trainingTab">Training</button>
+        <button type="button" class="difficulty-option" data-cache-mode="COMMUNITY" aria-pressed="false" data-i18n="cacheList.communityTab">Community</button>
+      </fieldset>
+    </div>
+
+    <section class="section ai-response-section" id="trainingResponseSection" data-cache-panel="TRAINING">
+      <div class="section-title-row">
+        <div>
+          <h2 data-i18n="packList.selectPack">Select Pack</h2>
+          <div id="trainingPackCount" class="pack-list-count muted-status" aria-live="polite"></div>
+        </div>
+        <div class="section-controls">
+          <label class="title-search-control" for="cachePackTitleSearch">
+            <span class="admin-visually-hidden" data-i18n="packList.searchTitle">Search Title</span>
+            <svg class="title-search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <circle cx="11" cy="11" r="7"></circle>
+              <path d="m16.5 16.5 4 4"></path>
+            </svg>
+            <input type="search" id="cachePackTitleSearch" data-i18n-placeholder="packList.titleSearchPlaceholder" placeholder="Pack title" autocomplete="off">
+          </label>
+          <fieldset class="difficulty-segment">
+            <legend class="admin-visually-hidden" data-i18n="common.difficulty">Difficulty</legend>
+            <button type="button" class="difficulty-option" data-cache-difficulty="LOW" aria-pressed="true">LOW</button>
+            <button type="button" class="difficulty-option" data-cache-difficulty="MIDDLE" aria-pressed="false">MIDDLE</button>
+            <button type="button" class="difficulty-option" data-cache-difficulty="HIGH" aria-pressed="false">HIGH</button>
+          </fieldset>
+        </div>
+      </div>
+
+      <div id="cachePackEmptyState" class="admin-empty" hidden>
+        <span data-i18n="packList.noPacks">No packs found.</span>
+      </div>
+
+      <div id="cachePackTableWrap" class="admin-table-wrap" hidden>
+        <table class="admin-table pack-list-table">
+          <colgroup>
+            <col class="pack-list-col-main">
+            <col class="pack-list-col-meta">
+            <col class="pack-list-col-meta">
+            <col class="pack-list-col-meta">
+          </colgroup>
+          <thead>
+          <tr>
+            <th class="pack-list-main-col" data-i18n="common.pack">Pack</th>
+            <th class="pack-list-center-col" data-i18n="common.difficulty">Difficulty</th>
+            <th class="pack-list-center-col" data-i18n="common.price">Price</th>
+            <th class="pack-list-center-col" data-i18n="common.puzzles">Puzzles</th>
+          </tr>
+          </thead>
+          <tbody id="cachePackTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section ai-response-section" id="communityResponseSection" data-cache-panel="COMMUNITY" hidden>
+      <div class="section-title-row ai-community-title-row">
+        <div>
+          <h2 data-i18n="cacheList.communityHeading">Community Puzzles</h2>
+          <p data-i18n="cacheList.communityHelp">Search by puzzle number, then open it to manage its AI response.</p>
+        </div>
+        <form class="community-search-form" id="communitySearchForm">
+          <label for="commPuzzleId">
+            <span class="admin-visually-hidden" data-i18n="cacheList.puzzleNumber">Puzzle Number</span>
+            <input type="number" id="commPuzzleId" min="1" data-i18n-placeholder="cacheList.puzzleNumberPlaceholder" placeholder="Puzzle number" autocomplete="off">
+          </label>
+          <button type="submit" class="btn btn-primary community-load-btn" id="loadCommPuzzlesBtn" data-i18n="common.search">Search</button>
+        </form>
+      </div>
+
+      <div id="commPuzzleStatus" class="community-search-status" aria-live="polite" hidden></div>
+    </section>
+  </main>
+
+  <script type="module" th:inline="javascript">
+    const API_BASE = '';
+    let selectedCacheMode = 'TRAINING';
+    let selectedCacheDifficulty = 'LOW';
+    const CACHE_DIFFICULTIES = new Set(['LOW', 'MIDDLE', 'HIGH']);
+    const CACHE_MODES = new Set(['TRAINING', 'COMMUNITY']);
+
+    async function fetchWithAuth(url, options = {}) {
+      const headers = { 'Content-Type': 'application/json', ...options.headers };
+      if (options.body === undefined || options.body === null) {
+        delete headers['Content-Type'];
+      }
+      const res = await fetch(url, { ...options, headers, credentials: 'same-origin' });
+      if (res.status === 401 || res.status === 403) {
+        alert(adminT('msg.sessionExpired'));
+        globalThis.location.href = '/admin/logout';
+        return null;
+      }
+      return res;
+    }
+
+    function showListError(text) {
+      adminToast(text, 'error');
+    }
+
+    const PC_FILTER_KEY = 'admin_puzzlecache_filter';
+
+    function getTrainingLang() {
+      const currentLanguage = globalThis.adminGetLanguage?.();
+      const languageSelect = document.querySelector('[data-admin-language-select]');
+      const lang = currentLanguage || languageSelect?.value || document.documentElement.lang || 'en';
+      return String(lang).toUpperCase().startsWith('KO') ? 'KO' : 'EN';
+    }
+
+    function getCachePackTitleQuery() {
+      return document.getElementById('cachePackTitleSearch').value.trim().toLowerCase();
+    }
+
+    function savePcFilters() {
+      localStorage.setItem(PC_FILTER_KEY, JSON.stringify({
+        mode: selectedCacheMode,
+        difficulty: selectedCacheDifficulty
+      }));
+    }
+
+    function restorePcFilters() {
+      const stored = localStorage.getItem(PC_FILTER_KEY);
+      if (!stored) return;
+
+      const difficultyMatch = stored.match(/"difficulty"\s*:\s*"([^"]+)"/);
+      const modeMatch = stored.match(/"mode"\s*:\s*"([^"]+)"/);
+      const savedDifficulty = difficultyMatch?.[1] || stored;
+      const savedMode = modeMatch?.[1];
+
+      if (CACHE_DIFFICULTIES.has(savedDifficulty)) {
+        selectedCacheDifficulty = savedDifficulty;
+      }
+      if (CACHE_MODES.has(savedMode)) {
+        selectedCacheMode = savedMode;
+      }
+    }
+
+    function syncCacheModeButtons() {
+      document.querySelectorAll('[data-cache-mode]').forEach(button => {
+        const active = button.dataset.cacheMode === selectedCacheMode;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
+    }
+
+    function syncCachePanels() {
+      document.querySelectorAll('[data-cache-panel]').forEach(panel => {
+        panel.hidden = panel.dataset.cachePanel !== selectedCacheMode;
+      });
+    }
+
+    function setCacheMode(mode) {
+      if (!CACHE_MODES.has(mode) || mode === selectedCacheMode) return;
+      selectedCacheMode = mode;
+      savePcFilters();
+      syncCacheModeButtons();
+      syncCachePanels();
+      if (selectedCacheMode === 'TRAINING') {
+        loadPacks();
+      }
+    }
+
+    function syncCacheDifficultyButtons() {
+      document.querySelectorAll('[data-cache-difficulty]').forEach(button => {
+        const active = button.dataset.cacheDifficulty === selectedCacheDifficulty;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
+    }
+
+    function setPackCount(count) {
+      const countEl = document.getElementById('trainingPackCount');
+      countEl.textContent = count === null
+              ? adminT('packList.unknownCount')
+              : adminT('packList.count', { count });
+    }
+
+    function showCommunityStatus(text) {
+      const statusEl = document.getElementById('commPuzzleStatus');
+      statusEl.textContent = text;
+      statusEl.hidden = !text;
+    }
+
+    async function loadPacks() {
+      const difficulty = selectedCacheDifficulty;
+      const lang = getTrainingLang();
+      const tableWrap = document.getElementById('cachePackTableWrap');
+      const emptyState = document.getElementById('cachePackEmptyState');
+      const tableBody = document.getElementById('cachePackTableBody');
+      savePcFilters();
+      tableBody.innerHTML = '';
+      tableWrap.hidden = true;
+      emptyState.hidden = true;
+      setPackCount(null);
+
+      try {
+        const res = await fetchWithAuth(API_BASE + '/admin/training/pack?difficulty=' + encodeURIComponent(difficulty) + '&lang=' + encodeURIComponent(lang));
+        if (!res) return;
+        const data = await res.json();
+        if (!data.isSuccess) {
+          if (res.status === 404) {
+            setPackCount(0);
+            emptyState.hidden = false;
+            return;
+          }
+          showListError(adminT('cacheList.failedLoadList'));
+          return;
+        }
+        const titleQuery = getCachePackTitleQuery();
+        const packs = (data.response || []).filter(p => {
+          const title = p['title'];
+          if (!title || title.trim() === '') return false;
+          return !titleQuery || title.toLowerCase().includes(titleQuery);
+        });
+        setPackCount(packs.length);
+        if (packs.length === 0) {
+          emptyState.hidden = false;
+        } else {
+          tableWrap.hidden = false;
+          packs.forEach(p => {
+            const packIdValue = p['id'];
+            const packTitle = p['title'] || adminT('common.untitled');
+            const packAuthor = p['author'];
+            const packPrice = p['price'] ?? 0;
+            const totalPuzzleCount = p['totalPuzzleCount'] ?? 0;
+            const tr = document.createElement('tr');
+            tr.classList.add('clickable-row');
+            tr.addEventListener('click', function() {
+              globalThis.location.href = '/puzzle-cache/training-pack?packId=' + encodeURIComponent(packIdValue);
+            });
+
+            const titleTd = document.createElement('td');
+            titleTd.className = 'pack-list-main-col';
+            const title = document.createElement('strong');
+            title.textContent = packTitle;
+            titleTd.appendChild(title);
+            const meta = document.createElement('div');
+            meta.className = 'pack-row-meta';
+            meta.textContent = packAuthor ? adminT('packList.metaAuthor', { author: packAuthor }) : adminT('common.noAuthor');
+            titleTd.appendChild(meta);
+
+            const diffTd = document.createElement('td');
+            diffTd.className = 'pack-list-center-col';
+            const diffPill = document.createElement('span');
+            diffPill.className = 'admin-pill primary';
+            diffPill.textContent = difficulty;
+            diffTd.appendChild(diffPill);
+
+            const priceTd = document.createElement('td');
+            priceTd.className = 'pack-list-center-col';
+            priceTd.textContent = String(packPrice);
+
+            const countTd = document.createElement('td');
+            countTd.className = 'pack-list-center-col';
+            countTd.textContent = String(totalPuzzleCount);
+
+            tr.appendChild(titleTd);
+            tr.appendChild(diffTd);
+            tr.appendChild(priceTd);
+            tr.appendChild(countTd);
+            tableBody.appendChild(tr);
+          });
+        }
+      } catch (err) {
+        showListError(adminT('common.errorPrefix', { message: err.message || '' }));
+        setPackCount(null);
+      }
+    }
+
+    function showCommError(text) {
+      adminToast(text, 'error');
+    }
+
+    async function loadCommunityPuzzleById(event) {
+      event?.preventDefault();
+      showCommunityStatus('');
+      const puzzleIdValue = document.getElementById('commPuzzleId').value.trim();
+      if (!puzzleIdValue) {
+        showCommunityStatus(adminT('cacheList.noCommunity'));
+        return;
+      }
+      const loadButton = document.getElementById('loadCommPuzzlesBtn');
+      loadButton.disabled = true;
+      try {
+        const res = await fetchWithAuth(API_BASE + '/admin/community/puzzle-detail/' + encodeURIComponent(puzzleIdValue));
+        if (!res) return;
+        const data = await res.json();
+        if (!res.ok || !data.isSuccess || !data.response) {
+          showCommunityStatus(adminT('cacheList.noCommunity'));
+          return;
+        }
+        const puzzle = data.response;
+        const href = '/puzzle-cache/board?puzzleType=COMMUNITY&puzzleId=' + encodeURIComponent(puzzle['id'] ?? puzzleIdValue);
+        globalThis.location.href = href;
+      } catch (err) {
+        showCommError(adminT('common.errorPrefix', { message: err.message || '' }));
+      } finally {
+        loadButton.disabled = false;
+      }
+    }
+
+    document.getElementById('communitySearchForm').addEventListener('submit', loadCommunityPuzzleById);
+
+    // On entry: restore the last filters and automatically load training packs
+    document.querySelectorAll('[data-cache-mode]').forEach(button => {
+      button.addEventListener('click', () => {
+        setCacheMode(button.dataset.cacheMode);
+      });
+    });
+    document.querySelectorAll('[data-cache-difficulty]').forEach(button => {
+      button.addEventListener('click', () => {
+        if (button.dataset.cacheDifficulty === selectedCacheDifficulty) return;
+        selectedCacheDifficulty = button.dataset.cacheDifficulty;
+        savePcFilters();
+        syncCacheDifficultyButtons();
+        loadPacks();
+      });
+    });
+    let cachePackTitleSearchTimer = null;
+    document.getElementById('cachePackTitleSearch').addEventListener('input', () => {
+      clearTimeout(cachePackTitleSearchTimer);
+      cachePackTitleSearchTimer = setTimeout(loadPacks, 180);
+    });
+    document.addEventListener('admin:language-change', () => {
+      syncCacheModeButtons();
+      syncCachePanels();
+      syncCacheDifficultyButtons();
+      if (selectedCacheMode === 'TRAINING') {
+        loadPacks();
+      } else if (!document.getElementById('commPuzzleStatus').hidden) {
+        showCommunityStatus(adminT('cacheList.noCommunity'));
+      }
+    });
+    restorePcFilters();
+    syncCacheModeButtons();
+    syncCachePanels();
+    syncCacheDifficultyButtons();
+    if (selectedCacheMode === 'TRAINING') {
+      await loadPacks();
+    }
+  </script>
+</body>
+</html>
