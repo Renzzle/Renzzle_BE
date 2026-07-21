@@ -23,7 +23,8 @@ public interface TrainingPuzzleRepository extends JpaRepository<TrainingPuzzle, 
     @Transactional
     @Query(value = "UPDATE training_puzzle " +
             "SET training_index = training_index + 1 " +
-            "WHERE training_index >= :targetIdx AND pack_id = :packId",
+            "WHERE training_index >= :targetIdx AND pack_id = :packId " +
+            "ORDER BY training_index DESC",
             nativeQuery = true)
     void increaseIndexesFrom(@Param("packId") Long packId,
                              @Param("targetIdx") int targetIdx);

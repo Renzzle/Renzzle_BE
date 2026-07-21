@@ -18,6 +18,7 @@ import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.domain.puzzle.shared.util.BoardUtils;
+import com.renzzle.backend.domain.puzzle.shared.util.RatingUtil;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static com.renzzle.backend.global.common.constant.DoubleConstant.DEFAULT_PUZZLE_RATING;
 import static com.renzzle.backend.global.common.constant.ItemPrice.HINT;
 
 @Service
@@ -44,16 +44,17 @@ public class CommunityService {
     @Transactional
     public AddCommunityPuzzleResponse addCommunityPuzzle(AddCommunityPuzzleRequest request, UserEntity user) {
         String boardKey = BoardUtils.makeBoardKey(request.boardStatus());
+        WinColor winColor = WinColor.getWinColor(request.winColor());
 
         CommunityPuzzle puzzle = CommunityPuzzle.builder()
                 .boardStatus(request.boardStatus())
                 .boardKey(boardKey)
                 .answer(request.answer())
                 .depth(request.depth())
-                .rating(request.depth() * DEFAULT_PUZZLE_RATING) // TODO: rating formula
+                .rating(RatingUtil.puzzleRating(request.depth(), winColor))
                 .description(request.description())
                 .user(user)
-                .winColor(WinColor.getWinColor(request.winColor()))
+                .winColor(winColor)
                 .isVerified(request.isVerified())
                 .build();
 

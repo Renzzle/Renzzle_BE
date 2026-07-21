@@ -48,3 +48,5 @@ out/
 
 ### Mac Mise ###
 mise.toml
+### cloudflare key
+caddy/origin/
