@@ -25,16 +25,25 @@ public class EmailSender {
 
     @Async
     public void sendAuthEmail(String address, String code) {
+        sendEmail(address, code, "[Renzzle] Email Verification", "email/verification");
+    }
+
+    @Async
+    public void sendPasswordResetEmail(String address, String code) {
+        sendEmail(address, code, "[Renzzle] Password Reset", "email/password-reset");
+    }
+
+    private void sendEmail(String address, String code, String subject, String template) {
         MimeMessage message = javaMailSender.createMimeMessage();
 
         try {
             message.setFrom(senderEmail);
             message.setRecipients(Message.RecipientType.TO, address);
-            message.setSubject("[Renzzle] Email Verification");
+            message.setSubject(subject);
 
             Context context = new Context();
             context.setVariable("verificationCode", code);
-            String htmlContent = templateEngine.process("email/verification", context);
+            String htmlContent = templateEngine.process(template, context);
 
             message.setText(htmlContent, "UTF-8", "html");
         } catch (MessagingException e) {

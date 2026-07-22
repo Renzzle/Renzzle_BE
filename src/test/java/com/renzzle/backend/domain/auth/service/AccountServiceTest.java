@@ -2,6 +2,7 @@ package com.renzzle.backend.domain.auth.service;
 
 import com.renzzle.backend.domain.auth.api.request.ChangePasswordRequest;
 import com.renzzle.backend.domain.auth.api.request.LoginRequest;
+import com.renzzle.backend.domain.auth.api.request.ResetPasswordRequest;
 import com.renzzle.backend.domain.auth.api.request.SignupRequest;
 import com.renzzle.backend.domain.auth.api.response.LoginResponse;
 import com.renzzle.backend.domain.user.dao.UserRepository;
@@ -168,6 +169,38 @@ class AccountServiceTest {
 
         assertEquals(ErrorCode.INVALID_PASSWORD, ex.getErrorCode());
         assertTrue(new BCryptPasswordEncoder().matches(password, user.getPassword()));
+    }
+
+    @Test
+    void resetPassword_ShouldChangePasswordAndDeleteRefreshToken_WhenTokenIsValid() {
+        UserEntity user = UserEntity.builder()
+                .id(1L)
+                .email(email)
+                .password(new BCryptPasswordEncoder().encode(password))
+                .nickname(nickname)
+                .deviceId(deviceId)
+                .build();
+        ResetPasswordRequest request = new ResetPasswordRequest(email, authVerityToken, "newPassword123");
+        when(authService.verifyAuthVerityToken(authVerityToken, email)).thenReturn(true);
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+
+        Long resetUserId = accountService.resetPassword(request);
+
+        assertEquals(1L, resetUserId);
+        assertTrue(new BCryptPasswordEncoder().matches(request.newPassword(), user.getPassword()));
+        verify(authService).deleteRefreshToken(user);
+    }
+
+    @Test
+    void resetPassword_ShouldThrowException_WhenTokenDoesNotMatchEmail() {
+        ResetPasswordRequest request = new ResetPasswordRequest(email, "invalid-token", "newPassword123");
+        when(authService.verifyAuthVerityToken(request.authVerityToken(), email)).thenReturn(false);
+
+        CustomException ex = assertThrows(CustomException.class,
+                () -> accountService.resetPassword(request));
+
+        assertEquals(ErrorCode.INVALID_AUTH_VERITY_TOKEN, ex.getErrorCode());
+        verify(userRepository, never()).findByEmail(anyString());
     }
 
 }

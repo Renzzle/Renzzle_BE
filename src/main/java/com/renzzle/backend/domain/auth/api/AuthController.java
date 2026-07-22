@@ -33,7 +33,7 @@ public class AuthController {
         return ApiUtils.success(emailService.sendCode(request));
     }
 
-    @Operation(summary = "Confirm code", description = "Authenticate code & Return token for sign up")
+    @Operation(summary = "Confirm code", description = "Authenticate code & Return token for sign up or password reset")
     @PostMapping("/confirmCode")
     public ApiResponse<ConfirmCodeResponse> confirmCode(@Valid @RequestBody ConfirmCodeRequest request) {
         return ApiUtils.success(emailService.confirmCode(request));
@@ -62,6 +62,18 @@ public class AuthController {
     public ApiResponse<Long> changePassword(@AuthenticationPrincipal UserDetailsImpl userDetails,
                                             @Valid @RequestBody ChangePasswordRequest request) {
         return ApiUtils.success(accountService.changePassword(userDetails.getUser(), request));
+    }
+
+    @Operation(summary = "Send password reset code", description = "Send a confirmation code to a registered email")
+    @PostMapping("/password/reset/email")
+    public ApiResponse<AuthEmailResponse> sendPasswordResetCode(@Valid @RequestBody AuthEmailRequest request) {
+        return ApiUtils.success(emailService.sendPasswordResetCode(request));
+    }
+
+    @Operation(summary = "Reset password", description = "Reset password with a verified email token")
+    @PatchMapping("/password/reset")
+    public ApiResponse<Long> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        return ApiUtils.success(accountService.resetPassword(request));
     }
 
     @Operation(summary = "Logout to service", description = "Delete the refresh token to prevent reissuing the authentication tokens")

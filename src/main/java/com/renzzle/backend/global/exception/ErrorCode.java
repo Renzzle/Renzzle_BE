@@ -22,7 +22,7 @@ public enum ErrorCode {
     // Auth
     EXCEED_EMAIL_AUTH_REQUEST(HttpStatus.TOO_MANY_REQUESTS, "A429", "이메일 인증 횟수를 초과했습니다."),
     INVALID_EMAIL_AUTH_CODE(HttpStatus.UNAUTHORIZED, "A4010", "유효하지 않은 인증코드입니다."),
-    INVALID_AUTH_VERITY_TOKEN(HttpStatus.UNAUTHORIZED, "A4011", "유효하지 않은 회원가입 인증 토큰입니다."),
+    INVALID_AUTH_VERITY_TOKEN(HttpStatus.UNAUTHORIZED, "A4011", "유효하지 않은 이메일 인증 토큰입니다."),
     INVALID_EMAIL(HttpStatus.UNAUTHORIZED, "A4012", "유효하지 않은 이메일입니다."),
     INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "A4013", "유효하지 않은 비밀번호입니다."),
     NOT_BEARER_GRANT_TYPE(HttpStatus.UNAUTHORIZED, "A4014", "인증 타입이 Bearer 타입이 아닙니다."),
