@@ -1,244 +1,459 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Renzzle 어드민 - 문제집 목록</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      margin: 0;
-      min-height: 100vh;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-      color: #e8e8e8;
-      padding: 1rem;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-    }
-    .header h1 { margin: 0; font-size: 1.35rem; }
-    .header .user-info { font-size: 0.9rem; color: #b0b0b0; margin-right: 1rem; }
-    .btn {
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 8px;
-      background: rgba(255,255,255,0.15);
-      color: #fff;
-      cursor: pointer;
-      font-size: 0.9rem;
-      text-decoration: none;
-      display: inline-block;
-    }
-    .btn:hover { background: rgba(255,255,255,0.25); }
-    .btn-primary { background: linear-gradient(90deg, #4a9eff, #357abd); }
-    .btn-primary:hover { opacity: 0.95; }
-    .section {
-      max-width: 720px;
-      margin-bottom: 2rem;
-      padding: 1.5rem;
-      background: rgba(255,255,255,0.06);
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-    .section h2 { margin: 0; font-size: 1.15rem; }
-    .section-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; gap: 1rem; }
-    label { display: block; margin-bottom: 0.35rem; font-size: 0.9rem; color: #b0b0b0; }
-    input, select {
-      width: 100%;
-      padding: 0.6rem 0.8rem;
-      margin-bottom: 0.9rem;
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 8px;
-      background: rgba(0,0,0,0.2);
-      color: #fff;
-      font-size: 0.95rem;
-    }
-    .row { display: flex; gap: 1rem; align-items: flex-end; }
-    .row > * { flex: 1; }
-    .load-button-cell .btn { margin-bottom: 0.9rem; }
-    .msg { margin-top: 0.5rem; padding: 0.5rem; border-radius: 8px; font-size: 0.9rem; display: none; }
-    .msg.show { display: block; }
-    .msg.success { background: rgba(40,167,69,0.2); color: #90ee90; }
-    .msg.error { background: rgba(220,53,69,0.2); color: #f8a0a0; }
-    ul.pack-list { list-style: none; padding: 0; margin: 0; }
-    ul.pack-list li {
-      padding: 0.6rem 0.8rem;
-      margin-bottom: 0.4rem;
-      background: rgba(0,0,0,0.2);
-      border-radius: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    ul.pack-list li:hover { background: rgba(0,0,0,0.3); }
-    .pack-list li .pack-info { flex: 1; }
-    .pack-list li .pack-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
-    .pack-list li .btn-sm { padding: 0.35rem 0.6rem; font-size: 0.85rem; }
-    .pack-id { font-weight: 600; color: #4a9eff; }
-    small { color: #888; font-size: 0.85rem; }
-  </style>
+  <title data-i18n="title.packList">Renzzle Admin - Packs</title>
+  <link rel="stylesheet" href="/assets/admin/pack-list.css">
+  <link rel="stylesheet" href="/assets/admin/common.css">
+  <script src="/assets/admin/i18n.js"></script>
 </head>
 <body>
   <div class="header">
     <div>
-      <h1>Renzzle 어드민 - 문제집 목록</h1>
+      <h1>Renzzle Admin</h1>
       <span class="user-info" th:if="${userEmail}" th:text="${userEmail}"></span>
     </div>
-    <a href="/admin/logout" class="btn">로그아웃</a>
+    <div class="header-actions">
+      <th:block th:replace="~{admin/fragments :: languageSelect}"></th:block>
+      <a href="/admin/logout" class="btn" data-i18n="common.logout">Log out</a>
+    </div>
   </div>
 
-  <th:block th:replace="~{admin/fragments :: siteNav(true, false, false)}"></th:block>
+  <th:block th:replace="~{admin/fragments :: siteNav(true, false, false, false)}"></th:block>
+  <th:block th:replace="~{admin/fragments :: uiKit}"></th:block>
 
-  <section class="section">
-    <div class="section-title-row">
-      <h2>문제집 목록 조회</h2>
-      <a href="/admin/pack-create" class="btn btn-primary">문제집 생성</a>
-    </div>
-    <div class="row">
+  <main class="admin-shell">
+    <div class="admin-page-heading">
       <div>
-        <label>난이도</label>
-        <select id="filterDifficulty">
-          <option value="LOW">LOW</option>
-          <option value="MIDDLE">MIDDLE</option>
-          <option value="HIGH">HIGH</option>
-        </select>
+        <h2 data-i18n="packList.heading">Packs</h2>
+        <p data-i18n="packList.description">Select a pack first, then create or edit puzzles inside it.</p>
       </div>
-      <div>
-        <label>언어</label>
-        <select id="filterLang">
-          <option th:each="langCode : ${langCodeNames}" th:value="${langCode}" th:text="${langCode}">EN</option>
-        </select>
-      </div>
-      <div class="load-button-cell">
-        <button type="button" class="btn btn-primary" id="loadPacksBtn">목록 불러오기</button>
-      </div>
+      <button type="button" class="btn btn-primary" id="toggleInlineCreateBtn" aria-haspopup="dialog" aria-controls="inlinePackCreateDialog" aria-expanded="false" data-i18n="common.newPack">New Pack</button>
     </div>
-    <ul class="pack-list" id="packListUl"></ul>
-    <div id="packListMsg" class="msg"></div>
-  </section>
 
-  <script th:inline="javascript">
+    <section class="section">
+      <div class="section-title-row">
+        <div>
+          <h2 data-i18n="packList.selectPack">Select Pack</h2>
+          <div id="packListMsg" class="pack-list-count muted-status"></div>
+        </div>
+        <div class="section-controls">
+          <label class="title-search-control" for="packTitleSearch">
+            <span class="admin-visually-hidden" data-i18n="packList.searchTitle">Search Title</span>
+            <svg class="title-search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <circle cx="11" cy="11" r="7"></circle>
+              <path d="m16.5 16.5 4 4"></path>
+            </svg>
+            <input type="search" id="packTitleSearch" data-i18n-placeholder="packList.titleSearchPlaceholder" placeholder="Pack title" autocomplete="off">
+          </label>
+          <fieldset class="difficulty-segment">
+            <legend class="admin-visually-hidden" data-i18n="common.difficulty">Difficulty</legend>
+            <button type="button" class="difficulty-option" data-difficulty="LOW" aria-pressed="true">LOW</button>
+            <button type="button" class="difficulty-option" data-difficulty="MIDDLE" aria-pressed="false">MIDDLE</button>
+            <button type="button" class="difficulty-option" data-difficulty="HIGH" aria-pressed="false">HIGH</button>
+          </fieldset>
+        </div>
+      </div>
+
+      <dialog id="inlinePackCreateDialog" class="pack-create-dialog" aria-labelledby="inlineCreateTitle">
+      <form id="inlinePackCreateForm" class="pack-inline-create" novalidate>
+        <div class="inline-create-heading">
+          <div>
+            <h3 id="inlineCreateTitle" data-i18n="packList.createHeading">Create Pack</h3>
+            <p data-i18n="packList.createDescription">Fill one or more language sections. A title and author are required for each language you use.</p>
+          </div>
+          <button type="button" class="btn btn-secondary" id="closeInlineCreateBtn" data-i18n="common.cancel">Cancel</button>
+        </div>
+
+        <div class="inline-pack-basics">
+          <div>
+            <label for="inlinePackPrice" data-i18n="common.price">Price</label>
+            <input type="number" id="inlinePackPrice" min="0" value="0" required>
+          </div>
+          <fieldset class="difficulty-segment inline-create-difficulty">
+            <legend class="admin-visually-hidden" data-i18n="common.difficulty">Difficulty</legend>
+            <button type="button" class="difficulty-option" data-create-difficulty="LOW" aria-pressed="true">LOW</button>
+            <button type="button" class="difficulty-option" data-create-difficulty="MIDDLE" aria-pressed="false">MIDDLE</button>
+            <button type="button" class="difficulty-option" data-create-difficulty="HIGH" aria-pressed="false">HIGH</button>
+          </fieldset>
+        </div>
+
+        <div class="inline-translation-grid" id="inlineTranslationGrid">
+          <section class="inline-translation-card" data-lang-code="EN" th:data-lang-code="${langCode}" th:each="langCode : ${langCodeNames}">
+            <div class="inline-translation-header">
+              <strong th:text="${langCode}">EN</strong>
+              <span data-i18n="packList.translationOptional">Optional</span>
+            </div>
+            <label class="inline-field-label">
+              <span data-i18n="common.title">Title</span>
+              <input type="text" class="inline-pack-title" data-i18n-placeholder="packCreate.titlePlaceholder" placeholder="Pack Title" maxlength="225">
+            </label>
+            <label class="inline-field-label">
+              <span data-i18n="common.author">Author</span>
+              <input type="text" class="inline-pack-author" data-i18n-placeholder="packCreate.authorPlaceholder" placeholder="Author name" maxlength="127">
+            </label>
+            <label class="inline-field-label">
+              <span data-i18n="common.description">Description</span>
+              <textarea class="inline-pack-description" data-i18n-placeholder="packCreate.descriptionPlaceholder" placeholder="Pack Description" maxlength="1023"></textarea>
+            </label>
+          </section>
+        </div>
+        <div class="inline-create-footer">
+          <div id="inlineCreatePackMsg" class="inline-form-status muted-status" aria-live="polite"></div>
+          <button type="submit" class="btn btn-primary" id="inlineCreatePackBtn" data-i18n="common.newPack">New Pack</button>
+        </div>
+      </form>
+      </dialog>
+
+      <div id="packEmptyState" class="admin-empty" hidden>
+        <span data-i18n="packList.noPacks">No packs found.</span>
+      </div>
+
+      <div id="packTableWrap" class="admin-table-wrap" hidden>
+        <table class="admin-table pack-list-table">
+          <colgroup>
+            <col class="pack-list-col-main">
+            <col class="pack-list-col-meta">
+            <col class="pack-list-col-meta">
+            <col class="pack-list-col-meta">
+          </colgroup>
+          <thead>
+          <tr>
+            <th class="pack-list-main-col" data-i18n="common.pack">Pack</th>
+            <th class="pack-list-center-col" data-i18n="common.difficulty">Difficulty</th>
+            <th class="pack-list-center-col" data-i18n="common.price">Price</th>
+            <th class="pack-list-center-col" data-i18n="common.puzzles">Puzzles</th>
+          </tr>
+          </thead>
+          <tbody id="packTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" th:inline="javascript">
     const API_BASE = '';
 
-    function getCookie(name) {
-      const value = '; ' + document.cookie;
-      const parts = value.split('; ' + name + '=');
-      if (parts.length === 2) return parts.pop().split(';').shift();
-      return null;
-    }
-
     async function fetchWithAuth(url, options = {}) {
-      const token = getCookie('admin_accessToken');
-      if (!token) {
-        document.cookie = 'admin_accessToken=; path=/; max-age=0';
-        window.location.href = '/admin';
-        throw new Error('로그인이 필요합니다.');
+      const headers = { 'Content-Type': 'application/json', ...options.headers };
+      if (options.body === undefined || options.body === null) {
+        delete headers['Content-Type'];
       }
-      const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
-      const res = await fetch(url, { ...options, headers });
+      const res = await fetch(url, { ...options, headers, credentials: 'same-origin' });
       if (res.status === 401 || res.status === 403) {
-        document.cookie = 'admin_accessToken=; path=/; max-age=0';
-        alert('토큰이 만료되었거나 권한이 없습니다. 다시 로그인하세요.');
-        window.location.href = '/admin';
-        throw new Error('토큰 만료');
+        alert(adminT('msg.sessionExpired'));
+        globalThis.location.href = '/admin/logout';
+        return null;
       }
       return res;
     }
 
     const FILTER_KEY = 'admin_packlist_filter';
+    const DIFFICULTIES = new Set(['LOW', 'MIDDLE', 'HIGH']);
+    let selectedDifficulty = 'LOW';
+    let createDifficulty = 'LOW';
 
     function saveFilters() {
-      localStorage.setItem(FILTER_KEY, JSON.stringify({
-        difficulty: document.getElementById('filterDifficulty').value,
-        lang: document.getElementById('filterLang').value
-      }));
+      localStorage.setItem(FILTER_KEY, selectedDifficulty);
     }
 
     function restoreFilters() {
-      try {
-        const saved = JSON.parse(localStorage.getItem(FILTER_KEY) || '{}');
-        const diffEl = document.getElementById('filterDifficulty');
-        const langEl = document.getElementById('filterLang');
-        if (saved.difficulty && [...diffEl.options].some(o => o.value === saved.difficulty)) diffEl.value = saved.difficulty;
-        if (saved.lang && [...langEl.options].some(o => o.value === saved.lang)) langEl.value = saved.lang;
-      } catch (e) { /* 무시 */ }
-    }
+      const stored = localStorage.getItem(FILTER_KEY);
+      if (!stored) return;
+      if (DIFFICULTIES.has(stored)) {
+        selectedDifficulty = stored;
+        return;
+      }
 
-    async function loadPacks() {
-      const difficulty = document.getElementById('filterDifficulty').value;
-      const lang = document.getElementById('filterLang').value;
-      const msgEl = document.getElementById('packListMsg');
-      const listEl = document.getElementById('packListUl');
-      saveFilters();
-      msgEl.classList.remove('show', 'success', 'error');
-      listEl.innerHTML = '';
-
-      try {
-        const res = await fetchWithAuth(API_BASE + '/admin/training/pack?difficulty=' + encodeURIComponent(difficulty) + '&lang=' + encodeURIComponent(lang));
-        const data = await res.json();
-        if (!data.isSuccess) {
-          msgEl.textContent = data.errorResponse?.message || '목록 조회 실패';
-          msgEl.classList.add('show', 'error');
-          return;
-        }
-        const packs = (data.response || []).filter(p => p.title && p.title.trim() !== '');
-        if (packs.length === 0) {
-          listEl.innerHTML = '<li>해당 조건의 문제집이 없습니다.</li>';
-        } else {
-          packs.forEach(p => {
-            const li = document.createElement('li');
-            const info = document.createElement('span');
-            info.className = 'pack-info';
-            const idSpan = document.createElement('span');
-            idSpan.className = 'pack-id';
-            idSpan.textContent = 'ID: ' + p.id;
-            const meta = document.createElement('small');
-            meta.textContent = '가격:' + p.price + ' / 문제 개수:' + p.totalPuzzleCount;
-            // 제목은 서버 값이므로 textContent로 안전하게 삽입 (XSS 방지)
-            info.appendChild(idSpan);
-            info.appendChild(document.createTextNode(' ' + (p.title || '') + ' '));
-            info.appendChild(meta);
-            const actions = document.createElement('div');
-            actions.className = 'pack-actions';
-            const editBtn = document.createElement('button');
-            editBtn.type = 'button';
-            editBtn.className = 'btn btn-sm';
-            editBtn.textContent = '정보 편집';
-            editBtn.onclick = function(e) { e.stopPropagation(); window.location.href = '/admin/pack-create?packId=' + p.id; };
-            const moveBtn = document.createElement('button');
-            moveBtn.type = 'button';
-            moveBtn.className = 'btn btn-sm btn-primary';
-            moveBtn.textContent = '문제 관리';
-            moveBtn.onclick = function(e) { e.stopPropagation(); window.location.href = '/admin/pack-detail?packId=' + p.id; };
-            actions.appendChild(editBtn);
-            actions.appendChild(moveBtn);
-            li.appendChild(info);
-            li.appendChild(actions);
-            listEl.appendChild(li);
-          });
-        }
-        msgEl.textContent = packs.length + '개 조회됨';
-        msgEl.classList.add('show', 'success');
-      } catch (err) {
-        msgEl.textContent = '오류: ' + (err.message || '');
-        msgEl.classList.add('show', 'error');
+      const legacyMatch = stored.match(/"difficulty"\s*:\s*"([^"]+)"/);
+      const legacyDifficulty = legacyMatch?.[1];
+      if (DIFFICULTIES.has(legacyDifficulty)) {
+        selectedDifficulty = legacyDifficulty;
+      } else {
+        localStorage.removeItem(FILTER_KEY);
       }
     }
 
-    document.getElementById('loadPacksBtn').addEventListener('click', loadPacks);
-    document.getElementById('filterDifficulty').addEventListener('change', () => { saveFilters(); loadPacks(); });
-    document.getElementById('filterLang').addEventListener('change', () => { saveFilters(); loadPacks(); });
+    function getDisplayLang() {
+      const currentLanguage = globalThis.adminGetLanguage?.();
+      const languageSelect = document.querySelector('[data-admin-language-select]');
+      const lang = currentLanguage || languageSelect?.value || document.documentElement.lang || 'en';
+      return String(lang).toUpperCase().startsWith('KO') ? 'KO' : 'EN';
+    }
 
-    // 진입 시: 마지막 필터 복원 후 자동으로 목록 로드
+    function getPackTitleQuery() {
+      return document.getElementById('packTitleSearch').value.trim().toLowerCase();
+    }
+
+    function syncDifficultyButtons() {
+      document.querySelectorAll('[data-difficulty]').forEach(button => {
+        const active = button.dataset.difficulty === selectedDifficulty;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
+    }
+
+    function syncCreateDifficultyButtons() {
+      document.querySelectorAll('[data-create-difficulty]').forEach(button => {
+        const active = button.dataset.createDifficulty === createDifficulty;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
+    }
+
+    function setInlineCreateMessage(message, state) {
+      const msgEl = document.getElementById('inlineCreatePackMsg');
+      msgEl.textContent = message || '';
+      msgEl.classList.toggle('error', state === 'error');
+      msgEl.classList.toggle('success', state === 'success');
+    }
+
+    function collectInlineTranslations() {
+      const info = [];
+      let hasPartialTranslation = false;
+      document.querySelectorAll('.inline-translation-card').forEach(card => {
+        const langCode = card.dataset.langCode;
+        const title = card.querySelector('.inline-pack-title')?.value.trim() || '';
+        const author = card.querySelector('.inline-pack-author')?.value.trim() || '';
+        const description = card.querySelector('.inline-pack-description')?.value.trim() || '';
+        const hasAnyText = Boolean(title || author || description);
+        if (!hasAnyText) return;
+        if (!title || !author) {
+          hasPartialTranslation = true;
+          return;
+        }
+        info.push({
+          langCode,
+          title,
+          author,
+          description: description || null
+        });
+      });
+      return { info, hasPartialTranslation };
+    }
+
+    function resetInlineCreateForm() {
+      document.getElementById('inlinePackPrice').value = '0';
+      document.querySelectorAll('.inline-translation-card input[type="text"], .inline-translation-card textarea').forEach(field => {
+        field.value = '';
+      });
+      createDifficulty = 'LOW';
+      syncCreateDifficultyButtons();
+      setInlineCreateMessage('', null);
+    }
+
+    function setInlineCreateOpen(open, focusFirstField = true) {
+      const dialog = document.getElementById('inlinePackCreateDialog');
+      const toggleBtn = document.getElementById('toggleInlineCreateBtn');
+      if (open && !dialog.open) {
+        if (typeof dialog.showModal === 'function') {
+          dialog.showModal();
+        } else {
+          dialog.setAttribute('open', '');
+        }
+      } else if (!open && dialog.open) {
+        if (typeof dialog.close === 'function') {
+          dialog.close();
+        } else {
+          dialog.removeAttribute('open');
+        }
+      }
+      toggleBtn.setAttribute('aria-expanded', String(open));
+      toggleBtn.dataset.i18n = 'common.newPack';
+      toggleBtn.textContent = adminT('common.newPack');
+
+      if (open && focusFirstField) {
+        requestAnimationFrame(() => {
+          const preferredLang = getDisplayLang();
+          const preferredCard = document.querySelector(`.inline-translation-card[data-lang-code="${preferredLang}"]`);
+          const firstTitle = preferredCard?.querySelector('.inline-pack-title')
+                  || document.querySelector('.inline-pack-title');
+          firstTitle?.focus();
+        });
+      }
+    }
+
+    async function createPackInline(event) {
+      event.preventDefault();
+      const submitBtn = document.getElementById('inlineCreatePackBtn');
+      const { info, hasPartialTranslation } = collectInlineTranslations();
+      if (hasPartialTranslation) {
+        setInlineCreateMessage(adminT('packList.createNeedTitleAuthor'), 'error');
+        return;
+      }
+      if (info.length === 0) {
+        setInlineCreateMessage(adminT('packList.createNeedTranslation'), 'error');
+        return;
+      }
+
+      let price = Number.parseInt(document.getElementById('inlinePackPrice').value, 10);
+      if (!Number.isFinite(price) || price < 0) {
+        price = 0;
+      }
+      const submittedDifficulty = createDifficulty;
+
+      submitBtn.disabled = true;
+      setInlineCreateMessage(adminT('packList.creating'), null);
+      try {
+        const res = await fetchWithAuth(API_BASE + '/api/training/pack', {
+          method: 'POST',
+          body: JSON.stringify({ info, price, difficulty: submittedDifficulty })
+        });
+        if (!res) return;
+        const data = await res.json();
+        if (!data.isSuccess) {
+          setInlineCreateMessage(adminT('packList.createFailed'), 'error');
+          return;
+        }
+        resetInlineCreateForm();
+        selectedDifficulty = submittedDifficulty;
+        syncDifficultyButtons();
+        await loadPacks();
+        setInlineCreateMessage(adminT('packList.created'), 'success');
+        setTimeout(() => { globalThis.location.href = '/admin/pack-detail?packId=' + data.response; }, 350);
+      } catch (err) {
+        setInlineCreateMessage(adminT('common.errorPrefix', { message: err.message || '' }), 'error');
+      } finally {
+        submitBtn.disabled = false;
+      }
+    }
+
+    async function loadPacks() {
+      const difficulty = selectedDifficulty;
+      const lang = getDisplayLang();
+      const msgEl = document.getElementById('packListMsg');
+      const tableWrap = document.getElementById('packTableWrap');
+      const emptyState = document.getElementById('packEmptyState');
+      const tableBody = document.getElementById('packTableBody');
+      saveFilters();
+      tableBody.innerHTML = '';
+      tableWrap.hidden = true;
+      emptyState.hidden = true;
+      msgEl.textContent = adminT('packList.unknownCount');
+
+      try {
+        const res = await fetchWithAuth(API_BASE + '/admin/training/pack?difficulty=' + encodeURIComponent(difficulty) + '&lang=' + encodeURIComponent(lang));
+        if (!res) return;
+        const data = await res.json();
+        if (!data.isSuccess) {
+          if (res.status === 404) {
+            emptyState.hidden = false;
+            msgEl.textContent = adminT('packList.zero');
+            return;
+          }
+          msgEl.textContent = adminT('packList.unknownCount');
+          return;
+        }
+        const titleQuery = getPackTitleQuery();
+        const packs = (data.response || []).filter(p => {
+          const title = p['title'];
+          if (!title || title.trim() === '') return false;
+          return !titleQuery || title.toLowerCase().includes(titleQuery);
+        });
+        if (packs.length === 0) {
+          emptyState.hidden = false;
+          msgEl.textContent = adminT('packList.zero');
+        } else {
+          tableWrap.hidden = false;
+          packs.forEach(p => {
+            const packIdValue = p['id'];
+            const packTitle = p['title'] || adminT('common.untitled');
+            const packAuthor = p['author'];
+            const tr = document.createElement('tr');
+            tr.addEventListener('click', () => { globalThis.location.href = '/admin/pack-detail?packId=' + packIdValue; });
+            tr.classList.add('clickable-row');
+
+            const titleTd = document.createElement('td');
+            titleTd.className = 'pack-list-main-col';
+            const title = document.createElement('strong');
+            title.textContent = packTitle;
+            titleTd.appendChild(title);
+            const meta = document.createElement('div');
+            meta.className = 'pack-row-meta';
+            meta.textContent = packAuthor ? adminT('packList.metaAuthor', { author: packAuthor }) : adminT('common.noAuthor');
+            titleTd.appendChild(meta);
+
+            const diffTd = document.createElement('td');
+            diffTd.className = 'pack-list-center-col';
+            const diffPill = document.createElement('span');
+            diffPill.className = 'admin-pill primary';
+            diffPill.textContent = difficulty;
+            diffTd.appendChild(diffPill);
+
+            const priceTd = document.createElement('td');
+            priceTd.className = 'pack-list-center-col';
+            priceTd.textContent = String(p['price'] ?? 0);
+
+            const countTd = document.createElement('td');
+            countTd.className = 'pack-list-center-col';
+            countTd.textContent = String(p['totalPuzzleCount'] ?? 0);
+
+            tr.appendChild(titleTd);
+            tr.appendChild(diffTd);
+            tr.appendChild(priceTd);
+            tr.appendChild(countTd);
+            tableBody.appendChild(tr);
+          });
+        }
+        if (packs.length > 0) {
+          msgEl.textContent = adminT('packList.count', { count: packs.length });
+        }
+      } catch (err) {
+        msgEl.dataset.loadError = err instanceof Error ? err.message : String(err);
+        msgEl.textContent = adminT('packList.unknownCount');
+      }
+    }
+
+    document.querySelectorAll('[data-difficulty]').forEach(button => {
+      button.addEventListener('click', () => {
+        if (button.dataset.difficulty === selectedDifficulty) return;
+        selectedDifficulty = button.dataset.difficulty;
+        saveFilters();
+        syncDifficultyButtons();
+        loadPacks();
+      });
+    });
+    let packTitleSearchTimer = null;
+    document.getElementById('packTitleSearch').addEventListener('input', () => {
+      clearTimeout(packTitleSearchTimer);
+      packTitleSearchTimer = setTimeout(loadPacks, 180);
+    });
+    document.querySelectorAll('[data-create-difficulty]').forEach(button => {
+      button.addEventListener('click', () => {
+        if (button.dataset.createDifficulty === createDifficulty) return;
+        createDifficulty = button.dataset.createDifficulty;
+        syncCreateDifficultyButtons();
+      });
+    });
+    document.getElementById('toggleInlineCreateBtn').addEventListener('click', () => {
+      const dialog = document.getElementById('inlinePackCreateDialog');
+      setInlineCreateOpen(!dialog.open);
+    });
+    document.getElementById('closeInlineCreateBtn').addEventListener('click', () => {
+      setInlineCreateOpen(false, false);
+    });
+    document.getElementById('inlinePackCreateDialog').addEventListener('click', (event) => {
+      if (event.target === event.currentTarget) {
+        setInlineCreateOpen(false, false);
+      }
+    });
+    document.getElementById('inlinePackCreateDialog').addEventListener('close', () => {
+      document.getElementById('toggleInlineCreateBtn').setAttribute('aria-expanded', 'false');
+    });
+    document.getElementById('inlinePackCreateForm').addEventListener('submit', createPackInline);
+    document.addEventListener('admin:language-change', () => {
+      loadPacks();
+      setInlineCreateOpen(document.getElementById('inlinePackCreateDialog').open, false);
+    });
+
+    // Restore the last filters and load the list on entry.
     restoreFilters();
-    loadPacks();
+    createDifficulty = selectedDifficulty;
+    syncDifficultyButtons();
+    syncCreateDifficultyButtons();
+    setInlineCreateOpen(false, false);
+    await loadPacks();
   </script>
 </body>
 </html>

@@ -40,8 +40,12 @@ public class SecurityConfig {
         List<RequestMatcher> permitAllRequestMatchers = Arrays.asList(
                 AntPathRequestMatcher.antMatcher("/admin"),  // Admin login page (excluded from JWT filter)
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/admin/login"),  // Admin login API (called without a token)
+                AntPathRequestMatcher.antMatcher("/assets/**"),
+                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/favicon.ico"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/email"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/confirmCode"),
+                AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/password/reset/email"),
+                AntPathRequestMatcher.antMatcher(HttpMethod.PATCH, "/api/auth/password/reset"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/api/auth/duplicate/**"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/login"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/signup"),
@@ -68,7 +72,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/admin/pack-detail").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.GET, "/admin/puzzle-add").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.GET, "/admin/puzzle-edit").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.GET, "/admin/community-puzzles").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.GET, "/puzzle-cache").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.GET, "/puzzle-cache/training-pack").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.GET, "/puzzle-cache/board").hasAuthority(ADMIN_PREFIX)
                         // Admin-only query APIs (for the dashboard)
                         .requestMatchers(HttpMethod.GET, "/admin/training/pack").hasAuthority(ADMIN_PREFIX)
@@ -76,12 +82,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/admin/training/puzzle/**").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.GET, "/admin/training/puzzle-detail/**").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.GET, "/admin/community/puzzle-detail/**").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.GET, "/admin/community/puzzle-manage/**").hasAuthority(ADMIN_PREFIX)
                         // Admin-only create/update/delete APIs
                         .requestMatchers(HttpMethod.POST, "/api/training/puzzle").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.POST, "/api/training/pack").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.PATCH, "/api/training/pack/**").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.DELETE, "/api/training/pack/**").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.POST, "/api/training/pack/translation").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.PATCH, "/api/training/puzzle/**").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.PATCH, "/admin/community/puzzle-manage/**").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.DELETE, "/api/training/puzzle/**").hasAuthority(ADMIN_PREFIX)
                         // All remaining requests require authentication (including regular users)
                         .anyRequest().authenticated()

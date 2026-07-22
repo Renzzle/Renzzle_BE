@@ -131,4 +131,8 @@ public class CommunityPuzzle {
         this.dislikeCount--;
     }
 
+    public void updateVerification(boolean isVerified) {
+        this.isVerified = isVerified;
+    }
+
 }

@@ -1,6 +1,8 @@
 package com.renzzle.backend.domain.puzzle.training.service;
 
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
+import com.renzzle.backend.domain.puzzle.cache.dao.PuzzleCacheRepository;
+import com.renzzle.backend.domain.puzzle.shared.util.RatingUtil;
 import com.renzzle.backend.domain.puzzle.training.api.request.*;
 import com.renzzle.backend.domain.puzzle.training.api.response.*;
 import com.renzzle.backend.domain.puzzle.training.dao.*;
@@ -23,13 +25,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Clock;
-import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static com.renzzle.backend.support.TestTime.FIXED_INSTANT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -55,12 +57,13 @@ public class TrainingServiceTest {
     private UserPackRepository userPackRepository;
 
     @Mock
+    private PuzzleCacheRepository puzzleCacheRepository;
+
+    @Mock
     private UserRepository userRepository;
 
     @Mock
     private Clock clock;
-
-    private final Instant fixedNow = Instant.parse("2025-01-01T00:00:00Z");
 
     @InjectMocks
     private TrainingService trainingService;
@@ -276,7 +279,7 @@ public class TrainingServiceTest {
                     .boardStatus(boardStatus)
                     .boardKey("generatedKey")
                     .depth(depth)
-                    .rating(depth * 200) // TODO: manage the rating calculation formula via RatingUtils
+                    .rating(RatingUtil.puzzleRating(depth, WinColor.getWinColor(winColorStr)))
                     .winColor(WinColor.getWinColor(winColorStr))
                     .build();
 
@@ -293,7 +296,7 @@ public class TrainingServiceTest {
             assertEquals(boardStatus, result.getBoardStatus());
             assertEquals("generatedKey", result.getBoardKey());
             assertEquals(depth, result.getDepth());
-            assertEquals(600.0, result.getRating());
+            assertEquals(RatingUtil.puzzleRating(depth, WinColor.getWinColor(winColorStr)), result.getRating());
 
             verify(trainingPuzzleRepository, times(1)).findTopIndex(packId);
             verify(packRepository, times(1)).findById(packId);
@@ -331,7 +334,7 @@ public class TrainingServiceTest {
                     .id(999L)
                     .user(user)
                     .puzzle(puzzle)
-                    .solvedAt(Instant.now())
+                    .solvedAt(FIXED_INSTANT)
                     .build();
 
             when(trainingPuzzleRepository.findById(puzzleId)).thenReturn(Optional.of(puzzle));
@@ -361,8 +364,8 @@ public class TrainingServiceTest {
                     .password("password")
                     .nickname("testUser")
                     .deviceId("dummy-device")
-                    .lastAccessedAt(Instant.now())
-                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
+                    .lastAccessedAt(FIXED_INSTANT)
+                    .deletedAt(FIXED_INSTANT.plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
                     .status(Status.getDefaultStatus())
                     .build();
 
@@ -415,8 +418,8 @@ public class TrainingServiceTest {
                     .password("password")
                     .nickname("testUser")
                     .deviceId("dummy-device")
-                    .lastAccessedAt(fixedNow)
-                    .deletedAt(fixedNow.plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
+                    .lastAccessedAt(FIXED_INSTANT)
+                    .deletedAt(FIXED_INSTANT.plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
                     .status(Status.getDefaultStatus())
                     .build();
 
@@ -445,8 +448,8 @@ public class TrainingServiceTest {
                     .password("password")
                     .nickname("testUser")
                     .deviceId("dummy-device")
-                    .lastAccessedAt(Instant.now())
-                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
+                    .lastAccessedAt(FIXED_INSTANT)
+                    .deletedAt(FIXED_INSTANT.plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
                     .status(Status.getDefaultStatus())
                     .build();
 
@@ -487,8 +490,8 @@ public class TrainingServiceTest {
                     .password("password")
                     .nickname("testUser")
                     .deviceId("dummy-device")
-                    .lastAccessedAt(Instant.now())
-                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
+                    .lastAccessedAt(FIXED_INSTANT)
+                    .deletedAt(FIXED_INSTANT.plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
                     .status(Status.getDefaultStatus())
                     .build();
 
@@ -549,8 +552,8 @@ public class TrainingServiceTest {
                     .nickname("testUser")
                     .deviceId("dummy-device")
                     .currency(2000)
-                    .lastAccessedAt(Instant.now())
-                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
+                    .lastAccessedAt(FIXED_INSTANT)
+                    .deletedAt(FIXED_INSTANT.plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
                     .status(Status.getDefaultStatus())
                     .build();
 
@@ -604,8 +607,8 @@ public class TrainingServiceTest {
                     .nickname("testUser")
                     .deviceId("dummy-device")
                     .currency(500)
-                    .lastAccessedAt(Instant.now())
-                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))
+                    .lastAccessedAt(FIXED_INSTANT)
+                    .deletedAt(FIXED_INSTANT.plus(1, ChronoUnit.DAYS))
                     .status(Status.getDefaultStatus())
                     .build();
 
@@ -760,8 +763,8 @@ public class TrainingServiceTest {
                     .password("password")
                     .nickname("testUser")
                     .deviceId("dummy-device")
-                    .lastAccessedAt(Instant.now())
-                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
+                    .lastAccessedAt(FIXED_INSTANT)
+                    .deletedAt(FIXED_INSTANT.plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
                     .status(Status.getDefaultStatus())
                     .build();
 
@@ -796,8 +799,8 @@ public class TrainingServiceTest {
                     .password("password")
                     .nickname("testUser")
                     .deviceId("dummy-device")
-                    .lastAccessedAt(Instant.now())
-                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
+                    .lastAccessedAt(FIXED_INSTANT)
+                    .deletedAt(FIXED_INSTANT.plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
                     .status(Status.getDefaultStatus())
                     .build();
 
@@ -823,8 +826,8 @@ public class TrainingServiceTest {
                     .password("password")
                     .nickname("testUser")
                     .deviceId("dummy-device")
-                    .lastAccessedAt(Instant.now())
-                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
+                    .lastAccessedAt(FIXED_INSTANT)
+                    .deletedAt(FIXED_INSTANT.plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
                     .status(Status.getDefaultStatus())
                     .build();
             GetTrainingPackRequest request = new GetTrainingPackRequest("LOW", null);
@@ -850,8 +853,8 @@ public class TrainingServiceTest {
                     .nickname("testUser")
                     .deviceId("dummy-device")
                     .currency(500)
-                    .lastAccessedAt(Instant.now())
-                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
+                    .lastAccessedAt(FIXED_INSTANT)
+                    .deletedAt(FIXED_INSTANT.plus(1, ChronoUnit.DAYS))  // deletedAt set to a future point in time (example)
                     .status(Status.getDefaultStatus())
                     .build();
 
@@ -886,8 +889,8 @@ public class TrainingServiceTest {
                     .nickname("testUser")
                     .deviceId("dummy-device")
                     .currency(500)
-                    .lastAccessedAt(Instant.now())
-                    .deletedAt(Instant.now().plus(1, ChronoUnit.DAYS))
+                    .lastAccessedAt(FIXED_INSTANT)
+                    .deletedAt(FIXED_INSTANT.plus(1, ChronoUnit.DAYS))
                     .status(Status.getDefaultStatus())
                     .build();
 

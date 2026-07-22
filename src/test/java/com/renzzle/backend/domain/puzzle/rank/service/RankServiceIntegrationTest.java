@@ -20,7 +20,6 @@ import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.test.context.ActiveProfiles;
@@ -51,9 +50,6 @@ class RankServiceIntegrationTest {
 
     private UserEntity testUser;
     private String redisKey;
-
-    @Value("${rank.session.ttl}")
-    private long sessionTtl;
 
     @BeforeEach
     void setup() {
@@ -125,7 +121,7 @@ class RankServiceIntegrationTest {
 
         // Call result API - assume the problem is answered correctly
         RankResultRequest resultRequest = new RankResultRequest(true);
-        RankResultResponse resultResponse = rankService.resultRankGame(beforeUser, resultRequest);
+        rankService.resultRankGame(beforeUser, resultRequest);
 
         RankSessionData sessionAfterResult = redisTemplate.opsForValue().get(redisKey);
         assertNotNull(sessionAfterResult, "result 호출 후에도 세션이 Redis에 존재해야 함");
@@ -221,8 +217,5 @@ class RankServiceIntegrationTest {
         LatestRankPuzzle secondPuzzle = secondResult.latestPuzzle();
 
         assertNotEquals(firstPuzzle.getBoardStatus(), secondPuzzle.getBoardStatus(), "같은 문제 다시 출제되면 안 됨");
-
-//        double diff = Math.abs(secondResult.rating() - ELOUtils.getProblemRatingForTargetWinProbability(testUser.getMmr(), targetWinProb - 0.05));
-//        assertTrue(diff <= 200, "the second problem's rating should be near the expected value");
     }
 }

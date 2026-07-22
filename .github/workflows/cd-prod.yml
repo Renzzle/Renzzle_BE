@@ -106,6 +106,16 @@ jobs:
           key: ${{ secrets.PRIVATE_KEY }}
           script: sudo rm -rf /home/ubuntu/caddy
 
+      - name: Create Cloudflare Origin cert files
+        run: |
+          mkdir -p caddy/origin
+          cat > caddy/origin/renzzle.com.pem <<'EOF'
+          ${{ secrets.CF_ORIGIN_CERT }}
+          EOF
+          cat > caddy/origin/renzzle.com.key <<'EOF'
+          ${{ secrets.CF_ORIGIN_KEY }}
+          EOF
+
       - name: Copy Caddy config to EC2
         uses: appleboy/scp-action@master
         with:

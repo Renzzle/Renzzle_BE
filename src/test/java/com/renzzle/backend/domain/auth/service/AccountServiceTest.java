@@ -1,6 +1,8 @@
 package com.renzzle.backend.domain.auth.service;
 
+import com.renzzle.backend.domain.auth.api.request.ChangePasswordRequest;
 import com.renzzle.backend.domain.auth.api.request.LoginRequest;
+import com.renzzle.backend.domain.auth.api.request.ResetPasswordRequest;
 import com.renzzle.backend.domain.auth.api.request.SignupRequest;
 import com.renzzle.backend.domain.auth.api.response.LoginResponse;
 import com.renzzle.backend.domain.user.dao.UserRepository;
@@ -8,7 +10,6 @@ import com.renzzle.backend.domain.puzzle.training.service.TrainingService;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
-import com.renzzle.backend.support.TestUserEntityBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,9 +18,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -29,8 +27,6 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class AccountServiceTest {
 
-    @Mock
-    private Clock clock;
     @Mock
     private UserRepository userRepository;
     @Mock
@@ -80,9 +76,7 @@ class AccountServiceTest {
         when(authService.verifyAuthVerityToken(authVerityToken, email)).thenReturn(true);
         when(userRepository.existsByEmail(email)).thenReturn(true);
 
-        CustomException ex = assertThrows(CustomException.class, () -> {
-            accountService.signUp(validSignupRequest);
-        });
+        CustomException ex = assertThrows(CustomException.class, () -> accountService.signUp(validSignupRequest));
 
         assertEquals(ErrorCode.DUPLICATE_EMAIL, ex.getErrorCode());
     }
@@ -91,9 +85,7 @@ class AccountServiceTest {
     void signUp_ShouldThrowException_WhenInvalidAuthToken() {
         when(authService.verifyAuthVerityToken(authVerityToken, email)).thenReturn(false);
 
-        CustomException ex = assertThrows(CustomException.class, () -> {
-            accountService.signUp(validSignupRequest);
-        });
+        CustomException ex = assertThrows(CustomException.class, () -> accountService.signUp(validSignupRequest));
 
         assertEquals(ErrorCode.INVALID_AUTH_VERITY_TOKEN, ex.getErrorCode());
     }
@@ -120,9 +112,7 @@ class AccountServiceTest {
     void login_ShouldThrowException_WhenEmailNotFound() {
         when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
 
-        CustomException ex = assertThrows(CustomException.class, () -> {
-            accountService.login(validLoginRequest);
-        });
+        CustomException ex = assertThrows(CustomException.class, () -> accountService.login(validLoginRequest));
 
         assertEquals(ErrorCode.INVALID_EMAIL, ex.getErrorCode());
     }
@@ -139,11 +129,78 @@ class AccountServiceTest {
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
 
-        CustomException ex = assertThrows(CustomException.class, () -> {
-            accountService.login(validLoginRequest);
-        });
+        CustomException ex = assertThrows(CustomException.class, () -> accountService.login(validLoginRequest));
 
         assertEquals(ErrorCode.INVALID_PASSWORD, ex.getErrorCode());
+    }
+
+    @Test
+    void changePassword_ShouldChangePassword_WhenCurrentPasswordMatches() {
+        UserEntity user = UserEntity.builder()
+                .id(1L)
+                .email(email)
+                .password(new BCryptPasswordEncoder().encode(password))
+                .nickname(nickname)
+                .deviceId(deviceId)
+                .build();
+        ChangePasswordRequest request = new ChangePasswordRequest(password, "newPassword123");
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        Long changedUserId = accountService.changePassword(user, request);
+
+        assertEquals(1L, changedUserId);
+        assertTrue(new BCryptPasswordEncoder().matches(request.newPassword(), user.getPassword()));
+    }
+
+    @Test
+    void changePassword_ShouldThrowException_WhenCurrentPasswordMismatch() {
+        UserEntity user = UserEntity.builder()
+                .id(1L)
+                .email(email)
+                .password(new BCryptPasswordEncoder().encode(password))
+                .nickname(nickname)
+                .deviceId(deviceId)
+                .build();
+        ChangePasswordRequest request = new ChangePasswordRequest("wrongPassword", "newPassword123");
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        CustomException ex = assertThrows(CustomException.class,
+                () -> accountService.changePassword(user, request));
+
+        assertEquals(ErrorCode.INVALID_PASSWORD, ex.getErrorCode());
+        assertTrue(new BCryptPasswordEncoder().matches(password, user.getPassword()));
+    }
+
+    @Test
+    void resetPassword_ShouldChangePasswordAndDeleteRefreshToken_WhenTokenIsValid() {
+        UserEntity user = UserEntity.builder()
+                .id(1L)
+                .email(email)
+                .password(new BCryptPasswordEncoder().encode(password))
+                .nickname(nickname)
+                .deviceId(deviceId)
+                .build();
+        ResetPasswordRequest request = new ResetPasswordRequest(email, authVerityToken, "newPassword123");
+        when(authService.verifyAuthVerityToken(authVerityToken, email)).thenReturn(true);
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+
+        Long resetUserId = accountService.resetPassword(request);
+
+        assertEquals(1L, resetUserId);
+        assertTrue(new BCryptPasswordEncoder().matches(request.newPassword(), user.getPassword()));
+        verify(authService).deleteRefreshToken(user);
+    }
+
+    @Test
+    void resetPassword_ShouldThrowException_WhenTokenDoesNotMatchEmail() {
+        ResetPasswordRequest request = new ResetPasswordRequest(email, "invalid-token", "newPassword123");
+        when(authService.verifyAuthVerityToken(request.authVerityToken(), email)).thenReturn(false);
+
+        CustomException ex = assertThrows(CustomException.class,
+                () -> accountService.resetPassword(request));
+
+        assertEquals(ErrorCode.INVALID_AUTH_VERITY_TOKEN, ex.getErrorCode());
+        verify(userRepository, never()).findByEmail(anyString());
     }
 
 }

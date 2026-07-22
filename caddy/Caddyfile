@@ -3,6 +3,8 @@
 }
 
 renzzle.com, www.renzzle.com {
+	tls /etc/caddy/origin/renzzle.com.pem /etc/caddy/origin/renzzle.com.key
+	
 	handle /app-ads.txt {
 		header Content-Type text/plain
 		respond "google.com, pub-8517144519151386, DIRECT, f08c47fec0942fa0" 200

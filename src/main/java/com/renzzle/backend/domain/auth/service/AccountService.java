@@ -1,6 +1,8 @@
 package com.renzzle.backend.domain.auth.service;
 
+import com.renzzle.backend.domain.auth.api.request.ChangePasswordRequest;
 import com.renzzle.backend.domain.auth.api.request.LoginRequest;
+import com.renzzle.backend.domain.auth.api.request.ResetPasswordRequest;
 import com.renzzle.backend.domain.auth.api.request.SignupRequest;
 import com.renzzle.backend.domain.auth.api.response.LoginResponse;
 import com.renzzle.backend.domain.auth.dao.AdminRepository;
@@ -89,6 +91,33 @@ public class AccountService {
         long userId = user.get().getId();
 
         return authService.createAuthTokens(userId);
+    }
+
+    @Transactional
+    public Long changePassword(UserEntity user, ChangePasswordRequest request) {
+        UserEntity persistedUser = userRepository.findById(user.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
+
+        if (!passwordEncoder.matches(request.currentPassword(), persistedUser.getPassword())) {
+            throw new CustomException(ErrorCode.INVALID_PASSWORD);
+        }
+
+        persistedUser.changePassword(passwordEncoder.encode(request.newPassword()));
+        return persistedUser.getId();
+    }
+
+    @Transactional
+    public Long resetPassword(ResetPasswordRequest request) {
+        if (!authService.verifyAuthVerityToken(request.authVerityToken(), request.email())) {
+            throw new CustomException(ErrorCode.INVALID_AUTH_VERITY_TOKEN);
+        }
+
+        UserEntity user = userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new CustomException(ErrorCode.INVALID_EMAIL));
+
+        user.changePassword(passwordEncoder.encode(request.newPassword()));
+        authService.deleteRefreshToken(user);
+        return user.getId();
     }
 
     @Transactional(readOnly = true)

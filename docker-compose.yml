@@ -31,6 +31,7 @@ services:
       ACTUATOR_TOKEN: ${ACTUATOR_TOKEN}
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy/origin:/etc/caddy/origin:ro
       - caddy-data:/data
       - caddy-config:/config
     networks:

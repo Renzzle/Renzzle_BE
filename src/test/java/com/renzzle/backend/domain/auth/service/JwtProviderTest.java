@@ -13,9 +13,9 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneId;
 import static com.renzzle.backend.domain.auth.service.JwtProviderTest.JWT_TEST_PROPERTY;
+import static com.renzzle.backend.support.TestTime.FIXED_INSTANT;
+import static com.renzzle.backend.support.TestTime.FIXED_ZONE;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
@@ -42,8 +42,8 @@ class JwtProviderTest {
 
     @BeforeEach
     void setUp() {
-        when(clock.instant()).thenReturn(Instant.now());
-        when(clock.getZone()).thenReturn(ZoneId.systemDefault());
+        when(clock.instant()).thenReturn(FIXED_INSTANT);
+        when(clock.getZone()).thenReturn(FIXED_ZONE);
 
         testUserId = 1L;
         testEmail = "test@example.com";
@@ -51,7 +51,7 @@ class JwtProviderTest {
         refreshToken = jwtProvider.createRefreshToken(testUserId);
         authVerityToken = jwtProvider.createAuthVerityToken(testEmail);
 
-        when(clock.instant()).thenReturn(Instant.now().plusSeconds(1));
+        when(clock.instant()).thenReturn(FIXED_INSTANT.plusSeconds(1));
     }
 
     @Test

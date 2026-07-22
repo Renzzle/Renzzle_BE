@@ -76,6 +76,30 @@ class EmailServiceTest {
     }
 
     @Test
+    void sendPasswordResetCode_ShouldSendEmail_WhenEmailExists() {
+        AuthEmailRequest request = new AuthEmailRequest("registered@example.com");
+        when(accountService.isDuplicatedEmail(request.email())).thenReturn(true);
+        when(emailRepository.findById(request.email())).thenReturn(Optional.empty());
+
+        AuthEmailResponse response = emailService.sendPasswordResetCode(request);
+
+        assertThat(response.requestCount()).isEqualTo(1);
+        verify(emailSender).sendPasswordResetEmail(eq(request.email()), any(String.class));
+    }
+
+    @Test
+    void sendPasswordResetCode_ShouldThrowException_WhenEmailDoesNotExist() {
+        AuthEmailRequest request = new AuthEmailRequest("unknown@example.com");
+        when(accountService.isDuplicatedEmail(request.email())).thenReturn(false);
+
+        CustomException exception = assertThrows(CustomException.class,
+                () -> emailService.sendPasswordResetCode(request));
+
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_EMAIL);
+        verifyNoInteractions(emailSender);
+    }
+
+    @Test
     void sendCode_ExceedRequestCount_ShouldThrowException() {
         // given
         AuthEmailRequest request = new AuthEmailRequest("test@example.com");
