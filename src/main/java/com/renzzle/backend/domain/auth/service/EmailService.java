@@ -16,6 +16,7 @@ import java.time.Duration;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 
 @Service
 @RequiredArgsConstructor
@@ -49,15 +50,28 @@ public class EmailService {
             throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
         }
 
-        int count = getRequestCount(request.email());
+        return sendCodeTo(request.email(), emailSender::sendAuthEmail);
+    }
+
+    @Transactional
+    public AuthEmailResponse sendPasswordResetCode(AuthEmailRequest request) {
+        if(!accountService.isDuplicatedEmail(request.email())) {
+            throw new CustomException(ErrorCode.INVALID_EMAIL);
+        }
+
+        return sendCodeTo(request.email(), emailSender::sendPasswordResetEmail);
+    }
+
+    private AuthEmailResponse sendCodeTo(String email, BiConsumer<String, String> emailConsumer) {
+        int count = getRequestCount(email);
         if(count >= EMAIL_VERIFICATION_LIMIT) {
             throw new CustomException(ErrorCode.EXCEED_EMAIL_AUTH_REQUEST);
         }
 
         String code = generateRandomCode();
-        emailSender.sendAuthEmail(request.email(), code);
+        emailConsumer.accept(email, code);
 
-        saveConfirmCode(request.email(), code, count);
+        saveConfirmCode(email, code, count);
 
         return AuthEmailResponse
                 .builder()

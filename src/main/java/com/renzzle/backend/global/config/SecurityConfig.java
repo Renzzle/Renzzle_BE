@@ -44,6 +44,8 @@ public class SecurityConfig {
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/favicon.ico"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/email"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/confirmCode"),
+                AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/password/reset/email"),
+                AntPathRequestMatcher.antMatcher(HttpMethod.PATCH, "/api/auth/password/reset"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/api/auth/duplicate/**"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/login"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/signup"),
