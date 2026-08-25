@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -81,6 +82,63 @@ public class PuzzleCacheService {
 
         Map<Long, Integer> solutionDag = solutionSerializer.deserialize(puzzle.getSolutionDag());
         return solutionDag.get(currentZobristHash);
+    }
+
+    /**
+     * Enumerates every next move that is already cached for the given position, so the client can
+     * prefetch one ply ahead and answer the user's move without another round trip.
+     * <p>
+     * Unlike {@link #getAiResponse}, {@code currentBoardState} is a position where it is the
+     * <b>user's</b> turn. Each candidate is the user's move mapped to the AI's cached reply.
+     *
+     * @return user move index to AI reply index, both 0-based; empty when nothing is cached
+     */
+    @Transactional(readOnly = true)
+    public Map<Integer, Integer> getNextMoveCandidates(PuzzleType puzzleType, Long puzzleId, String currentBoardState) {
+        if (puzzleType == null || puzzleId == null || currentBoardState == null || currentBoardState.isBlank()) {
+            throw new CustomException(ErrorCode.NO_BOARD_STATUS);
+        }
+
+        final int[] currentCellIndexes;
+        try {
+            currentCellIndexes = ZobristHashUtils.parseCellIndexes(currentBoardState);
+        } catch (IllegalArgumentException e) {
+            throw new CustomException(e.getMessage(), ErrorCode.VALIDATION_ERROR);
+        }
+
+        PuzzleCache puzzle = puzzleCacheRepository.findByPuzzleTypeAndPuzzleId(puzzleType, puzzleId)
+                .orElse(null);
+
+        if (puzzle == null || puzzle.getSolutionDag() == null || puzzle.getSolutionDag().length == 0) {
+            return Map.of();
+        }
+
+        Map<Long, Integer> solutionDag = solutionSerializer.deserialize(puzzle.getSolutionDag());
+        if (solutionDag.isEmpty()) {
+            return Map.of();
+        }
+
+        int totalCells = ZobristHashUtils.totalCells();
+        boolean[] occupied = new boolean[totalCells];
+        for (int cellIndex : currentCellIndexes) {
+            occupied[cellIndex] = true;
+        }
+
+        long currentZobristHash = ZobristHashUtils.hashFromCellIndexes(currentCellIndexes);
+        int userMoveIndex = currentCellIndexes.length;
+
+        Map<Integer, Integer> candidates = new LinkedHashMap<>();
+        for (int cellIndex = 0; cellIndex < totalCells; cellIndex++) {
+            if (occupied[cellIndex]) {
+                continue;
+            }
+            long nextHash = ZobristHashUtils.applyMove(currentZobristHash, cellIndex, userMoveIndex);
+            Integer aiResponse = solutionDag.get(nextHash);
+            if (aiResponse != null) {
+                candidates.put(cellIndex, aiResponse);
+            }
+        }
+        return candidates;
     }
 
     private int parseAnswerPuzzleToMove(String answerPuzzle) {

@@ -225,4 +225,112 @@ class PuzzleCacheServiceTest {
                 .containsEntry(existingHash, existingMove)
                 .containsEntry(zobristHash, newMove);
     }
+
+    // ========== getNextMoveCandidates ==========
+
+    private static final String USER_TURN_BOARD_STATE = "h8h9";
+    private static final int USER_MOVE_INDEX = 2;
+    private static final int CELL_I10 = 129;
+    private static final int CELL_J11 = 145;
+    private static final int CELL_H8 = 112;
+
+    private static long hashAfterUserMove(int cellIndex) {
+        return ZobristHashUtils.applyMove(
+                ZobristHashUtils.hashFromBoardStatus(USER_TURN_BOARD_STATE), cellIndex, USER_MOVE_INDEX);
+    }
+
+    @Test
+    @DisplayName("캐시에 존재하는 사용자 수와 그에 대한 AI 응답만 반환한다")
+    void getNextMoveCandidates_ShouldReturnOnlyCachedMoves() {
+        byte[] solutionDagBinary = new byte[] {1, 2, 3};
+        PuzzleCache puzzle = PuzzleCache.builder()
+                .puzzleType(TYPE).puzzleId(PUZZLE_ID)
+                .rootBoardState(USER_TURN_BOARD_STATE)
+                .solutionDag(solutionDagBinary)
+                .build();
+
+        Map<Long, Integer> dag = new HashMap<>();
+        dag.put(hashAfterUserMove(CELL_I10), CELL_J11);
+        dag.put(12345L, 7); // 도달 불가능한 항목이므로 후보에 포함되지 않아야 한다
+
+        when(puzzleCacheRepository.findByPuzzleTypeAndPuzzleId(TYPE, PUZZLE_ID)).thenReturn(Optional.of(puzzle));
+        when(solutionSerializer.deserialize(solutionDagBinary)).thenReturn(dag);
+
+        Map<Integer, Integer> candidates =
+                puzzleCacheService.getNextMoveCandidates(TYPE, PUZZLE_ID, USER_TURN_BOARD_STATE);
+
+        assertThat(candidates).containsExactlyEntriesOf(Map.of(CELL_I10, CELL_J11));
+    }
+
+    @Test
+    @DisplayName("이미 돌이 놓인 칸은 후보에서 제외한다")
+    void getNextMoveCandidates_ShouldSkipOccupiedCells() {
+        byte[] solutionDagBinary = new byte[] {1, 2, 3};
+        PuzzleCache puzzle = PuzzleCache.builder()
+                .puzzleType(TYPE).puzzleId(PUZZLE_ID)
+                .rootBoardState(USER_TURN_BOARD_STATE)
+                .solutionDag(solutionDagBinary)
+                .build();
+
+        Map<Long, Integer> dag = new HashMap<>();
+        dag.put(hashAfterUserMove(CELL_H8), CELL_J11); // h8은 이미 점유된 칸
+
+        when(puzzleCacheRepository.findByPuzzleTypeAndPuzzleId(TYPE, PUZZLE_ID)).thenReturn(Optional.of(puzzle));
+        when(solutionSerializer.deserialize(solutionDagBinary)).thenReturn(dag);
+
+        Map<Integer, Integer> candidates =
+                puzzleCacheService.getNextMoveCandidates(TYPE, PUZZLE_ID, USER_TURN_BOARD_STATE);
+
+        assertThat(candidates).isEmpty();
+    }
+
+    @Test
+    @DisplayName("캐시 퍼즐이 없으면 빈 결과를 반환한다")
+    void getNextMoveCandidates_ShouldReturnEmpty_WhenPuzzleNotFound() {
+        when(puzzleCacheRepository.findByPuzzleTypeAndPuzzleId(TYPE, 999L)).thenReturn(Optional.empty());
+
+        Map<Integer, Integer> candidates =
+                puzzleCacheService.getNextMoveCandidates(TYPE, 999L, USER_TURN_BOARD_STATE);
+
+        assertThat(candidates).isEmpty();
+    }
+
+    @Test
+    @DisplayName("solutionDag가 비어 있으면 역직렬화 없이 빈 결과를 반환한다")
+    void getNextMoveCandidates_ShouldReturnEmpty_WhenSolutionDagIsEmpty() {
+        PuzzleCache puzzle = PuzzleCache.builder()
+                .puzzleType(TYPE).puzzleId(PUZZLE_ID)
+                .rootBoardState(USER_TURN_BOARD_STATE)
+                .solutionDag(new byte[0])
+                .build();
+
+        when(puzzleCacheRepository.findByPuzzleTypeAndPuzzleId(TYPE, PUZZLE_ID)).thenReturn(Optional.of(puzzle));
+
+        Map<Integer, Integer> candidates =
+                puzzleCacheService.getNextMoveCandidates(TYPE, PUZZLE_ID, USER_TURN_BOARD_STATE);
+
+        assertThat(candidates).isEmpty();
+    }
+
+    @Test
+    @DisplayName("보드 상태 문자열이 잘못되면 VALIDATION_ERROR 예외가 발생한다")
+    void getNextMoveCandidates_ShouldThrowValidation_WhenBoardStateInvalid() {
+        CustomException exception = assertThrows(
+                CustomException.class,
+                () -> puzzleCacheService.getNextMoveCandidates(TYPE, PUZZLE_ID, "z99")
+        );
+
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_ERROR);
+    }
+
+    @Test
+    @DisplayName("보드 상태가 비어 있으면 NO_BOARD_STATUS 예외가 발생한다")
+    void getNextMoveCandidates_ShouldThrowNoBoardStatus_WhenBoardStateBlank() {
+        CustomException exception = assertThrows(
+                CustomException.class,
+                () -> puzzleCacheService.getNextMoveCandidates(TYPE, PUZZLE_ID, "  ")
+        );
+
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.NO_BOARD_STATUS);
+    }
 }

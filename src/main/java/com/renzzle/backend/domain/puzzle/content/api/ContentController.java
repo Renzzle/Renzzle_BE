@@ -10,6 +10,7 @@ import com.renzzle.backend.global.util.ApiUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -24,7 +25,7 @@ public class ContentController {
     @Operation(summary = "Get recommend Pack", description = "Get recommend Pack")
     @GetMapping("/recommend")
     public ApiResponse<GetRecommendPackResponse> getRecommendPack(
-            @Valid @ModelAttribute GetRecommendRequest request,
+            @Valid @ParameterObject @ModelAttribute GetRecommendRequest request,
             @AuthenticationPrincipal UserDetailsImpl user
     ) {
         GetRecommendPackResponse response = contentService.getRecommendedPack(request, user.getUser());

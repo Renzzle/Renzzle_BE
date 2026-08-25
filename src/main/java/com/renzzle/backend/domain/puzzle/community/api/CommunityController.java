@@ -13,6 +13,7 @@ import com.renzzle.backend.global.util.ApiUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -38,7 +39,7 @@ public class CommunityController {
     @Operation(summary = "Get community puzzle data", description = "Return community puzzle list")
     @GetMapping("/puzzle")
     public ApiResponse<List<GetCommunityPuzzlesResponse>> getCommunityPuzzles(
-            @Valid @ModelAttribute GetCommunityPuzzleRequest request,
+            @Valid @ParameterObject @ModelAttribute GetCommunityPuzzleRequest request,
             @AuthenticationPrincipal UserDetailsImpl user
     ) {
         return ApiUtils.success(communityService.getCommunityPuzzleList(request, user.getUser()));
