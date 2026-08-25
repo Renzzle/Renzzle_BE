@@ -57,9 +57,12 @@ iap:
     package-name: ${GOOGLE_PLAY_PACKAGE_NAME:}
     credentials-path: ${GOOGLE_APPLICATION_CREDENTIALS:}
   apple:
-    shared-secret: ${APPLE_APP_SHARED_SECRET:}
-    production-url: https://buy.itunes.apple.com/verifyReceipt
-    sandbox-url: https://sandbox.itunes.apple.com/verifyReceipt
+    issuer-id: ${APPLE_IAP_ISSUER_ID:}
+    key-id: ${APPLE_IAP_KEY_ID:}
+    bundle-id: ${APPLE_IAP_BUNDLE_ID:com.renzzle}
+    private-key-path: ${APPLE_IAP_PRIVATE_KEY_PATH:}
+    production-url: https://api.storekit.itunes.apple.com
+    sandbox-url: https://api.storekit-sandbox.itunes.apple.com
 
 springdoc:
   packages-to-scan: com.renzzle.backend

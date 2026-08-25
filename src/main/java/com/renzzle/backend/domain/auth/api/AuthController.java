@@ -41,7 +41,7 @@ public class AuthController {
 
     @Operation(summary = "Check duplication of nickname", description = "Return true if nickname exists")
     @GetMapping("/duplicate/{nickname}")
-    public ApiResponse<Boolean> isDuplicateNickname(@PathVariable("nickname") String nickname) {
+    public ApiResponse<Boolean> isDuplicateNickname(@PathVariable String nickname) {
         return ApiUtils.success(accountService.isDuplicateNickname(nickname));
     }
 

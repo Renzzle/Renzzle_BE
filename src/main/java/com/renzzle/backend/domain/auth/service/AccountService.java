@@ -39,11 +39,6 @@ public class AccountService {
         return userRepository.existsByNickname(nickname);
     }
 
-    @Transactional(readOnly = true)
-    public boolean isDuplicateSignUp(String deviceId) {
-        return userRepository.existsByDeviceId(deviceId);
-    }
-
     @Transactional
     public LoginResponse signUp(SignupRequest request) {
         if(!authService.verifyAuthVerityToken(request.authVerityToken(), request.email())) {

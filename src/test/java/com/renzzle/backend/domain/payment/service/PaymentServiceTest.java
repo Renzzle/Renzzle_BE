@@ -42,7 +42,7 @@ class PaymentServiceTest {
     private GooglePlayReceiptVerifier googlePlayReceiptVerifier;
 
     @Mock
-    private AppleReceiptVerifier appleReceiptVerifier;
+    private AppleTransactionVerifier appleTransactionVerifier;
 
     @InjectMocks
     private PaymentService paymentService;
@@ -53,7 +53,7 @@ class PaymentServiceTest {
         // given
         UserEntity user = TestUserEntityBuilder.builder().withId(1L).build();
         VerifyInAppPurchaseRequest request =
-                new VerifyInAppPurchaseRequest("ios", "piece_1000", null, null, "receipt");
+                new VerifyInAppPurchaseRequest("ios", "piece_1000", null, null, null);
 
         // when
         CustomException exception = assertThrows(CustomException.class,
@@ -61,24 +61,7 @@ class PaymentServiceTest {
 
         // then
         assertEquals(ErrorCode.INVALID_PAYMENT_REQUEST, exception.getErrorCode());
-        verifyNoInteractions(appleReceiptVerifier);
-    }
-
-    @DisplayName("iOS 검증 요청에서 receipt가 없으면 실패")
-    @Test
-    void verifyInAppPurchase_WhenIosReceiptMissing_ThenThrowsCustomException() {
-        // given
-        UserEntity user = TestUserEntityBuilder.builder().withId(1L).build();
-        VerifyInAppPurchaseRequest request =
-                new VerifyInAppPurchaseRequest("ios", "piece_1000", "transaction-id", null, null);
-
-        // when
-        CustomException exception = assertThrows(CustomException.class,
-                () -> paymentService.verifyInAppPurchase(user, request));
-
-        // then
-        assertEquals(ErrorCode.INVALID_PAYMENT_REQUEST, exception.getErrorCode());
-        verifyNoInteractions(appleReceiptVerifier);
+        verifyNoInteractions(appleTransactionVerifier);
     }
 
     @DisplayName("iOS 검증 응답의 transactionId가 요청과 다르면 실패")
@@ -87,10 +70,10 @@ class PaymentServiceTest {
         // given
         UserEntity user = TestUserEntityBuilder.builder().withId(1L).build();
         VerifyInAppPurchaseRequest request =
-                new VerifyInAppPurchaseRequest("ios", "piece_1000", "transaction-id", null, "receipt");
+                new VerifyInAppPurchaseRequest("ios", "piece_1000", "transaction-id", null, null);
 
         when(inAppPurchaseRepository.existsByTransactionId("transaction-id")).thenReturn(false);
-        when(appleReceiptVerifier.verify("piece_1000", "transaction-id", "receipt"))
+        when(appleTransactionVerifier.verify("piece_1000", "transaction-id"))
                 .thenReturn(new StoreVerificationResult("piece_1000", "other-transaction-id"));
 
         // when
@@ -145,7 +128,7 @@ class PaymentServiceTest {
         // given
         UserEntity user = TestUserEntityBuilder.builder().withId(1L).build();
         VerifyInAppPurchaseRequest request =
-                new VerifyInAppPurchaseRequest("ios", "piece_1000", "transaction-id", null, "receipt");
+                new VerifyInAppPurchaseRequest("ios", "piece_1000", "transaction-id", null, null);
 
         when(inAppPurchaseRepository.existsByTransactionId("transaction-id")).thenReturn(true);
 
@@ -155,8 +138,42 @@ class PaymentServiceTest {
 
         // then
         assertEquals(ErrorCode.ALREADY_PROCESSED_RECEIPT, exception.getErrorCode());
-        verifyNoInteractions(appleReceiptVerifier);
+        verifyNoInteractions(appleTransactionVerifier);
         verify(inAppPurchaseRepository, never()).save(any(InAppPurchase.class));
+    }
+
+    @DisplayName("정상 iOS 결제는 결제 기록 저장 후 재화를 지급")
+    @Test
+    void verifyInAppPurchase_WhenIosPurchaseValid_ThenSavePurchaseAndGrantReward() {
+        // given
+        UserEntity principalUser = TestUserEntityBuilder.builder().withId(1L).build();
+        UserEntity persistedUser = TestUserEntityBuilder.builder().withId(1L).withCurrency(0).build();
+        VerifyInAppPurchaseRequest request =
+                new VerifyInAppPurchaseRequest("ios", "piece_5000", "2000000123456789", null, null);
+
+        when(inAppPurchaseRepository.existsByTransactionId("2000000123456789")).thenReturn(false);
+        when(appleTransactionVerifier.verify("piece_5000", "2000000123456789"))
+                .thenReturn(new StoreVerificationResult("piece_5000", "2000000123456789"));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(persistedUser));
+
+        // when
+        VerifyInAppPurchaseResponse response = paymentService.verifyInAppPurchase(principalUser, request);
+
+        // then
+        ArgumentCaptor<InAppPurchase> captor = ArgumentCaptor.forClass(InAppPurchase.class);
+        verify(inAppPurchaseRepository).save(captor.capture());
+
+        InAppPurchase savedPurchase = captor.getValue();
+        assertThat(savedPurchase.getPlatform()).isEqualTo(PaymentPlatform.IOS);
+        assertThat(savedPurchase.getProductId()).isEqualTo("piece_5000");
+        assertThat(savedPurchase.getTransactionId()).isEqualTo("2000000123456789");
+        assertThat(savedPurchase.getPurchaseToken()).isNull();
+        assertThat(savedPurchase.getGrantedCurrency()).isEqualTo(5000);
+        assertThat(persistedUser.getCurrency()).isEqualTo(5000);
+
+        assertThat(response.platform()).isEqualTo("IOS");
+        assertThat(response.productId()).isEqualTo("piece_5000");
+        assertThat(response.grantedCurrency()).isEqualTo(5000);
     }
 
     @DisplayName("정상 Android 결제는 결제 기록 저장 후 재화를 지급")

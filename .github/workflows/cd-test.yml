@@ -92,6 +92,10 @@ jobs:
           echo "LOKI_TOKEN=${{ secrets.LOKI_TOKEN }}" >> .env
           echo "GOOGLE_PLAY_PACKAGE_NAME=com.renzzle_fe" >> .env
           echo "GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/google-play-service-account.json" >> .env
+          echo "APPLE_IAP_ISSUER_ID=fdfa8478-dee3-4484-8565-f55d1c6dd1f2" >> .env
+          echo "APPLE_IAP_KEY_ID=QNA358LHQ9" >> .env
+          echo "APPLE_IAP_BUNDLE_ID=com.renzzle" >> .env
+          echo "APPLE_IAP_PRIVATE_KEY_PATH=/app/secrets/apple-iap-key.p8" >> .env
           echo "ACME_EMAIL=${{ secrets.ACME_EMAIL }}" >> .env
           echo "ACTUATOR_TOKEN=${{ secrets.ACTUATOR_TOKEN }}" >> .env
 
@@ -102,13 +106,20 @@ jobs:
           ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           EOF
 
+      - name: Create Apple IAP private key file
+        run: |
+          mkdir -p secrets
+          cat > secrets/apple-iap-key.p8 <<'EOF'
+          ${{ secrets.APPLE_IAP_PRIVATE_KEY }}
+          EOF
+
       - name: Copy Files to Home Server
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.TEST_HOST }}
           username: ${{ secrets.TEST_USERNAME }}
           key: ${{ secrets.TEST_PRIVATE_KEY }}
-          source: "./docker-compose.yml,./docker-compose.test.yml,./.env,./secrets/google-play-service-account.json"
+          source: "./docker-compose.yml,./docker-compose.test.yml,./.env,./secrets/google-play-service-account.json,./secrets/apple-iap-key.p8"
           target: "/home/${{ secrets.TEST_USERNAME }}/app/"
           overwrite: true
 
