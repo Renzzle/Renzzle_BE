@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.puzzle.shared.util;
 
+import java.util.Arrays;
 import java.util.SplittableRandom;
 
 public final class ZobristHashUtils {
@@ -14,25 +15,66 @@ public final class ZobristHashUtils {
     private ZobristHashUtils() {
     }
 
+    public static int totalCells() {
+        return TOTAL_CELLS;
+    }
+
     public static long hashFromBoardStatus(String boardStatus) {
+        return hashFromCellIndexes(parseCellIndexes(boardStatus));
+    }
+
+    /**
+     * Parses a board status string into 0-based cell indexes in move order.
+     * The index of each element is its move index, which determines the stone color.
+     */
+    public static int[] parseCellIndexes(String boardStatus) {
         if (boardStatus == null || boardStatus.isBlank()) {
             throw new IllegalArgumentException("Board status is null or blank");
         }
 
-        long hash = 0L;
-        int moveIndex = 0;
+        // every move takes at least two characters, so this never overflows
+        int[] cellIndexes = new int[boardStatus.length() / 2 + 1];
+        int moveCount = 0;
 
         for (int i = 0; i < boardStatus.length();) {
             int position = parseBoardPosition(boardStatus, i);
-            int cellIndex = position - 1;
-            int stoneColor = (moveIndex % 2 == 0) ? BLACK : WHITE;
-            hash ^= ZOBRIST_TABLE[cellIndex][stoneColor];
+            cellIndexes[moveCount++] = position - 1;
 
             i += ((position - 1) % BOARD_SIZE < 9) ? 2 : 3;
-            moveIndex++;
         }
 
+        return Arrays.copyOf(cellIndexes, moveCount);
+    }
+
+    public static long hashFromCellIndexes(int[] cellIndexes) {
+        long hash = 0L;
+        for (int moveIndex = 0; moveIndex < cellIndexes.length; moveIndex++) {
+            hash ^= ZOBRIST_TABLE[cellIndexes[moveIndex]][colorOf(moveIndex)];
+        }
         return hash;
+    }
+
+    /**
+     * Incrementally derives the hash of the position reached by adding one stone.
+     * Zobrist hashing is XOR-based, so appending a move costs a single XOR
+     * instead of re-hashing the whole board.
+     *
+     * @param hash      hash of the position before the move
+     * @param cellIndex 0-based cell the stone is placed on
+     * @param moveIndex 0-based index of the new stone, i.e. the stone count before the move
+     */
+    public static long applyMove(long hash, int cellIndex, int moveIndex) {
+        if (cellIndex < 0 || cellIndex >= TOTAL_CELLS) {
+            throw new IllegalArgumentException("Invalid cell index: " + cellIndex);
+        }
+        if (moveIndex < 0) {
+            throw new IllegalArgumentException("Invalid move index: " + moveIndex);
+        }
+        return hash ^ ZOBRIST_TABLE[cellIndex][colorOf(moveIndex)];
+    }
+
+    private static int colorOf(int moveIndex) {
+        return (moveIndex % 2 == 0) ? BLACK : WHITE;
     }
 
     private static int parseBoardPosition(String boardStatus, int index) {
