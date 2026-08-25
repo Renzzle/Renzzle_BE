@@ -23,7 +23,7 @@ public class PaymentService {
     private final InAppPurchaseRepository inAppPurchaseRepository;
     private final UserRepository userRepository;
     private final GooglePlayReceiptVerifier googlePlayReceiptVerifier;
-    private final AppleReceiptVerifier appleReceiptVerifier;
+    private final AppleTransactionVerifier appleTransactionVerifier;
 
     @Transactional
     public VerifyInAppPurchaseResponse verifyInAppPurchase(UserEntity user, VerifyInAppPurchaseRequest request) {
@@ -53,14 +53,13 @@ public class PaymentService {
     }
 
     private VerifyInAppPurchaseResponse verifyIosPurchase(UserEntity user, VerifyInAppPurchaseRequest request) {
-        validateRequired(request.receipt());
         validateRequired(request.transactionId());
         if (inAppPurchaseRepository.existsByTransactionId(request.transactionId())) {
             throw new CustomException(ErrorCode.ALREADY_PROCESSED_RECEIPT);
         }
 
         StoreVerificationResult verificationResult =
-                appleReceiptVerifier.verify(request.productId(), request.transactionId(), request.receipt());
+                appleTransactionVerifier.verify(request.productId(), request.transactionId());
 
         if (!request.productId().equals(verificationResult.productId())
                 || !request.transactionId().equals(verificationResult.transactionId())) {
