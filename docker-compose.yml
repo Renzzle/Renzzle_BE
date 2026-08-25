@@ -13,6 +13,7 @@ services:
     volumes:
       - app-logs:/app/logs
       - ./secrets/google-play-service-account.json:/app/secrets/google-play-service-account.json:ro
+      - ./secrets/apple-iap-key.p8:/app/secrets/apple-iap-key.p8:ro
     networks:
       - app-network
     depends_on:

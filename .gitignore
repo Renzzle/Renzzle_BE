@@ -4,6 +4,7 @@ build/
 redis-data/
 mysql-data/
 .env
+secrets/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
