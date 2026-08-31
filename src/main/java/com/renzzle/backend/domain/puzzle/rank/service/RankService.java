@@ -380,6 +380,16 @@ public class RankService {
     }
 
     @Transactional(readOnly = true)
+    public GetMyRatingResponse getMyRating(UserEntity userData) {
+        UserEntity user = userRepository.findById(userData.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
+
+        return GetMyRatingResponse.builder()
+                .rating(user.getRating())
+                .build();
+    }
+
+    @Transactional(readOnly = true)
     public GetPuzzlerRankingResponse getPuzzlerRanking(UserEntity user) {
         String key = "user:puzzler:ranking";
 
