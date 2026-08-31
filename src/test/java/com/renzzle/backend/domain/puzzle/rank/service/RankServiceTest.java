@@ -578,4 +578,35 @@ class RankServiceTest {
         assertThat(first.nickname()).isEqualTo("user1");
         assertThat(second.nickname()).isEqualTo("user2");
     }
+
+    // getMyRating Test
+    @Test
+    void getMyRating_WhenUserExists_ThenReturnsRatingFromDatabase() {
+        // Given: the authenticated principal holds a stale rating
+        UserEntity principal = TestUserFactory.createTestUser("me", 1200.0);
+        UserEntity stored = TestUserFactory.createTestUser("me", 1500.0);
+        when(userRepository.findById(principal.getId())).thenReturn(Optional.of(stored));
+
+        // When
+        GetMyRatingResponse response = rankService.getMyRating(principal);
+
+        // Then
+        assertThat(response.rating()).isEqualTo(1500.0);
+        verify(userRepository).findById(principal.getId());
+    }
+
+    @Test
+    void getMyRating_WhenUserNotFound_ThenThrowsCustomException() {
+        // Given
+        UserEntity dummy = TestUserFactory.createTestUser("noname", 1500.0);
+        when(userRepository.findById(dummy.getId())).thenReturn(Optional.empty());
+
+        // When
+        CustomException ex = assertThrows(CustomException.class, () ->
+                rankService.getMyRating(dummy)
+        );
+
+        // Then
+        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.CANNOT_FIND_USER);
+    }
 }
