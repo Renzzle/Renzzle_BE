@@ -35,13 +35,11 @@ public class WinColor {
     }
 
     public void setWinColor(String winColorName) {
-        WinColor.WinColorName[] winColorNames = WinColor.WinColorName.values();
-        boolean isValid = Arrays.stream(winColorNames)
-                .anyMatch(winColor -> winColor.name().equals(winColorName));
-        if(!isValid)
-            throw new IllegalArgumentException("Invalid win color name: " + winColorName);
-
-        this.name = winColorName;
+        this.name = Arrays.stream(WinColorName.values())
+                .filter(winColor -> winColor.name().equalsIgnoreCase(winColorName))
+                .findFirst()
+                .map(Enum::name)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid win color name: " + winColorName));
     }
 
     @Override

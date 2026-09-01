@@ -45,12 +45,7 @@ public class CommunityPuzzleQueryRepositoryImpl implements CommunityPuzzleQueryR
     }
 
     private BooleanExpression idCursorCondition(Long id, String sort) {
-        SortOption sortOption;
-        if (sort != null) {
-            sortOption = SortOption.valueOf(sort);
-        } else {
-            sortOption = SortOption.LATEST;
-        }
+        SortOption sortOption = SortOption.from(sort);
 
         if (id == null) return null;
 
@@ -120,12 +115,7 @@ public class CommunityPuzzleQueryRepositoryImpl implements CommunityPuzzleQueryR
     }
 
     private OrderSpecifier<?>[] orderSpecifier(String sort) {
-        SortOption sortOption;
-        if (sort != null) {
-            sortOption = SortOption.valueOf(sort);
-        } else {
-            sortOption = SortOption.LATEST;
-        }
+        SortOption sortOption = SortOption.from(sort);
 
         return switch (sortOption) {
             case LATEST -> new OrderSpecifier<?>[]{
