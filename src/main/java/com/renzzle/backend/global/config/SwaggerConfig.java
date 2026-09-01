@@ -36,7 +36,7 @@ public class SwaggerConfig {
     private Info apiInfo() {
         return new Info()
                 .title("Renzzle Documents")
-                .description("Renzzle Swagger UI")
+                .description("Renzzle API Documents")
                 .version("1.0.0");
     }
 

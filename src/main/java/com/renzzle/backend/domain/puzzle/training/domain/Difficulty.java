@@ -34,12 +34,10 @@ public class Difficulty {
     }
 
     public void setDifficulty(String difficultyName) {
-        Difficulty.DifficultyName[] difficultyNames = Difficulty.DifficultyName.values();
-        boolean isValid = Arrays.stream(difficultyNames)
-                .anyMatch(difficulty -> difficulty.name().equals(difficultyName));
-        if(!isValid)
-            throw new IllegalArgumentException("Invalid difficulty name: " + difficultyName);
-
-        this.name = difficultyName;
+        this.name = Arrays.stream(DifficultyName.values())
+                .filter(difficulty -> difficulty.name().equalsIgnoreCase(difficultyName))
+                .findFirst()
+                .map(Enum::name)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid difficulty name: " + difficultyName));
     }
 }

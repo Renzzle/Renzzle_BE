@@ -33,17 +33,11 @@ public class LangCode {
     }
 
     public static LangCode getLangCode(String langCodeName) {
-        LangCode langCode = new LangCode();
-
-        LangCode.LangCodeName[] langCodeNames = LangCode.LangCodeName.values();
-        boolean isValid = Arrays.stream(langCodeNames)
-                .anyMatch(lc -> lc.name().equals(langCodeName));
-        if (!isValid)
-            throw new IllegalArgumentException("Invalid lang code name: " + langCodeName);
-
-        langCode.name = langCodeName;
-
-        return langCode;
+        return Arrays.stream(LangCodeName.values())
+                .filter(lc -> lc.name().equalsIgnoreCase(langCodeName))
+                .findFirst()
+                .map(LangCode::getLangCode)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid lang code name: " + langCodeName));
     }
 
 }
