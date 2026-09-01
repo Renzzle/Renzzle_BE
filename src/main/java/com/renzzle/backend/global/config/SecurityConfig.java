@@ -50,6 +50,7 @@ public class SecurityConfig {
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/login"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/signup"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/reissueToken"),
+                AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/test-token"),  // only mapped when docs.enabled=true
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/docs"),  // Scalar API reference page
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/v3/api-docs/**"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/actuator/**")
