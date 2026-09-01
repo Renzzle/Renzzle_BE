@@ -148,6 +148,9 @@ jobs:
           echo "APPLE_IAP_PRIVATE_KEY_PATH=/app/secrets/apple-iap-key.p8" >> .env
           echo "ACME_EMAIL=${{ secrets.ACME_EMAIL }}" >> .env
           echo "ACTUATOR_TOKEN=${{ secrets.ACTUATOR_TOKEN }}" >> .env
+          if [ -n "${{ secrets.DOCS_ENABLED }}" ]; then
+            echo "DOCS_ENABLED=${{ secrets.DOCS_ENABLED }}" >> .env
+          fi
 
       - name: Create Google Play service account file
         run: |

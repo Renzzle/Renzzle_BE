@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Renzzle Documents</title>
+    <link rel="icon" href="/assets/image/icon.svg" type="image/svg+xml"/>
+</head>
+<body>
+<div id="app"></div>
+
+<script src="/assets/scalar/standalone-1.67.0.js"></script>
+<script>
+    Scalar.createApiReference('#app', {
+        url: '/v3/api-docs',
+        tagsSorter: 'alpha',
+        operationsSorter: 'method',
+        persistAuth: true,
+        defaultOpenFirstTag: false,
+        withDefaultFonts: false,
+    })
+</script>
+</body>
+</html>
