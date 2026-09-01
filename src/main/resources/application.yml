@@ -69,7 +69,7 @@ docs:
 
 springdoc:
   api-docs:
-    enabled: ${DOCS_ENABLED:false}
+    enabled: ${DOCS_ENABLED:true}
   packages-to-scan: com.renzzle.backend
   default-consumes-media-type: application/json;charset=UTF-8
   default-produces-media-type: application/json;charset=UTF-8
