@@ -5,12 +5,12 @@ import lombok.Getter;
 @Getter
 public enum ItemPrice {
 
-    CHANGE_NICKNAME(2500),
-    HINT(100),
-    RANK_REWARD(20),
-    TRAINING_LOW_REWARD(20),
-    TRAINING_MIDDLE_REWARD(40),
-    TRAINING_HIGH_REWARD(60);
+    CHANGE_NICKNAME(3000),
+    HINT(200),
+    RANK_REWARD(10),
+    TRAINING_LOW_REWARD(10),
+    TRAINING_MIDDLE_REWARD(30),
+    TRAINING_HIGH_REWARD(50);
 
     private final int price;
 

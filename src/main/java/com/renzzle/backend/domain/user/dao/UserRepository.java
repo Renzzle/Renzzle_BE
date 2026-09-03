@@ -8,7 +8,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<UserEntity, Long> {
@@ -53,8 +52,6 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
         return isUserQualifiedRaw(userId, minLikes, minPuzzleCount, minRating, minSolverCount) == 1L;
     }
 
-    List<UserEntity> findTop100ByOrderByRatingDesc();
-           
     //Ranking
     @Query("SELECT CASE WHEN (u.lastAccessedAt < CURRENT_DATE) THEN true ELSE false END FROM UserEntity u WHERE u.id = :userId")
     Boolean isLastAccessBeforeToday(@Param("userId") Long userId);

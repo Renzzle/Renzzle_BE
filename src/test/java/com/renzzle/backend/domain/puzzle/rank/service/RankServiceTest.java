@@ -34,6 +34,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import static com.renzzle.backend.global.common.constant.ItemPrice.RANK_REWARD;
 import static com.renzzle.backend.support.TestTime.FIXED_INSTANT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -326,7 +327,7 @@ class RankServiceTest {
         RankEndResponse response = rankService.endRankGame(user);
         // Then
         assertThat(response.rating()).isEqualTo(1600);
-        assertThat(response.reward()).isEqualTo(40);
+        assertThat(response.reward()).isEqualTo(2 * RANK_REWARD.getPrice());
         verify(redisSessionTemplate).delete("3");
     }
 
