@@ -404,7 +404,7 @@ public class TrainingServiceTest {
             verify(solvedTrainingPuzzleRepository).save(any(SolvedTrainingPuzzle.class));
             verify(userPackRepository).increaseSolvedCount(userId, packId);
 
-            assertThat(response.reward()).isEqualTo(20); // ItemPrice.TRAINING_LOW_REWARD.getPrice()
+            assertThat(response.reward()).isEqualTo(ItemPrice.TRAINING_LOW_REWARD.getPrice());
         }
 
         @DisplayName("testSolveLessonPuzzle_AlreadySolved: 이미 풀이한 퍼즐의 경우 solvedAt을 갱신")

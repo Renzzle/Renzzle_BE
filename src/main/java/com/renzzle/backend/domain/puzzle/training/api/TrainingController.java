@@ -53,7 +53,7 @@ public class TrainingController {
         return ApiUtils.success(null);
     }
 
-    @Operation(summary = "Solve training puzzle", description = "Return unlocked training puzzle id (can be null???)")
+    @Operation(summary = "Solve training puzzle", description = "Return currency reward earned for solving (0 if already solved before)")
     @PostMapping("puzzle/{puzzleId}/solve")
     public ApiResponse<SolveTrainingPuzzleResponse> solveTrainingPuzzle(
             @PathVariable("puzzleId") Long puzzleId,

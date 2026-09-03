@@ -8,7 +8,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.Arrays;
 import java.util.Objects;
 
 @Entity
@@ -35,15 +34,6 @@ public class Title {
 
     public static Title getTitle(TitleType titleType) {
         return new Title(titleType.name());
-    }
-
-    public static Title getTitle(String typeName) {
-        boolean isValid = Arrays.stream(TitleType.values())
-                .anyMatch(tt -> tt.name().equalsIgnoreCase(typeName));
-        if (!isValid) {
-            throw new IllegalArgumentException("Invalid title type: " + typeName);
-        }
-        return new Title(typeName.toUpperCase());
     }
 
     @Override

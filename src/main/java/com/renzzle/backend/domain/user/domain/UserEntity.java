@@ -132,11 +132,6 @@ public class UserEntity {
         this.mmr = newMmr;
     }
 
-    public void softDelete() {
-        this.status = Status.getStatus(Status.StatusName.DELETED);
-        this.deletedAt = Instant.now();
-    }
-
     public void changeNickname(String nickname) {
         purchase(ItemPrice.CHANGE_NICKNAME.getPrice());
         this.nickname = nickname;

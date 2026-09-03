@@ -41,9 +41,6 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
             "cp.deletedAt = :deletedAt WHERE cp.id = :puzzleId")
     int softDelete(@Param("puzzleId") Long puzzleId, @Param("deletedAt") Instant deletedAt);
 
-    @Query("SELECT c FROM CommunityPuzzle c WHERE c.rating BETWEEN :min AND :max AND c.isVerified = true AND c.user <> :user")
-    List<CommunityPuzzle> findAvailablePuzzlesForUser(@Param("min") double min, @Param("max") double max, @Param("user") UserEntity user);
-
     @Query("SELECT p FROM CommunityPuzzle p " +
             "WHERE p.boardStatus NOT IN (" +
             "    SELECT l.boardStatus FROM LatestRankPuzzle l WHERE l.user = :user" +

@@ -36,7 +36,8 @@ public final class ZobristHashUtils {
         int[] cellIndexes = new int[boardStatus.length() / 2 + 1];
         int moveCount = 0;
 
-        for (int i = 0; i < boardStatus.length();) {
+        int i = 0;
+        while (i < boardStatus.length()) {
             int position = parseBoardPosition(boardStatus, i);
             cellIndexes[moveCount++] = position - 1;
 
@@ -88,6 +89,13 @@ public final class ZobristHashUtils {
             throw new IllegalArgumentException(INVALID_BOARD_STATUS + boardStatus);
         }
 
+        return rowBase + parseColumn(boardStatus, index);
+    }
+
+    /**
+     * Parses the 1-based column number that follows the row character at {@code index}.
+     */
+    private static int parseColumn(String boardStatus, int index) {
         char firstDigit = boardStatus.charAt(index + 1);
         if (firstDigit < '1' || firstDigit > '9') {
             throw new IllegalArgumentException(INVALID_BOARD_STATUS + boardStatus);
@@ -107,7 +115,7 @@ public final class ZobristHashUtils {
             throw new IllegalArgumentException(INVALID_BOARD_STATUS + boardStatus);
         }
 
-        return rowBase + col;
+        return col;
     }
 
     private static long[][] initZobristTable() {

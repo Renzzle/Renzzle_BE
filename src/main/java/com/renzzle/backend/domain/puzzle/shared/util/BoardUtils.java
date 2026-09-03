@@ -12,26 +12,51 @@ import java.util.List;
 
 public class BoardUtils {
 
+    private static final int SYMMETRY_COUNT = 8;
+
     private BoardUtils() {}
 
     public static String makeBoardKey(String boardStatus) {
         if(boardStatus == null || boardStatus.isBlank())
             throwIllegalBoardStatusException(boardStatus);
 
-        List<List<Integer>> blackPosLists = new ArrayList<>();
-        List<List<Integer>> whitePosLists = new ArrayList<>();
+        List<List<Integer>> blackPosLists = createSymmetryLists();
+        List<List<Integer>> whitePosLists = createSymmetryLists();
 
-        for(int i = 0; i < 8; i++) {
-            blackPosLists.add(new ArrayList<>());
-            whitePosLists.add(new ArrayList<>());
+        parseBoardStatus(boardStatus, blackPosLists, whitePosLists);
+
+        // sort all lists
+        for(int i = 0; i < SYMMETRY_COUNT; i++) {
+            Collections.sort(blackPosLists.get(i));
+            Collections.sort(whitePosLists.get(i));
         }
 
-        // parse board status string
-        for(int i = 0; i < boardStatus.length();) {
+        List<Integer> minB = findMinList(blackPosLists);
+        List<Integer> minW = findMinList(whitePosLists);
+
+        return sha256Hex(joinPositions(minB, minW));
+    }
+
+    private static List<List<Integer>> createSymmetryLists() {
+        List<List<Integer>> posLists = new ArrayList<>();
+        for(int i = 0; i < SYMMETRY_COUNT; i++) {
+            posLists.add(new ArrayList<>());
+        }
+        return posLists;
+    }
+
+    // parse board status string, distributing each symmetry variant into the black/white lists
+    private static void parseBoardStatus(
+            String boardStatus,
+            List<List<Integer>> blackPosLists,
+            List<List<Integer>> whitePosLists
+    ) {
+        int i = 0;
+        while(i < boardStatus.length()) {
             int p = getBoardPositionFromString(boardStatus, i);
             List<Integer> posList = getAllSymmetryPos(p);
 
-            for(int j = 0; j < 8; j++) {
+            for(int j = 0; j < SYMMETRY_COUNT; j++) {
                 if(blackPosLists.get(j).size() <= whitePosLists.get(j).size())
                     blackPosLists.get(j).add(posList.get(j));
                 else whitePosLists.get(j).add(posList.get(j));
@@ -40,51 +65,49 @@ public class BoardUtils {
             // calculate increment based on position
             i += ((p - 1) % 15 < 9) ? 2 : 3;
         }
+    }
 
-        // sort all lists
-        for(int i = 0; i < 8; i++) {
-            Collections.sort(blackPosLists.get(i));
-            Collections.sort(whitePosLists.get(i));
-        }
-
-        // find minimum value list
-        List<Integer> minB = blackPosLists.get(0);
-        List<Integer> minW = whitePosLists.get(0);
-        for(int i = 1; i < 8; i++) {
-            if(compareList(minB, blackPosLists.get(i)) > 0) {
-                minB = blackPosLists.get(i);
-            }
-            if(compareList(minW, whitePosLists.get(i)) > 0) {
-                minW = whitePosLists.get(i);
+    // find minimum value list
+    private static List<Integer> findMinList(List<List<Integer>> posLists) {
+        List<Integer> min = posLists.get(0);
+        for(int i = 1; i < posLists.size(); i++) {
+            if(compareList(min, posLists.get(i)) > 0) {
+                min = posLists.get(i);
             }
         }
+        return min;
+    }
 
-        // make string key
+    // make string key
+    private static String joinPositions(List<Integer> blackPos, List<Integer> whitePos) {
         StringBuilder result = new StringBuilder();
-
-        for (Integer num : minB) {
+        for (Integer num : blackPos) {
             result.append(num);
         }
-        for (Integer num : minW) {
+        for (Integer num : whitePos) {
             result.append(num);
         }
-
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            md.update(result.toString().getBytes(StandardCharsets.UTF_8));
-            result = new StringBuilder();
-            for (byte b : md.digest()) {
-                result.append(String.format("%02x", b));
-            }
-        } catch (NoSuchAlgorithmException e) {
-            throw new CustomException(e.getMessage(), ErrorCode.INTERNAL_SERVER_ERROR);
-        }
-
         return result.toString();
     }
 
+    private static String sha256Hex(String value) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            md.update(value.getBytes(StandardCharsets.UTF_8));
+
+            StringBuilder result = new StringBuilder();
+            for (byte b : md.digest()) {
+                result.append(String.format("%02x", b));
+            }
+            return result.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new CustomException(e.getMessage(), ErrorCode.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     public static boolean validBoardString(String str) {
-        for(int i = 0; i < str.length();) {
+        int i = 0;
+        while(i < str.length()) {
             char charPart = str.charAt(i);
             if(isCharNotInAtoO(charPart))
                 return false;
