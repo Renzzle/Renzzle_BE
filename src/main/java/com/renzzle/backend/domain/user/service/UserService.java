@@ -13,6 +13,7 @@ import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -70,35 +71,18 @@ public class UserService {
     public List<GetCommunityPuzzlesResponse> getUserLikedPuzzleList(UserEntity user, Long cursorId, int size) {
         List<CommunityPuzzle> puzzles = communityPuzzleRepository.getUserLikedPuzzles(user.getId(), cursorId, size);
 
-        List<GetCommunityPuzzlesResponse> response = new ArrayList<>();
-        for (CommunityPuzzle puzzle : puzzles) {
-            boolean isSolved = userCommunityPuzzleRepository.checkIsSolvedPuzzle(user.getId(), puzzle.getId());
-
-            response.add(
-                    GetCommunityPuzzlesResponse.builder()
-                            .id(puzzle.getId())
-                            .boardStatus(puzzle.getBoardStatus())
-                            .authorId(puzzle.getUser().getId())
-                            .authorName(puzzle.getUser().getNickname())
-                            .depth(puzzle.getDepth())
-                            .winColor(puzzle.getWinColor().getName())
-                            .solvedCount(puzzle.getSolvedCount())
-                            .views(puzzle.getView())
-                            .likeCount(puzzle.getLikeCount())
-                            .createdAt(puzzle.getCreatedAt().toString())
-                            .isSolved(isSolved)
-                            .isVerified(puzzle.getIsVerified())
-                            .build()
-            );
-        }
-
-        return response;
+        return getGetCommunityPuzzlesResponses(user, puzzles);
     }
 
     @Transactional(readOnly = true)
     public List<GetCommunityPuzzlesResponse> getUserPuzzleList(UserEntity user, Long cursorId, int size) {
         List<CommunityPuzzle> puzzles = communityPuzzleRepository.getUserPuzzles(user.getId(), cursorId, size);
 
+        return getGetCommunityPuzzlesResponses(user, puzzles);
+    }
+
+    @NonNull
+    private List<GetCommunityPuzzlesResponse> getGetCommunityPuzzlesResponses(UserEntity user, List<CommunityPuzzle> puzzles) {
         List<GetCommunityPuzzlesResponse> response = new ArrayList<>();
         for (CommunityPuzzle puzzle : puzzles) {
             boolean isSolved = userCommunityPuzzleRepository.checkIsSolvedPuzzle(user.getId(), puzzle.getId());

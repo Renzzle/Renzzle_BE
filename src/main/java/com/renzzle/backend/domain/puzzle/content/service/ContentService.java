@@ -75,7 +75,7 @@ public class ContentService {
                 .findByUserIdAndPackId(userId, pack.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_USER_PROGRESS_FOR_PACK));
 
-        int solvedCount = (userPack != null) ? userPack.getSolvedCount() : 0;
+        int solvedCount = userPack.getSolvedCount();
 
         return GetRecommendPackResponse.builder()
                 .id(pack.getId())

@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 
+import static com.renzzle.backend.global.common.constant.ItemPrice.RANK_REWARD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.validator.internal.util.Contracts.assertTrue;
 import static org.junit.jupiter.api.Assertions.*;
@@ -178,7 +179,7 @@ class RankServiceIntegrationTest {
 
         // Then
         assertThat(response.rating()).isEqualTo(testUser.getRating());
-        assertThat(response.reward()).isEqualTo(40); // 2 correct answers * 20
+        assertThat(response.reward()).isEqualTo(2 * RANK_REWARD.getPrice()); // 2 correct answers
     }
 
     @Test

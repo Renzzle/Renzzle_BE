@@ -18,13 +18,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 public class PuzzleCachePageController {
 
+    private static final String USER_EMAIL_ATTRIBUTE = "userEmail";
+
     @GetMapping("/puzzle-cache")
     public String puzzleCachePage(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             Model model
     ) {
         if (userDetails != null) {
-            model.addAttribute("userEmail", userDetails.getUser().getEmail());
+            model.addAttribute(USER_EMAIL_ATTRIBUTE, userDetails.getUser().getEmail());
         }
         model.addAttribute("langCodeNames", LangCode.LangCodeName.values());
         return "admin/puzzle-cache";
@@ -42,7 +44,7 @@ public class PuzzleCachePageController {
         model.addAttribute("puzzleId", puzzleId);
         model.addAttribute("packId", packId);
         if (userDetails != null) {
-            model.addAttribute("userEmail", userDetails.getUser().getEmail());
+            model.addAttribute(USER_EMAIL_ATTRIBUTE, userDetails.getUser().getEmail());
         }
         return "admin/puzzle-cache-board";
     }
@@ -55,7 +57,7 @@ public class PuzzleCachePageController {
     ) {
         model.addAttribute("packId", packId);
         if (userDetails != null) {
-            model.addAttribute("userEmail", userDetails.getUser().getEmail());
+            model.addAttribute(USER_EMAIL_ATTRIBUTE, userDetails.getUser().getEmail());
         }
         return "admin/puzzle-cache-training-pack";
     }

@@ -108,20 +108,13 @@ public class RankService {
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
 
         String redisKey = String.valueOf(user.getId());
-        RankSessionData session = redisTemplate.opsForValue().get(redisKey);
-
-        if (session == null) {
-            throw new CustomException(ErrorCode.EMPTY_SESSION_DATA);
-        }
+        RankSessionData session = getSessionOrThrow(redisKey);
 
         if (!session.isStarted()) {
             throw new CustomException(ErrorCode.EMPTY_SESSION_DATA);
         }
 
-        Long currentTTL = redisTemplate.getExpire(redisKey, TimeUnit.SECONDS);
-        if (currentTTL == null || currentTTL <= 0) {
-            throw new CustomException(ErrorCode.INVALID_SESSION_TTL);
-        }
+        long currentTTL = getRemainingTtlOrThrow(redisKey);
 
         // Look up the previous puzzle and update whether it was solved
         LatestRankPuzzle previousPuzzle = latestRankPuzzleRepository
@@ -199,6 +192,22 @@ public class RankService {
                 .boardStatus(latestPuzzle.getBoardStatus())
                 .winColor(latestPuzzle.getWinColor().getName())
                 .build();
+    }
+
+    private RankSessionData getSessionOrThrow(String redisKey) {
+        RankSessionData session = redisTemplate.opsForValue().get(redisKey);
+        if (session == null) {
+            throw new CustomException(ErrorCode.EMPTY_SESSION_DATA);
+        }
+        return session;
+    }
+
+    private long getRemainingTtlOrThrow(String redisKey) {
+        Long ttl = (redisTemplate).getExpire(redisKey, TimeUnit.SECONDS);
+        if (ttl == null || ttl <= 0) {
+            throw new CustomException(ErrorCode.INVALID_SESSION_TTL);
+        }
+        return ttl;
     }
 
     public RankEndResponse endRankGame(UserEntity userData) {

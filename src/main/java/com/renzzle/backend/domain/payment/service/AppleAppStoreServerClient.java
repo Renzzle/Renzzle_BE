@@ -12,11 +12,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -63,19 +66,7 @@ public class AppleAppStoreServerClient {
     public AppleTransactionInfo fetchTransactionInfo(String transactionId) {
         try {
             String token = generateToken();
-            String signedTransactionInfo;
-            try {
-                signedTransactionInfo = requestSignedTransactionInfo(productionUrl, transactionId, token);
-            } catch (RestClientResponseException e) {
-                if (e.getStatusCode().value() != HttpStatus.UNAUTHORIZED.value()) {
-                    throw e;
-                }
-                // Apps not yet released get 401 (not 404) from the production host;
-                // a genuine credential error still fails below because sandbox returns 401 too
-                log.info("Production App Store returned 401 (app likely unreleased); retrying sandbox. "
-                        + "transactionId={}", transactionId);
-                signedTransactionInfo = null;
-            }
+            String signedTransactionInfo = requestFromProductionOrNull(transactionId, token);
             if (signedTransactionInfo == null) {
                 // Sandbox transactions are not visible in production (Apple: try production, then sandbox)
                 signedTransactionInfo = requestSignedTransactionInfo(sandboxUrl, transactionId, token);
@@ -93,9 +84,22 @@ public class AppleAppStoreServerClient {
             log.warn("App Store Server API request failed. status={}, body={}",
                     e.getStatusCode().value(), e.getResponseBodyAsString());
             throw new CustomException(ErrorCode.STORE_VERIFICATION_FAILED);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.warn("App Store Server API request failed.", e);
             throw new CustomException(ErrorCode.STORE_VERIFICATION_FAILED);
+        }
+    }
+
+    private String requestFromProductionOrNull(String transactionId, String token) {
+        try {
+            return requestSignedTransactionInfo(productionUrl, transactionId, token);
+        } catch (RestClientResponseException e) {
+            if (e.getStatusCode().value() != HttpStatus.UNAUTHORIZED.value()) {
+                throw e;
+            }
+            log.info("Production App Store returned 401 (app likely unreleased); retrying sandbox. "
+                    + "transactionId={}", transactionId);
+            return null;
         }
     }
 
@@ -115,7 +119,8 @@ public class AppleAppStoreServerClient {
         }
     }
 
-    private String generateToken() throws Exception {
+    @SuppressWarnings("deprecation")
+    private String generateToken() {
         Instant now = Instant.now();
         return Jwts.builder()
                 .header().keyId(keyId).type("JWT").and()
@@ -129,15 +134,21 @@ public class AppleAppStoreServerClient {
                 .compact();
     }
 
-    private synchronized PrivateKey loadPrivateKey() throws Exception {
+    private synchronized PrivateKey loadPrivateKey() {
         if (privateKey == null) {
-            String pem = Files.readString(Path.of(privateKeyPath), StandardCharsets.UTF_8);
-            String base64Key = pem
-                    .replace("-----BEGIN PRIVATE KEY-----", "")
-                    .replace("-----END PRIVATE KEY-----", "")
-                    .replaceAll("\\s", "");
-            byte[] encodedKey = Base64.getDecoder().decode(base64Key);
-            privateKey = KeyFactory.getInstance("EC").generatePrivate(new PKCS8EncodedKeySpec(encodedKey));
+            try {
+                String pem = Files.readString(Path.of(privateKeyPath), StandardCharsets.UTF_8);
+                String base64Key = pem
+                        .replace("-----BEGIN PRIVATE KEY-----", "")
+                        .replace("-----END PRIVATE KEY-----", "")
+                        .replaceAll("\\s", "");
+                byte[] encodedKey = Base64.getDecoder().decode(base64Key);
+                privateKey = KeyFactory.getInstance("EC").generatePrivate(new PKCS8EncodedKeySpec(encodedKey));
+            } catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException
+                     | IllegalArgumentException e) {
+                log.warn("Failed to load the Apple IAP private key. path={}", privateKeyPath, e);
+                throw new CustomException(ErrorCode.STORE_VERIFICATION_FAILED);
+            }
         }
         return privateKey;
     }
