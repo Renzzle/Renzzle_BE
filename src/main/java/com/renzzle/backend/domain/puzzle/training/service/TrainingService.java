@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.renzzle.backend.global.common.constant.ItemPrice.*;
@@ -205,7 +206,6 @@ public class TrainingService {
             throw new CustomException(ErrorCode.VALIDATION_ERROR);
         }
 
-        //TODO : return in training index order
         List<TrainingPuzzle> trainingPuzzles = trainingPuzzleRepository.findByPack_IdOrderByTrainingIndex(packId);
 
         if(trainingPuzzles.isEmpty()) {
@@ -239,15 +239,7 @@ public class TrainingService {
 
         Pack savedPack = packRepository.save(pack);
 
-        List<PackTranslation> translations = request.info().stream()
-                .map(info -> PackTranslation.builder()
-                        .pack(savedPack)
-                        .langCode(LangCode.getLangCode(info.langCode()))
-                        .title(info.title())
-                        .author(info.author())
-                        .description(info.description())
-                        .build())
-                .toList();
+        List<PackTranslation> translations = buildPackTranslations(savedPack, request.info());
 
         packTranslationRepository.saveAll(translations);
 
@@ -268,15 +260,7 @@ public class TrainingService {
         List<PackTranslation> existingTranslations = packTranslationRepository.findAllByPack_Id(packId);
         packTranslationRepository.deleteAll(existingTranslations);
 
-        List<PackTranslation> newTranslations = request.info().stream()
-                .map(info -> PackTranslation.builder()
-                        .pack(updatedPack)
-                        .langCode(LangCode.getLangCode(info.langCode()))
-                        .title(info.title())
-                        .author(info.author())
-                        .description(info.description())
-                        .build())
-                .toList();
+        List<PackTranslation> newTranslations = buildPackTranslations(updatedPack, request.info());
         packTranslationRepository.saveAll(newTranslations);
 
         return updatedPack;
@@ -347,33 +331,10 @@ public class TrainingService {
         Map<Long, PackTranslation> defaultMap = defaultTranslations.stream()
                 .collect(Collectors.toMap(t -> t.getPack().getId(), t -> t));
 
-        Long userId = user.getId();
-        List<UserPack> userPacks = userPackRepository.findAllByUserIdAndPackIdIn(userId, packIds);
-        Map<Long, UserPack> userPackMap = userPacks.stream()
-                .collect(Collectors.toMap(up -> up.getPack().getId(), up -> up));
+        Map<Long, UserPack> userPackMap = buildUserPackMap(user.getId(), packIds);
 
-        List<GetPackResponse> result = new ArrayList<>();
-        for (Pack pack : packs) {
-            PackTranslation translation = requestedMap.getOrDefault(pack.getId(), defaultMap.get(pack.getId()));
-
-            UserPack up = userPackMap.get(pack.getId());
-            boolean locked = (up == null);
-            int solvedCount = (up != null) ? up.getSolvedCount() : 0;
-
-            GetPackResponse dto = new GetPackResponse(
-                    pack.getId(),
-                    translation != null ? translation.getTitle() : null,
-                    translation != null ? translation.getAuthor() : null,
-                    translation != null ? translation.getDescription() : null,
-                    pack.getPrice(),
-                    pack.getPuzzleCount(),
-                    solvedCount,
-                    locked
-            );
-            result.add(dto);
-        }
-
-        return result;
+        return buildPackResponses(packs, userPackMap,
+                pack -> requestedMap.getOrDefault(pack.getId(), defaultMap.get(pack.getId())));
     }
 
     @Transactional(readOnly = true)
@@ -391,37 +352,13 @@ public class TrainingService {
         Map<Long, List<PackTranslation>> translationsByPack = packTranslationRepository.findAllByPack_IdIn(packIds).stream()
                 .collect(Collectors.groupingBy(t -> t.getPack().getId()));
 
-        Long userId = user.getId();
-        List<UserPack> userPacks = userPackRepository.findAllByUserIdAndPackIdIn(userId, packIds);
-        Map<Long, UserPack> userPackMap = userPacks.stream()
-                .collect(Collectors.toMap(up -> up.getPack().getId(), up -> up));
+        Map<Long, UserPack> userPackMap = buildUserPackMap(user.getId(), packIds);
 
-        List<GetPackResponse> result = new ArrayList<>();
-        for (Pack pack : packs) {
-            PackTranslation translation = selectAdminPackTranslation(
-                    translationsByPack.get(pack.getId()),
-                    requestedLangCode,
-                    defaultLangCode
-            );
-
-            UserPack up = userPackMap.get(pack.getId());
-            boolean locked = (up == null);
-            int solvedCount = (up != null) ? up.getSolvedCount() : 0;
-
-            GetPackResponse dto = new GetPackResponse(
-                    pack.getId(),
-                    translation != null ? translation.getTitle() : null,
-                    translation != null ? translation.getAuthor() : null,
-                    translation != null ? translation.getDescription() : null,
-                    pack.getPrice(),
-                    pack.getPuzzleCount(),
-                    solvedCount,
-                    locked
-            );
-            result.add(dto);
-        }
-
-        return result;
+        return buildPackResponses(packs, userPackMap, pack -> selectAdminPackTranslation(
+                translationsByPack.get(pack.getId()),
+                requestedLangCode,
+                defaultLangCode
+        ));
     }
 
     private PackTranslation selectAdminPackTranslation(
@@ -443,6 +380,51 @@ public class TrainingService {
             }
         }
         return translations.get(0);
+    }
+
+    private List<PackTranslation> buildPackTranslations(Pack pack, List<PackTranslationRequest> infoList) {
+        return infoList.stream()
+                .map(info -> PackTranslation.builder()
+                        .pack(pack)
+                        .langCode(LangCode.getLangCode(info.langCode()))
+                        .title(info.title())
+                        .author(info.author())
+                        .description(info.description())
+                        .build())
+                .toList();
+    }
+
+    private Map<Long, UserPack> buildUserPackMap(Long userId, List<Long> packIds) {
+        List<UserPack> userPacks = userPackRepository.findAllByUserIdAndPackIdIn(userId, packIds);
+        return userPacks.stream()
+                .collect(Collectors.toMap(up -> up.getPack().getId(), up -> up));
+    }
+
+    private List<GetPackResponse> buildPackResponses(
+            List<Pack> packs,
+            Map<Long, UserPack> userPackMap,
+            Function<Pack, PackTranslation> translationResolver
+    ) {
+        List<GetPackResponse> result = new ArrayList<>();
+        for (Pack pack : packs) {
+            PackTranslation translation = translationResolver.apply(pack);
+
+            UserPack up = userPackMap.get(pack.getId());
+            boolean locked = (up == null);
+            int solvedCount = (up != null) ? up.getSolvedCount() : 0;
+
+            result.add(new GetPackResponse(
+                    pack.getId(),
+                    translation != null ? translation.getTitle() : null,
+                    translation != null ? translation.getAuthor() : null,
+                    translation != null ? translation.getDescription() : null,
+                    pack.getPrice(),
+                    pack.getPuzzleCount(),
+                    solvedCount,
+                    locked
+            ));
+        }
+        return result;
     }
 
     // service test, repo test
