@@ -135,7 +135,46 @@ class RankServiceTest {
         ));
     }
 
-    // resultRankGame test
+    @Test
+    void startRankGame_WhenRatingAndMmrDiffer_ThenDerivesEachPenaltyFromItsOwnValue() {
+        // Given: rating and mmr must differ here. TestUserFactory sets both to the
+        // same value, which makes swapping the two penalty arguments invisible.
+        UserEntity user = TestUserFactory.createTestUser("tester", 1400.0);
+        ReflectionTestUtils.setField(user, "id", 1L);
+        ReflectionTestUtils.setField(user, "mmr", 1600.0);
+
+        TrainingPuzzle puzzle = TrainingPuzzle.builder()
+                .boardStatus("a1a2")
+                .answer("a3")
+                .rating(1400)
+                .winColor(WinColor.getWinColor("BLACK"))
+                .depth(3)
+                .build();
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(latestRankPuzzleRepository.findAllByUser(user)).thenReturn(Collections.emptyList());
+        when(trainingPuzzleRepository.findAvailableTrainingPuzzlesSortedByRating(user))
+                .thenReturn(List.of(puzzle));
+        when(communityPuzzleRepository.findAvailableCommunityPuzzlesSortedByRating(user))
+                .thenReturn(Collections.emptyList());
+        when(redisSessionTemplate.opsForValue()).thenReturn(valueOperations);
+        when(clock.instant()).thenReturn(Instant.parse("2025-01-01T00:00:00Z"));
+
+        // When
+        rankService.startRankGame(user);
+
+        /*
+            The mmr penalty must come from mmr and the rating penalty from rating.
+            mmr    1600 -> above MMR_THRESHOLD, so penalty x1.5 -> -7  -> 1593
+            rating 1400 -> below MMR_THRESHOLD, so penalty x0.5 -> -2  -> 1398
+            Feeding each the other's value yields 1595 / 1396 instead.
+        */
+        ArgumentCaptor<UserEntity> saved = ArgumentCaptor.forClass(UserEntity.class);
+        verify(userRepository).save(saved.capture());
+
+        assertThat(saved.getValue().getMmr()).isEqualTo(1593.0);
+        assertThat(saved.getValue().getRating()).isEqualTo(1398.0);
+    }
 
     @Test
     void resultRankGame_WhenSessionIsNull_ThenThrowsEmptySession() {
