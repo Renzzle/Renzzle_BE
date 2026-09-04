@@ -97,7 +97,7 @@ class CommunityServiceTest {
         UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
         CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
 
-        when(communityPuzzleRepository.searchCommunityPuzzles(any(GetCommunityPuzzleRequest.class), anyLong()))
+        when(communityPuzzleRepository.searchCommunityPuzzles(any(GetCommunityPuzzleRequest.class), any(UserEntity.class), anyLong()))
                 .thenReturn(List.of(puzzle));
         when(userCommunityPuzzleRepository.checkIsSolvedPuzzle(anyLong(), anyLong()))
                 .thenReturn(true);

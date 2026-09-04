@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 public enum SortOption {
 
-    LATEST, LIKE;
+    LATEST, LIKE, RECOMMEND;
 
     public static SortOption from(String sort) {
         return Arrays.stream(values())

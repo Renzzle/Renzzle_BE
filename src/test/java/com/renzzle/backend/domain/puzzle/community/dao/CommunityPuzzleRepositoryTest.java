@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.renzzle.backend.domain.puzzle.shared.domain.WinColor.getWinColor;
@@ -54,8 +55,9 @@ class CommunityPuzzleRepositoryTest {
 
         // When
         List<CommunityPuzzle> result = communityPuzzleRepository.searchCommunityPuzzles(
-                new GetCommunityPuzzleRequest(null, null, null, "BLACK", true, 6, 7, true, "test"),
-                user.getId()
+                new GetCommunityPuzzleRequest(null, null, null, null, "BLACK", true, 6, 7, true, "test"),
+                user,
+                0
         );
 
         // Then
@@ -82,8 +84,9 @@ class CommunityPuzzleRepositoryTest {
 
         // When
         List<CommunityPuzzle> result = communityPuzzleRepository.searchCommunityPuzzles(
-                new GetCommunityPuzzleRequest(puzzle3.getId(), 2, null, null, null, null, null, null, null),
-                user.getId()
+                new GetCommunityPuzzleRequest(puzzle3.getId(), 2, null, null, null, null, null, null, null, null),
+                user,
+                0
         );
 
         // Then
@@ -110,8 +113,9 @@ class CommunityPuzzleRepositoryTest {
 
         // When
         List<CommunityPuzzle> result = communityPuzzleRepository.searchCommunityPuzzles(
-                new GetCommunityPuzzleRequest(null, 3, "LIKE", null, null, null, null, null, null),
-                user.getId()
+                new GetCommunityPuzzleRequest(null, 3, "LIKE", null, null, null, null, null, null, null),
+                user,
+                0
         );
 
         // Then
@@ -134,8 +138,9 @@ class CommunityPuzzleRepositoryTest {
 
         // When
         List<CommunityPuzzle> result = communityPuzzleRepository.searchCommunityPuzzles(
-                new GetCommunityPuzzleRequest(null, 3, "LATEST", null, null, null, null, null, null),
-                user.getId()
+                new GetCommunityPuzzleRequest(null, 3, "LATEST", null, null, null, null, null, null, null),
+                user,
+                0
         );
 
         // Then
@@ -293,4 +298,116 @@ class CommunityPuzzleRepositoryTest {
                 .isEqualTo(deletedTime.truncatedTo(ChronoUnit.MICROS));
     }
 
+
+    @Test
+    void searchCommunityPuzzles_WhenSortIsRecommend_ThenSameSeedYieldsSameOrder() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder().withMmr(1500.0).save(userRepository);
+        for (int i = 0; i < 10; i++) {
+            TestCommunityPuzzleBuilder.builder(user).withRating(1500.0).save(communityPuzzleRepository);
+        }
+
+        // When
+        List<Long> first = recommendIds(user, 42, null, 10);
+        List<Long> second = recommendIds(user, 42, null, 10);
+
+        // Then: the shuffle comes from (id, seed), never stored, so it must reproduce
+        assertThat(first).hasSize(10).isEqualTo(second);
+    }
+
+    @Test
+    void searchCommunityPuzzles_WhenSortIsRecommend_ThenDifferentSeedsReshuffle() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder().withMmr(1500.0).save(userRepository);
+        for (int i = 0; i < 10; i++) {
+            TestCommunityPuzzleBuilder.builder(user).withRating(1500.0).save(communityPuzzleRepository);
+        }
+
+        // When
+        List<Long> withSeed1 = recommendIds(user, 1, null, 10);
+        List<Long> withSeed2 = recommendIds(user, 2, null, 10);
+
+        // Then: same puzzles, different order
+        assertThat(withSeed1).containsExactlyInAnyOrderElementsOf(withSeed2).isNotEqualTo(withSeed2);
+    }
+
+    @Test
+    void searchCommunityPuzzles_WhenSortIsRecommend_ThenPuzzlesNearUserMmrComeFirst() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder().withMmr(1500.0).save(userRepository);
+
+        List<Long> nearIds = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            nearIds.add(TestCommunityPuzzleBuilder.builder(user)
+                    .withRating(1500.0)
+                    .save(communityPuzzleRepository)
+                    .getId());
+        }
+        for (int i = 0; i < 5; i++) {
+            TestCommunityPuzzleBuilder.builder(user)
+                    .withRating(3000.0)
+                    .save(communityPuzzleRepository);
+        }
+
+        // near = |1500-1500| + [0,600) = [0,600), far = |3000-1500| + [0,600) = [1500,2100).
+        // The ranges cannot overlap, so the near five win for every seed.
+        assertThat(recommendIds(user, 7, null, 5)).containsExactlyInAnyOrderElementsOf(nearIds);
+    }
+
+    @Test
+    void searchCommunityPuzzles_WhenSortIsRecommend_ThenCursorPagingVisitsEachPuzzleOnce() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder().withMmr(1500.0).save(userRepository);
+
+        List<Long> allIds = new ArrayList<>();
+        for (int i = 0; i < 7; i++) {
+            allIds.add(TestCommunityPuzzleBuilder.builder(user)
+                    .withRating(i % 2 == 0 ? 1500.0 : 1650.0)
+                    .save(communityPuzzleRepository)
+                    .getId());
+        }
+
+        // When: walk the cursor three at a time
+        List<Long> paged = new ArrayList<>();
+        Long cursor = null;
+        for (int page = 0; page < 5; page++) {
+            List<Long> chunk = recommendIds(user, 99, cursor, 3);
+            if (chunk.isEmpty()) break;
+            paged.addAll(chunk);
+            cursor = chunk.get(chunk.size() - 1);
+        }
+
+        // Then: every puzzle exactly once, in the same order a single page would give
+        assertThat(paged)
+                .doesNotHaveDuplicates()
+                .containsExactlyInAnyOrderElementsOf(allIds)
+                .isEqualTo(recommendIds(user, 99, null, 7));
+    }
+
+    @Test
+    void searchCommunityPuzzles_WhenShuffleSeedExceedsIntRange_ThenStillOrdersDeterministically() {
+        // Given: clients reach for Date.now(), which overflows an int
+        UserEntity user = TestUserEntityBuilder.builder().withMmr(1500.0).save(userRepository);
+        for (int i = 0; i < 5; i++) {
+            TestCommunityPuzzleBuilder.builder(user).withRating(1500.0).save(communityPuzzleRepository);
+        }
+        long epochMillisSeed = 1_760_000_000_000L;
+
+        // When / Then
+        assertThat(recommendIds(user, epochMillisSeed, null, 5))
+                .hasSize(5)
+                .isEqualTo(recommendIds(user, epochMillisSeed, null, 5));
+    }
+
+    private List<Long> recommendIds(UserEntity user, long seed, Long cursorId, int size) {
+        return communityPuzzleRepository.searchCommunityPuzzles(
+                        new GetCommunityPuzzleRequest(
+                                cursorId, size, "RECOMMEND", seed,
+                                null, null, null, null, null, null),
+                        user,
+                        seed
+                ).stream()
+                .map(CommunityPuzzle::getId)
+                .toList();
+    }
 }

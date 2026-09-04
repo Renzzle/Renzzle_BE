@@ -16,6 +16,8 @@ public record GetCommunityPuzzleRequest(
 
         @ValidEnum(enumClass = SortOption.class, nullable = true, message = "잘못된 sort 형식입니다")
         String sort,
+        
+        Long shuffleSeed,
 
         @ValidEnum(enumClass = WinColor.WinColorName.class, nullable = true, message = "잘못된 stone 형식입니다")
         String stone,

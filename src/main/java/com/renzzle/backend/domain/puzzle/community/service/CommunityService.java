@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import static com.renzzle.backend.global.common.constant.ItemPrice.HINT;
@@ -67,7 +68,8 @@ public class CommunityService {
 
     @Transactional(readOnly = true)
     public List<GetCommunityPuzzlesResponse> getCommunityPuzzleList(GetCommunityPuzzleRequest request, UserEntity user) {
-        List<CommunityPuzzle> puzzleList = communityPuzzleRepository.searchCommunityPuzzles(request, user.getId());
+        List<CommunityPuzzle> puzzleList = communityPuzzleRepository.searchCommunityPuzzles(
+                request, user, Objects.requireNonNullElse(request.shuffleSeed(), 0L));
 
         List<GetCommunityPuzzlesResponse> response = new ArrayList<>();
         for (CommunityPuzzle puzzle : puzzleList) {
