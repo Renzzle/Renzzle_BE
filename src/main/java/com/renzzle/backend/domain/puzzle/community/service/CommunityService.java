@@ -22,10 +22,13 @@ import com.renzzle.backend.domain.puzzle.shared.util.RatingUtil;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -42,8 +45,13 @@ public class CommunityService {
     private final UserCommunityPuzzleRepository userCommunityPuzzleRepository;
     private final UserRepository userRepository;
 
+    @Value("${community.puzzle.daily-upload-limit}")
+    private int dailyUploadLimit;
+
     @Transactional
     public AddCommunityPuzzleResponse addCommunityPuzzle(AddCommunityPuzzleRequest request, UserEntity user) {
+        checkDailyUploadLimit(user);
+
         String boardKey = BoardUtils.makeBoardKey(request.boardStatus());
         WinColor winColor = WinColor.getWinColor(request.winColor());
 
@@ -64,6 +72,15 @@ public class CommunityService {
         return AddCommunityPuzzleResponse.builder()
                 .puzzleId(result.getId())
                 .build();
+    }
+
+    private void checkDailyUploadLimit(UserEntity user) {
+        Instant since = clock.instant().minus(24, ChronoUnit.HOURS);
+        long uploaded = communityPuzzleRepository.countByAuthorSinceIncludingDeleted(user.getId(), since);
+
+        if (uploaded >= dailyUploadLimit) {
+            throw new CustomException(ErrorCode.EXCEED_DAILY_PUZZLE_UPLOAD);
+        }
     }
 
     @Transactional(readOnly = true)

@@ -76,6 +76,7 @@ public enum ErrorCode {
     EMPTY_SESSION_DATA(HttpStatus.NOT_FOUND, "P4047", "세션 데이터가 존재하지 않습니다."),
     LATEST_PUZZLE_NOT_FOUND(HttpStatus.NOT_FOUND, "P4048", "이전 랭크 퍼즐이 존재하지 않습니다."),
     TREND_PUZZLE_DUPLICATED(HttpStatus.CONFLICT, "P4090", "트렌드 퍼즐이 중복되었습니다."),
+    EXCEED_DAILY_PUZZLE_UPLOAD(HttpStatus.TOO_MANY_REQUESTS, "P429", "하루에 올릴 수 있는 퍼즐 개수를 초과했습니다."),
     SESSION_ALREADY_ENDED(HttpStatus.GONE, "P4100", "세션이 이미 만료되었습니다."),
     SESSION_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "P5000", "세션 ID 생성에 실패하였습니다."),
 

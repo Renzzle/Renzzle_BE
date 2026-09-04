@@ -58,6 +58,10 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
     @Query("SELECT COUNT(p) FROM CommunityPuzzle p WHERE p.user.id = :userId")
     long countByAuthor(@Param("userId") Long userId);
 
+    @Query(value = "SELECT COUNT(*) FROM community_puzzle " +
+            "WHERE author_id = :userId AND created_at > :since", nativeQuery = true)
+    long countByAuthorSinceIncludingDeleted(@Param("userId") Long userId, @Param("since") Instant since);
+
     @Query("SELECT COALESCE(SUM(p.likeCount), 0) FROM CommunityPuzzle p WHERE p.user.id = :userId")
     int sumLikesByUser(@Param("userId") Long userId);
 

@@ -298,6 +298,53 @@ class CommunityPuzzleRepositoryTest {
                 .isEqualTo(deletedTime.truncatedTo(ChronoUnit.MICROS));
     }
 
+    @Test
+    void countByAuthorSinceIncludingDeleted_WhenPuzzleWasDeleted_ThenStillCounted() {
+        // Given: deleting a puzzle must not free up an upload slot
+        UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
+        CommunityPuzzle kept = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
+        CommunityPuzzle removed = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
+
+        communityPuzzleRepository.softDelete(removed.getId(), FIXED_INSTANT);
+        entityManager.flush();
+        entityManager.clear();
+
+        Instant since = kept.getCreatedAt().minus(1, ChronoUnit.HOURS);
+
+        // When / Then
+        assertThat(communityPuzzleRepository.countByAuthorSinceIncludingDeleted(user.getId(), since))
+                .isEqualTo(2);
+        // the JPQL sibling drops it, which is exactly why the native query exists
+        assertThat(communityPuzzleRepository.countByAuthor(user.getId())).isEqualTo(1);
+    }
+
+    @Test
+    void countByAuthorSinceIncludingDeleted_WhenPuzzleIsOlderThanWindow_ThenExcluded() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
+        CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
+        Instant createdAt = puzzle.getCreatedAt();
+
+        // When / Then
+        assertThat(communityPuzzleRepository.countByAuthorSinceIncludingDeleted(
+                user.getId(), createdAt.minus(1, ChronoUnit.SECONDS))).isEqualTo(1);
+        assertThat(communityPuzzleRepository.countByAuthorSinceIncludingDeleted(
+                user.getId(), createdAt.plus(1, ChronoUnit.SECONDS))).isZero();
+    }
+
+    @Test
+    void countByAuthorSinceIncludingDeleted_WhenAnotherUserUploaded_ThenNotCounted() {
+        // Given
+        UserEntity author = TestUserEntityBuilder.builder().save(userRepository);
+        UserEntity other = TestUserEntityBuilder.builder().save(userRepository);
+        CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(other).save(communityPuzzleRepository);
+
+        Instant since = puzzle.getCreatedAt().minus(1, ChronoUnit.HOURS);
+
+        // When / Then
+        assertThat(communityPuzzleRepository.countByAuthorSinceIncludingDeleted(author.getId(), since)).isZero();
+    }
+
 
     @Test
     void searchCommunityPuzzles_WhenSortIsRecommend_ThenSameSeedYieldsSameOrder() {

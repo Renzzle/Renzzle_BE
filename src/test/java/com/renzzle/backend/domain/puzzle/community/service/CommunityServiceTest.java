@@ -20,24 +20,30 @@ import com.renzzle.backend.global.exception.ErrorCode;
 import com.renzzle.backend.support.TestCommunityPuzzleBuilder;
 import com.renzzle.backend.support.TestUserCommunityPuzzleBuilder;
 import com.renzzle.backend.support.TestUserEntityBuilder;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
 import static com.renzzle.backend.global.common.constant.ItemPrice.HINT;
+import static com.renzzle.backend.support.TestTime.FIXED_INSTANT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class CommunityServiceTest {
+
+    private static final int DAILY_UPLOAD_LIMIT = 50;
 
     @Mock
     private Clock clock;
@@ -50,6 +56,12 @@ class CommunityServiceTest {
 
     @InjectMocks
     private CommunityService communityService;
+
+    @BeforeEach
+    void setup() {
+        ReflectionTestUtils.setField(communityService, "dailyUploadLimit", DAILY_UPLOAD_LIMIT);
+        lenient().when(clock.instant()).thenReturn(FIXED_INSTANT);
+    }
 
     @Test
     void addCommunityPuzzle_WhenValidInput_ThenSavesAndReturnsPuzzleId() {
@@ -89,6 +101,42 @@ class CommunityServiceTest {
         assertThat(response.puzzleId()).isEqualTo(mockPuzzle.getId());
 
         verify(communityPuzzleRepository, times(1)).save(any(CommunityPuzzle.class));
+    }
+
+    @Test
+    void addCommunityPuzzle_WhenDailyLimitReached_ThenThrowsAndSavesNothing() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder().withId(1L).build();
+        when(communityPuzzleRepository.countByAuthorSinceIncludingDeleted(eq(user.getId()), any(Instant.class)))
+                .thenReturn((long) DAILY_UPLOAD_LIMIT);
+
+        AddCommunityPuzzleRequest request =
+                new AddCommunityPuzzleRequest("f8f9", "e5", 7, "description", "BLACK", true);
+
+        // When
+        CustomException exception =
+                assertThrows(CustomException.class, () -> communityService.addCommunityPuzzle(request, user));
+
+        // Then
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.EXCEED_DAILY_PUZZLE_UPLOAD);
+        verify(communityPuzzleRepository, never()).save(any(CommunityPuzzle.class));
+    }
+
+    @Test
+    void addCommunityPuzzle_WhenCountingUploads_ThenWindowStartsOneDayBack() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder().withId(1L).build();
+        AddCommunityPuzzleRequest request =
+                new AddCommunityPuzzleRequest("f8f9", "e5", 7, "description", "BLACK", true);
+        when(communityPuzzleRepository.save(any(CommunityPuzzle.class)))
+                .thenReturn(CommunityPuzzle.builder().id(1L).build());
+
+        // When
+        communityService.addCommunityPuzzle(request, user);
+
+        // Then: rolling 24h, not the start of the calendar day
+        verify(communityPuzzleRepository).countByAuthorSinceIncludingDeleted(
+                user.getId(), FIXED_INSTANT.minus(24, ChronoUnit.HOURS));
     }
 
     @Test
