@@ -13,11 +13,11 @@ public record ModifyTrainingPuzzleRequest(
         @ValidBoardString
         String boardStatus,
 
-        @Size(max = 1023, message = "정답은 1023자 이하로 작성해야 합니다")
+        @Size(max = 1023, message = "Answer must be at most 1023 characters")
         String answer,
 
         Integer depth,
 
-        @ValidEnum(enumClass = WinColor.WinColorName.class, message = "잘못된 WinColor 타입입니다", nullable = true)
+        @ValidEnum(enumClass = WinColor.WinColorName.class, message = "Invalid WinColor type", nullable = true)
         String winColor
 ) { }

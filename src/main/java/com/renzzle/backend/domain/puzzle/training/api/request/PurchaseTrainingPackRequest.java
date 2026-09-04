@@ -4,6 +4,6 @@ import jakarta.validation.constraints.NotNull;
 
 public record PurchaseTrainingPackRequest(
 
-        @NotNull(message = "팩 정보가 없습니다")
+        @NotNull(message = "Pack is required")
         Long packId
 ) { }

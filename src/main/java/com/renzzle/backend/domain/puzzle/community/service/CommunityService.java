@@ -142,7 +142,7 @@ public class CommunityService {
     @Transactional
     public GetCommunityPuzzleForAdminResponse updateCommunityPuzzleVerificationForAdmin(Long puzzleId, Boolean isVerified) {
         if (isVerified == null) {
-            throw new CustomException("검증 여부 정보가 없습니다.", ErrorCode.VALIDATION_ERROR);
+            throw new CustomException("Verification flag is required", ErrorCode.VALIDATION_ERROR);
         }
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
@@ -172,7 +172,7 @@ public class CommunityService {
         int depthMin = request.depthMin() != null ? request.depthMin() : 1;
         int depthMax = request.depthMax() != null ? request.depthMax() : 225;
         if (depthMin > depthMax) {
-            throw new CustomException("depthMin은 depthMax보다 클 수 없습니다.", ErrorCode.VALIDATION_ERROR);
+            throw new CustomException("depthMin must not be greater than depthMax", ErrorCode.VALIDATION_ERROR);
         }
         int size = request.size() != null ? request.size() : 20;
         String nickname = request.authorNickname();

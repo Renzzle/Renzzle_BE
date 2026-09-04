@@ -13,7 +13,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ValidEnum {
 
-    String message() default "요구되는 Enum 타입의 데이터가 아닙니다";
+    String message() default "Not a valid enum value";
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
     Class<? extends java.lang.Enum<?>> enumClass();

@@ -6,13 +6,13 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public record UpdateTrainingPackRequest(
-        @NotNull(message = "info가 필요합니다")
+        @NotNull(message = "info is required")
         List<PackTranslationRequest> info,
 
-        @NotNull(message = "가격이 필요합니다")
+        @NotNull(message = "Price is required")
         Integer price,
 
-        @NotBlank(message = "난이도가 필요합니다")
+        @NotBlank(message = "Difficulty is required")
         String difficulty
 ) {
 }

@@ -5,14 +5,14 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
 
 public record ResetPasswordRequest(
-        @NotEmpty(message = "이메일 정보가 없습니다")
-        @Email(message = "이메일 형식이 아닙니다")
+        @NotEmpty(message = "Email is required")
+        @Email(message = "Invalid email format")
         String email,
 
-        @NotEmpty(message = "토큰 정보가 없습니다")
+        @NotEmpty(message = "Token is required")
         String authVerityToken,
 
-        @NotEmpty(message = "새 비밀번호 정보가 없습니다")
-        @Pattern(regexp = "^(?=.*[A-Za-z])[A-Za-z\\d]{8,}$", message = "새 비밀번호의 형식이 올바르지 않습니다")
+        @NotEmpty(message = "New password is required")
+        @Pattern(regexp = "^(?=.*[A-Za-z])[A-Za-z\\d]{8,}$", message = "Invalid new password format")
         String newPassword
 ) { }

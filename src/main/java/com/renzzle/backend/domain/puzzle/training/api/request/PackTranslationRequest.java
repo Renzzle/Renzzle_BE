@@ -5,13 +5,13 @@ import com.renzzle.backend.global.validation.ValidEnum;
 import jakarta.validation.constraints.NotBlank;
 
 public record PackTranslationRequest(
-        @ValidEnum(enumClass = LangCode.LangCodeName.class, message = "잘못된 lang 형식입니다")
+        @ValidEnum(enumClass = LangCode.LangCodeName.class, message = "Invalid lang format")
         String langCode,
 
-        @NotBlank(message = "title은 필수입니다")
+        @NotBlank(message = "title is required")
         String title,
 
-        @NotBlank(message = "author는 필수입니다")
+        @NotBlank(message = "author is required")
         String author,
 
         String description

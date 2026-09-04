@@ -8,24 +8,24 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record AddTrainingPuzzleRequest(
-        @NotNull(message = "팩 정보가 없습니다")
+        @NotNull(message = "Pack is required")
         Long packId,
 
         @NotNull
         Integer puzzleIndex,
 
-        @NotEmpty(message = "보드 정보가 없습니다")
+        @NotEmpty(message = "Board is required")
         @ValidBoardString
         String boardStatus,
 
-        @NotEmpty(message = "정답은 존재해야 합니다.")
-        @Size(max = 1023, message = "정답은 1023자 이하로 작성해야 합니다")
+        @NotEmpty(message = "Answer is required")
+        @Size(max = 1023, message = "Answer must be at most 1023 characters")
         String answer,
 
-        @NotNull(message = "깊이 정보가 없습니다")
+        @NotNull(message = "Depth is required")
         Integer depth,
 
-        @NotEmpty(message = "승리 색상 정보가 없습니다")
-        @ValidEnum(enumClass = WinColor.WinColorName.class, message = "잘못된 WinColor 타입입니다")
+        @NotEmpty(message = "Win color is required")
+        @ValidEnum(enumClass = WinColor.WinColorName.class, message = "Invalid WinColor type")
         String winColor
 ) { }

@@ -8,24 +8,24 @@ import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.Length;
 
 public record AddCommunityPuzzleRequest(
-        @NotEmpty(message = "보드 정보가 없습니다")
+        @NotEmpty(message = "Board is required")
         @ValidBoardString
         String boardStatus,
 
-        @NotEmpty(message = "정답 정보가 없습니다")
+        @NotEmpty(message = "Answer is required")
         @ValidBoardString
         String answer,
 
-        @NotNull(message = "깊이 정보가 없습니다")
+        @NotNull(message = "Depth is required")
         Integer depth,
 
         @Length(max = 100)
         String description,
 
-        @NotEmpty(message = "깊이 정보가 없습니다")
-        @ValidEnum(enumClass = WinColor.WinColorName.class, message = "잘못된 WinColor 타입입니다")
+        @NotEmpty(message = "Depth is required")
+        @ValidEnum(enumClass = WinColor.WinColorName.class, message = "Invalid WinColor type")
         String winColor,
 
-        @NotNull(message = "검증 여부 정보가 없습니다")
+        @NotNull(message = "Verification flag is required")
         Boolean isVerified
 ) { }

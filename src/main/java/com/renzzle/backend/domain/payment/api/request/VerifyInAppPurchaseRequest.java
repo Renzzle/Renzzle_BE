@@ -3,10 +3,10 @@ package com.renzzle.backend.domain.payment.api.request;
 import jakarta.validation.constraints.NotBlank;
 
 public record VerifyInAppPurchaseRequest(
-        @NotBlank(message = "플랫폼 정보가 없습니다")
+        @NotBlank(message = "Platform is required")
         String platform,
 
-        @NotBlank(message = "상품 정보가 없습니다")
+        @NotBlank(message = "Product is required")
         String productId,
 
         String transactionId,

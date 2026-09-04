@@ -3,6 +3,6 @@ package com.renzzle.backend.domain.puzzle.community.api.request;
 import jakarta.validation.constraints.NotNull;
 
 public record CommunityPuzzleResultUpdateRequest(
-        @NotNull(message = "퍼즐 아이디 정보가 없습니다")
+        @NotNull(message = "Puzzle ID is required")
         Long puzzleId
 ) { }
