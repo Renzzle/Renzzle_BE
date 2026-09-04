@@ -14,7 +14,6 @@ import com.renzzle.backend.global.common.domain.Status;
 import com.renzzle.backend.support.DataJpaTestWithInitContainers;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -70,7 +69,6 @@ class TrainingServiceRepositoryTest {
     }
 
     @Test
-    @DisplayName("TrainingPuzzle 저장 및 조회: 유효한 Pack과 TrainingPuzzle을 저장 후 정상 조회")
     @Transactional
     void increaseIndexesFrom_WhenCalled_ThenIncrementsAllFollowingIndexes() {
         // Given
@@ -107,7 +105,6 @@ class TrainingServiceRepositoryTest {
     }
 
     @Test
-    @DisplayName("testDeleteAndDecreaseIndexes: 존재하는 퍼즐 삭제 후, 후속 퍼즐의 trainingIndex가 감소된다.")
     @Transactional
     void decreaseIndexesFrom_WhenCalled_ThenDecrementsIndexesGreaterThanTarget() {
         // Given
@@ -167,7 +164,6 @@ class TrainingServiceRepositoryTest {
     }
 
     @Test
-    @DisplayName("testSaveAndFindSolvedTrainingPuzzle: SolvedTrainingPuzzle 저장 후, findByUserIdAndPuzzleId로 조회")
     @Transactional
     void findByPackId_WhenPackExists_ThenReturnsAllAssociatedPuzzles() {
         // Given
@@ -211,7 +207,6 @@ class TrainingServiceRepositoryTest {
     }
 
     @Test
-    @DisplayName("GetTrainingPuzzleList: 특정 Pack의 TrainingPuzzle 목록이 정상적으로 조회된다.")
     @Transactional
     void findByChapterAndIndex_WhenExists_ThenReturnsPuzzle() {
         // Given
@@ -259,7 +254,6 @@ class TrainingServiceRepositoryTest {
     }
 
     @Test
-    @DisplayName("PackTranslation들이 정상 저장되고 조회")
     @Transactional
     void saveTranslations_WhenTranslationsLinkedToPack_ThenAllAreSaved() {
         // Given
@@ -300,7 +294,6 @@ class TrainingServiceRepositoryTest {
     }
 
     @Test
-    @DisplayName("getTrainingPackList : findByDifficulty, findAllByPack_IdInAndLanguageCode, findAllByUserIdAndPackIdIn 메소드 확인")
     @Transactional
     void GetTrainingPackList_WhenGetDifficulty_ThenReturnPackList() {
         // Given
@@ -339,7 +332,6 @@ class TrainingServiceRepositoryTest {
     }
 
     @Test
-    @DisplayName("testAddTranslation: 유효한 Pack에 대해 번역을 추가 시 저장")
     @Transactional
     void AddTranslation_WhenPackExist_ThenReturnPack() {
         // Given
@@ -376,7 +368,6 @@ class TrainingServiceRepositoryTest {
     }
 
     @Test
-    @DisplayName("testPurchaseTrainingPack: 사용자의 잔액 차감 및 UserPack 저장")
     @Transactional
     void PurchaseTrainingPack() {
         // Given
@@ -427,7 +418,6 @@ class TrainingServiceRepositoryTest {
     }
 
     @Test
-    @DisplayName("testPurchaseTrainingPuzzleAnswer: 사용자의 잔액이 정상 차감되고, 구매 후 결과를 조회할 수 있다")
     @Transactional
     void PurchaseTrainingPuzzleAnswer_WhenEnoughCurrent_ThenReturnRemainCurrent() {
         // Given

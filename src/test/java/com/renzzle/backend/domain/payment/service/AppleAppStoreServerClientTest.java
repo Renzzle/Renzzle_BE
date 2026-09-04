@@ -7,7 +7,6 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.http.HttpHeaders;
@@ -63,7 +62,6 @@ class AppleAppStoreServerClientTest {
         privateKeyPath = keyFile.toString();
     }
 
-    @DisplayName("운영 환경 조회 성공 시 서명 페이로드를 디코딩해 거래 정보를 반환")
     @Test
     void fetchTransactionInfo_WhenFoundInProduction_ThenReturnsDecodedTransaction() throws Exception {
         // given
@@ -101,7 +99,6 @@ class AppleAppStoreServerClientTest {
         server.verify();
     }
 
-    @DisplayName("운영 환경에서 404면 샌드박스 환경으로 재조회")
     @Test
     void fetchTransactionInfo_WhenNotFoundInProduction_ThenRetriesSandbox() throws Exception {
         // given
@@ -127,7 +124,6 @@ class AppleAppStoreServerClientTest {
         server.verify();
     }
 
-    @DisplayName("운영과 샌드박스 모두에 거래가 없으면 검증 실패")
     @Test
     void fetchTransactionInfo_WhenNotFoundInBothEnvironments_ThenThrowsCustomException() {
         // given
@@ -153,7 +149,6 @@ class AppleAppStoreServerClientTest {
         server.verify();
     }
 
-    @DisplayName("미출시 앱은 운영 환경에서 401이 오므로 샌드박스로 재조회")
     @Test
     void fetchTransactionInfo_WhenProductionUnauthorized_ThenRetriesSandbox() throws Exception {
         // given
@@ -177,7 +172,6 @@ class AppleAppStoreServerClientTest {
         server.verify();
     }
 
-    @DisplayName("운영과 샌드박스 모두 401이면 검증 실패")
     @Test
     void fetchTransactionInfo_WhenUnauthorizedInBothEnvironments_ThenThrowsCustomException() {
         // given
@@ -199,7 +193,6 @@ class AppleAppStoreServerClientTest {
         server.verify();
     }
 
-    @DisplayName("응답의 서명 페이로드가 JWS 형식이 아니면 검증 실패")
     @Test
     void fetchTransactionInfo_WhenSignedPayloadMalformed_ThenThrowsCustomException() throws Exception {
         // given
