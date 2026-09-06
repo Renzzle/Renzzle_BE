@@ -117,7 +117,7 @@ public class TrainingService {
         if (winColorChanged) {
             puzzleBuilder.winColor(WinColor.getWinColor(request.winColor()));
         }
-        // rating은 depth·winColor 양쪽에 의존하므로 둘 중 하나라도 바뀌면 재계산
+        // rating depends on both depth and winColor, so recalculate whenever either one changes
         if (depthChanged || winColorChanged) {
             int effectiveDepth = depthChanged ? request.depth() : puzzle.getDepth();
             WinColor effectiveWinColor = winColorChanged

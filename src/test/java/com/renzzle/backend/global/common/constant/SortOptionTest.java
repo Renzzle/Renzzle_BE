@@ -12,12 +12,14 @@ class SortOptionTest {
         assertThat(SortOption.from("latest")).isEqualTo(SortOption.LATEST);
         assertThat(SortOption.from("like")).isEqualTo(SortOption.LIKE);
         assertThat(SortOption.from("Like")).isEqualTo(SortOption.LIKE);
+        assertThat(SortOption.from("recommend")).isEqualTo(SortOption.RECOMMEND);
     }
 
     @Test
     void from_WhenSortIsUpperCase_ThenResolvesToEnumConstant() {
         assertThat(SortOption.from("LATEST")).isEqualTo(SortOption.LATEST);
         assertThat(SortOption.from("LIKE")).isEqualTo(SortOption.LIKE);
+        assertThat(SortOption.from("RECOMMEND")).isEqualTo(SortOption.RECOMMEND);
     }
 
     @Test

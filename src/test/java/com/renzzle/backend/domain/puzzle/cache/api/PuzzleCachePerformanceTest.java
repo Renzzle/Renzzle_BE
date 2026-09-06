@@ -11,7 +11,6 @@ import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.support.TestUserEntityBuilder;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -80,8 +79,7 @@ class PuzzleCachePerformanceTest {
     }
 
     @Test
-    @DisplayName("[성능] 시나리오 1 - cache_puzzle 행 수 증가(1 → 10,000)에 따른 조회 성능 비교")
-    void scenario1_행_수_증가에_따른_조회_성능() {
+    void lookupPerformance_WhenCachePuzzleRowsGrowTo10000_ThenComparesLatency() {
         long knownHash = ZobristHashUtils.hashFromBoardStatus(TEST_BOARD_STATE);
 
         Map<Long, Integer> targetDag = new HashMap<>();
@@ -116,19 +114,18 @@ class PuzzleCachePerformanceTest {
         double afterMs = measureApiCall(1L);
 
         System.out.println("========================================");
-        System.out.println("[시나리오 1] cache_puzzle 행 수 증가 테스트");
+        System.out.println("[Scenario 1] cache_puzzle row count growth");
         System.out.println("========================================");
-        System.out.println("[Before] 퍼즐 1개    → 평균 조회 시간: " + String.format("%.2f", beforeMs) + " ms");
-        System.out.println("[After]  퍼즐 10,000개 → 평균 조회 시간: " + String.format("%.2f", afterMs) + " ms");
-        System.out.println("[차이] " + String.format("%.2f", afterMs - beforeMs) + " ms");
+        System.out.println("[Before] 1 puzzle       -> avg lookup: " + String.format("%.2f", beforeMs) + " ms");
+        System.out.println("[After]  10,000 puzzles -> avg lookup: " + String.format("%.2f", afterMs) + " ms");
+        System.out.println("[Delta] " + String.format("%.2f", afterMs - beforeMs) + " ms");
         System.out.println("========================================");
 
         assertThat(afterMs).isPositive();
     }
 
     @Test
-    @DisplayName("[성능] 시나리오 2 - solution_dag 크기 증가(map 10 → 10,000)에 따른 조회 성능 비교")
-    void scenario2_DAG_크기_증가에_따른_조회_성능() {
+    void lookupPerformance_WhenSolutionDagGrowsTo10000Entries_ThenComparesLatency() {
         long knownHash = ZobristHashUtils.hashFromBoardStatus(TEST_BOARD_STATE);
 
         Map<Long, Integer> smallDag = new HashMap<>();
@@ -157,11 +154,11 @@ class PuzzleCachePerformanceTest {
         double afterMs = measureApiCall(1L);
 
         System.out.println("========================================");
-        System.out.println("[시나리오 2] solution_dag 크기 증가 테스트");
+        System.out.println("[Scenario 2] solution_dag size growth");
         System.out.println("========================================");
-        System.out.println("[Before] map 10개    → 평균 조회 시간: " + String.format("%.2f", beforeMs) + " ms");
-        System.out.println("[After]  map 10,000개 → 평균 조회 시간: " + String.format("%.2f", afterMs) + " ms");
-        System.out.println("[차이] " + String.format("%.2f", afterMs - beforeMs) + " ms");
+        System.out.println("[Before] map of 10     -> avg lookup: " + String.format("%.2f", beforeMs) + " ms");
+        System.out.println("[After]  map of 10,000 -> avg lookup: " + String.format("%.2f", afterMs) + " ms");
+        System.out.println("[Delta] " + String.format("%.2f", afterMs - beforeMs) + " ms");
         System.out.println("========================================");
 
         assertThat(afterMs).isPositive();

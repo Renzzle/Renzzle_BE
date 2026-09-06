@@ -13,7 +13,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ValidBoardString {
 
-    String message() default "올바른 Board String 형식이 아닙니다";
+    String message() default "Invalid board string format";
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
 

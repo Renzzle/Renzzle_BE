@@ -75,8 +75,8 @@ public class RankService {
 
         latestRankPuzzleRepository.save(latestPuzzle);
 
-        double mmrPenalty = ELOUtils.calculateMMRDecrease(originalRating, puzzleRating);
-        double ratingPenalty = ELOUtils.calculateRatingDecrease(originalMmr, puzzleRating);
+        double mmrPenalty = ELOUtils.calculateMMRDecrease(originalMmr, puzzleRating);
+        double ratingPenalty = ELOUtils.calculateRatingDecrease(originalRating, puzzleRating);
 
         user.updateMmrTo(originalMmr + mmrPenalty);
         user.updateRatingTo(originalRating + ratingPenalty);

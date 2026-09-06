@@ -8,6 +8,6 @@ import jakarta.validation.constraints.NotBlank;
                 @NotBlank(message = "Difficulty is required")
                 String difficulty,
 
-                @ValidEnum(enumClass = LangCode.LangCodeName.class, message = "잘못된 lang 형식입니다")
+                @ValidEnum(enumClass = LangCode.LangCodeName.class, message = "Invalid lang format")
                 String lang
         ) { }

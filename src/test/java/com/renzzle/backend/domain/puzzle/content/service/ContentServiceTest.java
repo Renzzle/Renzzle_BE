@@ -317,7 +317,7 @@ class ContentServiceTest {
                     .map(GetCommunityPuzzlesResponse::id)
                 .toList();
 
-        System.out.println("선택된 퍼즐 IDs: " + puzzleIds);
+        System.out.println("selected puzzle IDs: " + puzzleIds);
     }
 
     @Test

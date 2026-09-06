@@ -7,7 +7,6 @@ import com.renzzle.backend.domain.puzzle.cache.dao.PuzzleCacheRepository;
 import com.renzzle.backend.domain.puzzle.shared.util.ZobristHashUtils;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -44,7 +43,6 @@ class PuzzleCacheServiceTest {
     // ========== getAiResponse ==========
 
     @Test
-    @DisplayName("현재 보드 상태를 Zobrist Hash로 변환해 AI 응답 수를 반환한다")
     void getAiResponse_ShouldReturnAnswer_WhenHashExists() {
         String currentBoardState = "h8h9";
         Long zobristHash = ZobristHashUtils.hashFromBoardStatus(currentBoardState);
@@ -64,7 +62,6 @@ class PuzzleCacheServiceTest {
     }
 
     @Test
-    @DisplayName("Zobrist Hash가 DAG에 없으면 null을 반환한다")
     void getAiResponse_ShouldReturnNull_WhenHashDoesNotExist() {
         String currentBoardState = "h8h10";
         byte[] solutionDagBinary = new byte[] {1, 2, 3};
@@ -83,7 +80,6 @@ class PuzzleCacheServiceTest {
     }
 
     @Test
-    @DisplayName("캐시 퍼즐이 없으면 null을 반환한다")
     void getAiResponse_ShouldReturnNull_WhenPuzzleNotFound() {
         when(puzzleCacheRepository.findByPuzzleTypeAndPuzzleId(TYPE, 999L)).thenReturn(Optional.empty());
 
@@ -93,7 +89,6 @@ class PuzzleCacheServiceTest {
     }
 
     @Test
-    @DisplayName("보드 상태 문자열이 잘못되면 VALIDATION_ERROR 예외가 발생한다")
     void getAiResponse_ShouldThrowValidation_WhenBoardStateInvalid() {
         byte[] solutionDagBinary = new byte[] {1, 2, 3};
         PuzzleCache puzzle = PuzzleCache.builder()
@@ -115,7 +110,6 @@ class PuzzleCacheServiceTest {
     // ========== savePuzzle ==========
 
     @Test
-    @DisplayName("기존 캐시가 있으면 DAG에 추가되어 저장된다")
     void savePuzzle_ShouldSerializeAndPersist_WhenCacheExists() {
         String currentBoardState = "h8h9";
         String answerPuzzle = "h8";
@@ -138,7 +132,6 @@ class PuzzleCacheServiceTest {
     }
 
     @Test
-    @DisplayName("캐시가 없으면 새로 생성되어 저장된다")
     void savePuzzle_ShouldCreateNewCache_WhenNotExists() {
         String currentBoardState = "h8h9";
         String answerPuzzle = "h8";
@@ -158,7 +151,6 @@ class PuzzleCacheServiceTest {
     }
 
     @Test
-    @DisplayName("answerPuzzle이 범위 밖 알파벳이면 INVALID_ANSWER_POSITION 예외가 발생한다")
     void savePuzzle_ShouldThrowInvalidAnswerPosition_WhenLetterOutOfRange() {
         CustomException exception = assertThrows(
                 CustomException.class,
@@ -168,7 +160,6 @@ class PuzzleCacheServiceTest {
     }
 
     @Test
-    @DisplayName("answerPuzzle이 범위 밖 숫자이면 INVALID_ANSWER_POSITION 예외가 발생한다")
     void savePuzzle_ShouldThrowInvalidAnswerPosition_WhenNumberOutOfRange() {
         CustomException exception = assertThrows(
                 CustomException.class,
@@ -178,7 +169,6 @@ class PuzzleCacheServiceTest {
     }
 
     @Test
-    @DisplayName("answerPuzzle이 숫자 0이면 INVALID_ANSWER_POSITION 예외가 발생한다")
     void savePuzzle_ShouldThrowInvalidAnswerPosition_WhenNumberIsZero() {
         CustomException exception = assertThrows(
                 CustomException.class,
@@ -189,7 +179,6 @@ class PuzzleCacheServiceTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    @DisplayName("기존 DAG에 새 항목이 정상적으로 merge 된다")
     void savePuzzle_ShouldMergeNewEntryIntoExistingDag() {
         String currentBoardState = "h8h9";
         String answerPuzzle = "h8";
@@ -240,7 +229,6 @@ class PuzzleCacheServiceTest {
     }
 
     @Test
-    @DisplayName("캐시에 존재하는 사용자 수와 그에 대한 AI 응답만 반환한다")
     void getNextMoveCandidates_ShouldReturnOnlyCachedMoves() {
         byte[] solutionDagBinary = new byte[] {1, 2, 3};
         PuzzleCache puzzle = PuzzleCache.builder()
@@ -251,7 +239,7 @@ class PuzzleCacheServiceTest {
 
         Map<Long, Integer> dag = new HashMap<>();
         dag.put(hashAfterUserMove(CELL_I10), CELL_J11);
-        dag.put(12345L, 7); // 도달 불가능한 항목이므로 후보에 포함되지 않아야 한다
+        dag.put(12345L, 7); // unreachable entry, so it must not appear among the candidates
 
         when(puzzleCacheRepository.findByPuzzleTypeAndPuzzleId(TYPE, PUZZLE_ID)).thenReturn(Optional.of(puzzle));
         when(solutionSerializer.deserialize(solutionDagBinary)).thenReturn(dag);
@@ -263,7 +251,6 @@ class PuzzleCacheServiceTest {
     }
 
     @Test
-    @DisplayName("이미 돌이 놓인 칸은 후보에서 제외한다")
     void getNextMoveCandidates_ShouldSkipOccupiedCells() {
         byte[] solutionDagBinary = new byte[] {1, 2, 3};
         PuzzleCache puzzle = PuzzleCache.builder()
@@ -273,7 +260,7 @@ class PuzzleCacheServiceTest {
                 .build();
 
         Map<Long, Integer> dag = new HashMap<>();
-        dag.put(hashAfterUserMove(CELL_H8), CELL_J11); // h8은 이미 점유된 칸
+        dag.put(hashAfterUserMove(CELL_H8), CELL_J11); // h8 is already occupied
 
         when(puzzleCacheRepository.findByPuzzleTypeAndPuzzleId(TYPE, PUZZLE_ID)).thenReturn(Optional.of(puzzle));
         when(solutionSerializer.deserialize(solutionDagBinary)).thenReturn(dag);
@@ -285,7 +272,6 @@ class PuzzleCacheServiceTest {
     }
 
     @Test
-    @DisplayName("캐시 퍼즐이 없으면 빈 결과를 반환한다")
     void getNextMoveCandidates_ShouldReturnEmpty_WhenPuzzleNotFound() {
         when(puzzleCacheRepository.findByPuzzleTypeAndPuzzleId(TYPE, 999L)).thenReturn(Optional.empty());
 
@@ -296,7 +282,6 @@ class PuzzleCacheServiceTest {
     }
 
     @Test
-    @DisplayName("solutionDag가 비어 있으면 역직렬화 없이 빈 결과를 반환한다")
     void getNextMoveCandidates_ShouldReturnEmpty_WhenSolutionDagIsEmpty() {
         PuzzleCache puzzle = PuzzleCache.builder()
                 .puzzleType(TYPE).puzzleId(PUZZLE_ID)
@@ -313,7 +298,6 @@ class PuzzleCacheServiceTest {
     }
 
     @Test
-    @DisplayName("보드 상태 문자열이 잘못되면 VALIDATION_ERROR 예외가 발생한다")
     void getNextMoveCandidates_ShouldThrowValidation_WhenBoardStateInvalid() {
         CustomException exception = assertThrows(
                 CustomException.class,
@@ -324,7 +308,6 @@ class PuzzleCacheServiceTest {
     }
 
     @Test
-    @DisplayName("보드 상태가 비어 있으면 NO_BOARD_STATUS 예외가 발생한다")
     void getNextMoveCandidates_ShouldThrowNoBoardStatus_WhenBoardStateBlank() {
         CustomException exception = assertThrows(
                 CustomException.class,

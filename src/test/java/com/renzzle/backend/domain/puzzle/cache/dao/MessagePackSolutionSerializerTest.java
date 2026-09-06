@@ -2,7 +2,6 @@ package com.renzzle.backend.domain.puzzle.cache.dao;
 
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -15,7 +14,6 @@ class MessagePackSolutionSerializerTest {
     private final MessagePackSolutionSerializer serializer = new MessagePackSolutionSerializer();
 
     @Test
-    @DisplayName("MessagePack 직렬화-역직렬화 후 원본 DAG가 보존된다")
     void serializeAndDeserialize_ShouldRoundTrip() {
         // given
         Map<Long, Integer> dag = Map.of(
@@ -34,7 +32,6 @@ class MessagePackSolutionSerializerTest {
     }
 
     @Test
-    @DisplayName("착수값이 0~224 범위를 벗어나면 VALIDATION_ERROR가 발생한다")
     void serialize_ShouldThrow_WhenMoveOutOfRange() {
         // given
         Map<Long, Integer> invalidDag = Map.of(1L, 225);

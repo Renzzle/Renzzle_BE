@@ -22,12 +22,16 @@ import com.renzzle.backend.domain.puzzle.shared.util.RatingUtil;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import static com.renzzle.backend.global.common.constant.ItemPrice.HINT;
@@ -41,8 +45,13 @@ public class CommunityService {
     private final UserCommunityPuzzleRepository userCommunityPuzzleRepository;
     private final UserRepository userRepository;
 
+    @Value("${community.puzzle.daily-upload-limit}")
+    private int dailyUploadLimit;
+
     @Transactional
     public AddCommunityPuzzleResponse addCommunityPuzzle(AddCommunityPuzzleRequest request, UserEntity user) {
+        checkDailyUploadLimit(user);
+
         String boardKey = BoardUtils.makeBoardKey(request.boardStatus());
         WinColor winColor = WinColor.getWinColor(request.winColor());
 
@@ -65,9 +74,19 @@ public class CommunityService {
                 .build();
     }
 
+    private void checkDailyUploadLimit(UserEntity user) {
+        Instant since = clock.instant().minus(24, ChronoUnit.HOURS);
+        long uploaded = communityPuzzleRepository.countByAuthorSinceIncludingDeleted(user.getId(), since);
+
+        if (uploaded >= dailyUploadLimit) {
+            throw new CustomException(ErrorCode.EXCEED_DAILY_PUZZLE_UPLOAD);
+        }
+    }
+
     @Transactional(readOnly = true)
     public List<GetCommunityPuzzlesResponse> getCommunityPuzzleList(GetCommunityPuzzleRequest request, UserEntity user) {
-        List<CommunityPuzzle> puzzleList = communityPuzzleRepository.searchCommunityPuzzles(request, user.getId());
+        List<CommunityPuzzle> puzzleList = communityPuzzleRepository.searchCommunityPuzzles(
+                request, user, Objects.requireNonNullElse(request.shuffleSeed(), 0L));
 
         List<GetCommunityPuzzlesResponse> response = new ArrayList<>();
         for (CommunityPuzzle puzzle : puzzleList) {
@@ -123,7 +142,7 @@ public class CommunityService {
     @Transactional
     public GetCommunityPuzzleForAdminResponse updateCommunityPuzzleVerificationForAdmin(Long puzzleId, Boolean isVerified) {
         if (isVerified == null) {
-            throw new CustomException("검증 여부 정보가 없습니다.", ErrorCode.VALIDATION_ERROR);
+            throw new CustomException("Verification flag is required", ErrorCode.VALIDATION_ERROR);
         }
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
@@ -153,7 +172,7 @@ public class CommunityService {
         int depthMin = request.depthMin() != null ? request.depthMin() : 1;
         int depthMax = request.depthMax() != null ? request.depthMax() : 225;
         if (depthMin > depthMax) {
-            throw new CustomException("depthMin은 depthMax보다 클 수 없습니다.", ErrorCode.VALIDATION_ERROR);
+            throw new CustomException("depthMin must not be greater than depthMax", ErrorCode.VALIDATION_ERROR);
         }
         int size = request.size() != null ? request.size() : 20;
         String nickname = request.authorNickname();

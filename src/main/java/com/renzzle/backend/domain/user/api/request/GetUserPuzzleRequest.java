@@ -4,10 +4,10 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
 public record GetUserPuzzleRequest(
-        @Min(value = 0, message = "page는 최소 0이어야 합니다")
+        @Min(value = 0, message = "page must be at least 0")
         Integer page,
 
-        @Min(value = 1, message = "size는 최소 1이어야 합니다")
-        @Max(value = 100, message = "size는 최대 100이어야 합니다")
+        @Min(value = 1, message = "size must be at least 1")
+        @Max(value = 100, message = "size must be at most 100")
         Integer size
 ) { }

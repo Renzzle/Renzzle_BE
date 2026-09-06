@@ -3,7 +3,6 @@ package com.renzzle.backend.domain.payment.service;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -30,7 +29,6 @@ class AppleTransactionVerifierTest {
         verifier = new AppleTransactionVerifier(appStoreServerClient, BUNDLE_ID);
     }
 
-    @DisplayName("번들 ID, 상품, 거래 ID가 모두 일치하면 검증 성공")
     @Test
     void verify_WhenTransactionMatches_ThenReturnsVerificationResult() {
         // given
@@ -45,7 +43,6 @@ class AppleTransactionVerifierTest {
         assertThat(result.transactionId()).isEqualTo(TRANSACTION_ID);
     }
 
-    @DisplayName("번들 ID가 다르면 검증 실패")
     @Test
     void verify_WhenBundleIdMismatch_ThenThrowsCustomException() {
         // given
@@ -60,7 +57,6 @@ class AppleTransactionVerifierTest {
         assertEquals(ErrorCode.STORE_VERIFICATION_FAILED, exception.getErrorCode());
     }
 
-    @DisplayName("환불된 거래는 검증 실패")
     @Test
     void verify_WhenTransactionRevoked_ThenThrowsCustomException() {
         // given
@@ -75,7 +71,6 @@ class AppleTransactionVerifierTest {
         assertEquals(ErrorCode.STORE_VERIFICATION_FAILED, exception.getErrorCode());
     }
 
-    @DisplayName("요청 상품과 실제 거래 상품이 다르면 검증 실패")
     @Test
     void verify_WhenProductIdMismatch_ThenThrowsCustomException() {
         // given
