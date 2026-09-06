@@ -33,6 +33,8 @@ class AccountServiceTest {
     private AuthService authService;
     @Mock
     private TrainingService trainingService;
+    @Mock
+    private LoginAttemptService loginAttemptService;
 
     @InjectMocks
     private AccountService accountService;
@@ -106,6 +108,9 @@ class AccountServiceTest {
         LoginResponse response = accountService.login(validLoginRequest);
 
         assertNotNull(response);
+        verify(loginAttemptService).checkNotLocked(email);
+        verify(loginAttemptService).reset(email);
+        verify(loginAttemptService, never()).recordFailure(email);
     }
 
     @Test
@@ -115,6 +120,7 @@ class AccountServiceTest {
         CustomException ex = assertThrows(CustomException.class, () -> accountService.login(validLoginRequest));
 
         assertEquals(ErrorCode.INVALID_EMAIL, ex.getErrorCode());
+        verify(loginAttemptService).recordFailure(email);
     }
 
     @Test
@@ -132,6 +138,19 @@ class AccountServiceTest {
         CustomException ex = assertThrows(CustomException.class, () -> accountService.login(validLoginRequest));
 
         assertEquals(ErrorCode.INVALID_PASSWORD, ex.getErrorCode());
+        verify(loginAttemptService).recordFailure(email);
+        verify(loginAttemptService, never()).reset(email);
+    }
+
+    @Test
+    void login_ShouldThrowException_WhenAccountIsLocked() {
+        doThrow(new CustomException(ErrorCode.EXCEED_LOGIN_ATTEMPT))
+                .when(loginAttemptService).checkNotLocked(email);
+
+        CustomException ex = assertThrows(CustomException.class, () -> accountService.login(validLoginRequest));
+
+        assertEquals(ErrorCode.EXCEED_LOGIN_ATTEMPT, ex.getErrorCode());
+        verify(userRepository, never()).findByEmail(anyString());
     }
 
     @Test

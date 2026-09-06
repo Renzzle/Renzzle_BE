@@ -28,6 +28,7 @@ public class AccountService {
     private final AuthService authService;
     private final TrainingService trainingService;
     private final AdminRepository adminRepository;
+    private final LoginAttemptService loginAttemptService;
 
     @Transactional(readOnly = true)
     public boolean isDuplicatedEmail(String email) {
@@ -75,13 +76,22 @@ public class AccountService {
 
     @Transactional
     public LoginResponse login(LoginRequest request) {
+        loginAttemptService.checkNotLocked(request.email());
+
         Optional<UserEntity> user = userRepository.findByEmail(request.email());
 
-        if(user.isEmpty())
+        // An unknown email is counted as well, otherwise the lock would reveal which accounts exist
+        if(user.isEmpty()) {
+            loginAttemptService.recordFailure(request.email());
             throw new CustomException(ErrorCode.INVALID_EMAIL);
+        }
 
-        if(!passwordEncoder.matches(request.password(), user.get().getPassword()))
+        if(!passwordEncoder.matches(request.password(), user.get().getPassword())) {
+            loginAttemptService.recordFailure(request.email());
             throw new CustomException(ErrorCode.INVALID_PASSWORD);
+        }
+
+        loginAttemptService.reset(request.email());
 
         long userId = user.get().getId();
 

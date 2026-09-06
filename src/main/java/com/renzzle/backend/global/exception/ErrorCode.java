@@ -20,7 +20,9 @@ public enum ErrorCode {
     CONSTRAINT_VIOLATION_ERROR(HttpStatus.CONFLICT, "S409", "Database constraint violated"),
 
     // Auth
-    EXCEED_EMAIL_AUTH_REQUEST(HttpStatus.TOO_MANY_REQUESTS, "A429", "Too many email verification requests"),
+    EXCEED_EMAIL_AUTH_REQUEST(HttpStatus.TOO_MANY_REQUESTS, "A4290", "Too many email verification requests"),
+    EXCEED_EMAIL_AUTH_ATTEMPT(HttpStatus.TOO_MANY_REQUESTS, "A4291", "Too many verification code attempts"),
+    EXCEED_LOGIN_ATTEMPT(HttpStatus.TOO_MANY_REQUESTS, "A4292", "Too many login attempts"),
     INVALID_EMAIL_AUTH_CODE(HttpStatus.UNAUTHORIZED, "A4010", "Invalid verification code"),
     INVALID_AUTH_VERITY_TOKEN(HttpStatus.UNAUTHORIZED, "A4011", "Invalid email verification token"),
     INVALID_EMAIL(HttpStatus.UNAUTHORIZED, "A4012", "Invalid email"),

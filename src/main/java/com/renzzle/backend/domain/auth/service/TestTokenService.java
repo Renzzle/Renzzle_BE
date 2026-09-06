@@ -28,19 +28,28 @@ public class TestTokenService {
     private final Clock clock;
     private final JwtProvider jwtProvider;
     private final UserRepository userRepository;
+    private final LoginAttemptService loginAttemptService;
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     // Same credential check as login, but issues a longer lived access token.
     // No refresh token is stored, so the login session of the account is left untouched.
     @Transactional(readOnly = true)
     public TestTokenResponse createTestToken(TestTokenRequest request) {
+        loginAttemptService.checkNotLocked(request.email());
+
         Optional<UserEntity> user = userRepository.findByEmail(request.email());
 
-        if (user.isEmpty())
+        if (user.isEmpty()) {
+            loginAttemptService.recordFailure(request.email());
             throw new CustomException(ErrorCode.INVALID_EMAIL);
+        }
 
-        if (!passwordEncoder.matches(request.password(), user.get().getPassword()))
+        if (!passwordEncoder.matches(request.password(), user.get().getPassword())) {
+            loginAttemptService.recordFailure(request.email());
             throw new CustomException(ErrorCode.INVALID_PASSWORD);
+        }
+
+        loginAttemptService.reset(request.email());
 
         return TestTokenResponse.builder()
                 .grantType(GrantType.BEARER.getType())
