@@ -110,7 +110,7 @@ class TrainingServiceRepositoryTest {
         // Given
         Difficulty difficulty = Difficulty.getDifficulty("LOW");
         WinColor winColor = WinColor.getWinColor("WHITE");
-        
+
         Pack pack = Pack.builder()
                 .price(1000)
                 .difficulty(difficulty)

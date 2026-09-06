@@ -8,6 +8,6 @@ public record GetPersonalNoticeRequest(
         @ValidEnum(enumClass = LangCode.LangCodeName.class, message = "Invalid lang format")
         String langCode,
 
-        @NotBlank
+        @NotBlank(message = "Version is required")
         String version
 ) { }

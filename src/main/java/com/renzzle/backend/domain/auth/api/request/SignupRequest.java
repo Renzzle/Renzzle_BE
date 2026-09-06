@@ -19,7 +19,7 @@ public record SignupRequest(
         @Size(min = 2, max = 8, message = "Nickname must be 2-8 characters")
         String nickname,
 
-        @NotEmpty(message = "Token is required")
+        @NotEmpty(message = "Auth verification token is required")
         String authVerityToken,
 
         @NotEmpty(message = "Device ID is required")

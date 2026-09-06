@@ -8,10 +8,10 @@ public record PackTranslationRequest(
         @ValidEnum(enumClass = LangCode.LangCodeName.class, message = "Invalid lang format")
         String langCode,
 
-        @NotBlank(message = "title is required")
+        @NotBlank(message = "Title is required")
         String title,
 
-        @NotBlank(message = "author is required")
+        @NotBlank(message = "Author is required")
         String author,
 
         String description

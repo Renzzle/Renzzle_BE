@@ -6,7 +6,7 @@ public record VerifyInAppPurchaseRequest(
         @NotBlank(message = "Platform is required")
         String platform,
 
-        @NotBlank(message = "Product is required")
+        @NotBlank(message = "Product ID is required")
         String productId,
 
         String transactionId,

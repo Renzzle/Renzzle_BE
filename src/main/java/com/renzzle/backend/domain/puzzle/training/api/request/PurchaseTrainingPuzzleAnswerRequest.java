@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotNull;
 
 public record PurchaseTrainingPuzzleAnswerRequest(
 
-        @NotNull(message = "Invalid puzzle ID")
+        @NotNull(message = "Puzzle ID is required")
         Long puzzleId
 ) {
 }

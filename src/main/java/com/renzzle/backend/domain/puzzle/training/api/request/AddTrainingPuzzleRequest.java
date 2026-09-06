@@ -8,13 +8,13 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record AddTrainingPuzzleRequest(
-        @NotNull(message = "Pack is required")
+        @NotNull(message = "Pack ID is required")
         Long packId,
 
-        @NotNull
+        @NotNull(message = "Puzzle index is required")
         Integer puzzleIndex,
 
-        @NotEmpty(message = "Board is required")
+        @NotEmpty(message = "Board status is required")
         @ValidBoardString
         String boardStatus,
 
@@ -26,6 +26,6 @@ public record AddTrainingPuzzleRequest(
         Integer depth,
 
         @NotEmpty(message = "Win color is required")
-        @ValidEnum(enumClass = WinColor.WinColorName.class, message = "Invalid WinColor type")
+        @ValidEnum(enumClass = WinColor.WinColorName.class, message = "Invalid win color format")
         String winColor
 ) { }

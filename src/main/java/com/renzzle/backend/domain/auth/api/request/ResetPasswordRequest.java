@@ -9,7 +9,7 @@ public record ResetPasswordRequest(
         @Email(message = "Invalid email format")
         String email,
 
-        @NotEmpty(message = "Token is required")
+        @NotEmpty(message = "Auth verification token is required")
         String authVerityToken,
 
         @NotEmpty(message = "New password is required")

@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public record CreateTrainingPackRequest(
-        @NotNull(message = "info is required")
+        @NotNull(message = "Translation info is required")
         List<PackTranslationRequest> info,
 
         @NotNull(message = "Price is required")
