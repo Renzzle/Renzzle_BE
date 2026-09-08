@@ -21,6 +21,7 @@ public enum ErrorCode {
 
     // Auth
     EXCEED_EMAIL_AUTH_REQUEST(HttpStatus.TOO_MANY_REQUESTS, "A429", "Too many email verification requests"),
+    EXCEED_AUTH_REQUEST_RATE(HttpStatus.TOO_MANY_REQUESTS, "A4290", "Too many requests, please try again later"),
     INVALID_EMAIL_AUTH_CODE(HttpStatus.UNAUTHORIZED, "A4010", "Invalid verification code"),
     INVALID_AUTH_VERITY_TOKEN(HttpStatus.UNAUTHORIZED, "A4011", "Invalid email verification token"),
     INVALID_EMAIL(HttpStatus.UNAUTHORIZED, "A4012", "Invalid email"),
