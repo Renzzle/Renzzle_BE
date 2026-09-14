@@ -36,8 +36,12 @@ jobs:
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
-          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
-          GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
+          MAIL_HOST: ${{ secrets.MAIL_HOST }}
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
         run: ./gradlew build -x test --stacktrace
 
@@ -136,8 +140,14 @@ jobs:
           echo "DB_ROOT_PASSWORD=${{ secrets.DB_ROOT_PASSWORD }}" >> .env
           echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
           echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" >> .env
-          echo "GMAIL_PASSWORD=${{ secrets.GMAIL_PASSWORD }}" >> .env
-          echo "GMAIL_ADDRESS=\"${{ secrets.GMAIL_ADDRESS }}\"" >> .env
+          echo "MAIL_HOST=${{ secrets.MAIL_HOST }}" >> .env
+          echo "MAIL_PORT=587" >> .env
+          echo "MAIL_USERNAME=\"${{ secrets.MAIL_USERNAME }}\"" >> .env
+          echo "MAIL_PASSWORD=\"${{ secrets.MAIL_PASSWORD }}\"" >> .env
+          echo "MAIL_FROM=${{ secrets.MAIL_FROM }}" >> .env
+          echo "MAIL_FROM_NAME=Renzzle" >> .env
+          echo "ADMIN_EMAIL=\"${{ secrets.ADMIN_EMAIL }}\"" >> .env
+          echo "ADMIN_PASSWORD=\"${{ secrets.ADMIN_PASSWORD }}\"" >> .env
           echo "JWT_SECRET_KEY=\"${{ secrets.JWT_SECRET_KEY }}\"" >> .env
           echo "LOKI_TOKEN=${{ secrets.LOKI_TOKEN }}" >> .env
           echo "GOOGLE_PLAY_PACKAGE_NAME=com.renzzle_fe" >> .env
