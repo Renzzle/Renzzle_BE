@@ -44,9 +44,9 @@ public class PaymentService {
         StoreVerificationResult verificationResult =
                 googlePlayReceiptVerifier.verify(request.productId(), request.purchaseToken());
 
-        String transactionId = StringUtils.hasText(request.transactionId())
-                ? request.transactionId()
-                : verificationResult.transactionId();
+        String transactionId = StringUtils.hasText(verificationResult.transactionId())
+                ? verificationResult.transactionId()
+                : request.purchaseToken();
 
         return grantReward(user, PaymentPlatform.ANDROID, request.productId(), transactionId,
                 request.purchaseToken());
