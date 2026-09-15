@@ -241,7 +241,7 @@ public class CommunityService {
 
     @Transactional
     public GetCommunityPuzzleAnswerResponse getCommunityPuzzleAnswer(Long puzzleId, UserEntity user) {
-        UserEntity persistedUser = userRepository.findById(user.getId())
+        UserEntity persistedUser = userRepository.findByIdForUpdate(user.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
 
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)

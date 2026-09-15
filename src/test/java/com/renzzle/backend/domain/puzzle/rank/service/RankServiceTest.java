@@ -351,9 +351,8 @@ class RankServiceTest {
         RankSessionData session = new RankSessionData();
         session.setStarted(true);
 
-         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(valueOperations.get("3")).thenReturn(session);
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user)); // added: userRepository Mock
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(latestRankPuzzleRepository.findAllByUser(user))
                 .thenReturn(List.of(
                         LatestRankPuzzle.builder().isSolved(true).build(),

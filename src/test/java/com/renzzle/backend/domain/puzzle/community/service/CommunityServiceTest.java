@@ -190,7 +190,7 @@ class CommunityServiceTest {
         UserEntity user = TestUserEntityBuilder.builder().withCurrency(1000).save(userRepository);
         CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user).withAnswer("e5").save(communityPuzzleRepository);
 
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(communityPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
 
         // When
@@ -207,7 +207,7 @@ class CommunityServiceTest {
         UserEntity user = TestUserEntityBuilder.builder().withCurrency(HINT.getPrice() - 1).save(userRepository);
         CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user).withAnswer("e5").save(communityPuzzleRepository);
 
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(communityPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
 
         // When

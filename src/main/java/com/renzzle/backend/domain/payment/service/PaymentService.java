@@ -77,7 +77,7 @@ public class PaymentService {
             String purchaseToken
     ) {
         IapProduct product = IapProduct.fromProductId(productId);
-        UserEntity persistedUser = userRepository.findById(user.getId())
+        UserEntity persistedUser = userRepository.findByIdForUpdate(user.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
 
         int grantedCurrency = product.grantsCurrency() ? product.getGrantedCurrency() : 0;
