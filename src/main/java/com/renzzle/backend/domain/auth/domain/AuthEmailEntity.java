@@ -11,5 +11,17 @@ public record AuthEmailEntity(
         String email,
         String code,
         int count,
+        int attemptCount,
+        boolean verified,
         String issuedAt
-) { }
+) {
+
+    public AuthEmailEntity increaseAttemptCount() {
+        return new AuthEmailEntity(email, code, count, attemptCount + 1, verified, issuedAt);
+    }
+
+    public AuthEmailEntity verify() {
+        return new AuthEmailEntity(email, code, count, attemptCount, true, issuedAt);
+    }
+
+}

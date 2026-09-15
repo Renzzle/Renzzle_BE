@@ -2,6 +2,8 @@ package com.renzzle.backend.domain.puzzle.community.dao.query;
 
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.JPQLQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -9,6 +11,7 @@ import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzl
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.community.domain.QCommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
+import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.constant.SortOption;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -23,28 +26,44 @@ import static com.renzzle.backend.domain.user.domain.QUserEntity.userEntity;
 @RequiredArgsConstructor
 public class CommunityPuzzleQueryRepositoryImpl implements CommunityPuzzleQueryRepository {
 
+    /** Puzzles whose distance from the user's mmr differs by less than this are shuffled freely. */
+    private static final int RECOMMEND_JITTER = 600;
+
     private final JPAQueryFactory queryFactory;
     QCommunityPuzzle p2 = new QCommunityPuzzle("p2");
 
     @Override
-    public List<CommunityPuzzle> searchCommunityPuzzles(GetCommunityPuzzleRequest request, Long userId) {
+    public List<CommunityPuzzle> searchCommunityPuzzles(GetCommunityPuzzleRequest request, UserEntity user, long seed) {
         return queryFactory
                 .selectFrom(communityPuzzle)
                 .join(communityPuzzle.user, userEntity)
                 .where(
-                        idCursorCondition(request.id(), request.sort()),
+                        idCursorCondition(request.id(), request.sort(), user.getMmr(), seed),
                         stoneEq(request.stone()),
                         authEq(request.auth()),
                         depthBetween(request.depthMin(), request.depthMax()),
-                        solvedCondition(request.solved(), userId),
+                        solvedCondition(request.solved(), user.getId()),
                         queryCondition(request.query())
                 )
-                .orderBy(orderSpecifier(request.sort()))
+                .orderBy(orderSpecifier(request.sort(), user.getMmr(), seed))
                 .limit(size(request.size()))
                 .fetch();
     }
 
-    private BooleanExpression idCursorCondition(Long id, String sort) {
+    /** RECOMMEND ordering key, lowest first. */
+    private NumberExpression<Double> recommendScore(QCommunityPuzzle puzzle, double userMmr, long seed) {
+        return Expressions.numberTemplate(
+                Double.class,
+                "abs({0} - {1}) + mod(crc32(concat({2}, '-', {3})), {4})",
+                puzzle.rating,
+                userMmr,
+                puzzle.id.stringValue(),
+                seed,
+                RECOMMEND_JITTER
+        );
+    }
+
+    private BooleanExpression idCursorCondition(Long id, String sort, double userMmr, long seed) {
         SortOption sortOption = SortOption.from(sort);
 
         if (id == null) return null;
@@ -72,6 +91,18 @@ public class CommunityPuzzleQueryRepositoryImpl implements CommunityPuzzleQueryR
                                     .where(p2.id.eq(id))
                     ).and(communityPuzzle.id.gt(id))
             );
+            case RECOMMEND -> {
+                // Ascending, unlike LATEST/LIKE, so keep the rows above the cursor
+                NumberExpression<Double> score = recommendScore(communityPuzzle, userMmr, seed);
+                JPQLQuery<Double> cursorScore = JPAExpressions
+                        .select(recommendScore(p2, userMmr, seed))
+                        .from(p2)
+                        .where(p2.id.eq(id));
+
+                yield score.gt(cursorScore).or(
+                        score.eq(cursorScore).and(communityPuzzle.id.gt(id))
+                );
+            }
         };
     }
 
@@ -114,7 +145,7 @@ public class CommunityPuzzleQueryRepositoryImpl implements CommunityPuzzleQueryR
         return byId.or(byAuthor);
     }
 
-    private OrderSpecifier<?>[] orderSpecifier(String sort) {
+    private OrderSpecifier<?>[] orderSpecifier(String sort, double userMmr, long seed) {
         SortOption sortOption = SortOption.from(sort);
 
         return switch (sortOption) {
@@ -124,6 +155,10 @@ public class CommunityPuzzleQueryRepositoryImpl implements CommunityPuzzleQueryR
             };
             case LIKE -> new OrderSpecifier<?>[]{
                     communityPuzzle.likeCount.desc(),
+                    communityPuzzle.id.asc()
+            };
+            case RECOMMEND -> new OrderSpecifier<?>[]{
+                    recommendScore(communityPuzzle, userMmr, seed).asc(),
                     communityPuzzle.id.asc()
             };
         };

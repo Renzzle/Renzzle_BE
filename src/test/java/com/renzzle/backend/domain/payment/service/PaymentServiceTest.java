@@ -10,7 +10,6 @@ import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import com.renzzle.backend.support.TestUserEntityBuilder;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -47,7 +46,6 @@ class PaymentServiceTest {
     @InjectMocks
     private PaymentService paymentService;
 
-    @DisplayName("iOS 검증 요청에서 transactionId가 없으면 실패")
     @Test
     void verifyInAppPurchase_WhenIosTransactionIdMissing_ThenThrowsCustomException() {
         // given
@@ -64,7 +62,6 @@ class PaymentServiceTest {
         verifyNoInteractions(appleTransactionVerifier);
     }
 
-    @DisplayName("iOS 검증 응답의 transactionId가 요청과 다르면 실패")
     @Test
     void verifyInAppPurchase_WhenIosTransactionMismatch_ThenThrowsCustomException() {
         // given
@@ -85,7 +82,6 @@ class PaymentServiceTest {
         verify(inAppPurchaseRepository, never()).save(any(InAppPurchase.class));
     }
 
-    @DisplayName("Android 검증 요청에서 purchaseToken이 없으면 실패")
     @Test
     void verifyInAppPurchase_WhenAndroidPurchaseTokenMissing_ThenThrowsCustomException() {
         // given
@@ -102,7 +98,6 @@ class PaymentServiceTest {
         verifyNoInteractions(googlePlayReceiptVerifier);
     }
 
-    @DisplayName("중복 purchaseToken은 지급하지 않고 실패")
     @Test
     void verifyInAppPurchase_WhenPurchaseTokenDuplicated_ThenThrowsCustomException() {
         // given
@@ -122,7 +117,6 @@ class PaymentServiceTest {
         verify(inAppPurchaseRepository, never()).save(any(InAppPurchase.class));
     }
 
-    @DisplayName("중복 transactionId는 지급하지 않고 실패")
     @Test
     void verifyInAppPurchase_WhenTransactionIdDuplicated_ThenThrowsCustomException() {
         // given
@@ -142,7 +136,6 @@ class PaymentServiceTest {
         verify(inAppPurchaseRepository, never()).save(any(InAppPurchase.class));
     }
 
-    @DisplayName("정상 iOS 결제는 결제 기록 저장 후 재화를 지급")
     @Test
     void verifyInAppPurchase_WhenIosPurchaseValid_ThenSavePurchaseAndGrantReward() {
         // given
@@ -154,7 +147,7 @@ class PaymentServiceTest {
         when(inAppPurchaseRepository.existsByTransactionId("2000000123456789")).thenReturn(false);
         when(appleTransactionVerifier.verify("piece_5000", "2000000123456789"))
                 .thenReturn(new StoreVerificationResult("piece_5000", "2000000123456789"));
-        when(userRepository.findById(1L)).thenReturn(Optional.of(persistedUser));
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(persistedUser));
 
         // when
         VerifyInAppPurchaseResponse response = paymentService.verifyInAppPurchase(principalUser, request);
@@ -176,7 +169,6 @@ class PaymentServiceTest {
         assertThat(response.grantedCurrency()).isEqualTo(5000);
     }
 
-    @DisplayName("정상 Android 결제는 결제 기록 저장 후 재화를 지급")
     @Test
     void verifyInAppPurchase_WhenAndroidPurchaseValid_ThenSavePurchaseAndGrantReward() {
         // given
@@ -188,7 +180,7 @@ class PaymentServiceTest {
         when(inAppPurchaseRepository.existsByPurchaseToken("purchase-token")).thenReturn(false);
         when(googlePlayReceiptVerifier.verify("piece_1000", "purchase-token"))
                 .thenReturn(new StoreVerificationResult("piece_1000", "order-id"));
-        when(userRepository.findById(1L)).thenReturn(Optional.of(persistedUser));
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(persistedUser));
 
         // when
         VerifyInAppPurchaseResponse response = paymentService.verifyInAppPurchase(principalUser, request);
@@ -210,7 +202,6 @@ class PaymentServiceTest {
         assertThat(response.grantedCurrency()).isEqualTo(1000);
     }
 
-    @DisplayName("remove_ads 결제는 기록만 저장하고 재화는 지급하지 않음")
     @Test
     void verifyInAppPurchase_WhenRemoveAdsPurchaseValid_ThenSavePurchaseWithoutGrantingCurrency() {
         // given
@@ -222,7 +213,7 @@ class PaymentServiceTest {
         when(inAppPurchaseRepository.existsByPurchaseToken("purchase-token")).thenReturn(false);
         when(googlePlayReceiptVerifier.verify("remove_ads", "purchase-token"))
                 .thenReturn(new StoreVerificationResult("remove_ads", "order-id"));
-        when(userRepository.findById(1L)).thenReturn(Optional.of(persistedUser));
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(persistedUser));
 
         // when
         VerifyInAppPurchaseResponse response = paymentService.verifyInAppPurchase(principalUser, request);

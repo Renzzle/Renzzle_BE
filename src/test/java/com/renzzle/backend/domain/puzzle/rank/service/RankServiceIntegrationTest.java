@@ -109,14 +109,14 @@ class RankServiceIntegrationTest {
         RankStartResponse startResponse = rankService.startRankGame(testUser);
         UserEntity beforeUser = userRepository.findById(testUser.getId()).orElseThrow();
         RankSessionData sessionAfterStart = redisTemplate.opsForValue().get(redisKey);
-        assertNotNull(sessionAfterStart, "start 후 세션이 Redis에 존재해야 함");
+        assertNotNull(sessionAfterStart, "session must exist in Redis after start");
 
         assertEquals(startResponse.boardStatus(), sessionAfterStart.getBoardState());
 
         double ratingAfterStart = beforeUser.getRating();
         double mmrAfterStart = beforeUser.getMmr();
-        assertTrue(ratingAfterStart < 1500, "레이팅 감산 확인");
-        assertTrue(mmrAfterStart < 1500, "MMR 감산 확인");
+        assertTrue(ratingAfterStart < 1500, "rating must be deducted");
+        assertTrue(mmrAfterStart < 1500, "mmr must be deducted");
 
         Thread.sleep(1000);
 
@@ -125,10 +125,10 @@ class RankServiceIntegrationTest {
         rankService.resultRankGame(beforeUser, resultRequest);
 
         RankSessionData sessionAfterResult = redisTemplate.opsForValue().get(redisKey);
-        assertNotNull(sessionAfterResult, "result 호출 후에도 세션이 Redis에 존재해야 함");
+        assertNotNull(sessionAfterResult, "session must still exist in Redis after result");
         assertNotEquals(sessionAfterResult.getBoardState(),
                 sessionAfterStart.getBoardState(),
-                "보드 상태가 동일; 예상과 달리 갱신되지 않았을 수 있음 → " +
+                "board state unchanged; it may not have been refreshed as expected -> " +
                         "start=" + sessionAfterStart.getBoardState() + ", result=" + sessionAfterResult.getBoardState()
         );
 
@@ -141,7 +141,7 @@ class RankServiceIntegrationTest {
         assertEquals(testUser.getRating(), endResponse.rating(), 0.01);
 
         RankSessionData sessionAfterEnd = redisTemplate.opsForValue().get(redisKey);
-        assertNull(sessionAfterEnd, "end 호출 후 Redis에서 세션이 사라져야 함");
+        assertNull(sessionAfterEnd, "session must be gone from Redis after end");
     }
 
     @Test
@@ -217,6 +217,6 @@ class RankServiceIntegrationTest {
         NextPuzzleResult secondResult = rankService.getNextPuzzle(testUser.getMmr(), targetWinProb - 0.05, testUser);
         LatestRankPuzzle secondPuzzle = secondResult.latestPuzzle();
 
-        assertNotEquals(firstPuzzle.getBoardStatus(), secondPuzzle.getBoardStatus(), "같은 문제 다시 출제되면 안 됨");
+        assertNotEquals(firstPuzzle.getBoardStatus(), secondPuzzle.getBoardStatus(), "the same puzzle must not be served twice");
     }
 }

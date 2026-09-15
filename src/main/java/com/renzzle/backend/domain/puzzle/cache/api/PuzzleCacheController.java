@@ -31,13 +31,13 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/puzzle/cache")
 @RequiredArgsConstructor
-@Tag(name = "Puzzle Cache API", description = "퍼즐 캐시 관련 API")
+@Tag(name = "Puzzle Cache API", description = "Puzzle cache API")
 public class PuzzleCacheController {
 
     private final PuzzleCacheService puzzleCacheService;
     private final CommunityService communityService;
 
-    @Operation(summary = "커뮤니티 퍼즐 후보 목록 (캐시 입력용)", description = "작성자 닉네임 완전 일치·승리 색·깊이 구간 필터")
+    @Operation(summary = "Community puzzle candidates (for cache entry)", description = "Filters by exact author nickname, win color and depth range")
     @GetMapping("/community-puzzles")
     public ApiResponse<List<CommunityPuzzleCachePickerResponse>> getCommunityPuzzlesForCache(
             @Valid @ParameterObject @ModelAttribute GetCommunityPuzzlesForCacheRequest request
@@ -45,14 +45,14 @@ public class PuzzleCacheController {
         return ApiUtils.success(communityService.getCommunityPuzzlesForCachePicker(request));
     }
 
-    @Operation(summary = "퍼즐 저장", description = "보드 상태와 정답 수를 전달받아 퍼즐에 저장")
+    @Operation(summary = "Save puzzle", description = "Stores the given board state and answer move into the puzzle cache")
     @PostMapping("/save")
     public ApiResponse<Void> savePuzzle(@Valid @RequestBody SavePuzzleRequest request) {
         puzzleCacheService.savePuzzle(request.puzzleType(), request.puzzleId(), request.currentBoardState(), request.answerPuzzle());
         return ApiUtils.success(null);
     }
 
-    @Operation(summary = "AI 응답 조회", description = "현재 보드 상태에 대한 AI의 다음 수를 반환")
+    @Operation(summary = "Get AI response", description = "Returns the AI's next move for the current board state")
     @GetMapping("/ai-response")
     public ApiResponse<GetAiResponseResponse> getAiResponse(
             @RequestParam PuzzleType puzzleType,
@@ -64,8 +64,8 @@ public class PuzzleCacheController {
     }
 
     @Operation(
-            summary = "다음 수 후보 조회",
-            description = "사용자 차례인 보드 상태를 받아, 캐시에 존재하는 모든 사용자 수와 그에 대한 AI 응답을 반환"
+            summary = "Get next move candidates",
+            description = "Takes a board state on the user's turn and returns every cached user move with its AI response"
     )
     @GetMapping("/next-moves")
     public ApiResponse<List<NextMoveCandidateResponse>> getNextMoves(

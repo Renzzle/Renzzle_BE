@@ -117,7 +117,7 @@ public class TrainingService {
         if (winColorChanged) {
             puzzleBuilder.winColor(WinColor.getWinColor(request.winColor()));
         }
-        // rating은 depth·winColor 양쪽에 의존하므로 둘 중 하나라도 바뀌면 재계산
+        // rating depends on both depth and winColor, so recalculate whenever either one changes
         if (depthChanged || winColorChanged) {
             int effectiveDepth = depthChanged ? request.depth() : puzzle.getDepth();
             WinColor effectiveWinColor = winColorChanged
@@ -155,12 +155,17 @@ public class TrainingService {
     // service test, repo test
     @Transactional
     public SolveTrainingPuzzleResponse solveTrainingPuzzle(UserEntity user, Long puzzleId, Boolean getReward) {
-        return applySolveTrainingPuzzle(user, puzzleId, getReward);
+        UserEntity lockedUser = userRepository.findByIdForUpdate(user.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
+
+        return applySolveTrainingPuzzle(lockedUser, puzzleId, getReward);
     }
 
-    private SolveTrainingPuzzleResponse applySolveTrainingPuzzle(UserEntity user, Long puzzleId, Boolean getReward) {
+    // The caller must pass a user loaded through findByIdForUpdate, so the reward below is applied
+    // to a locked row and the user lock is always taken before any other row in this transaction
+    private SolveTrainingPuzzleResponse applySolveTrainingPuzzle(UserEntity lockedUser, Long puzzleId, Boolean getReward) {
         Optional<SolvedTrainingPuzzle> existInfo =
-                solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId);
+                solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(lockedUser.getId(), puzzleId);
 
         if (existInfo.isPresent()) {
             existInfo.get().updateSolvedAtToNow(clock);
@@ -174,24 +179,15 @@ public class TrainingService {
 
         // If solved for the first time, save it and compute the reward based on difficulty
         solvedTrainingPuzzleRepository.save(SolvedTrainingPuzzle.builder()
-                .user(user)
+                .user(lockedUser)
                 .puzzle(trainingPuzzle)
                 .build());
 
-        userPackRepository.increaseSolvedCount(user.getId(), trainingPuzzle.getPack().getId());
+        userPackRepository.increaseSolvedCount(lockedUser.getId(), trainingPuzzle.getPack().getId());
 
-        // Difficulty -> reward mapping
-        Difficulty difficulty = trainingPuzzle.getPack().getDifficulty();
-        int reward = switch (difficulty.getName()) {
-            case "LOW" -> TRAINING_LOW_REWARD.getPrice();
-            case "MIDDLE" -> TRAINING_MIDDLE_REWARD.getPrice();
-            case "HIGH" -> TRAINING_HIGH_REWARD.getPrice();
-            default -> 0;
-        };
+        int reward = TRAINING_REWARD.getPrice();
         if(Boolean.TRUE.equals(getReward)){
-            UserEntity persistentUser = userRepository.findById(user.getId())
-                    .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
-            persistentUser.getReward(reward);
+            lockedUser.getReward(reward);
         }
 
         return SolveTrainingPuzzleResponse.builder()
@@ -430,15 +426,16 @@ public class TrainingService {
     // service test, repo test
     @Transactional
     public GetPackPurchaseResponse purchaseTrainingPack(UserEntity user, PurchaseTrainingPackRequest request) {
+        UserEntity lockedUser = userRepository.findByIdForUpdate(user.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
+
         Pack pack = packRepository.findById(request.packId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
-        user.purchase(pack.getPrice());
-
-        userRepository.save(user);
+        lockedUser.purchase(pack.getPrice());
 
         UserPack userPack = UserPack.builder()
-                .user(user)
+                .user(lockedUser)
                 .pack(pack)
                 .solvedCount(0)
                 .build();
@@ -451,14 +448,14 @@ public class TrainingService {
 
     @Transactional
     public GetTrainingPuzzleAnswerResponse purchaseTrainingPuzzleAnswer(UserEntity user, Long puzzleId) {
-        UserEntity newUser = userRepository.findById(user.getId())
+        UserEntity lockedUser = userRepository.findByIdForUpdate(user.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
         TrainingPuzzle puzzle = trainingPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
 
-        newUser.purchase(ItemPrice.HINT.getPrice());
+        lockedUser.purchase(ItemPrice.HINT.getPrice());
 
-        applySolveTrainingPuzzle(user, puzzle.getId(), false);
+        applySolveTrainingPuzzle(lockedUser, puzzle.getId(), false);
 
         return GetTrainingPuzzleAnswerResponse.builder()
                 .answer(puzzle.getAnswer())

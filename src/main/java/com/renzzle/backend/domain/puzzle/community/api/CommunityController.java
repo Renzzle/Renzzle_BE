@@ -6,6 +6,7 @@ import com.renzzle.backend.domain.puzzle.community.api.response.AddCommunityPuzz
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleAnswerResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlesResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetSingleCommunityPuzzleResponse;
+import com.renzzle.backend.domain.puzzle.community.api.response.SolveCommunityPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.community.service.CommunityService;
 import com.renzzle.backend.global.common.response.ApiResponse;
 import com.renzzle.backend.global.security.UserDetailsImpl;
@@ -36,7 +37,7 @@ public class CommunityController {
         return ApiUtils.success(communityService.addCommunityPuzzle(request, user.getUser()));
     }
 
-    @Operation(summary = "Get community puzzle data", description = "Return community puzzle list")
+    @Operation(summary = "Get community puzzle data", description = "Return community puzzle list.")
     @GetMapping("/puzzle")
     public ApiResponse<List<GetCommunityPuzzlesResponse>> getCommunityPuzzles(
             @Valid @ParameterObject @ModelAttribute GetCommunityPuzzleRequest request,
@@ -65,12 +66,11 @@ public class CommunityController {
 
     @Operation(summary = "Solve community puzzle", description = "Save the information that a user has solved puzzle")
     @PostMapping("/puzzle/{puzzleId}/solve")
-    public ApiResponse<Void> solveCommunityPuzzle(
+    public ApiResponse<SolveCommunityPuzzleResponse> solveCommunityPuzzle(
             @PathVariable Long puzzleId,
             @AuthenticationPrincipal UserDetailsImpl user
     ) {
-        communityService.solveCommunityPuzzle(puzzleId, user.getUser());
-        return ApiUtils.success(null);
+        return ApiUtils.success(communityService.solveCommunityPuzzle(puzzleId, user.getUser()));
     }
 
     @Operation(summary = "Like community puzzle", description = "Registers a like to the puzzle by the user")

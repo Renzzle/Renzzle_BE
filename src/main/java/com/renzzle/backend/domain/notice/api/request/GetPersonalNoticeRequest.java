@@ -5,9 +5,9 @@ import com.renzzle.backend.global.validation.ValidEnum;
 import jakarta.validation.constraints.NotBlank;
 
 public record GetPersonalNoticeRequest(
-        @ValidEnum(enumClass = LangCode.LangCodeName.class, message = "잘못된 lang 형식입니다")
+        @ValidEnum(enumClass = LangCode.LangCodeName.class, message = "Invalid lang format")
         String langCode,
 
-        @NotBlank
+        @NotBlank(message = "Version is required")
         String version
 ) { }

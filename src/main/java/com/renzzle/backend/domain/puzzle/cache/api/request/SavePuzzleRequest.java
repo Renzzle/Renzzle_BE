@@ -5,15 +5,15 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record SavePuzzleRequest(
-        @NotNull(message = "퍼즐 타입이 존재해야 합니다.")
+        @NotNull(message = "Puzzle type is required")
         PuzzleType puzzleType,
 
-        @NotNull(message = "퍼즐 ID가 존재해야 합니다.")
+        @NotNull(message = "Puzzle ID is required")
         Long puzzleId,
 
-        @NotBlank(message = "보드 상태가 존재해야 합니다.")
+        @NotBlank(message = "Board status is required")
         String currentBoardState,
 
-        @NotBlank(message = "정답 수가 존재해야 합니다.")
+        @NotBlank(message = "Answer move is required")
         String answerPuzzle
 ) { }

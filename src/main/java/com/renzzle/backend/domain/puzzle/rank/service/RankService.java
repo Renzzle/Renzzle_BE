@@ -75,8 +75,8 @@ public class RankService {
 
         latestRankPuzzleRepository.save(latestPuzzle);
 
-        double mmrPenalty = ELOUtils.calculateMMRDecrease(originalRating, puzzleRating);
-        double ratingPenalty = ELOUtils.calculateRatingDecrease(originalMmr, puzzleRating);
+        double mmrPenalty = ELOUtils.calculateMMRDecrease(originalMmr, puzzleRating);
+        double ratingPenalty = ELOUtils.calculateRatingDecrease(originalRating, puzzleRating);
 
         user.updateMmrTo(originalMmr + mmrPenalty);
         user.updateRatingTo(originalRating + ratingPenalty);
@@ -210,6 +210,7 @@ public class RankService {
         return ttl;
     }
 
+    @Transactional
     public RankEndResponse endRankGame(UserEntity userData) {
         String redisKey = String.valueOf(userData.getId());
         RankSessionData session = redisTemplate.opsForValue().get(redisKey);
@@ -230,11 +231,10 @@ public class RankService {
         int solvedCount = solvedPuzzles.size();
         int reward = solvedCount * RANK_REWARD.getPrice();
 
-        UserEntity user = userRepository.findById(userData.getId())
+        UserEntity user = userRepository.findByIdForUpdate(userData.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
 
         user.getReward(reward);
-        userRepository.save(user);
 
 
         return RankEndResponse.builder()

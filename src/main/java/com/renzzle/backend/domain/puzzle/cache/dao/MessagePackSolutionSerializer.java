@@ -29,14 +29,14 @@ public class MessagePackSolutionSerializer implements SolutionSerializer {
         try {
             return objectMapper.writeValueAsBytes(solutionDag);
         } catch (IOException e) {
-            throw new CustomException("solution_dag MessagePack 직렬화에 실패했습니다.", ErrorCode.INTERNAL_SERVER_ERROR);
+            throw new CustomException("Failed to serialize solution_dag to MessagePack", ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
     @Override
     public Map<Long, Integer> deserialize(byte[] serializedSolutionDag) {
         if (serializedSolutionDag == null) {
-            throw new CustomException("solution_dag 데이터는 null일 수 없습니다.", ErrorCode.VALIDATION_ERROR);
+            throw new CustomException("solution_dag data must not be null", ErrorCode.VALIDATION_ERROR);
         }
         if (serializedSolutionDag.length == 0) {
             return Collections.emptyMap();
@@ -47,25 +47,25 @@ public class MessagePackSolutionSerializer implements SolutionSerializer {
             validateSolutionDag(restored);
             return restored;
         } catch (IOException e) {
-            throw new CustomException("solution_dag MessagePack 역직렬화에 실패했습니다.", ErrorCode.INTERNAL_SERVER_ERROR);
+            throw new CustomException("Failed to deserialize solution_dag from MessagePack", ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
     private void validateSolutionDag(Map<Long, Integer> solutionDag) {
         if (solutionDag == null) {
-            throw new CustomException("solution_dag은 null일 수 없습니다.", ErrorCode.VALIDATION_ERROR);
+            throw new CustomException("solution_dag must not be null", ErrorCode.VALIDATION_ERROR);
         }
 
         for (Map.Entry<Long, Integer> entry : solutionDag.entrySet()) {
             if (entry.getKey() == null) {
-                throw new CustomException("Zobrist Hash key는 null일 수 없습니다.", ErrorCode.VALIDATION_ERROR);
+                throw new CustomException("Zobrist hash key must not be null", ErrorCode.VALIDATION_ERROR);
             }
             if (entry.getValue() == null) {
-                throw new CustomException("AI 응답 수는 null일 수 없습니다.", ErrorCode.VALIDATION_ERROR);
+                throw new CustomException("AI response move must not be null", ErrorCode.VALIDATION_ERROR);
             }
             if (entry.getValue() < MIN_MOVE_INDEX || entry.getValue() > MAX_MOVE_INDEX) {
                 throw new CustomException(
-                        "AI 응답 수는 0~224 범위여야 합니다. value=" + entry.getValue(),
+                        "AI response move must be in range 0-224. value=" + entry.getValue(),
                         ErrorCode.VALIDATION_ERROR
                 );
             }
