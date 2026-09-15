@@ -9,6 +9,7 @@ import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzz
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleAnswerResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlesResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetSingleCommunityPuzzleResponse;
+import com.renzzle.backend.domain.puzzle.community.api.response.SolveCommunityPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleForAdminResponse;
 import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import static com.renzzle.backend.global.common.constant.ItemPrice.COMMUNITY_REWARD;
 import static com.renzzle.backend.global.common.constant.ItemPrice.HINT;
 
 @Service
@@ -258,29 +260,49 @@ public class CommunityService {
     }
 
     @Transactional
-    public void solveCommunityPuzzle(Long puzzleId, UserEntity user) {
-        applySolveCommunityPuzzle(puzzleId, user);
-    }
+    public SolveCommunityPuzzleResponse solveCommunityPuzzle(Long puzzleId, UserEntity user) {
+        UserEntity persistedUser = userRepository.findByIdForUpdate(user.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
 
-    private void applySolveCommunityPuzzle(Long puzzleId, UserEntity user) {
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
 
-        puzzle.increaseSolvedCount();
+        boolean ownPuzzle = Objects.equals(puzzle.getUser().getId(), persistedUser.getId());
+        boolean firstSolve = applySolveCommunityPuzzle(puzzleId, persistedUser);
+
+        // Solving your own puzzle or one you have solved before pays nothing
+        int reward = (firstSolve && !ownPuzzle) ? COMMUNITY_REWARD.getPrice() : 0;
+        persistedUser.getReward(reward);
+
+        return SolveCommunityPuzzleResponse.builder()
+                .reward(reward)
+                .build();
+    }
+
+    // Returns whether this was the user's first solve of the puzzle
+    private boolean applySolveCommunityPuzzle(Long puzzleId, UserEntity user) {
+        CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
+
+        boolean firstSolve = !userCommunityPuzzleRepository.checkIsSolvedPuzzle(user.getId(), puzzleId);
 
         int updatedRows = userCommunityPuzzleRepository.solvePuzzle(user.getId(), puzzleId, clock.instant());
-        if (updatedRows == 1) {
-            return;
+        if (updatedRows == 0) {
+            userCommunityPuzzleRepository.save(
+                    UserCommunityPuzzle.builder()
+                            .user(user)
+                            .puzzle(puzzle)
+                            .isSolved(true)
+                            .solvedAt(clock.instant())
+                            .build()
+            );
         }
 
-        userCommunityPuzzleRepository.save(
-                UserCommunityPuzzle.builder()
-                        .user(user)
-                        .puzzle(puzzle)
-                        .isSolved(true)
-                        .solvedAt(clock.instant())
-                        .build()
-        );
+        if (firstSolve) {
+            puzzle.increaseSolvedCount();
+        }
+
+        return firstSolve;
     }
 
     @Transactional

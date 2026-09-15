@@ -396,7 +396,7 @@ public class TrainingServiceTest {
             verify(solvedTrainingPuzzleRepository).save(any(SolvedTrainingPuzzle.class));
             verify(userPackRepository).increaseSolvedCount(userId, packId);
 
-            assertThat(response.reward()).isEqualTo(ItemPrice.TRAINING_LOW_REWARD.getPrice());
+            assertThat(response.reward()).isEqualTo(ItemPrice.TRAINING_REWARD.getPrice());
         }
 
         @Test

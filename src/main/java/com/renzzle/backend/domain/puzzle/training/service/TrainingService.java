@@ -185,14 +185,7 @@ public class TrainingService {
 
         userPackRepository.increaseSolvedCount(lockedUser.getId(), trainingPuzzle.getPack().getId());
 
-        // Difficulty -> reward mapping
-        Difficulty difficulty = trainingPuzzle.getPack().getDifficulty();
-        int reward = switch (difficulty.getName()) {
-            case "LOW" -> TRAINING_LOW_REWARD.getPrice();
-            case "MIDDLE" -> TRAINING_MIDDLE_REWARD.getPrice();
-            case "HIGH" -> TRAINING_HIGH_REWARD.getPrice();
-            default -> 0;
-        };
+        int reward = TRAINING_REWARD.getPrice();
         if(Boolean.TRUE.equals(getReward)){
             lockedUser.getReward(reward);
         }
