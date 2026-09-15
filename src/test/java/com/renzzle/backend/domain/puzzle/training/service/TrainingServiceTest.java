@@ -381,8 +381,8 @@ public class TrainingServiceTest {
             when(trainingPuzzleRepository.findById(puzzleId))
                     .thenReturn(Optional.of(trainingPuzzle));
 
-            // User lookup succeeds (returns a managed entity)
-            when(userRepository.findById(userId))
+            // User lookup succeeds (returns a locked, managed entity)
+            when(userRepository.findByIdForUpdate(userId))
                     .thenReturn(Optional.of(user));
 
             // Set up a dummy save result
@@ -396,7 +396,7 @@ public class TrainingServiceTest {
             verify(solvedTrainingPuzzleRepository).save(any(SolvedTrainingPuzzle.class));
             verify(userPackRepository).increaseSolvedCount(userId, packId);
 
-            assertThat(response.reward()).isEqualTo(ItemPrice.TRAINING_LOW_REWARD.getPrice());
+            assertThat(response.reward()).isEqualTo(ItemPrice.TRAINING_REWARD.getPrice());
         }
 
         @Test
@@ -415,6 +415,7 @@ public class TrainingServiceTest {
                     .build();
 
             SolvedTrainingPuzzle existingSolvedPuzzle = mock(SolvedTrainingPuzzle.class);
+            when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
             when(solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId))
                     .thenReturn(Optional.of(existingSolvedPuzzle));
 
@@ -552,18 +553,17 @@ public class TrainingServiceTest {
 
             PurchaseTrainingPackRequest request = new PurchaseTrainingPackRequest(1L);
 
+            when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
             when(packRepository.findById(1L)).thenReturn(Optional.of(pack));
-
-            // Meaning: whatever UserEntity is requested to be saved, return that UserEntity object itself
-            when(userRepository.save(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             // when
             GetPackPurchaseResponse getPackPurchaseResponse = trainingService.purchaseTrainingPack(user, request);
 
             // then
             assertThat(getPackPurchaseResponse.price()).isEqualTo(1000);
+            assertThat(user.getCurrency()).isEqualTo(1000);
             verify(packRepository, times(1)).findById(1L);
-            verify(userRepository, times(1)).save(user);
+            verify(userRepository, times(1)).findByIdForUpdate(user.getId());
             verify(userPackRepository, times(1)).save(any());
         }
 
@@ -600,7 +600,7 @@ public class TrainingServiceTest {
                     .build();
 
 
-            when(userRepository.findById(user.getId()))
+            when(userRepository.findByIdForUpdate(user.getId()))
                     .thenReturn(Optional.of(user));
 
             // when
@@ -749,6 +749,7 @@ public class TrainingServiceTest {
                     .build();
 
             // No existing solve record, and the puzzle does not exist
+            when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
             when(solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId))
                     .thenReturn(Optional.empty());
             when(trainingPuzzleRepository.findById(puzzleId))
@@ -841,6 +842,7 @@ public class TrainingServiceTest {
                     .build();
             PurchaseTrainingPackRequest request = new PurchaseTrainingPackRequest(1L);
 
+            when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
             when(packRepository.findById(1L)).thenReturn(Optional.of(pack));
 
             // when
@@ -873,7 +875,7 @@ public class TrainingServiceTest {
             when(trainingPuzzleRepository.findById(puzzleId))
                     .thenReturn(Optional.empty());
 
-            when(userRepository.findById(user.getId()))
+            when(userRepository.findByIdForUpdate(user.getId()))
                     .thenReturn(Optional.of(user));
 
             // when

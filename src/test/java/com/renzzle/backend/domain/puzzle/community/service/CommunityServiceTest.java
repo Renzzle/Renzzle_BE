@@ -6,6 +6,7 @@ import com.renzzle.backend.domain.puzzle.community.api.response.AddCommunityPuzz
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleAnswerResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlesResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetSingleCommunityPuzzleResponse;
+import com.renzzle.backend.domain.puzzle.community.api.response.SolveCommunityPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.dao.projection.LikeDislikeProjection;
@@ -34,6 +35,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
+import static com.renzzle.backend.global.common.constant.ItemPrice.COMMUNITY_REWARD;
 import static com.renzzle.backend.global.common.constant.ItemPrice.HINT;
 import static com.renzzle.backend.support.TestTime.FIXED_INSTANT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -190,7 +192,7 @@ class CommunityServiceTest {
         UserEntity user = TestUserEntityBuilder.builder().withCurrency(1000).save(userRepository);
         CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user).withAnswer("e5").save(communityPuzzleRepository);
 
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(communityPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
 
         // When
@@ -207,7 +209,7 @@ class CommunityServiceTest {
         UserEntity user = TestUserEntityBuilder.builder().withCurrency(HINT.getPrice() - 1).save(userRepository);
         CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user).withAnswer("e5").save(communityPuzzleRepository);
 
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(communityPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
 
         // When
@@ -225,6 +227,7 @@ class CommunityServiceTest {
         UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
         CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
 
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(communityPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
         when(userCommunityPuzzleRepository.solvePuzzle(user.getId(), puzzle.getId(), clock.instant()))
                 .thenReturn(0);
@@ -234,6 +237,67 @@ class CommunityServiceTest {
 
         // Then
         verify(userCommunityPuzzleRepository).save(any(UserCommunityPuzzle.class));
+    }
+
+    @Test
+    void solveCommunityPuzzle_WhenFirstSolveOfAnotherUsersPuzzle_ThenGivesReward() {
+        // Given
+        UserEntity author = TestUserEntityBuilder.builder().save(userRepository);
+        UserEntity solver = TestUserEntityBuilder.builder().save(userRepository);
+        CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(author).save(communityPuzzleRepository);
+
+        when(userRepository.findByIdForUpdate(solver.getId())).thenReturn(Optional.of(solver));
+        when(communityPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
+        when(userCommunityPuzzleRepository.checkIsSolvedPuzzle(solver.getId(), puzzle.getId()))
+                .thenReturn(false);
+        int solvedCountBefore = puzzle.getSolvedCount();
+
+        // When
+        SolveCommunityPuzzleResponse response = communityService.solveCommunityPuzzle(puzzle.getId(), solver);
+
+        // Then
+        assertThat(response.reward()).isEqualTo(COMMUNITY_REWARD.getPrice());
+        assertThat(solver.getCurrency()).isEqualTo(COMMUNITY_REWARD.getPrice());
+        assertThat(puzzle.getSolvedCount()).isEqualTo(solvedCountBefore + 1);
+    }
+
+    @Test
+    void solveCommunityPuzzle_WhenOwnPuzzle_ThenNoReward() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
+        CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
+
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
+        when(communityPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
+
+        // When
+        SolveCommunityPuzzleResponse response = communityService.solveCommunityPuzzle(puzzle.getId(), user);
+
+        // Then
+        assertThat(response.reward()).isZero();
+        assertThat(user.getCurrency()).isZero();
+    }
+
+    @Test
+    void solveCommunityPuzzle_WhenAlreadySolved_ThenNoReward() {
+        // Given
+        UserEntity author = TestUserEntityBuilder.builder().save(userRepository);
+        UserEntity solver = TestUserEntityBuilder.builder().save(userRepository);
+        CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(author).save(communityPuzzleRepository);
+
+        when(userRepository.findByIdForUpdate(solver.getId())).thenReturn(Optional.of(solver));
+        when(communityPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
+        when(userCommunityPuzzleRepository.checkIsSolvedPuzzle(solver.getId(), puzzle.getId()))
+                .thenReturn(true);
+        int solvedCountBefore = puzzle.getSolvedCount();
+
+        // When
+        SolveCommunityPuzzleResponse response = communityService.solveCommunityPuzzle(puzzle.getId(), solver);
+
+        // Then
+        assertThat(response.reward()).isZero();
+        assertThat(solver.getCurrency()).isZero();
+        assertThat(puzzle.getSolvedCount()).isEqualTo(solvedCountBefore);
     }
 
     @Test
