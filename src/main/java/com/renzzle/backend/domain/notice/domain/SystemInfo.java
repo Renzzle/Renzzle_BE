@@ -21,4 +21,9 @@ public class SystemInfo {
     @Column(name = "system_check", nullable = false)
     private boolean isSystemCheck;
 
+    public void update(String version, boolean isSystemCheck) {
+        this.version = version;
+        this.isSystemCheck = isSystemCheck;
+    }
+
 }
