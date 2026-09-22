@@ -41,11 +41,17 @@
       </div>
 
       <form id="systemForm" class="notice-system-form" novalidate>
-        <label class="inline-field-label" for="systemVersion">
-          <span data-i18n="notices.version">Required App Version</span>
-          <input type="text" id="systemVersion" maxlength="255" autocomplete="off" data-i18n-placeholder="notices.versionPlaceholder" placeholder="e.g. 1.0.0">
-          <small class="notice-field-help" data-i18n="notices.versionHelp">Clients on any other version are asked to update.</small>
-        </label>
+        <div class="notice-version-group">
+          <label class="inline-field-label" for="androidVersion">
+            <span data-i18n="notices.androidVersion">Required Android Version</span>
+            <input type="text" id="androidVersion" maxlength="255" autocomplete="off" data-i18n-placeholder="notices.versionPlaceholder" placeholder="e.g. 1.0.0">
+          </label>
+          <label class="inline-field-label" for="iosVersion">
+            <span data-i18n="notices.iosVersion">Required iOS Version</span>
+            <input type="text" id="iosVersion" maxlength="255" autocomplete="off" data-i18n-placeholder="notices.versionPlaceholder" placeholder="e.g. 1.0.0">
+          </label>
+          <small class="notice-field-help" data-i18n="notices.versionHelp">Clients on any other version are asked to update, per OS.</small>
+        </div>
 
         <div class="notice-toggle-card">
           <div>
@@ -307,7 +313,8 @@
 
     function renderSystem(info) {
       systemState = info;
-      document.getElementById('systemVersion').value = info.version || '';
+      document.getElementById('androidVersion').value = info.androidVersion || '';
+      document.getElementById('iosVersion').value = info.iosVersion || '';
       document.getElementById('systemCheck').checked = Boolean(info.isSystemCheck);
     }
 
@@ -328,9 +335,10 @@
 
     async function saveSystemInfo(event) {
       event.preventDefault();
-      const version = document.getElementById('systemVersion').value.trim();
+      const androidVersion = document.getElementById('androidVersion').value.trim();
+      const iosVersion = document.getElementById('iosVersion').value.trim();
       const isSystemCheck = document.getElementById('systemCheck').checked;
-      if (!version) {
+      if (!androidVersion || !iosVersion) {
         setFormMessage('systemMsg', adminT('notices.versionRequired'), 'error');
         return;
       }
@@ -344,7 +352,7 @@
       try {
         const res = await fetchWithAuth(API_BASE + '/admin/notice/system', {
           method: 'PATCH',
-          body: JSON.stringify({ version, isSystemCheck })
+          body: JSON.stringify({ androidVersion, iosVersion, isSystemCheck })
         });
         if (!res) return;
         const data = await res.json();

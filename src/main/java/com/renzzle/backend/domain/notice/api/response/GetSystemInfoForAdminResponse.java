@@ -4,6 +4,7 @@ import lombok.Builder;
 
 @Builder
 public record GetSystemInfoForAdminResponse(
-        String version,
+        String androidVersion,
+        String iosVersion,
         boolean isSystemCheck
 ) { }

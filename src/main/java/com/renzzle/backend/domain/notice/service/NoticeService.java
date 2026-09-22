@@ -23,6 +23,7 @@ import com.renzzle.backend.domain.notice.util.NoticeTextBuilderUtil;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 
 import com.renzzle.backend.domain.user.domain.UserEntity;
+import com.renzzle.backend.global.common.domain.AppPlatform;
 import com.renzzle.backend.global.common.domain.LangCode;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
@@ -59,11 +60,12 @@ public class NoticeService {
                     .description("system-check")
                     .build();
         }
-        // App version check
-        if (!request.version().trim().equals(systemInfo.getVersion())) {
+        // App version check, against the required version for the caller's OS
+        String requiredVersion = systemInfo.getRequiredVersion(AppPlatform.from(request.platform()));
+        if (!request.version().trim().equals(requiredVersion)) {
             return GetPersonalNoticeResponse.builder()
                     .description("update")
-                    .version(systemInfo.getVersion())
+                    .version(requiredVersion)
                     .build();
         }
 
@@ -184,7 +186,7 @@ public class NoticeService {
     public GetSystemInfoForAdminResponse updateSystemInfoForAdmin(UpdateSystemInfoRequest request) {
         SystemInfo systemInfo = loadSystemInfo();
         // Stored trimmed because getPersonalNotice compares against the trimmed client version
-        systemInfo.update(request.version().trim(), request.isSystemCheck());
+        systemInfo.update(request.androidVersion().trim(), request.iosVersion().trim(), request.isSystemCheck());
         return toSystemInfoResponse(systemInfo);
     }
 
@@ -239,7 +241,8 @@ public class NoticeService {
 
     private GetSystemInfoForAdminResponse toSystemInfoResponse(SystemInfo systemInfo) {
         return GetSystemInfoForAdminResponse.builder()
-                .version(systemInfo.getVersion())
+                .androidVersion(systemInfo.getAndroidVersion())
+                .iosVersion(systemInfo.getIosVersion())
                 .isSystemCheck(systemInfo.isSystemCheck())
                 .build();
     }

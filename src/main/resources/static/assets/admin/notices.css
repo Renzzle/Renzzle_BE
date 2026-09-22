@@ -10,6 +10,12 @@
   margin-bottom: 0 !important;
 }
 
+.notice-version-group {
+  display: grid;
+  gap: var(--admin-space-3);
+  min-width: 0;
+}
+
 .notice-field-help {
   display: block;
   margin-top: 0.35rem;

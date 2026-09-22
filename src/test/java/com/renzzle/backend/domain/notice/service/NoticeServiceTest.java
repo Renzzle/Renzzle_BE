@@ -2,12 +2,15 @@ package com.renzzle.backend.domain.notice.service;
 
 import com.renzzle.backend.domain.notice.api.request.AnnouncementContentRequest;
 import com.renzzle.backend.domain.notice.api.request.CreateAnnouncementRequest;
+import com.renzzle.backend.domain.notice.api.request.GetPersonalNoticeRequest;
 import com.renzzle.backend.domain.notice.api.request.SendPersonalNoticeRequest;
 import com.renzzle.backend.domain.notice.api.request.UpdateAnnouncementRequest;
 import com.renzzle.backend.domain.notice.api.request.UpdateSystemInfoRequest;
 import com.renzzle.backend.domain.notice.api.response.GetAnnouncementForAdminResponse;
 import com.renzzle.backend.domain.notice.api.response.GetNoticeRecipientResponse;
+import com.renzzle.backend.domain.notice.api.response.GetPersonalNoticeResponse;
 import com.renzzle.backend.domain.notice.api.response.GetSystemInfoForAdminResponse;
+import com.renzzle.backend.domain.notice.api.response.NoticeContext;
 import com.renzzle.backend.domain.notice.dao.AnnouncementRepository;
 import com.renzzle.backend.domain.notice.dao.NoticeRepository;
 import com.renzzle.backend.domain.notice.dao.SystemInfoRepository;
@@ -73,6 +76,14 @@ class NoticeServiceTest {
                 .withEmail("player@test.com")
                 .withNickname("player")
                 .withStatus(Status.getDefaultStatus())
+                .build();
+    }
+
+    private static SystemInfo systemInfo(String androidVersion, String iosVersion, boolean isSystemCheck) {
+        return SystemInfo.builder()
+                .androidVersion(androidVersion)
+                .iosVersion(iosVersion)
+                .isSystemCheck(isSystemCheck)
                 .build();
     }
 
@@ -246,33 +257,35 @@ class NoticeServiceTest {
     // ===== system info =====
 
     @Test
-    void getSystemInfoForAdmin_WhenExists_ThenReturnsCurrentValues() {
+    void getSystemInfoForAdmin_WhenExists_ThenReturnsBothPlatformVersions() {
         // Given
-        SystemInfo systemInfo = SystemInfo.builder().version("1.0.0").isSystemCheck(false).build();
-        when(systemInfoRepository.getSystemInfo()).thenReturn(Optional.of(systemInfo));
+        when(systemInfoRepository.getSystemInfo()).thenReturn(Optional.of(systemInfo("1.0.0", "1.0.3", false)));
 
         // When
         GetSystemInfoForAdminResponse response = noticeService.getSystemInfoForAdmin();
 
         // Then
-        assertThat(response.version()).isEqualTo("1.0.0");
+        assertThat(response.androidVersion()).isEqualTo("1.0.0");
+        assertThat(response.iosVersion()).isEqualTo("1.0.3");
         assertThat(response.isSystemCheck()).isFalse();
     }
 
     @Test
-    void updateSystemInfoForAdmin_WhenCalled_ThenUpdatesTrimmedVersionAndFlag() {
+    void updateSystemInfoForAdmin_WhenCalled_ThenUpdatesTrimmedVersionsAndFlag() {
         // Given
-        SystemInfo systemInfo = SystemInfo.builder().version("1.0.0").isSystemCheck(false).build();
-        when(systemInfoRepository.getSystemInfo()).thenReturn(Optional.of(systemInfo));
+        SystemInfo stored = systemInfo("1.0.0", "1.0.0", false);
+        when(systemInfoRepository.getSystemInfo()).thenReturn(Optional.of(stored));
 
         // When
         GetSystemInfoForAdminResponse response = noticeService.updateSystemInfoForAdmin(
-                new UpdateSystemInfoRequest("  1.2.0  ", true));
+                new UpdateSystemInfoRequest("  1.2.0  ", "  1.2.1  ", true));
 
         // Then
-        assertThat(systemInfo.getVersion()).isEqualTo("1.2.0");
-        assertThat(systemInfo.isSystemCheck()).isTrue();
-        assertThat(response.version()).isEqualTo("1.2.0");
+        assertThat(stored.getAndroidVersion()).isEqualTo("1.2.0");
+        assertThat(stored.getIosVersion()).isEqualTo("1.2.1");
+        assertThat(stored.isSystemCheck()).isTrue();
+        assertThat(response.androidVersion()).isEqualTo("1.2.0");
+        assertThat(response.iosVersion()).isEqualTo("1.2.1");
         assertThat(response.isSystemCheck()).isTrue();
     }
 
@@ -283,10 +296,84 @@ class NoticeServiceTest {
 
         // When
         CustomException exception = assertThrows(CustomException.class,
-                () -> noticeService.updateSystemInfoForAdmin(new UpdateSystemInfoRequest("1.0.0", false)));
+                () -> noticeService.updateSystemInfoForAdmin(new UpdateSystemInfoRequest("1.0.0", "1.0.0", false)));
 
         // Then
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INTERNAL_SERVER_ERROR);
+    }
+
+    // ===== personal notice: per-platform version gate =====
+
+    @Test
+    void getPersonalNotice_WhenAndroidVersionStale_ThenAsksToUpdateWithAndroidVersion() {
+        // Given: iOS differs, so reading the wrong platform could not yield 1.0.5
+        when(systemInfoRepository.getSystemInfo()).thenReturn(Optional.of(systemInfo("1.0.5", "1.0.9", false)));
+
+        // When
+        GetPersonalNoticeResponse response = noticeService.getPersonalNotice(
+                new GetPersonalNoticeRequest("EN", "ANDROID", "1.0.4"), user);
+
+        // Then
+        assertThat(response.description()).isEqualTo("update");
+        assertThat(response.version()).isEqualTo("1.0.5");
+        verify(noticeRepository, never()).findAllByUser(any());
+    }
+
+    @Test
+    void getPersonalNotice_WhenIosClientOnAndroidVersion_ThenStillAsksToUpdate() {
+        // Given
+        when(systemInfoRepository.getSystemInfo()).thenReturn(Optional.of(systemInfo("1.0.5", "1.0.9", false)));
+
+        // When: client sends the Android-required version but identifies as iOS
+        GetPersonalNoticeResponse response = noticeService.getPersonalNotice(
+                new GetPersonalNoticeRequest("EN", "ios", "1.0.5"), user);
+
+        // Then
+        assertThat(response.description()).isEqualTo("update");
+        assertThat(response.version()).isEqualTo("1.0.9");
+    }
+
+    @Test
+    void getPersonalNotice_WhenPlatformVersionMatches_ThenReturnsContexts() {
+        // Given
+        when(systemInfoRepository.getSystemInfo()).thenReturn(Optional.of(systemInfo("1.0.5", "1.0.9", false)));
+        when(noticeRepository.findAllByUser(user)).thenReturn(List.of(
+                Notice.builder().user(user).context("hello").build()));
+        when(userRepository.isLastAccessBeforeToday(user.getId())).thenReturn(false);
+
+        // When
+        GetPersonalNoticeResponse response = noticeService.getPersonalNotice(
+                new GetPersonalNoticeRequest("EN", "IOS", " 1.0.9 "), user);
+
+        // Then
+        assertThat(response.description()).isEqualTo("context");
+        assertThat(response.notice()).extracting(NoticeContext::context).containsExactly("hello");
+        verify(noticeRepository).deleteAllByUser(user);
+    }
+
+    @Test
+    void getPersonalNotice_WhenSystemCheckOn_ThenShortCircuitsBeforeVersionCheck() {
+        // Given
+        when(systemInfoRepository.getSystemInfo()).thenReturn(Optional.of(systemInfo("1.0.5", "1.0.9", true)));
+
+        // When
+        GetPersonalNoticeResponse response = noticeService.getPersonalNotice(
+                new GetPersonalNoticeRequest("EN", "ANDROID", "0.0.1"), user);
+
+        // Then
+        assertThat(response.description()).isEqualTo("system-check");
+        assertThat(response.version()).isNull();
+    }
+
+    @Test
+    void getPersonalNotice_WhenPlatformUnknown_ThenThrows() {
+        // Given
+        when(systemInfoRepository.getSystemInfo()).thenReturn(Optional.of(systemInfo("1.0.5", "1.0.9", false)));
+
+        // When / Then: bean validation rejects this in the web layer first; the service
+        // must not quietly fall back to a default platform either.
+        assertThrows(IllegalArgumentException.class, () -> noticeService.getPersonalNotice(
+                new GetPersonalNoticeRequest("EN", "WINDOWS", "1.0.5"), user));
     }
 
     // ===== personal notice: recipient lookup =====
