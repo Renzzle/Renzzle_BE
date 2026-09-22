@@ -1,43 +1,28 @@
 /* ===== System section ===== */
 .notice-system-form {
   display: grid;
-  grid-template-columns: minmax(200px, 320px) minmax(260px, 1fr);
-  gap: var(--admin-space-4);
-  align-items: start;
+  gap: var(--admin-space-3);
 }
 
 .notice-system-form .inline-field-label {
   margin-bottom: 0 !important;
 }
 
-.notice-version-group {
+.notice-version-row {
   display: grid;
-  gap: var(--admin-space-3);
-  min-width: 0;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--admin-space-4);
 }
 
-.notice-field-help {
-  display: block;
-  margin-top: 0.35rem;
-  color: var(--admin-muted);
-  font-size: 0.8rem;
-  font-weight: 400;
-  line-height: 1.4;
-}
-
-.notice-toggle-card {
+.notice-toggle-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--admin-space-4);
-  min-height: 3.75rem;
-  padding: var(--admin-space-4);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius);
-  background: #fbfcfe;
+  gap: var(--admin-space-3);
+  min-height: var(--admin-control-height);
 }
 
 .notice-toggle-label {
+  white-space: nowrap;
   display: block;
   color: var(--admin-text);
   font-size: 0.86rem;
@@ -45,8 +30,7 @@
 }
 
 .notice-system-footer {
-  grid-column: 1 / -1;
-  margin-top: 0 !important;
+  margin-top: var(--admin-space-2) !important;
 }
 
 /* Toggle switch (same look as the community verification switch) */
@@ -117,6 +101,14 @@
   margin: 0 !important;
 }
 
+/* i18n.js swaps the native select for .admin-custom-select, which carries a
+   bottom margin meant for stacked forms. In this flex row that margin offsets
+   the control upward against the neighbouring button, so drop it here. */
+.notice-lang-filter .admin-custom-select {
+  width: 9.5rem;
+  margin-bottom: 0;
+}
+
 .notice-lang-filter select {
   min-width: 9.5rem;
   height: var(--admin-control-height);
@@ -167,11 +159,11 @@
 .notice-table .notice-col-date { width: 15%; }
 .notice-table .notice-col-actions { width: 14%; }
 
-.notice-table .notice-main-col {
-  text-align: left;
-}
-
-.notice-table .notice-center-col {
+/* Every column centres, header and body alike. The doubled .admin-table
+   qualifier outranks common.css rules such as `.admin-table td.actions-col`,
+   which is loaded after this file. */
+.admin-table.notice-table th,
+.admin-table.notice-table td {
   text-align: center;
 }
 
@@ -179,12 +171,8 @@
   justify-content: center;
 }
 
-.notice-row-context {
-  margin-top: 0.25rem;
-  color: var(--admin-muted);
-  font-size: 0.82rem;
-  line-height: 1.4;
-  overflow-wrap: anywhere;
+.notice-table .admin-actions {
+  justify-content: center;
 }
 
 .notice-row-date {
@@ -278,21 +266,18 @@
 }
 
 @media (max-width: 760px) {
-  .notice-system-form {
+  .notice-version-row {
     grid-template-columns: 1fr;
   }
 
-  .notice-toggle-card {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .notice-switch {
-    align-self: flex-start;
+  .notice-toggle-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
   }
 
   .notice-lang-filter,
-  .notice-lang-filter select {
+  .notice-lang-filter select,
+  .notice-lang-filter .admin-custom-select {
     width: 100%;
   }
 

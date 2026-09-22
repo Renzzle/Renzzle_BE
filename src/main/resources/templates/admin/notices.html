@@ -41,7 +41,7 @@
       </div>
 
       <form id="systemForm" class="notice-system-form" novalidate>
-        <div class="notice-version-group">
+        <div class="notice-version-row">
           <label class="inline-field-label" for="androidVersion">
             <span data-i18n="notices.androidVersion">Required Android Version</span>
             <input type="text" id="androidVersion" maxlength="255" autocomplete="off" data-i18n-placeholder="notices.versionPlaceholder" placeholder="e.g. 1.0.0">
@@ -50,19 +50,15 @@
             <span data-i18n="notices.iosVersion">Required iOS Version</span>
             <input type="text" id="iosVersion" maxlength="255" autocomplete="off" data-i18n-placeholder="notices.versionPlaceholder" placeholder="e.g. 1.0.0">
           </label>
-          <small class="notice-field-help" data-i18n="notices.versionHelp">Clients on any other version are asked to update, per OS.</small>
         </div>
 
-        <div class="notice-toggle-card">
-          <div>
-            <span class="notice-toggle-label" data-i18n="notices.systemCheck">System Check Mode</span>
-            <small class="notice-field-help" data-i18n="notices.systemCheckHelp">When on, every client sees the system check screen instead of the app.</small>
-          </div>
+        <div class="notice-toggle-row">
           <label class="notice-switch" for="systemCheck">
             <span class="admin-visually-hidden" data-i18n="notices.systemCheck">System Check Mode</span>
             <input type="checkbox" id="systemCheck">
             <span class="notice-switch-track" aria-hidden="true"></span>
           </label>
+          <span class="notice-toggle-label" data-i18n="notices.systemCheck">System Check Mode</span>
         </div>
 
         <div class="inline-create-footer notice-system-footer">
@@ -185,9 +181,9 @@
           </colgroup>
           <thead>
           <tr>
-            <th class="notice-center-col" data-i18n="notices.status">Status</th>
-            <th class="notice-center-col" data-i18n="notices.language">Language</th>
-            <th class="notice-main-col" data-i18n="common.title">Title</th>
+            <th data-i18n="notices.status">Status</th>
+            <th data-i18n="notices.language">Language</th>
+            <th data-i18n="common.title">Title</th>
             <th data-i18n="notices.createdAt">Created</th>
             <th data-i18n="notices.expiredAt">Expires At</th>
             <th class="actions-col" data-i18n="common.actions">Actions</th>
@@ -286,12 +282,12 @@
       return Number.isNaN(d.getTime()) ? null : d.toISOString();
     }
 
-    function formatDateTime(iso) {
+    // Date only, e.g. 2001.12.09 -- same in every UI language.
+    function formatDate(iso) {
       if (!iso) return '';
       const d = new Date(iso);
       if (Number.isNaN(d.getTime())) return iso;
-      const locale = adminGetLanguage() === 'ko' ? 'ko-KR' : 'en-US';
-      return d.toLocaleString(locale, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`;
     }
 
     function defaultExpiryInput() {
@@ -299,11 +295,6 @@
       d.setDate(d.getDate() + 7);
       d.setSeconds(0, 0);
       return isoToLocalInput(d.toISOString());
-    }
-
-    function truncate(text, max) {
-      const value = String(text || '');
-      return value.length > max ? value.slice(0, max - 1) + '…' : value;
     }
 
     // =====================================================================
@@ -361,7 +352,6 @@
           return;
         }
         renderSystem(data.response);
-        setFormMessage('systemMsg', adminT('notices.systemSaved'), 'success');
         adminToast(adminT('notices.systemSaved'), 'success');
       } catch (err) {
         setFormMessage('systemMsg', adminT('common.errorPrefix', { message: err.message || '' }), 'error');
@@ -427,36 +417,29 @@
         const tr = document.createElement('tr');
 
         const statusTd = document.createElement('td');
-        statusTd.className = 'notice-center-col';
         const statusPill = document.createElement('span');
         statusPill.className = 'admin-pill' + (a.isActive ? ' primary' : '');
         statusPill.textContent = adminT(a.isActive ? 'notices.active' : 'notices.expired');
         statusTd.appendChild(statusPill);
 
         const langTd = document.createElement('td');
-        langTd.className = 'notice-center-col';
         const langPill = document.createElement('span');
         langPill.className = 'admin-pill';
         langPill.textContent = a.langCode;
         langTd.appendChild(langPill);
 
         const titleTd = document.createElement('td');
-        titleTd.className = 'notice-main-col';
         const title = document.createElement('strong');
         title.textContent = a.title || adminT('common.untitled');
         titleTd.appendChild(title);
-        const context = document.createElement('div');
-        context.className = 'notice-row-context';
-        context.textContent = truncate(a.context, 140);
-        titleTd.appendChild(context);
 
         const createdTd = document.createElement('td');
         createdTd.className = 'notice-row-date';
-        createdTd.textContent = formatDateTime(a.createdAt);
+        createdTd.textContent = formatDate(a.createdAt);
 
         const expiresTd = document.createElement('td');
         expiresTd.className = 'notice-row-date';
-        expiresTd.textContent = formatDateTime(a.expiredAt);
+        expiresTd.textContent = formatDate(a.expiredAt);
 
         const actionsTd = document.createElement('td');
         actionsTd.className = 'actions-col';
@@ -464,12 +447,12 @@
         actions.className = 'admin-actions';
         const editBtn = document.createElement('button');
         editBtn.type = 'button';
-        editBtn.className = 'btn btn-secondary';
+        editBtn.className = 'btn btn-edit';
         editBtn.textContent = adminT('common.edit');
         editBtn.addEventListener('click', () => openEditDialog(a));
         const deleteBtn = document.createElement('button');
         deleteBtn.type = 'button';
-        deleteBtn.className = 'btn btn-danger';
+        deleteBtn.className = 'btn btn-delete';
         deleteBtn.textContent = adminT('common.delete');
         deleteBtn.addEventListener('click', () => deleteAnnouncement(a));
         actions.appendChild(editBtn);
@@ -726,9 +709,9 @@
           return;
         }
         document.getElementById('personalNoticeContext').value = '';
-        const sentMessage = adminT('notices.sent', { nickname: data.response.nickname });
-        setFormMessage('personalNoticeMsg', sentMessage, 'success');
-        adminToast(sentMessage, 'success');
+        // Clears the "Sending..." progress text; the toast is the only success notice.
+        setFormMessage('personalNoticeMsg', '', null);
+        adminToast(adminT('notices.sent', { nickname: data.response.nickname }), 'success');
       } catch (err) {
         setFormMessage('personalNoticeMsg', adminT('common.errorPrefix', { message: err.message || '' }), 'error');
       } finally {
