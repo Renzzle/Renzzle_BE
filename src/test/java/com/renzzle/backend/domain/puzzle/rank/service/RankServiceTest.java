@@ -163,13 +163,13 @@ class RankServiceTest {
         // When
         rankService.startRankGame(user);
 
-        // mmr 1600 sits above MMR_THRESHOLD so its penalty is x1.5 -> -7 -> 1593, while
+        // mmr 1600 sits above MMR_THRESHOLD so its penalty is x1.5 -> -23 -> 1577, while
         // rating 1400 sits below it so its penalty is x0.5 -> -2 -> 1398. Feeding each
-        // the other's value yields 1595 / 1396 instead.
+        // the other's value yields 1595 / 1389 instead.
         ArgumentCaptor<UserEntity> saved = ArgumentCaptor.forClass(UserEntity.class);
         verify(userRepository).save(saved.capture());
 
-        assertThat(saved.getValue().getMmr()).isEqualTo(1593.0);
+        assertThat(saved.getValue().getMmr()).isEqualTo(1577.0);
         assertThat(saved.getValue().getRating()).isEqualTo(1398.0);
     }
 

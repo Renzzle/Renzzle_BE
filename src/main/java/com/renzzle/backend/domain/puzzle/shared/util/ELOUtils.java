@@ -31,6 +31,7 @@ public class ELOUtils {
         return userRating + Math.round(ratingOffset);
     }
 
+    // On a win, gain K * (1 - expected): the bigger the upset, the bigger the gain
     public static double calculateMMRIncrease(double userMMR, double problemRating) {
         double expected = expectedWinProbability(userMMR, problemRating);
         return Math.round(K_MMR * (1 - expected) * getRewardMultiplier(userMMR));
@@ -41,13 +42,14 @@ public class ELOUtils {
         return Math.round(K_RATING * (1 - expected) * getRewardMultiplier(userRating));
     }
 
+    // On a loss, lose K * expected: the more certain the win was, the bigger the loss
     public static double calculateMMRDecrease(double userMMR, double problemRating) {
         double expected = expectedWinProbability(userMMR, problemRating);
-        return Math.round(-K_MMR * (1 - expected) * getPenaltyMultiplier(userMMR));
+        return Math.round(-K_MMR * expected * getPenaltyMultiplier(userMMR));
     }
 
     public static double calculateRatingDecrease(double userRating, double problemRating) {
         double expected = expectedWinProbability(userRating, problemRating);
-        return Math.round(-K_RATING * (1 - expected) * getPenaltyMultiplier(userRating));
+        return Math.round(-K_RATING * expected * getPenaltyMultiplier(userRating));
     }
 }
