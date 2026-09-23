@@ -39,4 +39,10 @@ public class Announcement {
     @Column(name = "expired_at", nullable = false)
     private Instant expiredAt;
 
+    public void update(String title, String context, Instant expiredAt) {
+        this.title = title;
+        this.context = context;
+        this.expiredAt = expiredAt;
+    }
+
 }

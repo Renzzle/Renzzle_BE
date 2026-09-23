@@ -4,6 +4,14 @@ import com.renzzle.backend.domain.auth.api.request.LoginRequest;
 import com.renzzle.backend.domain.auth.dao.AdminRepository;
 import com.renzzle.backend.domain.auth.service.AccountService;
 import com.renzzle.backend.domain.auth.service.JwtProvider;
+import com.renzzle.backend.domain.notice.api.request.CreateAnnouncementRequest;
+import com.renzzle.backend.domain.notice.api.request.SendPersonalNoticeRequest;
+import com.renzzle.backend.domain.notice.api.request.UpdateAnnouncementRequest;
+import com.renzzle.backend.domain.notice.api.request.UpdateSystemInfoRequest;
+import com.renzzle.backend.domain.notice.api.response.GetAnnouncementForAdminResponse;
+import com.renzzle.backend.domain.notice.api.response.GetNoticeRecipientResponse;
+import com.renzzle.backend.domain.notice.api.response.GetSystemInfoForAdminResponse;
+import com.renzzle.backend.domain.notice.service.NoticeService;
 import com.renzzle.backend.domain.puzzle.community.api.request.UpdateCommunityPuzzleVerificationRequest;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleForAdminResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackDetailForAdminResponse;
@@ -60,6 +68,7 @@ public class AdminController {
     private final AdminRepository adminRepository;
     private final TrainingService trainingService;
     private final CommunityService communityService;
+    private final NoticeService noticeService;
     private final Clock clock;
 
     /**
@@ -345,6 +354,98 @@ public class AdminController {
                 request.isVerified()
         );
         return ApiUtils.success(puzzle);
+    }
+
+    // ===== Notices (announcements, system info, personal notice) =====
+
+    @Operation(summary = "Admin notice management page", description = "Manage announcements, system info, and personal notices")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/notices")
+    public String notices(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @Parameter(hidden = true) Model model
+    ) {
+        model.addAttribute(USER_EMAIL, userDetails.getUser().getEmail());
+        model.addAttribute(LANG_CODE_NAMES, LangCode.LangCodeName.values());
+        return "admin/notices";
+    }
+
+    @Operation(summary = "Get announcements (Admin only)", description = "All announcements including expired ones, newest first. Optional lang filter.")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/notice/announcement")
+    @ResponseBody
+    public ApiResponse<List<GetAnnouncementForAdminResponse>> getAnnouncementsForAdmin(
+            @RequestParam(value = "lang", required = false) String lang
+    ) {
+        return ApiUtils.success(noticeService.getAnnouncementsForAdmin(lang));
+    }
+
+    @Operation(summary = "Create announcements (Admin only)", description = "Creates one announcement per language content with a shared expiration time")
+    @SecurityRequirement(name = "Authorization")
+    @PostMapping("/notice/announcement")
+    @ResponseBody
+    public ApiResponse<List<GetAnnouncementForAdminResponse>> createAnnouncements(
+            @Valid @RequestBody CreateAnnouncementRequest request
+    ) {
+        return ApiUtils.success(noticeService.createAnnouncementsForAdmin(request));
+    }
+
+    @Operation(summary = "Update announcement (Admin only)", description = "Update title, context, and expiration time of a single announcement")
+    @SecurityRequirement(name = "Authorization")
+    @PatchMapping("/notice/announcement/{announcementId}")
+    @ResponseBody
+    public ApiResponse<GetAnnouncementForAdminResponse> updateAnnouncement(
+            @PathVariable Long announcementId,
+            @Valid @RequestBody UpdateAnnouncementRequest request
+    ) {
+        return ApiUtils.success(noticeService.updateAnnouncementForAdmin(announcementId, request));
+    }
+
+    @Operation(summary = "Delete announcement (Admin only)", description = "Permanently deletes a single announcement")
+    @SecurityRequirement(name = "Authorization")
+    @DeleteMapping("/notice/announcement/{announcementId}")
+    @ResponseBody
+    public ApiResponse<Object> deleteAnnouncement(@PathVariable Long announcementId) {
+        noticeService.deleteAnnouncementForAdmin(announcementId);
+        return ApiUtils.success(null);
+    }
+
+    @Operation(summary = "Get system info (Admin only)", description = "Current required app version and system check flag")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/notice/system")
+    @ResponseBody
+    public ApiResponse<GetSystemInfoForAdminResponse> getSystemInfoForAdmin() {
+        return ApiUtils.success(noticeService.getSystemInfoForAdmin());
+    }
+
+    @Operation(summary = "Update system info (Admin only)", description = "Update required app version and system check flag")
+    @SecurityRequirement(name = "Authorization")
+    @PatchMapping("/notice/system")
+    @ResponseBody
+    public ApiResponse<GetSystemInfoForAdminResponse> updateSystemInfo(
+            @Valid @RequestBody UpdateSystemInfoRequest request
+    ) {
+        return ApiUtils.success(noticeService.updateSystemInfoForAdmin(request));
+    }
+
+    @Operation(summary = "Find notice recipient (Admin only)", description = "Look up a user by exact email or nickname")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/notice/user")
+    @ResponseBody
+    public ApiResponse<GetNoticeRecipientResponse> findNoticeRecipient(
+            @RequestParam("keyword") String keyword
+    ) {
+        return ApiUtils.success(noticeService.findNoticeRecipientForAdmin(keyword));
+    }
+
+    @Operation(summary = "Send personal notice (Admin only)", description = "Queue a one-time personal notice for a user")
+    @SecurityRequirement(name = "Authorization")
+    @PostMapping("/notice/personal")
+    @ResponseBody
+    public ApiResponse<GetNoticeRecipientResponse> sendPersonalNotice(
+            @Valid @RequestBody SendPersonalNoticeRequest request
+    ) {
+        return ApiUtils.success(noticeService.sendPersonalNoticeForAdmin(request));
     }
 
     public record AdminLoginResponse(

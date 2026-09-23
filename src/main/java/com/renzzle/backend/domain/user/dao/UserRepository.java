@@ -22,6 +22,8 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     Optional<UserEntity> findByEmail(String email);
 
+    Optional<UserEntity> findByNickname(String nickname);
+
     // Takes a row lock so that concurrent requests cannot read the same currency and both spend it.
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT u FROM UserEntity u WHERE u.id = :userId")

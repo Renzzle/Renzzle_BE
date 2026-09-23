@@ -11,4 +11,9 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
 
     List<Announcement> findAllByLangCodeAndExpiredAtAfter(LangCode langCode, Instant now);
 
+    // Admin: newest first; id tiebreak keeps translations created together adjacent
+    List<Announcement> findAllByOrderByCreatedAtDescIdDesc();
+
+    List<Announcement> findAllByLangCodeOrderByCreatedAtDescIdDesc(LangCode langCode);
+
 }

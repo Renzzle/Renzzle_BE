@@ -82,6 +82,9 @@ public enum ErrorCode {
     SESSION_ALREADY_ENDED(HttpStatus.GONE, "P4100", "Session already ended"),
     SESSION_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "P5000", "Failed to generate session ID"),
 
+    // Notice
+    CANNOT_FIND_ANNOUNCEMENT(HttpStatus.NOT_FOUND, "N4040", "Announcement not found"),
+
     ;
 
     private final HttpStatus status;
