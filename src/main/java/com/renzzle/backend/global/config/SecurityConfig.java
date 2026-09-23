@@ -3,10 +3,13 @@ package com.renzzle.backend.global.config;
 import com.renzzle.backend.domain.auth.dao.AdminRepository;
 import com.renzzle.backend.domain.auth.service.JwtProvider;
 import com.renzzle.backend.domain.user.dao.UserRepository;
+import com.renzzle.backend.global.security.AppKeyAuthenticationFilter;
 import com.renzzle.backend.global.security.CustomAccessDeniedHandler;
 import com.renzzle.backend.global.security.CustomAuthenticationEntryPoint;
 import com.renzzle.backend.global.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -19,11 +22,15 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.util.StringUtils;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.renzzle.backend.domain.auth.domain.Admin.ADMIN_PREFIX;
 
+@Slf4j
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -36,7 +43,11 @@ public class SecurityConfig {
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, @Value("${app.key}") String appKey) throws Exception {
+        // Every API request must carry an app key, whether or not it needs a token
+        RequestMatcher appKeyRequestMatcher = AntPathRequestMatcher.antMatcher("/api/**");
+        Set<String> appKeys = parseAppKeys(appKey);
+
         List<RequestMatcher> permitAllRequestMatchers = Arrays.asList(
                 AntPathRequestMatcher.antMatcher("/admin"),  // Admin login page (excluded from JWT filter)
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/admin/login"),  // Admin login API (called without a token)
@@ -56,7 +67,7 @@ public class SecurityConfig {
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/actuator/**")
         );
 
-        return httpSecurity.csrf(AbstractHttpConfigurer::disable)
+        httpSecurity.csrf(AbstractHttpConfigurer::disable)
                 .formLogin(FormLoginConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .sessionManagement(sessionManagement ->
@@ -106,7 +117,23 @@ public class SecurityConfig {
                                 .accessDeniedHandler(accessDeniedHandler)
                                 .authenticationEntryPoint(authenticationEntryPoint)
                 )
-                .addFilterBefore(new JwtAuthenticationFilter(jwtProvider, userRepository, adminRepository, permitAllRequestMatchers), UsernamePasswordAuthenticationFilter.class)
-                .build();
+                .addFilterBefore(new JwtAuthenticationFilter(jwtProvider, userRepository, adminRepository, permitAllRequestMatchers), UsernamePasswordAuthenticationFilter.class);
+
+        if (!appKeys.isEmpty()) {
+            // Runs after authentication so admin dashboard requests, which cannot hold the key in a browser, are exempt
+            httpSecurity.addFilterAfter(new AppKeyAuthenticationFilter(appKeys, appKeyRequestMatcher), JwtAuthenticationFilter.class);
+        } else {
+            log.warn("APP_KEY is empty, so app key verification is disabled");
+        }
+
+        return httpSecurity.build();
+    }
+
+    // APP_KEY holds a comma separated list, so a new key can be accepted before the old one is dropped
+    private Set<String> parseAppKeys(String appKey) {
+        return Arrays.stream(appKey.split(","))
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .collect(Collectors.toUnmodifiableSet());
     }
 }
