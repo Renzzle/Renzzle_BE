@@ -52,6 +52,10 @@ spring:
     init:
       mode: always
 
+app:
+  # Required in the x-app-key header of every /api request
+  key: ${APP_KEY:}
+
 rank:
   session:
     ttl: 3600 # seconds

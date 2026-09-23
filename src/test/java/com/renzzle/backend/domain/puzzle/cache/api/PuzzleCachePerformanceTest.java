@@ -9,6 +9,7 @@ import com.renzzle.backend.domain.puzzle.cache.domain.SolutionSerializer;
 import com.renzzle.backend.domain.puzzle.shared.util.ZobristHashUtils;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
+import com.renzzle.backend.global.security.AppKeyAuthenticationFilter;
 import com.renzzle.backend.support.TestUserEntityBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,6 +77,7 @@ class PuzzleCachePerformanceTest {
 
         authHeaders = new HttpHeaders();
         authHeaders.setBearerAuth(token);
+        authHeaders.set(AppKeyAuthenticationFilter.APP_KEY_HEADER, "test-app-key");
     }
 
     @Test
@@ -94,7 +96,7 @@ class PuzzleCachePerformanceTest {
                 .solutionDag(serializer.serialize(targetDag))
                 .build());
 
-        double beforeMs = measureApiCall(1L);
+        double beforeMs = measureApiCall();
 
         List<PuzzleCache> dummies = new ArrayList<>();
         for (long id = 2; id <= 10_000; id++) {
@@ -111,7 +113,7 @@ class PuzzleCachePerformanceTest {
         }
         puzzleCacheRepository.saveAll(dummies);
 
-        double afterMs = measureApiCall(1L);
+        double afterMs = measureApiCall();
 
         System.out.println("========================================");
         System.out.println("[Scenario 1] cache_puzzle row count growth");
@@ -140,7 +142,7 @@ class PuzzleCachePerformanceTest {
                 .solutionDag(serializer.serialize(smallDag))
                 .build());
 
-        double beforeMs = measureApiCall(1L);
+        double beforeMs = measureApiCall();
 
         Map<Long, Integer> largeDag = new HashMap<>();
         largeDag.put(knownHash, 112);
@@ -151,7 +153,7 @@ class PuzzleCachePerformanceTest {
                 .solutionDag(serializer.serialize(largeDag))
                 .build());
 
-        double afterMs = measureApiCall(1L);
+        double afterMs = measureApiCall();
 
         System.out.println("========================================");
         System.out.println("[Scenario 2] solution_dag size growth");
@@ -164,19 +166,19 @@ class PuzzleCachePerformanceTest {
         assertThat(afterMs).isPositive();
     }
 
-    private double measureApiCall(Long puzzleId) {
+    private double measureApiCall() {
         String url = "/api/puzzle/cache/ai-response?puzzleType={type}&puzzleId={id}&currentBoardState={state}";
         HttpEntity<Void> entity = new HttpEntity<>(authHeaders);
 
         // warmup
-        restTemplate.exchange(url, HttpMethod.GET, entity, String.class, TYPE.name(), puzzleId, TEST_BOARD_STATE);
+        restTemplate.exchange(url, HttpMethod.GET, entity, String.class, TYPE.name(), 1L, TEST_BOARD_STATE);
 
         StopWatch stopWatch = new StopWatch();
         for (int i = 0; i < MEASURE_ITERATIONS; i++) {
             stopWatch.start();
             ResponseEntity<String> response = restTemplate.exchange(
                     url, HttpMethod.GET, entity, String.class,
-                    TYPE.name(), puzzleId, TEST_BOARD_STATE
+                    TYPE.name(), 1L, TEST_BOARD_STATE
             );
             stopWatch.stop();
 
