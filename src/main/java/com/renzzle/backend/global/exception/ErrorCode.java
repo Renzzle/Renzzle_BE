@@ -11,6 +11,7 @@ public enum ErrorCode {
     // Global
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR,"G500","Internal server error"),
     VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "G400", "Invalid request"),
+    INVALID_APP_KEY(HttpStatus.FORBIDDEN, "G403", "Forbidden request"),
     GLOBAL_NOT_FOUND(HttpStatus.NOT_FOUND, "G404", "Resource not found"),
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "G405", "Unsupported HTTP method"),
     UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "G415", "Unsupported media type"),

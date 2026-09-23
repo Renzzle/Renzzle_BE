@@ -33,6 +33,7 @@ public class TestContainersConfig implements ApplicationContextInitializer<Confi
                     "spring.data.redis.host=" + redisContainer.getHost(),
                     "spring.data.redis.port=" + redisContainer.getFirstMappedPort(),
                     "spring.jwt.secret=" + "testsecrettestsecrettestsecrettestsecret",
+                    "app.key=" + "test-app-key",
                     "spring.mail.username=" + "test@gmail.com",
                     "spring.mail.password=" + "password",
                     "rank.session.ttl=" + "10",

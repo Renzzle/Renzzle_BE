@@ -58,6 +58,7 @@ jobs:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          APP_KEY: ${{ secrets.APP_KEY }}
         run: ./gradlew build -x test --stacktrace
 
       - name: Login to Docker Hub
@@ -89,6 +90,7 @@ jobs:
           echo "GMAIL_PASSWORD=${{ secrets.GMAIL_PASSWORD }}" >> .env
           echo "GMAIL_ADDRESS=\"${{ secrets.GMAIL_ADDRESS }}\"" >> .env
           echo "JWT_SECRET_KEY=\"${{ secrets.JWT_SECRET_KEY }}\"" >> .env
+          echo "APP_KEY=\"${{ secrets.APP_KEY }}\"" >> .env
           echo "LOKI_TOKEN=${{ secrets.LOKI_TOKEN }}" >> .env
           echo "GOOGLE_PLAY_PACKAGE_NAME=com.renzzle_fe" >> .env
           echo "GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/google-play-service-account.json" >> .env
