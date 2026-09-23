@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="title.notices">Renzzle Admin - Notices</title>
+  <link rel="stylesheet" href="/assets/admin/notices.css">
+  <link rel="stylesheet" href="/assets/admin/common.css">
+  <script src="/assets/admin/i18n.js"></script>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>Renzzle Admin</h1>
+      <span class="user-info" th:if="${userEmail}" th:text="${userEmail}"></span>
+    </div>
+    <div class="header-actions">
+      <th:block th:replace="~{admin/fragments :: languageSelect}"></th:block>
+      <a href="/admin/logout" class="btn" data-i18n="common.logout">Log out</a>
+    </div>
+  </div>
+
+  <th:block th:replace="~{admin/fragments :: siteNav('notices')}"></th:block>
+  <th:block th:replace="~{admin/fragments :: uiKit}"></th:block>
+
+  <main class="admin-shell">
+    <div class="admin-page-heading">
+      <div>
+        <h2 data-i18n="notices.heading">Notices</h2>
+        <p data-i18n="notices.description">Manage the required app version, public announcements, and one-time personal notices.</p>
+      </div>
+    </div>
+
+    <!-- ===== System ===== -->
+    <section class="section">
+      <div class="section-title-row">
+        <div>
+          <h2 data-i18n="notices.systemHeading">System</h2>
+          <p data-i18n="notices.systemDescription">Applies to every app launch as soon as it is saved.</p>
+        </div>
+      </div>
+
+      <form id="systemForm" class="notice-system-form" novalidate>
+        <div class="notice-version-row">
+          <label class="inline-field-label" for="androidVersion">
+            <span data-i18n="notices.androidVersion">Required Android Version</span>
+            <input type="text" id="androidVersion" maxlength="255" autocomplete="off" data-i18n-placeholder="notices.versionPlaceholder" placeholder="e.g. 1.0.0">
+          </label>
+          <label class="inline-field-label" for="iosVersion">
+            <span data-i18n="notices.iosVersion">Required iOS Version</span>
+            <input type="text" id="iosVersion" maxlength="255" autocomplete="off" data-i18n-placeholder="notices.versionPlaceholder" placeholder="e.g. 1.0.0">
+          </label>
+        </div>
+
+        <div class="notice-toggle-row">
+          <label class="notice-switch" for="systemCheck">
+            <span class="admin-visually-hidden" data-i18n="notices.systemCheck">System Check Mode</span>
+            <input type="checkbox" id="systemCheck">
+            <span class="notice-switch-track" aria-hidden="true"></span>
+          </label>
+          <span class="notice-toggle-label" data-i18n="notices.systemCheck">System Check Mode</span>
+        </div>
+
+        <div class="inline-create-footer notice-system-footer">
+          <div id="systemMsg" class="inline-form-status muted-status" aria-live="polite"></div>
+          <button type="submit" class="btn btn-primary" id="systemSaveBtn" data-i18n="common.save">Save</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ===== Announcements ===== -->
+    <section class="section">
+      <div class="section-title-row">
+        <div>
+          <h2 data-i18n="notices.announcementsHeading">Announcements</h2>
+          <div id="announcementListMsg" class="muted-status"></div>
+        </div>
+        <div class="section-controls">
+          <label class="notice-lang-filter" for="announcementLangFilter">
+            <span class="admin-visually-hidden" data-i18n="notices.language">Language</span>
+            <select id="announcementLangFilter">
+              <option value="" data-i18n="notices.allLanguages">All languages</option>
+              <option th:each="langCode : ${langCodeNames}" th:value="${langCode}" th:text="${langCode}">EN</option>
+            </select>
+          </label>
+          <button type="button" class="btn btn-primary" id="openCreateAnnouncementBtn" aria-haspopup="dialog" aria-controls="announcementCreateDialog" aria-expanded="false" data-i18n="notices.newAnnouncement">New Announcement</button>
+        </div>
+      </div>
+
+      <!-- Create dialog -->
+      <dialog id="announcementCreateDialog" class="pack-create-dialog" aria-labelledby="announcementCreateTitle">
+        <form id="announcementCreateForm" class="pack-inline-create" novalidate>
+          <div class="inline-create-heading">
+            <div>
+              <h3 id="announcementCreateTitle" data-i18n="notices.createHeading">Create Announcement</h3>
+              <p data-i18n="notices.createDescription">Fill one or more language sections. Each language you fill becomes its own announcement sharing the expiration time below.</p>
+            </div>
+            <button type="button" class="btn btn-secondary" id="closeCreateAnnouncementBtn" data-i18n="common.cancel">Cancel</button>
+          </div>
+
+          <div class="notice-expiry-row">
+            <label class="inline-field-label" for="announcementExpiredAt">
+              <span data-i18n="notices.expiredAt">Expires At</span>
+              <input type="datetime-local" id="announcementExpiredAt">
+            </label>
+          </div>
+
+          <div class="inline-translation-grid">
+            <section class="inline-translation-card" data-lang-code="EN" th:data-lang-code="${langCode}" th:each="langCode : ${langCodeNames}">
+              <div class="inline-translation-header">
+                <strong th:text="${langCode}">EN</strong>
+                <span data-i18n="notices.translationOptional">Optional</span>
+              </div>
+              <label class="inline-field-label">
+                <span data-i18n="common.title">Title</span>
+                <input type="text" class="announcement-title" maxlength="127" data-i18n-placeholder="notices.titlePlaceholder" placeholder="Announcement title">
+              </label>
+              <label class="inline-field-label">
+                <span data-i18n="notices.body">Body</span>
+                <textarea class="announcement-context" maxlength="1023" data-i18n-placeholder="notices.bodyPlaceholder" placeholder="Announcement body"></textarea>
+              </label>
+            </section>
+          </div>
+
+          <div class="inline-create-footer">
+            <div id="announcementCreateMsg" class="inline-form-status muted-status" aria-live="polite"></div>
+            <button type="submit" class="btn btn-primary" id="submitCreateAnnouncementBtn" data-i18n="notices.newAnnouncement">New Announcement</button>
+          </div>
+        </form>
+      </dialog>
+
+      <!-- Edit dialog -->
+      <dialog id="announcementEditDialog" class="pack-create-dialog" aria-labelledby="announcementEditTitle">
+        <form id="announcementEditForm" class="pack-inline-create notice-edit-form" novalidate>
+          <div class="inline-create-heading">
+            <div>
+              <h3 id="announcementEditTitle" data-i18n="notices.editHeading">Edit Announcement</h3>
+              <p class="notice-edit-meta">
+                <span class="admin-pill primary" id="announcementEditLang">EN</span>
+                <span class="notice-edit-id" id="announcementEditId"></span>
+              </p>
+            </div>
+            <button type="button" class="btn btn-secondary" id="closeEditAnnouncementBtn" data-i18n="common.cancel">Cancel</button>
+          </div>
+
+          <label class="inline-field-label" for="editAnnouncementTitle">
+            <span data-i18n="common.title">Title</span>
+            <input type="text" id="editAnnouncementTitle" maxlength="127" data-i18n-placeholder="notices.titlePlaceholder" placeholder="Announcement title">
+          </label>
+          <label class="inline-field-label" for="editAnnouncementContext">
+            <span data-i18n="notices.body">Body</span>
+            <textarea id="editAnnouncementContext" maxlength="1023" data-i18n-placeholder="notices.bodyPlaceholder" placeholder="Announcement body"></textarea>
+          </label>
+          <div class="notice-expiry-row">
+            <label class="inline-field-label" for="editAnnouncementExpiredAt">
+              <span data-i18n="notices.expiredAt">Expires At</span>
+              <input type="datetime-local" id="editAnnouncementExpiredAt">
+            </label>
+          </div>
+
+          <div class="inline-create-footer">
+            <div id="announcementEditMsg" class="inline-form-status muted-status" aria-live="polite"></div>
+            <button type="submit" class="btn btn-primary" id="submitEditAnnouncementBtn" data-i18n="common.save">Save</button>
+          </div>
+        </form>
+      </dialog>
+
+      <div id="announcementEmptyState" class="admin-empty" hidden>
+        <span data-i18n="notices.noAnnouncements">No announcements found.</span>
+      </div>
+
+      <div id="announcementTableWrap" class="admin-table-wrap" hidden>
+        <table class="admin-table notice-table">
+          <colgroup>
+            <col class="notice-col-status">
+            <col class="notice-col-lang">
+            <col class="notice-col-main">
+            <col class="notice-col-date">
+            <col class="notice-col-date">
+            <col class="notice-col-actions">
+          </colgroup>
+          <thead>
+          <tr>
+            <th data-i18n="notices.status">Status</th>
+            <th data-i18n="notices.language">Language</th>
+            <th data-i18n="common.title">Title</th>
+            <th data-i18n="notices.createdAt">Created</th>
+            <th data-i18n="notices.expiredAt">Expires At</th>
+            <th class="actions-col" data-i18n="common.actions">Actions</th>
+          </tr>
+          </thead>
+          <tbody id="announcementTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== Personal notice ===== -->
+    <section class="section">
+      <div class="section-title-row notice-title-row">
+        <div>
+          <h2 data-i18n="notices.personalHeading">Personal Notice</h2>
+          <p data-i18n="notices.personalDescription">Send a one-time message to a single user. It is shown on the next app launch and then removed.</p>
+        </div>
+        <form class="notice-search" id="recipientSearchForm">
+          <label for="recipientKeyword">
+            <span class="admin-visually-hidden" data-i18n="notices.recipientSearch">Email or nickname</span>
+            <input type="text" id="recipientKeyword" autocomplete="off" data-i18n-placeholder="notices.recipientSearchPlaceholder" placeholder="Exact email or nickname">
+          </label>
+          <button type="submit" class="btn btn-primary notice-search-btn" id="recipientSearchBtn" data-i18n="common.search">Search</button>
+        </form>
+      </div>
+
+      <div id="recipientStatus" class="notice-search-status" aria-live="polite" hidden></div>
+
+      <form id="personalNoticeForm" class="notice-personal-form" novalidate hidden>
+        <div class="notice-recipient-card">
+          <span class="notice-toggle-label" data-i18n="notices.recipient">Recipient</span>
+          <div class="notice-recipient-identity">
+            <strong id="recipientNickname"></strong>
+            <span id="recipientEmail"></span>
+          </div>
+        </div>
+        <label class="inline-field-label" for="personalNoticeContext">
+          <span data-i18n="notices.message">Message</span>
+          <textarea id="personalNoticeContext" maxlength="255" data-i18n-placeholder="notices.messagePlaceholder" placeholder="Message shown to the user"></textarea>
+        </label>
+        <div class="inline-create-footer">
+          <div id="personalNoticeMsg" class="inline-form-status muted-status" aria-live="polite"></div>
+          <button type="submit" class="btn btn-primary" id="sendPersonalNoticeBtn" data-i18n="notices.send">Send</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script type="module">
+    const API_BASE = '';
+
+    async function fetchWithAuth(url, options = {}) {
+      const headers = { 'Content-Type': 'application/json', ...options.headers };
+      if (options.body === undefined || options.body === null) {
+        delete headers['Content-Type'];
+      }
+      const res = await fetch(url, { ...options, headers, credentials: 'same-origin' });
+      if (res.status === 401 || res.status === 403) {
+        alert(adminT('msg.sessionExpired'));
+        globalThis.location.href = '/admin/logout';
+        return null;
+      }
+      return res;
+    }
+
+    function setFormMessage(id, message, state) {
+      const el = document.getElementById(id);
+      el.textContent = message || '';
+      el.classList.toggle('error', state === 'error');
+      el.classList.toggle('success', state === 'success');
+    }
+
+    function setDialogOpen(dialog, open) {
+      if (open && !dialog.open) {
+        if (typeof dialog.showModal === 'function') dialog.showModal();
+        else dialog.setAttribute('open', '');
+      } else if (!open && dialog.open) {
+        if (typeof dialog.close === 'function') dialog.close();
+        else dialog.removeAttribute('open');
+      }
+    }
+
+    // ---- date helpers (datetime-local <-> ISO instant) ----
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    function isoToLocalInput(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return '';
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function localInputToIso(value) {
+      if (!value) return null;
+      const d = new Date(value); // datetime-local values are interpreted as local time
+      return Number.isNaN(d.getTime()) ? null : d.toISOString();
+    }
+
+    // Date only, e.g. 2001.12.09 -- same in every UI language.
+    function formatDate(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return iso;
+      return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`;
+    }
+
+    function defaultExpiryInput() {
+      const d = new Date();
+      d.setDate(d.getDate() + 7);
+      d.setSeconds(0, 0);
+      return isoToLocalInput(d.toISOString());
+    }
+
+    // =====================================================================
+    // System info
+    // =====================================================================
+    let systemState = null;
+
+    function renderSystem(info) {
+      systemState = info;
+      document.getElementById('androidVersion').value = info.androidVersion || '';
+      document.getElementById('iosVersion').value = info.iosVersion || '';
+      document.getElementById('systemCheck').checked = Boolean(info.isSystemCheck);
+    }
+
+    async function loadSystemInfo() {
+      try {
+        const res = await fetchWithAuth(API_BASE + '/admin/notice/system');
+        if (!res) return;
+        const data = await res.json();
+        if (!res.ok || !data.isSuccess || !data.response) {
+          setFormMessage('systemMsg', adminT('notices.systemLoadFailed'), 'error');
+          return;
+        }
+        renderSystem(data.response);
+      } catch (err) {
+        setFormMessage('systemMsg', adminT('common.errorPrefix', { message: err.message || '' }), 'error');
+      }
+    }
+
+    async function saveSystemInfo(event) {
+      event.preventDefault();
+      const androidVersion = document.getElementById('androidVersion').value.trim();
+      const iosVersion = document.getElementById('iosVersion').value.trim();
+      const isSystemCheck = document.getElementById('systemCheck').checked;
+      if (!androidVersion || !iosVersion) {
+        setFormMessage('systemMsg', adminT('notices.versionRequired'), 'error');
+        return;
+      }
+      if (isSystemCheck && !(systemState && systemState.isSystemCheck)) {
+        const ok = await adminConfirm(adminT('notices.systemCheckConfirm'));
+        if (!ok) return;
+      }
+      const btn = document.getElementById('systemSaveBtn');
+      btn.disabled = true;
+      setFormMessage('systemMsg', '', null);
+      try {
+        const res = await fetchWithAuth(API_BASE + '/admin/notice/system', {
+          method: 'PATCH',
+          body: JSON.stringify({ androidVersion, iosVersion, isSystemCheck })
+        });
+        if (!res) return;
+        const data = await res.json();
+        if (!res.ok || !data.isSuccess || !data.response) {
+          setFormMessage('systemMsg', adminT('notices.systemSaveFailed'), 'error');
+          return;
+        }
+        renderSystem(data.response);
+        adminToast(adminT('notices.systemSaved'), 'success');
+      } catch (err) {
+        setFormMessage('systemMsg', adminT('common.errorPrefix', { message: err.message || '' }), 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // =====================================================================
+    // Announcements
+    // =====================================================================
+    let announcements = [];
+    let editingAnnouncement = null;
+
+    function getLangFilter() {
+      return document.getElementById('announcementLangFilter').value;
+    }
+
+    async function loadAnnouncements() {
+      const msgEl = document.getElementById('announcementListMsg');
+      const tableWrap = document.getElementById('announcementTableWrap');
+      const emptyState = document.getElementById('announcementEmptyState');
+      document.getElementById('announcementTableBody').innerHTML = '';
+      tableWrap.hidden = true;
+      emptyState.hidden = true;
+      msgEl.textContent = adminT('notices.unknownCount');
+      try {
+        const lang = getLangFilter();
+        const url = API_BASE + '/admin/notice/announcement' + (lang ? '?lang=' + encodeURIComponent(lang) : '');
+        const res = await fetchWithAuth(url);
+        if (!res) return;
+        const data = await res.json();
+        if (!res.ok || !data.isSuccess) {
+          msgEl.textContent = adminT('notices.loadFailed');
+          return;
+        }
+        announcements = data.response || [];
+        renderAnnouncements();
+      } catch (err) {
+        msgEl.textContent = adminT('common.errorPrefix', { message: err.message || '' });
+      }
+    }
+
+    function renderAnnouncements() {
+      const msgEl = document.getElementById('announcementListMsg');
+      const tableWrap = document.getElementById('announcementTableWrap');
+      const emptyState = document.getElementById('announcementEmptyState');
+      const tableBody = document.getElementById('announcementTableBody');
+      tableBody.innerHTML = '';
+
+      if (announcements.length === 0) {
+        tableWrap.hidden = true;
+        emptyState.hidden = false;
+        msgEl.textContent = adminT('notices.zero');
+        return;
+      }
+
+      emptyState.hidden = true;
+      tableWrap.hidden = false;
+      msgEl.textContent = adminT('notices.count', { count: announcements.length });
+
+      announcements.forEach((a) => {
+        const tr = document.createElement('tr');
+
+        const statusTd = document.createElement('td');
+        const statusPill = document.createElement('span');
+        statusPill.className = 'admin-pill' + (a.isActive ? ' primary' : '');
+        statusPill.textContent = adminT(a.isActive ? 'notices.active' : 'notices.expired');
+        statusTd.appendChild(statusPill);
+
+        const langTd = document.createElement('td');
+        const langPill = document.createElement('span');
+        langPill.className = 'admin-pill';
+        langPill.textContent = a.langCode;
+        langTd.appendChild(langPill);
+
+        const titleTd = document.createElement('td');
+        const title = document.createElement('strong');
+        title.textContent = a.title || adminT('common.untitled');
+        titleTd.appendChild(title);
+
+        const createdTd = document.createElement('td');
+        createdTd.className = 'notice-row-date';
+        createdTd.textContent = formatDate(a.createdAt);
+
+        const expiresTd = document.createElement('td');
+        expiresTd.className = 'notice-row-date';
+        expiresTd.textContent = formatDate(a.expiredAt);
+
+        const actionsTd = document.createElement('td');
+        actionsTd.className = 'actions-col';
+        const actions = document.createElement('div');
+        actions.className = 'admin-actions';
+        const editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'btn btn-edit';
+        editBtn.textContent = adminT('common.edit');
+        editBtn.addEventListener('click', () => openEditDialog(a));
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'btn btn-delete';
+        deleteBtn.textContent = adminT('common.delete');
+        deleteBtn.addEventListener('click', () => deleteAnnouncement(a));
+        actions.appendChild(editBtn);
+        actions.appendChild(deleteBtn);
+        actionsTd.appendChild(actions);
+
+        tr.appendChild(statusTd);
+        tr.appendChild(langTd);
+        tr.appendChild(titleTd);
+        tr.appendChild(createdTd);
+        tr.appendChild(expiresTd);
+        tr.appendChild(actionsTd);
+        tableBody.appendChild(tr);
+      });
+    }
+
+    // ---- create ----
+    function collectCreateContents() {
+      const contents = [];
+      let hasPartial = false;
+      document.querySelectorAll('#announcementCreateForm .inline-translation-card').forEach((card) => {
+        const langCode = card.dataset.langCode;
+        const title = card.querySelector('.announcement-title')?.value.trim() || '';
+        const context = card.querySelector('.announcement-context')?.value.trim() || '';
+        if (!title && !context) return;
+        if (!title || !context) {
+          hasPartial = true;
+          return;
+        }
+        contents.push({ langCode, title, context });
+      });
+      return { contents, hasPartial };
+    }
+
+    function resetCreateForm() {
+      document.querySelectorAll('#announcementCreateForm .announcement-title, #announcementCreateForm .announcement-context').forEach((field) => {
+        field.value = '';
+      });
+      document.getElementById('announcementExpiredAt').value = defaultExpiryInput();
+      setFormMessage('announcementCreateMsg', '', null);
+    }
+
+    function setCreateDialogOpen(open, focusFirstField = true) {
+      const dialog = document.getElementById('announcementCreateDialog');
+      const toggleBtn = document.getElementById('openCreateAnnouncementBtn');
+      setDialogOpen(dialog, open);
+      toggleBtn.setAttribute('aria-expanded', String(open));
+      if (open && focusFirstField) {
+        requestAnimationFrame(() => {
+          const preferredLang = adminGetLanguage() === 'ko' ? 'KO' : 'EN';
+          const preferredCard = document.querySelector(`#announcementCreateForm .inline-translation-card[data-lang-code="${preferredLang}"]`);
+          const firstTitle = preferredCard?.querySelector('.announcement-title')
+            || document.querySelector('#announcementCreateForm .announcement-title');
+          firstTitle?.focus();
+        });
+      }
+    }
+
+    async function createAnnouncement(event) {
+      event.preventDefault();
+      const { contents, hasPartial } = collectCreateContents();
+      if (hasPartial) {
+        setFormMessage('announcementCreateMsg', adminT('notices.needTitleAndBody'), 'error');
+        return;
+      }
+      if (contents.length === 0) {
+        setFormMessage('announcementCreateMsg', adminT('notices.needContent'), 'error');
+        return;
+      }
+      const expiredAt = localInputToIso(document.getElementById('announcementExpiredAt').value);
+      if (!expiredAt) {
+        setFormMessage('announcementCreateMsg', adminT('notices.needExpiredAt'), 'error');
+        return;
+      }
+
+      const submitBtn = document.getElementById('submitCreateAnnouncementBtn');
+      submitBtn.disabled = true;
+      setFormMessage('announcementCreateMsg', adminT('notices.creating'), null);
+      try {
+        const res = await fetchWithAuth(API_BASE + '/admin/notice/announcement', {
+          method: 'POST',
+          body: JSON.stringify({ expiredAt, contents })
+        });
+        if (!res) return;
+        const data = await res.json();
+        if (!res.ok || !data.isSuccess) {
+          setFormMessage('announcementCreateMsg', adminT('notices.createFailed'), 'error');
+          return;
+        }
+        resetCreateForm();
+        setCreateDialogOpen(false, false);
+        adminToast(adminT('notices.created'), 'success');
+        await loadAnnouncements();
+      } catch (err) {
+        setFormMessage('announcementCreateMsg', adminT('common.errorPrefix', { message: err.message || '' }), 'error');
+      } finally {
+        submitBtn.disabled = false;
+      }
+    }
+
+    // ---- edit ----
+    function openEditDialog(announcement) {
+      editingAnnouncement = announcement;
+      document.getElementById('announcementEditLang').textContent = announcement.langCode;
+      document.getElementById('announcementEditId').textContent = '#' + announcement.id;
+      document.getElementById('editAnnouncementTitle').value = announcement.title || '';
+      document.getElementById('editAnnouncementContext').value = announcement.context || '';
+      document.getElementById('editAnnouncementExpiredAt').value = isoToLocalInput(announcement.expiredAt);
+      setFormMessage('announcementEditMsg', '', null);
+      setDialogOpen(document.getElementById('announcementEditDialog'), true);
+      requestAnimationFrame(() => document.getElementById('editAnnouncementTitle').focus());
+    }
+
+    function closeEditDialog() {
+      editingAnnouncement = null;
+      setDialogOpen(document.getElementById('announcementEditDialog'), false);
+    }
+
+    async function submitEditAnnouncement(event) {
+      event.preventDefault();
+      if (!editingAnnouncement) return;
+      const title = document.getElementById('editAnnouncementTitle').value.trim();
+      const context = document.getElementById('editAnnouncementContext').value.trim();
+      const expiredAt = localInputToIso(document.getElementById('editAnnouncementExpiredAt').value);
+      if (!title || !context) {
+        setFormMessage('announcementEditMsg', adminT('notices.needTitleAndBody'), 'error');
+        return;
+      }
+      if (!expiredAt) {
+        setFormMessage('announcementEditMsg', adminT('notices.needExpiredAt'), 'error');
+        return;
+      }
+
+      const submitBtn = document.getElementById('submitEditAnnouncementBtn');
+      submitBtn.disabled = true;
+      setFormMessage('announcementEditMsg', adminT('notices.saving'), null);
+      try {
+        const res = await fetchWithAuth(API_BASE + '/admin/notice/announcement/' + encodeURIComponent(editingAnnouncement.id), {
+          method: 'PATCH',
+          body: JSON.stringify({ title, context, expiredAt })
+        });
+        if (!res) return;
+        const data = await res.json();
+        if (!res.ok || !data.isSuccess || !data.response) {
+          setFormMessage('announcementEditMsg', adminT('notices.updateFailed'), 'error');
+          return;
+        }
+        closeEditDialog();
+        adminToast(adminT('notices.updated'), 'success');
+        await loadAnnouncements();
+      } catch (err) {
+        setFormMessage('announcementEditMsg', adminT('common.errorPrefix', { message: err.message || '' }), 'error');
+      } finally {
+        submitBtn.disabled = false;
+      }
+    }
+
+    // ---- delete ----
+    async function deleteAnnouncement(announcement) {
+      const ok = await adminConfirm(adminT('notices.deleteConfirm'), { confirmText: adminT('common.delete') });
+      if (!ok) return;
+      try {
+        const res = await fetchWithAuth(API_BASE + '/admin/notice/announcement/' + encodeURIComponent(announcement.id), {
+          method: 'DELETE'
+        });
+        if (!res) return;
+        const data = await res.json();
+        if (!res.ok || !data.isSuccess) {
+          adminToast(adminT('notices.deleteFailed'), 'error');
+          return;
+        }
+        adminToast(adminT('notices.deleted'), 'success');
+        await loadAnnouncements();
+      } catch (err) {
+        adminToast(adminT('common.errorPrefix', { message: err.message || '' }), 'error');
+      }
+    }
+
+    // =====================================================================
+    // Personal notice
+    // =====================================================================
+    let recipient = null;
+
+    function setRecipientStatus(message) {
+      const status = document.getElementById('recipientStatus');
+      status.textContent = message;
+      status.hidden = !message;
+    }
+
+    function renderRecipient(user) {
+      recipient = user;
+      const form = document.getElementById('personalNoticeForm');
+      if (!user) {
+        form.hidden = true;
+        return;
+      }
+      document.getElementById('recipientNickname').textContent = user.nickname;
+      document.getElementById('recipientEmail').textContent = user.email;
+      setFormMessage('personalNoticeMsg', '', null);
+      form.hidden = false;
+    }
+
+    async function searchRecipient(event) {
+      event.preventDefault();
+      setRecipientStatus('');
+      renderRecipient(null);
+      const keyword = document.getElementById('recipientKeyword').value.trim();
+      if (!keyword) {
+        setRecipientStatus(adminT('notices.noRecipient'));
+        return;
+      }
+      const button = document.getElementById('recipientSearchBtn');
+      button.disabled = true;
+      try {
+        const res = await fetchWithAuth(API_BASE + '/admin/notice/user?keyword=' + encodeURIComponent(keyword));
+        if (!res) return;
+        const data = await res.json();
+        if (!res.ok || !data.isSuccess || !data.response) {
+          setRecipientStatus(adminT('notices.noRecipient'));
+          return;
+        }
+        renderRecipient(data.response);
+        requestAnimationFrame(() => document.getElementById('personalNoticeContext').focus());
+      } catch (err) {
+        adminToast(adminT('common.errorPrefix', { message: err.message || '' }), 'error');
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function sendPersonalNotice(event) {
+      event.preventDefault();
+      if (!recipient) {
+        setFormMessage('personalNoticeMsg', adminT('notices.needRecipient'), 'error');
+        return;
+      }
+      const context = document.getElementById('personalNoticeContext').value.trim();
+      if (!context) {
+        setFormMessage('personalNoticeMsg', adminT('notices.needMessage'), 'error');
+        return;
+      }
+      const btn = document.getElementById('sendPersonalNoticeBtn');
+      btn.disabled = true;
+      setFormMessage('personalNoticeMsg', adminT('notices.sending'), null);
+      try {
+        const res = await fetchWithAuth(API_BASE + '/admin/notice/personal', {
+          method: 'POST',
+          body: JSON.stringify({ userId: recipient.id, context })
+        });
+        if (!res) return;
+        const data = await res.json();
+        if (!res.ok || !data.isSuccess || !data.response) {
+          setFormMessage('personalNoticeMsg', adminT('notices.sendFailed'), 'error');
+          return;
+        }
+        document.getElementById('personalNoticeContext').value = '';
+        // Clears the "Sending..." progress text; the toast is the only success notice.
+        setFormMessage('personalNoticeMsg', '', null);
+        adminToast(adminT('notices.sent', { nickname: data.response.nickname }), 'success');
+      } catch (err) {
+        setFormMessage('personalNoticeMsg', adminT('common.errorPrefix', { message: err.message || '' }), 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // =====================================================================
+    // Wiring
+    // =====================================================================
+    document.getElementById('systemForm').addEventListener('submit', saveSystemInfo);
+
+    document.getElementById('announcementLangFilter').addEventListener('change', loadAnnouncements);
+    document.getElementById('openCreateAnnouncementBtn').addEventListener('click', () => {
+      const dialog = document.getElementById('announcementCreateDialog');
+      setCreateDialogOpen(!dialog.open);
+    });
+    document.getElementById('closeCreateAnnouncementBtn').addEventListener('click', () => setCreateDialogOpen(false, false));
+    document.getElementById('announcementCreateDialog').addEventListener('click', (event) => {
+      if (event.target === event.currentTarget) setCreateDialogOpen(false, false);
+    });
+    document.getElementById('announcementCreateDialog').addEventListener('close', () => {
+      document.getElementById('openCreateAnnouncementBtn').setAttribute('aria-expanded', 'false');
+    });
+    document.getElementById('announcementCreateForm').addEventListener('submit', createAnnouncement);
+
+    document.getElementById('closeEditAnnouncementBtn').addEventListener('click', closeEditDialog);
+    document.getElementById('announcementEditDialog').addEventListener('click', (event) => {
+      if (event.target === event.currentTarget) closeEditDialog();
+    });
+    document.getElementById('announcementEditDialog').addEventListener('close', () => { editingAnnouncement = null; });
+    document.getElementById('announcementEditForm').addEventListener('submit', submitEditAnnouncement);
+
+    document.getElementById('recipientSearchForm').addEventListener('submit', searchRecipient);
+    document.getElementById('personalNoticeForm').addEventListener('submit', sendPersonalNotice);
+
+    document.addEventListener('admin:language-change', () => {
+      renderAnnouncements();
+      if (!recipient && !document.getElementById('recipientStatus').hidden) {
+        setRecipientStatus(adminT('notices.noRecipient'));
+      }
+    });
+
+    resetCreateForm();
+    await Promise.all([loadSystemInfo(), loadAnnouncements()]);
+  </script>
+</body>
+</html>

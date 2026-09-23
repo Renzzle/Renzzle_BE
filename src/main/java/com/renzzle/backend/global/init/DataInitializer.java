@@ -42,8 +42,8 @@ public class DataInitializer implements CommandLineRunner {
 
     private void initializeSystemInfo() {
         try {
-            jdbcTemplate.batchUpdate("INSERT IGNORE INTO system_info (id, version, system_check)\n" +
-                    "VALUES (1, '1.0.0', false);");
+            jdbcTemplate.batchUpdate("INSERT IGNORE INTO system_info (id, android_version, ios_version, system_check)\n" +
+                    "VALUES (1, '1.0.0', '1.0.0', false);");
         } catch (DuplicateKeyException e) {
             log.warn("System info already exists");
         }
