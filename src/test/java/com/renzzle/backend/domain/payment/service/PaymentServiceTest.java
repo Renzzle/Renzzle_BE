@@ -147,7 +147,7 @@ class PaymentServiceTest {
         when(inAppPurchaseRepository.existsByTransactionId("2000000123456789")).thenReturn(false);
         when(appleTransactionVerifier.verify("piece_5000", "2000000123456789"))
                 .thenReturn(new StoreVerificationResult("piece_5000", "2000000123456789"));
-        when(userRepository.findById(1L)).thenReturn(Optional.of(persistedUser));
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(persistedUser));
 
         // when
         VerifyInAppPurchaseResponse response = paymentService.verifyInAppPurchase(principalUser, request);
@@ -180,7 +180,7 @@ class PaymentServiceTest {
         when(inAppPurchaseRepository.existsByPurchaseToken("purchase-token")).thenReturn(false);
         when(googlePlayReceiptVerifier.verify("piece_1000", "purchase-token"))
                 .thenReturn(new StoreVerificationResult("piece_1000", "order-id"));
-        when(userRepository.findById(1L)).thenReturn(Optional.of(persistedUser));
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(persistedUser));
 
         // when
         VerifyInAppPurchaseResponse response = paymentService.verifyInAppPurchase(principalUser, request);
@@ -213,7 +213,7 @@ class PaymentServiceTest {
         when(inAppPurchaseRepository.existsByPurchaseToken("purchase-token")).thenReturn(false);
         when(googlePlayReceiptVerifier.verify("remove_ads", "purchase-token"))
                 .thenReturn(new StoreVerificationResult("remove_ads", "order-id"));
-        when(userRepository.findById(1L)).thenReturn(Optional.of(persistedUser));
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(persistedUser));
 
         // when
         VerifyInAppPurchaseResponse response = paymentService.verifyInAppPurchase(principalUser, request);

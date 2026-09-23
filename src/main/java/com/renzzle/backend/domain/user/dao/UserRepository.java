@@ -2,7 +2,9 @@ package com.renzzle.backend.domain.user.dao;
 
 import com.renzzle.backend.domain.user.domain.Title;
 import com.renzzle.backend.domain.user.domain.UserEntity;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,6 +21,13 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     boolean existsByDeviceId(String deviceId);
 
     Optional<UserEntity> findByEmail(String email);
+
+    Optional<UserEntity> findByNickname(String nickname);
+
+    // Takes a row lock so that concurrent requests cannot read the same currency and both spend it.
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT u FROM UserEntity u WHERE u.id = :userId")
+    Optional<UserEntity> findByIdForUpdate(@Param("userId") Long userId);
 
     @Modifying
     @Query("UPDATE UserEntity u SET u.status = (SELECT s FROM Status s WHERE s.name = 'DELETED'), " +

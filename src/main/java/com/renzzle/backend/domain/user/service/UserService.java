@@ -51,7 +51,7 @@ public class UserService {
 
     @Transactional
     public ChangeNicknameResponse changeNickname(UserEntity user, String nickname) {
-        Optional<UserEntity> persistedUser = userRepository.findById(user.getId());
+        Optional<UserEntity> persistedUser = userRepository.findByIdForUpdate(user.getId());
 
         if (persistedUser.isEmpty()) {
             throw new CustomException(ErrorCode.CANNOT_FIND_USER);

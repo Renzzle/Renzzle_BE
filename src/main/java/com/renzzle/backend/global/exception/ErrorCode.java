@@ -11,6 +11,7 @@ public enum ErrorCode {
     // Global
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR,"G500","Internal server error"),
     VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "G400", "Invalid request"),
+    INVALID_APP_KEY(HttpStatus.FORBIDDEN, "G403", "Forbidden request"),
     GLOBAL_NOT_FOUND(HttpStatus.NOT_FOUND, "G404", "Resource not found"),
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "G405", "Unsupported HTTP method"),
     UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "G415", "Unsupported media type"),
@@ -20,7 +21,9 @@ public enum ErrorCode {
     CONSTRAINT_VIOLATION_ERROR(HttpStatus.CONFLICT, "S409", "Database constraint violated"),
 
     // Auth
-    EXCEED_EMAIL_AUTH_REQUEST(HttpStatus.TOO_MANY_REQUESTS, "A429", "Too many email verification requests"),
+    EXCEED_EMAIL_AUTH_REQUEST(HttpStatus.TOO_MANY_REQUESTS, "A4290", "Too many email verification requests"),
+    EXCEED_EMAIL_AUTH_ATTEMPT(HttpStatus.TOO_MANY_REQUESTS, "A4291", "Too many verification code attempts"),
+    EXCEED_LOGIN_ATTEMPT(HttpStatus.TOO_MANY_REQUESTS, "A4292", "Too many login attempts"),
     INVALID_EMAIL_AUTH_CODE(HttpStatus.UNAUTHORIZED, "A4010", "Invalid verification code"),
     INVALID_AUTH_VERITY_TOKEN(HttpStatus.UNAUTHORIZED, "A4011", "Invalid email verification token"),
     INVALID_EMAIL(HttpStatus.UNAUTHORIZED, "A4012", "Invalid email"),
@@ -79,6 +82,9 @@ public enum ErrorCode {
     EXCEED_DAILY_PUZZLE_UPLOAD(HttpStatus.TOO_MANY_REQUESTS, "P429", "Daily puzzle upload limit reached"),
     SESSION_ALREADY_ENDED(HttpStatus.GONE, "P4100", "Session already ended"),
     SESSION_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "P5000", "Failed to generate session ID"),
+
+    // Notice
+    CANNOT_FIND_ANNOUNCEMENT(HttpStatus.NOT_FOUND, "N4040", "Announcement not found"),
 
     ;
 

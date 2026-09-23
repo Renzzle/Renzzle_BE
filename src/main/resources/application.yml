@@ -11,6 +11,10 @@ spring:
     username: ${DB_USER}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      connection-timeout: 10000
+      leak-detection-threshold: 20000
 
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
@@ -55,6 +59,8 @@ spring:
       mode: always
 
 app:
+  # Required in the x-app-key header of every /api request
+  key: ${APP_KEY:}
   mail:
     from: ${MAIL_FROM}
     from-name: ${MAIL_FROM_NAME:Renzzle}

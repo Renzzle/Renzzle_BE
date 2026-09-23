@@ -24,6 +24,7 @@ public class EmailService {
 
     public static final int EMAIL_CODE_VALID_SECOND = 5 * 60; // 5 minute
     public static final int EMAIL_VERIFICATION_LIMIT = 5;
+    public static final int EMAIL_CODE_ATTEMPT_LIMIT = 50;
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
@@ -88,21 +89,42 @@ public class EmailService {
         return count;
     }
 
+    // Issuing a new code replaces the previous one and clears its attempt count
     private void saveConfirmCode(String address, String code, int count) {
         AuthEmailEntity result = AuthEmailEntity
                 .builder()
                 .email(address)
                 .code(code)
                 .count(count + 1)
+                .attemptCount(0)
+                .verified(false)
                 .issuedAt(clock.instant().toString())
                 .build();
         emailRepository.save(result);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ConfirmCodeResponse confirmCode(ConfirmCodeRequest request) {
-        boolean isCorrect = verifyCode(request.email(), request.code());
-        if(!isCorrect) throw new CustomException(ErrorCode.INVALID_EMAIL_AUTH_CODE);
+        AuthEmailEntity emailEntity = emailRepository.findById(request.email())
+                .orElseThrow(() -> new CustomException(ErrorCode.INVALID_EMAIL_AUTH_CODE));
+
+        // A code is single use, so an already verified one is treated the same as a wrong one
+        if(emailEntity.verified()) {
+            throw new CustomException(ErrorCode.INVALID_EMAIL_AUTH_CODE);
+        }
+
+        // Guessing is cut off once the limit is hit; the caller has to request a new code.
+        // The record itself is kept so that the send count cannot be reset by burning attempts.
+        if(emailEntity.attemptCount() >= EMAIL_CODE_ATTEMPT_LIMIT) {
+            throw new CustomException(ErrorCode.EXCEED_EMAIL_AUTH_ATTEMPT);
+        }
+
+        if(isExpired(emailEntity) || !request.code().equals(emailEntity.code())) {
+            emailRepository.save(emailEntity.increaseAttemptCount());
+            throw new CustomException(ErrorCode.INVALID_EMAIL_AUTH_CODE);
+        }
+
+        emailRepository.save(emailEntity.verify());
 
         String authVerityToken = authService.createAuthVerityToken(request.email());
 
@@ -112,21 +134,9 @@ public class EmailService {
                 .build();
     }
 
-    private boolean verifyCode(String address, String code) {
-        Optional<AuthEmailEntity> emailEntity = emailRepository.findById(address);
-
-        if(emailEntity.isPresent()) {
-            Instant now = clock.instant();
-            Instant issuedAt = Instant.parse(emailEntity.get().issuedAt());
-
-            Duration duration = Duration.between(issuedAt, now);
-            if (duration.toSeconds() > EMAIL_CODE_VALID_SECOND) {
-                return false;
-            }
-        }
-
-        return emailEntity.map(authEmailEntity ->
-                authEmailEntity.code().equals(code)).orElse(false);
+    private boolean isExpired(AuthEmailEntity emailEntity) {
+        Duration duration = Duration.between(Instant.parse(emailEntity.issuedAt()), clock.instant());
+        return duration.toSeconds() > EMAIL_CODE_VALID_SECOND;
     }
 
 }
