@@ -11,7 +11,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface LatestRankPuzzleRepository extends JpaRepository<LatestRankPuzzle, Long> {
-    Optional<LatestRankPuzzle> findTopByUserOrderByAssignedAtDesc(UserEntity user);
+    // Ordered by id, not assignedAt: two puzzles can share an assignment instant, and a tie there
+    // would let a result be recorded against the wrong assignment.
+    Optional<LatestRankPuzzle> findTopByUserOrderByIdDesc(UserEntity user);
 
     List<LatestRankPuzzle> findAllByUserOrderByAssignedAtAsc(UserEntity user);
 

@@ -95,7 +95,7 @@ class RankRepositoryTest {
         );
 
         // When
-        Optional<LatestRankPuzzle> saved = latestRankPuzzleRepository.findTopByUserOrderByAssignedAtDesc(user);
+        Optional<LatestRankPuzzle> saved = latestRankPuzzleRepository.findTopByUserOrderByIdDesc(user);
 
         // Then
         assertThat(saved).isPresent();

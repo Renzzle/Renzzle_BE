@@ -86,7 +86,7 @@ class RankServiceTest {
     void startRankGame_WhenUserNotFound_ThenThrowsCustomException() {
         // Given
         UserEntity dummy = TestUserFactory.createTestUser("noname", 1500.0);
-        when(userRepository.findById(dummy.getId())).thenReturn(Optional.empty());
+        when(userRepository.findByIdForUpdate(dummy.getId())).thenReturn(Optional.empty());
 
         // When
         CustomException ex = assertThrows(CustomException.class, () ->
@@ -110,7 +110,7 @@ class RankServiceTest {
                 .depth(3)
                 .build();
 
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(latestRankPuzzleRepository.findAllByUser(user)).thenReturn(Collections.emptyList());
 
         when(trainingPuzzleRepository.findAvailableTrainingPuzzlesSortedByRating(user))
@@ -151,7 +151,7 @@ class RankServiceTest {
                 .depth(3)
                 .build();
 
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(latestRankPuzzleRepository.findAllByUser(user)).thenReturn(Collections.emptyList());
         when(trainingPuzzleRepository.findAvailableTrainingPuzzlesSortedByRating(user))
                 .thenReturn(List.of(puzzle));
@@ -179,7 +179,7 @@ class RankServiceTest {
         UserEntity user = TestUserFactory.createTestUser("u1", 1500);
         ReflectionTestUtils.setField(user, "id", 1L);
 
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(valueOperations.get("1")).thenReturn(null);
 
         RankResultRequest request = new RankResultRequest(true);
@@ -199,7 +199,7 @@ class RankServiceTest {
         RankSessionData session = new RankSessionData();
         session.setStarted(false);
 
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(valueOperations.get("1")).thenReturn(session);
 
         RankResultRequest request = new RankResultRequest(true);
@@ -219,7 +219,7 @@ class RankServiceTest {
         RankSessionData session = new RankSessionData();
         session.setStarted(true);
 
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(valueOperations.get("1")).thenReturn(session);
         when(redisSessionTemplate.getExpire("1", TimeUnit.SECONDS)).thenReturn(0L); // or null
 
@@ -238,15 +238,11 @@ class RankServiceTest {
 
         RankSessionData session = new RankSessionData();
         session.setStarted(true);
-        session.setMmrBeforePenalty(1500);
-        session.setRatingBeforePenalty(1500);
-        session.setLastProblemRating(1400);
-        session.setTargetWinProbability(0.7);
 
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(valueOperations.get("1")).thenReturn(session);
         when(redisSessionTemplate.getExpire("1", TimeUnit.SECONDS)).thenReturn(60L);
-        when(latestRankPuzzleRepository.findTopByUserOrderByAssignedAtDesc(user)).thenReturn(Optional.empty());
+        when(latestRankPuzzleRepository.findTopByUserOrderByIdDesc(user)).thenReturn(Optional.empty());
         // When
         RankResultRequest request = new RankResultRequest(true);
 
@@ -263,10 +259,6 @@ class RankServiceTest {
 
         RankSessionData session = new RankSessionData();
         session.setStarted(true);
-        session.setMmrBeforePenalty(1500);
-        session.setRatingBeforePenalty(1500);
-        session.setLastProblemRating(1400);
-        session.setTargetWinProbability(0.7);
 
         // Existing problem (previous round's problem)
         LatestRankPuzzle previous = LatestRankPuzzle.builder()
@@ -276,6 +268,10 @@ class RankServiceTest {
                 .isSolved(false)
                 .assignedAt(clock.instant())
                 .winColor(WinColor.getWinColor("WHITE"))
+                .puzzleRating(1400)
+                .ratingBeforePenalty(1500)
+                .mmrBeforePenalty(1500)
+                .targetWinProbability(0.7)
                 .build();
 
         // Next problem candidate (TrainingPuzzle)
@@ -288,10 +284,10 @@ class RankServiceTest {
                 .build();
 
 
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(valueOperations.get("1")).thenReturn(session);
         when(redisSessionTemplate.getExpire("1", TimeUnit.SECONDS)).thenReturn(120L);
-        when(latestRankPuzzleRepository.findTopByUserOrderByAssignedAtDesc(user)).thenReturn(Optional.of(previous));
+        when(latestRankPuzzleRepository.findTopByUserOrderByIdDesc(user)).thenReturn(Optional.of(previous));
         when(trainingPuzzleRepository.findAvailableTrainingPuzzlesSortedByRating(user)).thenReturn(List.of(candidatePuzzle));
         when(communityPuzzleRepository.findAvailableCommunityPuzzlesSortedByRating(user)).thenReturn(Collections.emptyList());
         when(clock.instant()).thenReturn(Instant.parse("2025-01-01T00:00:00Z"));
