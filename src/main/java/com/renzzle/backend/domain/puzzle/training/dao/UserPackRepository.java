@@ -16,6 +16,8 @@ public interface UserPackRepository extends JpaRepository<UserPack, Long> {
 
     Optional<UserPack> findByUserIdAndPackId(Long userId, Long id);
 
+    boolean existsByUserIdAndPackId(Long userId, Long packId);
+
     void deleteAllByPack_Id(Long packId);
 
     @Modifying

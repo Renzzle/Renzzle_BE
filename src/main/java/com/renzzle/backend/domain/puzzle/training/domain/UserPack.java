@@ -11,6 +11,12 @@ import org.hibernate.annotations.OnDeleteAction;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder(toBuilder = true)
+@Table(
+        name = "user_pack",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"user_id", "pack_id"})
+        }
+)
 public class UserPack {
 
     @Id
