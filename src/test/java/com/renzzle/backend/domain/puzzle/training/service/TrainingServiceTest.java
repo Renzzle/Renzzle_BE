@@ -857,6 +857,42 @@ public class TrainingServiceTest {
         }
 
         @Test
+        void purchaseTrainingPack_WhenAlreadyOwned_ThenThrowsAlreadyOwnedPackAndDoesNotCharge() {
+            // given
+            UserEntity user = UserEntity.builder()
+                    .id(100L)
+                    .email("test@example.com")
+                    .password("password")
+                    .nickname("testUser")
+                    .deviceId("dummy-device")
+                    .currency(2000)
+                    .lastAccessedAt(FIXED_INSTANT)
+                    .deletedAt(FIXED_INSTANT.plus(1, ChronoUnit.DAYS))
+                    .status(Status.getDefaultStatus())
+                    .build();
+
+            Pack pack = Pack.builder()
+                    .id(1L)
+                    .price(1000)
+                    .build();
+            PurchaseTrainingPackRequest request = new PurchaseTrainingPackRequest(1L);
+
+            when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
+            when(packRepository.findById(1L)).thenReturn(Optional.of(pack));
+            when(userPackRepository.existsByUserIdAndPackId(user.getId(), pack.getId())).thenReturn(true);
+
+            // when
+            CustomException exception = assertThrows(CustomException.class, () ->
+                    trainingService.purchaseTrainingPack(user, request)
+            );
+
+            // then
+            assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.ALREADY_OWNED_PACK);
+            assertThat(user.getCurrency()).isEqualTo(2000);
+            verify(userPackRepository, never()).save(any());
+        }
+
+        @Test
         void purchaseTrainingPuzzleAnswer_WhenPuzzleMissing_ThenThrowsCannotFindTrainingPuzzle() {
             // given
             Long puzzleId = 1L;

@@ -432,6 +432,12 @@ public class TrainingService {
         Pack pack = packRepository.findById(request.packId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
+        // The user row is already locked above, so concurrent purchases by the same user are
+        // serialized here and cannot both pass this check
+        if (userPackRepository.existsByUserIdAndPackId(lockedUser.getId(), pack.getId())) {
+            throw new CustomException(ErrorCode.ALREADY_OWNED_PACK);
+        }
+
         lockedUser.purchase(pack.getPrice());
 
         UserPack userPack = UserPack.builder()
@@ -549,7 +555,7 @@ public class TrainingService {
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
         // Ignore if the user already owns it
-        if (userPackRepository.findByUserIdAndPackId(user.getId(), packId).isPresent()) {
+        if (userPackRepository.existsByUserIdAndPackId(user.getId(), packId)) {
             return;
         }
 
