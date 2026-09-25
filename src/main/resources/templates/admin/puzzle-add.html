@@ -339,8 +339,9 @@
 
     canvas.addEventListener('click', (e) => {
       const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      const scale = CANVAS_LOGICAL_SIZE / rect.width;  // Responsive display size to logical coordinate correction
+      const x = (e.clientX - rect.left) * scale;
+      const y = (e.clientY - rect.top) * scale;
 
       const col = Math.round((x - MARGIN) / CELL_SIZE);
       const row = 14 - Math.round((y - MARGIN) / CELL_SIZE);
