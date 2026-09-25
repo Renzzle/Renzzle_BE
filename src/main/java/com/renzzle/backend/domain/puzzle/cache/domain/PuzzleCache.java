@@ -48,8 +48,16 @@ public class PuzzleCache {
     @Column(name = "puzzle_id", nullable = false)
     private Long puzzleId;
 
-    @Column(name = "root_board_state", nullable = false, length = 500)
+    // matches board_status on the puzzle tables, which this column is copied from
+    @Column(name = "root_board_state", nullable = false, length = 1023)
     private String rootBoardState;
+
+    /**
+     * The puzzle's answer at the time the cache was seeded. Kept so the seeded entries can be
+     * recomputed and protected from being overwritten by a manual save.
+     */
+    @Column(name = "solution_line", length = 1023)
+    private String solutionLine;
 
     @Lob
     @Column(name = "solution_dag", columnDefinition = "MEDIUMBLOB")

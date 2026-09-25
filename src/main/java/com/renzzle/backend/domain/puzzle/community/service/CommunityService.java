@@ -5,6 +5,8 @@ import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzl
 import com.renzzle.backend.domain.puzzle.community.api.response.AddCommunityPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.cache.api.request.GetCommunityPuzzlesForCacheRequest;
 import com.renzzle.backend.domain.puzzle.cache.api.response.CommunityPuzzleCachePickerResponse;
+import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
+import com.renzzle.backend.domain.puzzle.cache.service.PuzzleCacheService;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleForAdminResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleAnswerResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlesResponse;
@@ -46,6 +48,7 @@ public class CommunityService {
     private final CommunityPuzzleRepository communityPuzzleRepository;
     private final UserCommunityPuzzleRepository userCommunityPuzzleRepository;
     private final UserRepository userRepository;
+    private final PuzzleCacheService puzzleCacheService;
 
     @Value("${community.puzzle.daily-upload-limit}")
     private int dailyUploadLimit;
@@ -70,6 +73,9 @@ public class CommunityService {
                 .build();
 
         CommunityPuzzle result = communityPuzzleRepository.save(puzzle);
+
+        puzzleCacheService.seedSolutionPath(
+                PuzzleType.COMMUNITY, result.getId(), result.getBoardStatus(), result.getAnswer());
 
         return AddCommunityPuzzleResponse.builder()
                 .puzzleId(result.getId())

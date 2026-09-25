@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.puzzle.community.service;
 
+import com.renzzle.backend.domain.puzzle.cache.service.PuzzleCacheService;
 import com.renzzle.backend.domain.puzzle.community.api.request.AddCommunityPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.community.api.response.AddCommunityPuzzleResponse;
@@ -55,6 +56,9 @@ class CommunityServiceTest {
     private UserCommunityPuzzleRepository userCommunityPuzzleRepository;
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private PuzzleCacheService puzzleCacheService;
 
     @InjectMocks
     private CommunityService communityService;

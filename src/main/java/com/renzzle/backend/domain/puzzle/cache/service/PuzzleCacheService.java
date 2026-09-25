@@ -45,6 +45,10 @@ public class PuzzleCacheService {
                         .rootBoardState(currentBoardState)
                         .build());
 
+        if (isSeededPosition(puzzle, zobristHash)) {
+            throw new CustomException(ErrorCode.PROTECTED_SOLUTION_POSITION);
+        }
+
         Map<Long, Integer> solutionDag;
         byte[] existingDag = puzzle.getSolutionDag();
         if (existingDag != null && existingDag.length > 0) {
@@ -58,6 +62,82 @@ public class PuzzleCacheService {
         byte[] serializedDag = solutionSerializer.serialize(solutionDag);
         PuzzleCache updated = puzzle.toBuilder().solutionDag(serializedDag).build();
         puzzleCacheRepository.save(updated);
+    }
+
+    /**
+     * Seeds the cache with the puzzle's intended solution line, so the most travelled path is
+     * answered without waiting for an admin to enter it by hand.
+     * <p>
+     * Only positions where the AI is to move become keys: the user plays the winning color and so
+     * always moves first from the root, which makes every odd move of {@code answer} the AI's reply
+     * to the user move before it. A trailing user move has no reply and contributes no entry.
+     * <p>
+     * The solution line replaces the cached DAG instead of merging into it, so this doubles as
+     * invalidation when a puzzle's board or answer is edited and the old entries no longer apply.
+     *
+     * @param rootBoardState the puzzle's initial board
+     * @param answer         the solution moves played from {@code rootBoardState}
+     */
+    @Transactional
+    public void seedSolutionPath(PuzzleType puzzleType, Long puzzleId, String rootBoardState, String answer) {
+        if (puzzleType == null || puzzleId == null || rootBoardState == null || rootBoardState.isBlank()) {
+            throw new CustomException(ErrorCode.NO_BOARD_STATUS);
+        }
+
+        Map<Long, Integer> solutionPath = buildSolutionPath(rootBoardState, answer);
+
+        PuzzleCache puzzle = puzzleCacheRepository.findByPuzzleTypeAndPuzzleId(puzzleType, puzzleId)
+                .orElse(null);
+        if (puzzle == null) {
+            if (solutionPath.isEmpty()) {
+                return;
+            }
+            puzzle = PuzzleCache.builder()
+                    .puzzleType(puzzleType)
+                    .puzzleId(puzzleId)
+                    .rootBoardState(rootBoardState)
+                    .build();
+        }
+
+        PuzzleCache seeded = puzzle.toBuilder()
+                .rootBoardState(rootBoardState)
+                .solutionLine(answer)
+                .solutionDag(solutionSerializer.serialize(solutionPath))
+                .build();
+        puzzleCacheRepository.save(seeded);
+    }
+
+    /**
+     * A seeded position is answered by the puzzle's own solution, so a manual save must not change
+     * it. Correcting the solution means editing the puzzle's answer, which reseeds the cache.
+     */
+    private boolean isSeededPosition(PuzzleCache puzzle, long zobristHash) {
+        String solutionLine = puzzle.getSolutionLine();
+        if (solutionLine == null || solutionLine.isBlank()) {
+            return false;
+        }
+        return buildSolutionPath(puzzle.getRootBoardState(), solutionLine).containsKey(zobristHash);
+    }
+
+    private Map<Long, Integer> buildSolutionPath(String rootBoardState, String answer) {
+        final int[] rootCells;
+        final int[] answerCells;
+        try {
+            rootCells = ZobristHashUtils.parseCellIndexes(rootBoardState);
+            answerCells = ZobristHashUtils.parseCellIndexes(answer);
+        } catch (IllegalArgumentException e) {
+            throw new CustomException(e.getMessage(), ErrorCode.VALIDATION_ERROR);
+        }
+
+        Map<Long, Integer> solutionPath = new HashMap<>();
+        long hash = ZobristHashUtils.hashFromCellIndexes(rootCells);
+        int moveIndex = rootCells.length;
+        for (int i = 0; i + 1 < answerCells.length; i += 2) {
+            hash = ZobristHashUtils.applyMove(hash, answerCells[i], moveIndex++);
+            solutionPath.put(hash, answerCells[i + 1]);
+            hash = ZobristHashUtils.applyMove(hash, answerCells[i + 1], moveIndex++);
+        }
+        return solutionPath;
     }
 
     @Transactional(readOnly = true)

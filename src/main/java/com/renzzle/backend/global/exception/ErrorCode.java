@@ -78,6 +78,7 @@ public enum ErrorCode {
     EMPTY_SESSION_DATA(HttpStatus.NOT_FOUND, "P4047", "Session data not found"),
     LATEST_PUZZLE_NOT_FOUND(HttpStatus.NOT_FOUND, "P4048", "No previous ranked puzzle"),
     TREND_PUZZLE_DUPLICATED(HttpStatus.CONFLICT, "P4090", "Duplicate trend puzzle"),
+    PROTECTED_SOLUTION_POSITION(HttpStatus.CONFLICT, "P4091", "Position belongs to the puzzle's solution line"),
     EXCEED_DAILY_PUZZLE_UPLOAD(HttpStatus.TOO_MANY_REQUESTS, "P429", "Daily puzzle upload limit reached"),
     SESSION_ALREADY_ENDED(HttpStatus.GONE, "P4100", "Session already ended"),
     SESSION_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "P5000", "Failed to generate session ID"),

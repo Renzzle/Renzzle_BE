@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -213,6 +214,142 @@ class PuzzleCacheServiceTest {
                 .hasSize(2)
                 .containsEntry(existingHash, existingMove)
                 .containsEntry(zobristHash, newMove);
+    }
+
+    @Test
+    void savePuzzle_ShouldRejectWritingOverASeededPosition() {
+        PuzzleCache seeded = PuzzleCache.builder()
+                .puzzleType(TYPE).puzzleId(PUZZLE_ID)
+                .rootBoardState(ROOT_BOARD_STATE)
+                .solutionLine(SOLUTION_LINE)
+                .solutionDag(new byte[] {1, 2, 3})
+                .build();
+
+        when(puzzleCacheRepository.findByPuzzleTypeAndPuzzleId(TYPE, PUZZLE_ID)).thenReturn(Optional.of(seeded));
+
+        // "h8h9i8" is the position the solution line answers with i9
+        CustomException exception = assertThrows(
+                CustomException.class,
+                () -> puzzleCacheService.savePuzzle(TYPE, PUZZLE_ID, "h8h9i8", "a1")
+        );
+
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PROTECTED_SOLUTION_POSITION);
+        verify(puzzleCacheRepository, never()).save(any());
+    }
+
+    @Test
+    void savePuzzle_ShouldStillAcceptPositionsOffTheSolutionLine() {
+        byte[] existingDagBytes = new byte[] {1, 2, 3};
+        PuzzleCache seeded = PuzzleCache.builder()
+                .puzzleType(TYPE).puzzleId(PUZZLE_ID)
+                .rootBoardState(ROOT_BOARD_STATE)
+                .solutionLine(SOLUTION_LINE)
+                .solutionDag(existingDagBytes)
+                .build();
+
+        when(puzzleCacheRepository.findByPuzzleTypeAndPuzzleId(TYPE, PUZZLE_ID)).thenReturn(Optional.of(seeded));
+        when(solutionSerializer.deserialize(existingDagBytes)).thenReturn(new HashMap<>());
+        when(solutionSerializer.serialize(anyMap())).thenReturn(new byte[] {9});
+
+        // l5 is not played anywhere in the solution line, so this is a branch the admin may fill in
+        puzzleCacheService.savePuzzle(TYPE, PUZZLE_ID, "h8h9l5", "a1");
+
+        verify(puzzleCacheRepository).save(any());
+    }
+
+    // ========== seedSolutionPath ==========
+
+    private static final String ROOT_BOARD_STATE = "h8h9";
+    // i8 by the user, i9 by the AI, j8 by the user, j9 by the AI, k8 by the user
+    private static final String SOLUTION_LINE = "i8i9j8j9k8";
+    private static final int CELL_I9 = 128;
+    private static final int CELL_J9 = 143;
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void seedSolutionPath_ShouldCacheEveryAiReplyAndSkipTheTrailingUserMove() {
+        byte[] serialized = new byte[] {9, 8, 7};
+        when(puzzleCacheRepository.findByPuzzleTypeAndPuzzleId(TYPE, PUZZLE_ID)).thenReturn(Optional.empty());
+        when(solutionSerializer.serialize(anyMap())).thenReturn(serialized);
+
+        puzzleCacheService.seedSolutionPath(TYPE, PUZZLE_ID, ROOT_BOARD_STATE, SOLUTION_LINE);
+
+        ArgumentCaptor<Map<Long, Integer>> pathCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(solutionSerializer).serialize(pathCaptor.capture());
+
+        // keys are re-hashed from the full board string, independently of the incremental hashing
+        assertThat(pathCaptor.getValue())
+                .hasSize(2)
+                .containsEntry(ZobristHashUtils.hashFromBoardStatus("h8h9i8"), CELL_I9)
+                .containsEntry(ZobristHashUtils.hashFromBoardStatus("h8h9i8i9j8"), CELL_J9);
+    }
+
+    @Test
+    void seedSolutionPath_ShouldStoreRootBoardStateAndSolutionLine() {
+        when(puzzleCacheRepository.findByPuzzleTypeAndPuzzleId(TYPE, PUZZLE_ID)).thenReturn(Optional.empty());
+        when(solutionSerializer.serialize(anyMap())).thenReturn(new byte[] {9});
+
+        puzzleCacheService.seedSolutionPath(TYPE, PUZZLE_ID, ROOT_BOARD_STATE, SOLUTION_LINE);
+
+        ArgumentCaptor<PuzzleCache> cacheCaptor = ArgumentCaptor.forClass(PuzzleCache.class);
+        verify(puzzleCacheRepository).save(cacheCaptor.capture());
+
+        PuzzleCache saved = cacheCaptor.getValue();
+        assertThat(saved.getPuzzleType()).isEqualTo(TYPE);
+        assertThat(saved.getPuzzleId()).isEqualTo(PUZZLE_ID);
+        assertThat(saved.getRootBoardState()).isEqualTo(ROOT_BOARD_STATE);
+        assertThat(saved.getSolutionLine()).isEqualTo(SOLUTION_LINE);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void seedSolutionPath_ShouldReplaceExistingDag_SoStaleEntriesDoNotSurvive() {
+        PuzzleCache existing = PuzzleCache.builder()
+                .puzzleType(TYPE).puzzleId(PUZZLE_ID)
+                .rootBoardState("a1a2")
+                .solutionDag(new byte[] {1, 2, 3})
+                .build();
+
+        when(puzzleCacheRepository.findByPuzzleTypeAndPuzzleId(TYPE, PUZZLE_ID)).thenReturn(Optional.of(existing));
+        when(solutionSerializer.serialize(anyMap())).thenReturn(new byte[] {9});
+
+        puzzleCacheService.seedSolutionPath(TYPE, PUZZLE_ID, ROOT_BOARD_STATE, SOLUTION_LINE);
+
+        ArgumentCaptor<Map<Long, Integer>> pathCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(solutionSerializer).serialize(pathCaptor.capture());
+        assertThat(pathCaptor.getValue()).hasSize(2);
+
+        ArgumentCaptor<PuzzleCache> cacheCaptor = ArgumentCaptor.forClass(PuzzleCache.class);
+        verify(puzzleCacheRepository).save(cacheCaptor.capture());
+        assertThat(cacheCaptor.getValue().getRootBoardState()).isEqualTo(ROOT_BOARD_STATE);
+    }
+
+    @Test
+    void seedSolutionPath_ShouldNotCreateEntry_WhenSolutionHasNoAiReply() {
+        when(puzzleCacheRepository.findByPuzzleTypeAndPuzzleId(TYPE, PUZZLE_ID)).thenReturn(Optional.empty());
+
+        puzzleCacheService.seedSolutionPath(TYPE, PUZZLE_ID, ROOT_BOARD_STATE, "i8");
+
+        verify(puzzleCacheRepository, never()).save(any());
+        verify(solutionSerializer, never()).serialize(anyMap());
+    }
+
+    @Test
+    void seedSolutionPath_ShouldThrow_WhenRootBoardStateIsBlank() {
+        CustomException exception = assertThrows(
+                CustomException.class,
+                () -> puzzleCacheService.seedSolutionPath(TYPE, PUZZLE_ID, "  ", SOLUTION_LINE)
+        );
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.NO_BOARD_STATUS);
+    }
+
+    @Test
+    void seedSolutionPath_ShouldThrow_WhenSolutionLineIsMalformed() {
+        CustomException exception = assertThrows(
+                CustomException.class,
+                () -> puzzleCacheService.seedSolutionPath(TYPE, PUZZLE_ID, ROOT_BOARD_STATE, "z9")
+        );
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_ERROR);
     }
 
     // ========== getNextMoveCandidates ==========

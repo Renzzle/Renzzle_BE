@@ -2,6 +2,7 @@ package com.renzzle.backend.domain.puzzle.training.service;
 
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.puzzle.cache.dao.PuzzleCacheRepository;
+import com.renzzle.backend.domain.puzzle.cache.service.PuzzleCacheService;
 import com.renzzle.backend.domain.puzzle.shared.util.RatingUtil;
 import com.renzzle.backend.domain.puzzle.training.api.request.*;
 import com.renzzle.backend.domain.puzzle.training.api.response.*;
@@ -57,6 +58,9 @@ public class TrainingServiceTest {
 
     @Mock
     private PuzzleCacheRepository puzzleCacheRepository;
+
+    @Mock
+    private PuzzleCacheService puzzleCacheService;
 
     @Mock
     private UserRepository userRepository;

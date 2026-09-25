@@ -3,6 +3,7 @@ package com.renzzle.backend.domain.puzzle.training.service;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.puzzle.cache.dao.PuzzleCacheRepository;
 import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
+import com.renzzle.backend.domain.puzzle.cache.service.PuzzleCacheService;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackDetailForAdminResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackPurchaseResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackResponse;
@@ -45,6 +46,7 @@ public class TrainingService {
     private final PackTranslationRepository packTranslationRepository;
     private final UserPackRepository userPackRepository;
     private final PuzzleCacheRepository puzzleCacheRepository;
+    private final PuzzleCacheService puzzleCacheService;
     private final UserRepository userRepository;
     private final Clock clock;
 
@@ -79,7 +81,12 @@ public class TrainingService {
                 .winColor(winColor)
                 .build();
 
-        return trainingPuzzleRepository.save(puzzle);
+        TrainingPuzzle saved = trainingPuzzleRepository.save(puzzle);
+
+        puzzleCacheService.seedSolutionPath(
+                PuzzleType.TRAINING, saved.getId(), saved.getBoardStatus(), saved.getAnswer());
+
+        return saved;
     }
 
     @Transactional
@@ -126,7 +133,16 @@ public class TrainingService {
             puzzleBuilder.rating(RatingUtil.puzzleRating(effectiveDepth, effectiveWinColor));
         }
 
-        return trainingPuzzleRepository.save(puzzleBuilder.build());
+        TrainingPuzzle modified = trainingPuzzleRepository.save(puzzleBuilder.build());
+
+        // cached replies are keyed by board position, so editing either the board or the solution
+        // line strands every existing entry; reseeding replaces them with the new line
+        if (request.boardStatus() != null || request.answer() != null) {
+            puzzleCacheService.seedSolutionPath(
+                    PuzzleType.TRAINING, modified.getId(), modified.getBoardStatus(), modified.getAnswer());
+        }
+
+        return modified;
     }
 
     // service test, repo test
