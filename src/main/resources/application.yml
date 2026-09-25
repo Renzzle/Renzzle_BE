@@ -35,19 +35,25 @@ spring:
     secret: ${JWT_SECRET_KEY}
 
   mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${GMAIL_ADDRESS}
-    password: ${GMAIL_PASSWORD}
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         transport:
           protocol: smtp
         smtp:
           auth: true
+          connectiontimeout: 5000
           timeout: 5000
+          writetimeout: 5000
+          from: ${MAIL_FROM}
           starttls:
             enable: true
+            required: true
+          ssl:
+            protocols: TLSv1.2 TLSv1.3
   sql:
     init:
       mode: always
@@ -55,6 +61,12 @@ spring:
 app:
   # Required in the x-app-key header of every /api request
   key: ${APP_KEY:}
+  mail:
+    from: ${MAIL_FROM}
+    from-name: ${MAIL_FROM_NAME:Renzzle}
+  admin:
+    email: ${ADMIN_EMAIL}
+    password: ${ADMIN_PASSWORD}
 
 rank:
   session:
