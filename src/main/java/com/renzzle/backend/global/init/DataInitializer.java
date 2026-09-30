@@ -28,9 +28,11 @@ public class DataInitializer implements CommandLineRunner {
     private final AdminRepository adminRepository;
     private final JdbcTemplate jdbcTemplate;
 
-    @Value("${spring.mail.username}")
+    // Admin credentials are independent of the SMTP account: with OCI Email Delivery,
+    // spring.mail.username is an OCID-formatted SMTP credential, not an email address.
+    @Value("${app.admin.email}")
     private String adminEmail;
-    @Value("${spring.mail.password}")
+    @Value("${app.admin.password}")
     private String adminPassword;
 
     @Override

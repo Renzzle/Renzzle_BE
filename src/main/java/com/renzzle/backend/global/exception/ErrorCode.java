@@ -11,6 +11,7 @@ public enum ErrorCode {
     // Global
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR,"G500","Internal server error"),
     VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "G400", "Invalid request"),
+    INVALID_APP_KEY(HttpStatus.FORBIDDEN, "G403", "Forbidden request"),
     GLOBAL_NOT_FOUND(HttpStatus.NOT_FOUND, "G404", "Resource not found"),
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "G405", "Unsupported HTTP method"),
     UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "G415", "Unsupported media type"),
@@ -78,6 +79,7 @@ public enum ErrorCode {
     EMPTY_SESSION_DATA(HttpStatus.NOT_FOUND, "P4047", "Session data not found"),
     LATEST_PUZZLE_NOT_FOUND(HttpStatus.NOT_FOUND, "P4048", "No previous ranked puzzle"),
     TREND_PUZZLE_DUPLICATED(HttpStatus.CONFLICT, "P4090", "Duplicate trend puzzle"),
+    ALREADY_OWNED_PACK(HttpStatus.CONFLICT, "P4091", "Training pack already owned"),
     PROTECTED_SOLUTION_POSITION(HttpStatus.CONFLICT, "P4092", "Position belongs to the puzzle's solution line"),
     EXCEED_DAILY_PUZZLE_UPLOAD(HttpStatus.TOO_MANY_REQUESTS, "P429", "Daily puzzle upload limit reached"),
     SESSION_ALREADY_ENDED(HttpStatus.GONE, "P4100", "Session already ended"),
