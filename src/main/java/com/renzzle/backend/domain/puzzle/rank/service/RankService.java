@@ -37,7 +37,6 @@ import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 
 import static com.renzzle.backend.domain.puzzle.shared.util.ELOUtils.TARGET_WIN_PROBABILITY;
-import static com.renzzle.backend.domain.puzzle.shared.util.ELOUtils.WIN_PROBABILITY_DELTA;
 import static com.renzzle.backend.global.common.constant.ItemPrice.RANK_REWARD;
 
 @Service
@@ -128,15 +127,14 @@ public class RankService {
         double userBeforeMmr = previousPuzzle.getMmrBeforePenalty();
         double userBeforeRating = previousPuzzle.getRatingBeforePenalty();
         double lastProblemRating = previousPuzzle.getPuzzleRating();
-        double winProbability = previousPuzzle.getTargetWinProbability();
+        double winProbability = ELOUtils.nextTargetWinProbability(
+                previousPuzzle.getTargetWinProbability(), request.isSolved());
         /*
         If the previous puzzle was solved,
         adjust the target win probability for the next puzzle,
         apply the multiplier to adjust the mmr and rating values, and update the variables
          */
         if (request.isSolved()) {
-            winProbability -= WIN_PROBABILITY_DELTA;
-
             double mmrIncrease = ELOUtils.calculateMMRIncrease(userBeforeMmr, lastProblemRating);
             double ratingIncrease = ELOUtils.calculateRatingIncrease(userBeforeRating, lastProblemRating);
 
@@ -146,7 +144,6 @@ public class RankService {
             userBeforeMmr = userBeforeMmr + mmrIncrease;
             userBeforeRating = userBeforeRating + ratingIncrease;
         } else {
-            winProbability += WIN_PROBABILITY_DELTA;
             double mmrDecrease = ELOUtils.calculateMMRDecrease(userBeforeMmr, lastProblemRating);
             double ratingDecrease = ELOUtils.calculateRatingDecrease(userBeforeRating, lastProblemRating);
 

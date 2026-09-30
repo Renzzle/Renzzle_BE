@@ -11,6 +11,9 @@ public class ELOUtils {
     private static final double LOW_REWARD = 1.5;
     public static final double TARGET_WIN_PROBABILITY = 0.7;
     public static final double WIN_PROBABILITY_DELTA = 0.05;
+    // Outside (0, 1) the rating offset turns NaN and silently collapses to the user's own rating
+    public static final double MIN_TARGET_WIN_PROBABILITY = 0.05;
+    public static final double MAX_TARGET_WIN_PROBABILITY = 0.95;
 
     private static double getRewardMultiplier(double userMmr) {
         return userMmr >= MMR_THRESHOLD ? HIGH_REWARD : LOW_REWARD;
@@ -23,6 +26,12 @@ public class ELOUtils {
     // Calculate expected win probability via ELO
     public static double expectedWinProbability(double userRating, double problemRating) {
         return 1.0 / (1.0 + Math.pow(10, (problemRating - userRating) / 400.0));
+    }
+
+    // Step the target win probability after a round: harder after a solve, easier after a miss
+    public static double nextTargetWinProbability(double current, boolean solved) {
+        double next = solved ? current - WIN_PROBABILITY_DELTA : current + WIN_PROBABILITY_DELTA;
+        return Math.max(MIN_TARGET_WIN_PROBABILITY, Math.min(MAX_TARGET_WIN_PROBABILITY, next));
     }
 
     // Calculate the problem Rating matching the target win probability based on the user's rating

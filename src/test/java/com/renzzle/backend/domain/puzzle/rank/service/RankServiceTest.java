@@ -9,6 +9,7 @@ import com.renzzle.backend.domain.puzzle.rank.domain.LatestRankPuzzle;
 import com.renzzle.backend.domain.puzzle.rank.domain.RankSessionData;
 import com.renzzle.backend.domain.puzzle.rank.support.TestUserFactory;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
+import com.renzzle.backend.domain.puzzle.shared.util.ELOUtils;
 import com.renzzle.backend.domain.puzzle.training.dao.TrainingPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.user.dao.UserRepository;
@@ -301,6 +302,53 @@ class RankServiceTest {
 
         verify(redisSessionTemplate.opsForValue())
                 .set(eq("1"), any(RankSessionData.class), anyLong(), eq(TimeUnit.SECONDS));
+    }
+
+    @Test
+    void resultRankGame_WhenSolvedAtMinTargetWinProbability_ThenNextAssignmentStaysAtMin() {
+        // Given: the previous round already sits at the floor, so one more solve must not push past it
+        UserEntity user = TestUserFactory.createTestUser("u1", 1500);
+        ReflectionTestUtils.setField(user, "id", 1L);
+
+        RankSessionData session = new RankSessionData();
+        session.setStarted(true);
+
+        LatestRankPuzzle previous = LatestRankPuzzle.builder()
+                .user(user)
+                .boardStatus("a1a2")
+                .answer("a3")
+                .isSolved(false)
+                .assignedAt(clock.instant())
+                .winColor(WinColor.getWinColor("BLACK"))
+                .puzzleRating(2000)
+                .ratingBeforePenalty(1500)
+                .mmrBeforePenalty(1500)
+                .targetWinProbability(ELOUtils.MIN_TARGET_WIN_PROBABILITY)
+                .build();
+
+        TrainingPuzzle candidatePuzzle = TrainingPuzzle.builder()
+                .boardStatus("nextBoard")
+                .answer("nextAnswer")
+                .depth(3)
+                .rating(2000)
+                .winColor(WinColor.getWinColor("BLACK"))
+                .build();
+
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
+        when(valueOperations.get("1")).thenReturn(session);
+        when(redisSessionTemplate.getExpire("1", TimeUnit.SECONDS)).thenReturn(120L);
+        when(latestRankPuzzleRepository.findTopByUserOrderByIdDesc(user)).thenReturn(Optional.of(previous));
+        when(trainingPuzzleRepository.findAvailableTrainingPuzzlesSortedByRating(user)).thenReturn(List.of(candidatePuzzle));
+        when(communityPuzzleRepository.findAvailableCommunityPuzzlesSortedByRating(user)).thenReturn(Collections.emptyList());
+
+        // When
+        rankService.resultRankGame(user, new RankResultRequest(true));
+
+        // Then
+        ArgumentCaptor<LatestRankPuzzle> assigned = ArgumentCaptor.forClass(LatestRankPuzzle.class);
+        verify(latestRankPuzzleRepository).save(assigned.capture());
+        assertThat(assigned.getValue().getTargetWinProbability())
+                .isEqualTo(ELOUtils.MIN_TARGET_WIN_PROBABILITY);
     }
 
     // endRankGame test
