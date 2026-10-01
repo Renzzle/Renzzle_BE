@@ -77,7 +77,6 @@ public enum ErrorCode {
     CANNOT_FIND_RANK_PUZZLE(HttpStatus.NOT_FOUND, "P4046", "Ranked puzzle not found"),
     EMPTY_SESSION_DATA(HttpStatus.NOT_FOUND, "P4047", "Session data not found"),
     LATEST_PUZZLE_NOT_FOUND(HttpStatus.NOT_FOUND, "P4048", "No previous ranked puzzle"),
-    CANNOT_FIND_PUZZLE(HttpStatus.NOT_FOUND, "P4049", "Puzzle not found"),
     TREND_PUZZLE_DUPLICATED(HttpStatus.CONFLICT, "P4090", "Duplicate trend puzzle"),
     ALREADY_OWNED_PACK(HttpStatus.CONFLICT, "P4091", "Training pack already owned"),
     PROTECTED_SOLUTION_POSITION(HttpStatus.CONFLICT, "P4092", "Position belongs to the puzzle's solution line"),
