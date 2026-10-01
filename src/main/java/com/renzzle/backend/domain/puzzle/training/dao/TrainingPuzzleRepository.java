@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface TrainingPuzzleRepository extends JpaRepository<TrainingPuzzle, Long> {
 
@@ -46,4 +47,20 @@ public interface TrainingPuzzleRepository extends JpaRepository<TrainingPuzzle, 
             ") " +
             "ORDER BY p.rating ASC")
     List<TrainingPuzzle> findAvailableTrainingPuzzlesSortedByRating(@Param("user") UserEntity user);
+
+    @Query("SELECT p.rankAttemptCount FROM TrainingPuzzle p WHERE p.id = :id")
+    Optional<Integer> findRankAttemptCountById(@Param("id") Long id);
+
+    // One statement, so concurrent results on the same puzzle add up instead of overwriting each other
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE training_puzzle " +
+            "SET rating = LEAST(GREATEST(rating + :delta, :minRating), :maxRating), " +
+            "rank_attempt_count = rank_attempt_count + 1 " +
+            "WHERE id = :id",
+            nativeQuery = true)
+    int applyRankResult(@Param("id") Long id,
+                        @Param("delta") double delta,
+                        @Param("minRating") double minRating,
+                        @Param("maxRating") double maxRating);
 }

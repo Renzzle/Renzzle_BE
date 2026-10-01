@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.puzzle.rank.domain;
 
+import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import jakarta.persistence.*;
@@ -44,13 +45,6 @@ public class LatestRankPuzzle {
     @JoinColumn(name = "win_color", nullable = false)
     private WinColor winColor;
 
-    /*
-        Snapshot of everything the rating math needs, taken when the puzzle was handed out.
-        A rank game pre-deducts the loss at assignment time and reverts it on a solve, so the
-        pre-deduction values are what every later calculation starts from. Keeping them on the
-        row makes each assignment self-contained: the Redis session is only a liveness cache,
-        and losing it can no longer corrupt a rating.
-    */
     @Column(name = "puzzle_rating", nullable = false)
     private double puzzleRating;
 
@@ -62,6 +56,13 @@ public class LatestRankPuzzle {
 
     @Column(name = "target_win_probability", nullable = false)
     private double targetWinProbability;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "puzzle_type")
+    private PuzzleType puzzleType;
+
+    @Column(name = "puzzle_id")
+    private Long puzzleId;
 
     public void solvedUpdate(boolean solved) {
         this.isSolved = solved;

@@ -14,6 +14,11 @@ public class ELOUtils {
     // Outside (0, 1) the rating offset turns NaN and silently collapses to the user's own rating
     public static final double MIN_TARGET_WIN_PROBABILITY = 0.05;
     public static final double MAX_TARGET_WIN_PROBABILITY = 0.95;
+    // A new puzzle's rating is only a guess from its depth, so K starts high and falls as results
+    // come in: half of K_PUZZLE_MAX after K_PUZZLE_HALVING_ATTEMPTS results, never below K_PUZZLE_MIN
+    private static final double K_PUZZLE_MAX = 40.0;
+    private static final double K_PUZZLE_MIN = 8.0;
+    private static final double K_PUZZLE_HALVING_ATTEMPTS = 10.0;
 
     private static double getRewardMultiplier(double userMmr) {
         return userMmr >= MMR_THRESHOLD ? HIGH_REWARD : LOW_REWARD;
@@ -60,5 +65,17 @@ public class ELOUtils {
     public static double calculateRatingDecrease(double userRating, double problemRating) {
         double expected = expectedWinProbability(userRating, problemRating);
         return Math.round(-K_RATING * expected * getPenaltyMultiplier(userRating));
+    }
+
+    public static double puzzleKFactor(int rankAttemptCount) {
+        double k = K_PUZZLE_MAX * K_PUZZLE_HALVING_ATTEMPTS / (K_PUZZLE_HALVING_ATTEMPTS + rankAttemptCount);
+        return Math.max(K_PUZZLE_MIN, k);
+    }
+
+    public static double calculatePuzzleRatingChange(
+            double userMmr, double puzzleRating, int rankAttemptCount, boolean solved) {
+        double expected = expectedWinProbability(userMmr, puzzleRating);
+        double k = puzzleKFactor(rankAttemptCount);
+        return solved ? -k * (1 - expected) : k * expected;
     }
 }

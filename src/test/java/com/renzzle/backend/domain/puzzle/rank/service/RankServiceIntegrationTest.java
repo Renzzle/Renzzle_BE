@@ -1,6 +1,8 @@
 package com.renzzle.backend.domain.puzzle.rank.service;
 
 import com.renzzle.backend.config.TestContainersConfig;
+import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
+import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.rank.api.request.RankResultRequest;
 import com.renzzle.backend.domain.puzzle.rank.api.response.RankEndResponse;
 import com.renzzle.backend.domain.puzzle.rank.api.response.RankResultResponse;
@@ -13,6 +15,8 @@ import com.renzzle.backend.domain.puzzle.rank.support.TestUserFactory;
 import com.renzzle.backend.domain.puzzle.rank.util.CommunityPuzzleSeeder;
 import com.renzzle.backend.domain.puzzle.rank.util.TrainingPuzzleSeeder;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
+import com.renzzle.backend.domain.puzzle.training.dao.TrainingPuzzleRepository;
+import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.domain.puzzle.shared.util.ELOUtils;
@@ -53,6 +57,8 @@ class RankServiceIntegrationTest {
     @Autowired private RedisTemplate<String, RankSessionData> redisTemplate;
     @Autowired private TrainingPuzzleSeeder trainingPuzzleSeeder;
     @Autowired private CommunityPuzzleSeeder communityPuzzleSeeder;
+    @Autowired private TrainingPuzzleRepository trainingPuzzleRepository;
+    @Autowired private CommunityPuzzleRepository communityPuzzleRepository;
     @Autowired private Clock clock;
     @Autowired private PlatformTransactionManager transactionManager;
 
@@ -198,6 +204,49 @@ class RankServiceIntegrationTest {
         assertEquals(expectedAfterSolve
                         + ELOUtils.calculateRatingDecrease(expectedAfterSolve, nextAssigned.getPuzzleRating()),
                 actual, 0.01);
+    }
+
+    @Test
+    void rankFlow_WhenPuzzleAnswered_ThenOnlyTheAnsweredPuzzleRatingMoves() {
+        // start hands out the first puzzle, a missed result hands out the second, end leaves it unanswered
+        rankService.startRankGame(testUser);
+        LatestRankPuzzle answered = latestRankPuzzleRepository.findTopByUserOrderByIdDesc(testUser).orElseThrow();
+
+        rankService.resultRankGame(testUser, new RankResultRequest(false));
+        LatestRankPuzzle unanswered = latestRankPuzzleRepository.findTopByUserOrderByIdDesc(testUser).orElseThrow();
+        double unansweredBefore = currentRating(unanswered);
+
+        rankService.endRankGame(testUser);
+
+        double expected = answered.getPuzzleRating() + ELOUtils.calculatePuzzleRatingChange(
+                answered.getMmrBeforePenalty(), answered.getPuzzleRating(), 0, false);
+        assertEquals(expected, currentRating(answered), 0.0001);
+        assertEquals(1, currentAttempts(answered));
+
+        assertEquals(unansweredBefore, currentRating(unanswered), 0.0001);
+        assertEquals(0, currentAttempts(unanswered));
+    }
+
+    private double currentRating(LatestRankPuzzle assignment) {
+        return switch (assignment.getPuzzleType()) {
+            case TRAINING -> trainingPuzzle(assignment).getRating();
+            case COMMUNITY -> communityPuzzle(assignment).getRating();
+        };
+    }
+
+    private int currentAttempts(LatestRankPuzzle assignment) {
+        return switch (assignment.getPuzzleType()) {
+            case TRAINING -> trainingPuzzle(assignment).getRankAttemptCount();
+            case COMMUNITY -> communityPuzzle(assignment).getRankAttemptCount();
+        };
+    }
+
+    private TrainingPuzzle trainingPuzzle(LatestRankPuzzle assignment) {
+        return trainingPuzzleRepository.findById(assignment.getPuzzleId()).orElseThrow();
+    }
+
+    private CommunityPuzzle communityPuzzle(LatestRankPuzzle assignment) {
+        return communityPuzzleRepository.findById(assignment.getPuzzleId()).orElseThrow();
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.puzzle.rank.service;
 
+import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
@@ -37,6 +38,8 @@ import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 
 import static com.renzzle.backend.domain.puzzle.shared.util.ELOUtils.TARGET_WIN_PROBABILITY;
+import static com.renzzle.backend.domain.puzzle.shared.util.RatingUtil.MAX_RATING;
+import static com.renzzle.backend.domain.puzzle.shared.util.RatingUtil.MIN_RATING;
 import static com.renzzle.backend.global.common.constant.ItemPrice.RANK_REWARD;
 
 @Service
@@ -154,6 +157,8 @@ public class RankService {
             userBeforeRating = userBeforeRating + ratingDecrease;
         }
 
+        applyResultToPuzzle(previousPuzzle, request.isSolved());
+
         // Fetch a suitable puzzle based on the user's rating & target win probability
         NextPuzzleResult nextPuzzle = getNextPuzzle(userBeforeMmr, winProbability, user);
 
@@ -189,6 +194,8 @@ public class RankService {
     ) {
         return LatestRankPuzzle.builder()
                 .user(user)
+                .puzzleType(puzzle.puzzleType())
+                .puzzleId(puzzle.puzzleId())
                 .boardStatus(puzzle.boardStatus())
                 .answer(puzzle.answer())
                 .winColor(puzzle.winColor())
@@ -201,11 +208,31 @@ public class RankService {
                 .build();
     }
 
-    /*
-        Redis is not part of the JPA transaction, so writing it inline would let the session move
-        on to the next puzzle even when the transaction that assigned it rolls back. Deferring to
-        afterCommit keeps the session from ever running ahead of the database.
-    */
+    private void applyResultToPuzzle(LatestRankPuzzle answered, boolean solved) {
+        PuzzleType type = answered.getPuzzleType();
+        Long puzzleId = answered.getPuzzleId();
+        if (type == null || puzzleId == null) {
+            return;
+        }
+
+        Optional<Integer> rankAttemptCount = switch (type) {
+            case TRAINING -> trainingPuzzleRepository.findRankAttemptCountById(puzzleId);
+            case COMMUNITY -> communityPuzzleRepository.findRankAttemptCountById(puzzleId);
+        };
+        // Deleted since it was handed out
+        if (rankAttemptCount.isEmpty()) {
+            return;
+        }
+
+        double delta = ELOUtils.calculatePuzzleRatingChange(
+                answered.getMmrBeforePenalty(), answered.getPuzzleRating(), rankAttemptCount.get(), solved);
+
+        switch (type) {
+            case TRAINING -> trainingPuzzleRepository.applyRankResult(puzzleId, delta, MIN_RATING, MAX_RATING);
+            case COMMUNITY -> communityPuzzleRepository.applyRankResult(puzzleId, delta, MIN_RATING, MAX_RATING);
+        }
+    }
+
     private void writeSessionAfterCommit(String redisKey, RankSessionData session, long ttlSeconds) {
         runAfterCommit(() -> redisTemplate.opsForValue().set(redisKey, session, ttlSeconds, TimeUnit.SECONDS));
     }
@@ -304,12 +331,12 @@ public class RankService {
         Object selected = allCandidates.get(0);
 
         if (selected instanceof TrainingPuzzle puzzle) {
-            return new NextPuzzleResult(
+            return new NextPuzzleResult(PuzzleType.TRAINING, puzzle.getId(),
                     puzzle.getBoardStatus(), puzzle.getAnswer(), puzzle.getWinColor(), puzzle.getRating());
         }
 
         if (selected instanceof CommunityPuzzle puzzle) {
-            return new NextPuzzleResult(
+            return new NextPuzzleResult(PuzzleType.COMMUNITY, puzzle.getId(),
                     puzzle.getBoardStatus(), puzzle.getAnswer(), puzzle.getWinColor(), puzzle.getRating());
         }
         throw new CustomException(ErrorCode.INVALID_RANK_PUZZLE_TYPE);

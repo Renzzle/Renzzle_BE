@@ -7,9 +7,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle, Long>, CommunityPuzzleQueryRepository {
 
@@ -47,6 +49,22 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
             ") AND p.isVerified = true " +
             "ORDER BY p.rating ASC")
     List<CommunityPuzzle> findAvailableCommunityPuzzlesSortedByRating(@Param("user") UserEntity user);
+
+    @Query("SELECT p.rankAttemptCount FROM CommunityPuzzle p WHERE p.id = :id")
+    Optional<Integer> findRankAttemptCountById(@Param("id") Long id);
+
+    // One statement, so concurrent results on the same puzzle add up instead of overwriting each other
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE community_puzzle " +
+            "SET rating = LEAST(GREATEST(rating + :delta, :minRating), :maxRating), " +
+            "rank_attempt_count = rank_attempt_count + 1 " +
+            "WHERE id = :id",
+            nativeQuery = true)
+    int applyRankResult(@Param("id") Long id,
+                        @Param("delta") double delta,
+                        @Param("minRating") double minRating,
+                        @Param("maxRating") double maxRating);
 
     @Query(value = "SELECT * FROM community_puzzle WHERE id = :id", nativeQuery = true)
     CommunityPuzzle findByIdIncludingDeleted(@Param("id") Long id);

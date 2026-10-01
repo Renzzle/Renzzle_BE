@@ -81,4 +81,55 @@ class ELOUtilsTest {
             previous = desired;
         }
     }
+
+    @Test
+    void puzzleKFactor_WhenNoResultsYet_ThenStartsAtMax() {
+        assertEquals(40.0, ELOUtils.puzzleKFactor(0), EPS);
+    }
+
+    @Test
+    void puzzleKFactor_WhenResultsAccumulate_ThenShrinksDownToMin() {
+        assertEquals(20.0, ELOUtils.puzzleKFactor(10), EPS);
+
+        double previous = ELOUtils.puzzleKFactor(0);
+        for (int attempts = 1; attempts <= 200; attempts++) {
+            double k = ELOUtils.puzzleKFactor(attempts);
+            assertThat(k).isLessThanOrEqualTo(previous).isGreaterThanOrEqualTo(8.0);
+            previous = k;
+        }
+        assertEquals(8.0, ELOUtils.puzzleKFactor(200), EPS);
+    }
+
+    @Test
+    void calculatePuzzleRatingChange_WhenEvenlyMatched_ThenMovesByHalfOfK() {
+        assertEquals(-20.0, ELOUtils.calculatePuzzleRatingChange(1000, 1000, 0, true), EPS);
+        assertEquals(20.0, ELOUtils.calculatePuzzleRatingChange(1000, 1000, 0, false), EPS);
+    }
+
+    @Test
+    void calculatePuzzleRatingChange_WhenEasyPuzzleMissed_ThenRisesMoreThanHardPuzzleMissed() {
+        // missing a puzzle the user was expected to solve says more about the puzzle
+        double easyMissed = ELOUtils.calculatePuzzleRatingChange(1500, 1200, 0, false);
+        double hardMissed = ELOUtils.calculatePuzzleRatingChange(1500, 1800, 0, false);
+
+        assertThat(hardMissed).isPositive();
+        assertThat(easyMissed).isGreaterThan(hardMissed);
+    }
+
+    @Test
+    void calculatePuzzleRatingChange_WhenHardPuzzleSolved_ThenDropsMoreThanEasyPuzzleSolved() {
+        double hardSolved = ELOUtils.calculatePuzzleRatingChange(1500, 1800, 0, true);
+        double easySolved = ELOUtils.calculatePuzzleRatingChange(1500, 1200, 0, true);
+
+        assertThat(easySolved).isNegative();
+        assertThat(hardSolved).isLessThan(easySolved);
+    }
+
+    @Test
+    void calculatePuzzleRatingChange_WhenPuzzleWellAttempted_ThenMovesLess() {
+        double fresh = ELOUtils.calculatePuzzleRatingChange(1000, 1000, 0, false);
+        double settled = ELOUtils.calculatePuzzleRatingChange(1000, 1000, 100, false);
+
+        assertThat(settled).isPositive().isLessThan(fresh);
+    }
 }

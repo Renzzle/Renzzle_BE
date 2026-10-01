@@ -49,6 +49,10 @@ public class TrainingPuzzle {
         @Column(name = "rating", nullable = false)
         private double rating;
 
+        @Builder.Default
+        @Column(name = "rank_attempt_count", nullable = false)
+        private int rankAttemptCount = 0;
+
         @CreationTimestamp
         @Column(name = "created_at", updatable = false, nullable = false)
         private Instant createdAt;

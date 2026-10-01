@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.puzzle.rank.service;
 
+import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.rank.api.request.RankResultRequest;
@@ -10,6 +11,7 @@ import com.renzzle.backend.domain.puzzle.rank.domain.RankSessionData;
 import com.renzzle.backend.domain.puzzle.rank.support.TestUserFactory;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.puzzle.shared.util.ELOUtils;
+import com.renzzle.backend.domain.puzzle.shared.util.RatingUtil;
 import com.renzzle.backend.domain.puzzle.training.dao.TrainingPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.user.dao.UserRepository;
@@ -351,6 +353,143 @@ class RankServiceTest {
                 .isEqualTo(ELOUtils.MIN_TARGET_WIN_PROBABILITY);
     }
 
+    @Test
+    void startRankGame_WhenPuzzleAssigned_ThenRecordsWhichPuzzleItWas() {
+        // Given
+        UserEntity user = TestUserFactory.createTestUser("tester", 1500.0);
+        ReflectionTestUtils.setField(user, "id", 1L);
+
+        TrainingPuzzle puzzle = TrainingPuzzle.builder()
+                .boardStatus("a1a2")
+                .answer("a3")
+                .rating(1400)
+                .winColor(WinColor.getWinColor("BLACK"))
+                .depth(3)
+                .build();
+        ReflectionTestUtils.setField(puzzle, "id", 7L);
+
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
+        when(latestRankPuzzleRepository.findAllByUser(user)).thenReturn(Collections.emptyList());
+        when(trainingPuzzleRepository.findAvailableTrainingPuzzlesSortedByRating(user)).thenReturn(List.of(puzzle));
+        when(communityPuzzleRepository.findAvailableCommunityPuzzlesSortedByRating(user)).thenReturn(Collections.emptyList());
+
+        // When
+        rankService.startRankGame(user);
+
+        // Then
+        ArgumentCaptor<LatestRankPuzzle> assigned = ArgumentCaptor.forClass(LatestRankPuzzle.class);
+        verify(latestRankPuzzleRepository).save(assigned.capture());
+        assertThat(assigned.getValue().getPuzzleType()).isEqualTo(PuzzleType.TRAINING);
+        assertThat(assigned.getValue().getPuzzleId()).isEqualTo(7L);
+    }
+
+    @Test
+    void resultRankGame_WhenTrainingPuzzleSolved_ThenLowersThatPuzzleRating() {
+        // Given
+        UserEntity user = givenAnsweredRound(PuzzleType.TRAINING, 7L);
+        when(trainingPuzzleRepository.findRankAttemptCountById(7L)).thenReturn(Optional.of(0));
+
+        // When
+        rankService.resultRankGame(user, new RankResultRequest(true));
+
+        // Then: evenly matched and never attempted, so K = 40 and expected = 0.5
+        verify(trainingPuzzleRepository).applyRankResult(7L, -20.0, RatingUtil.MIN_RATING, RatingUtil.MAX_RATING);
+        verify(communityPuzzleRepository, never()).applyRankResult(anyLong(), anyDouble(), anyDouble(), anyDouble());
+    }
+
+    @Test
+    void resultRankGame_WhenCommunityPuzzleMissed_ThenRaisesThatPuzzleRating() {
+        // Given
+        UserEntity user = givenAnsweredRound(PuzzleType.COMMUNITY, 9L);
+        when(communityPuzzleRepository.findRankAttemptCountById(9L)).thenReturn(Optional.of(0));
+
+        // When
+        rankService.resultRankGame(user, new RankResultRequest(false));
+
+        // Then
+        verify(communityPuzzleRepository).applyRankResult(9L, 20.0, RatingUtil.MIN_RATING, RatingUtil.MAX_RATING);
+        verify(trainingPuzzleRepository, never()).applyRankResult(anyLong(), anyDouble(), anyDouble(), anyDouble());
+    }
+
+    @Test
+    void resultRankGame_WhenPuzzleAlreadyWellAttempted_ThenMovesItLess() {
+        // Given
+        UserEntity user = givenAnsweredRound(PuzzleType.TRAINING, 7L);
+        when(trainingPuzzleRepository.findRankAttemptCountById(7L)).thenReturn(Optional.of(10));
+
+        // When
+        rankService.resultRankGame(user, new RankResultRequest(false));
+
+        // Then: K is down to 20 after 10 results
+        verify(trainingPuzzleRepository).applyRankResult(7L, 10.0, RatingUtil.MIN_RATING, RatingUtil.MAX_RATING);
+    }
+
+    @Test
+    void resultRankGame_WhenAssignmentHasNoPuzzleReference_ThenLeavesPuzzleRatingsAlone() {
+        // Given: a row assigned before the puzzle reference was recorded
+        UserEntity user = givenAnsweredRound(null, null);
+
+        // When
+        rankService.resultRankGame(user, new RankResultRequest(true));
+
+        // Then
+        verify(trainingPuzzleRepository, never()).applyRankResult(anyLong(), anyDouble(), anyDouble(), anyDouble());
+        verify(communityPuzzleRepository, never()).applyRankResult(anyLong(), anyDouble(), anyDouble(), anyDouble());
+    }
+
+    @Test
+    void resultRankGame_WhenPuzzleDeletedSinceAssignment_ThenSkipsIt() {
+        // Given
+        UserEntity user = givenAnsweredRound(PuzzleType.COMMUNITY, 9L);
+        when(communityPuzzleRepository.findRankAttemptCountById(9L)).thenReturn(Optional.empty());
+
+        // When
+        rankService.resultRankGame(user, new RankResultRequest(false));
+
+        // Then
+        verify(communityPuzzleRepository, never()).applyRankResult(anyLong(), anyDouble(), anyDouble(), anyDouble());
+    }
+
+    // A started game whose current puzzle (mmr 1000 vs puzzle 1000) is about to be answered
+    private UserEntity givenAnsweredRound(PuzzleType puzzleType, Long puzzleId) {
+        UserEntity user = TestUserFactory.createTestUser("u1", 1000);
+        ReflectionTestUtils.setField(user, "id", 1L);
+
+        RankSessionData session = new RankSessionData();
+        session.setStarted(true);
+
+        LatestRankPuzzle answered = LatestRankPuzzle.builder()
+                .user(user)
+                .puzzleType(puzzleType)
+                .puzzleId(puzzleId)
+                .boardStatus("a1a2")
+                .answer("a3")
+                .isSolved(false)
+                .assignedAt(clock.instant())
+                .winColor(WinColor.getWinColor("BLACK"))
+                .puzzleRating(1000)
+                .ratingBeforePenalty(1000)
+                .mmrBeforePenalty(1000)
+                .targetWinProbability(0.7)
+                .build();
+
+        TrainingPuzzle nextCandidate = TrainingPuzzle.builder()
+                .boardStatus("nextBoard")
+                .answer("nextAnswer")
+                .depth(3)
+                .rating(1000)
+                .winColor(WinColor.getWinColor("BLACK"))
+                .build();
+
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
+        when(valueOperations.get("1")).thenReturn(session);
+        when(redisSessionTemplate.getExpire("1", TimeUnit.SECONDS)).thenReturn(120L);
+        when(latestRankPuzzleRepository.findTopByUserOrderByIdDesc(user)).thenReturn(Optional.of(answered));
+        when(trainingPuzzleRepository.findAvailableTrainingPuzzlesSortedByRating(user)).thenReturn(List.of(nextCandidate));
+        when(communityPuzzleRepository.findAvailableCommunityPuzzlesSortedByRating(user)).thenReturn(Collections.emptyList());
+        return user;
+    }
+
     // endRankGame test
 
     @Test
@@ -408,6 +547,32 @@ class RankServiceTest {
         assertThat(response.rating()).isEqualTo(1600);
         assertThat(response.reward()).isEqualTo(2 * RANK_REWARD.getPrice());
         verify(redisSessionTemplate).delete("3");
+    }
+
+    @Test
+    void endRankGame_WhenGameEnds_ThenLeavesLastPuzzleRatingAlone() {
+        // Given: the puzzle still on screen ran out of time, which says nothing about how hard it is
+        UserEntity user = TestUserFactory.createTestUser("user3", 1600);
+        ReflectionTestUtils.setField(user, "id", 3L);
+
+        RankSessionData session = new RankSessionData();
+        session.setStarted(true);
+
+        when(valueOperations.get("3")).thenReturn(session);
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
+        when(latestRankPuzzleRepository.findAllByUser(user))
+                .thenReturn(List.of(LatestRankPuzzle.builder()
+                        .puzzleType(PuzzleType.TRAINING)
+                        .puzzleId(7L)
+                        .isSolved(false)
+                        .build()));
+
+        // When
+        rankService.endRankGame(user);
+
+        // Then
+        verify(trainingPuzzleRepository, never()).applyRankResult(anyLong(), anyDouble(), anyDouble(), anyDouble());
+        verify(communityPuzzleRepository, never()).applyRankResult(anyLong(), anyDouble(), anyDouble(), anyDouble());
     }
 
     // getRankArchive test
