@@ -50,6 +50,8 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
             "ORDER BY p.rating ASC")
     List<CommunityPuzzle> findAvailableCommunityPuzzlesSortedByRating(@Param("user") UserEntity user);
 
+    List<CommunityPuzzle> findByRankAttemptCount(int rankAttemptCount);
+
     @Query("SELECT p.rankAttemptCount FROM CommunityPuzzle p WHERE p.id = :id")
     Optional<Integer> findRankAttemptCountById(@Param("id") Long id);
 

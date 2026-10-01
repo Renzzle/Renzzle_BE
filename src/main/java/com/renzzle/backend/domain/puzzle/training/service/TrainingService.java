@@ -30,6 +30,7 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -65,7 +66,7 @@ public class TrainingService {
         }
 
         WinColor winColor = WinColor.getWinColor(request.winColor());
-        double rating = RatingUtil.puzzleRating(request.depth(), winColor);
+        double rating = RatingUtil.puzzleRating(request.depth(), winColor, pack.getDifficulty());
 
         // increase puzzle_count
         packRepository.increasePuzzleCount(request.packId());
@@ -116,24 +117,24 @@ public class TrainingService {
         if (request.answer() != null) {
             puzzleBuilder.answer(request.answer());
         }
-        boolean depthChanged = request.depth() != null;
-        boolean winColorChanged = request.winColor() != null;
-        if (depthChanged) {
+        if (request.depth() != null) {
             puzzleBuilder.depth(request.depth());
         }
-        if (winColorChanged) {
+        if (request.winColor() != null) {
             puzzleBuilder.winColor(WinColor.getWinColor(request.winColor()));
         }
-        // rating depends on both depth and winColor, so recalculate whenever either one changes
-        if (depthChanged || winColorChanged) {
-            int effectiveDepth = depthChanged ? request.depth() : puzzle.getDepth();
-            WinColor effectiveWinColor = winColorChanged
-                    ? WinColor.getWinColor(request.winColor())
-                    : puzzle.getWinColor();
-            puzzleBuilder.rating(RatingUtil.puzzleRating(effectiveDepth, effectiveWinColor));
+
+        TrainingPuzzle edited = puzzleBuilder.build();
+        // The admin page resends every field on save, so compare values instead of checking for presence
+        if (changesRatingInputs(puzzle, edited)) {
+            edited = edited.toBuilder()
+                    .rating(RatingUtil.puzzleRating(
+                            edited.getDepth(), edited.getWinColor(), edited.getPack().getDifficulty()))
+                    .rankAttemptCount(0)
+                    .build();
         }
 
-        TrainingPuzzle modified = trainingPuzzleRepository.save(puzzleBuilder.build());
+        TrainingPuzzle modified = trainingPuzzleRepository.save(edited);
 
         // cached replies are keyed by board position, so editing either the board or the solution
         // line strands every existing entry; reseeding replaces them with the new line
@@ -143,6 +144,32 @@ public class TrainingService {
         }
 
         return modified;
+    }
+
+    private boolean changesRatingInputs(TrainingPuzzle before, TrainingPuzzle after) {
+        return !Objects.equals(before.getBoardStatus(), after.getBoardStatus())
+                || !Objects.equals(before.getAnswer(), after.getAnswer())
+                || before.getDepth() != after.getDepth()
+                || !Objects.equals(before.getWinColor().getName(), after.getWinColor().getName())
+                || !Objects.equals(before.getPack().getId(), after.getPack().getId());
+    }
+
+    // Puzzles with rank results already moved toward their real difficulty, so only the rest are re-rated
+    @Transactional
+    public int recalculateUnrankedPuzzleRatings() {
+        return rerate(trainingPuzzleRepository.findByRankAttemptCount(0), puzzle -> puzzle.getPack().getDifficulty());
+    }
+
+    private int rerate(List<TrainingPuzzle> puzzles, Function<TrainingPuzzle, Difficulty> difficultyOf) {
+        List<TrainingPuzzle> changed = new ArrayList<>();
+        for (TrainingPuzzle puzzle : puzzles) {
+            double rating = RatingUtil.puzzleRating(puzzle.getDepth(), puzzle.getWinColor(), difficultyOf.apply(puzzle));
+            if (rating != puzzle.getRating()) {
+                changed.add(puzzle.toBuilder().rating(rating).build());
+            }
+        }
+        trainingPuzzleRepository.saveAll(changed);
+        return changed.size();
     }
 
     // service test, repo test
@@ -263,11 +290,22 @@ public class TrainingService {
         Pack pack = packRepository.findById(packId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
+        // Read before saving: the save merges into this same managed pack
+        String previousDifficulty = pack.getDifficulty().getName();
+
         Pack updatedPack = pack.toBuilder()
                 .price(request.price())
                 .difficulty(Difficulty.getDifficulty(request.difficulty()))
                 .build();
         packRepository.save(updatedPack);
+
+        Difficulty newDifficulty = updatedPack.getDifficulty();
+        if (!previousDifficulty.equals(newDifficulty.getName())) {
+            List<TrainingPuzzle> unranked = trainingPuzzleRepository.findByPack_IdOrderByTrainingIndex(packId).stream()
+                    .filter(puzzle -> puzzle.getRankAttemptCount() == 0)
+                    .toList();
+            rerate(unranked, puzzle -> newDifficulty);
+        }
 
         List<PackTranslation> existingTranslations = packTranslationRepository.findAllByPack_Id(packId);
         packTranslationRepository.deleteAll(existingTranslations);

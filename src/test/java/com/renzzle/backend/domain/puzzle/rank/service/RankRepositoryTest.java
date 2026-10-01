@@ -131,8 +131,8 @@ class RankRepositoryTest {
     void applyRankResult_WhenDeltaCrossesABound_ThenStopsAtThatBound() {
         // Given
         UserEntity author = userRepository.save(TestUserFactory.createTestUser("author", 1500));
-        trainingPuzzleSeeder.seedPuzzle(1, "a1a2", "a3", 3, 2990, "BLACK");
-        communityPuzzleSeeder.seedPuzzle("b1b2", "b3", 4, 410, "WHITE", author);
+        trainingPuzzleSeeder.seedPuzzle(1, "a1a2", "a3", 3, MAX_RATING - 10, "BLACK");
+        communityPuzzleSeeder.seedPuzzle("b1b2", "b3", 4, MIN_RATING + 10, "WHITE", author);
         Long trainingId = trainingPuzzleId("a1a2");
         Long communityId = communityPuzzleId("b1b2");
 

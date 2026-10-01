@@ -15,6 +15,7 @@ import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.community.domain.UserCommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.puzzle.shared.util.BoardUtils;
+import com.renzzle.backend.domain.puzzle.shared.util.RatingUtil;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.exception.CustomException;
@@ -25,6 +26,7 @@ import com.renzzle.backend.support.TestUserEntityBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -382,6 +384,28 @@ class CommunityServiceTest {
 
         // Then
         verify(userCommunityPuzzleRepository).save(any(UserCommunityPuzzle.class));
+    }
+
+    @Test
+    void recalculateUnrankedPuzzleRatings_WhenSomeRatingsAreStale_ThenSavesOnlyThoseRatedLikeMiddle() {
+        // given
+        CommunityPuzzle stale = CommunityPuzzle.builder()
+                .id(1L).depth(9).rating(1600.0).winColor(WinColor.getWinColor("WHITE")).build();
+        CommunityPuzzle current = CommunityPuzzle.builder()
+                .id(2L).depth(7).rating(1000.0).winColor(WinColor.getWinColor("BLACK")).build();
+        when(communityPuzzleRepository.findByRankAttemptCount(0)).thenReturn(List.of(stale, current));
+
+        // when
+        int changed = communityService.recalculateUnrankedPuzzleRatings();
+
+        // then
+        assertThat(changed).isEqualTo(1);
+        ArgumentCaptor<List<CommunityPuzzle>> saved = ArgumentCaptor.captor();
+        verify(communityPuzzleRepository).saveAll(saved.capture());
+        assertThat(saved.getValue()).singleElement().satisfies(puzzle -> {
+            assertThat(puzzle.getId()).isEqualTo(1L);
+            assertThat(puzzle.getRating()).isEqualTo(RatingUtil.puzzleRating(9, WinColor.getWinColor("WHITE"), null));
+        });
     }
 
 }

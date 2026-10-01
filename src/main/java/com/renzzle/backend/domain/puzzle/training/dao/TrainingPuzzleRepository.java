@@ -39,6 +39,8 @@ public interface TrainingPuzzleRepository extends JpaRepository<TrainingPuzzle, 
 
     List<TrainingPuzzle> findByPack_IdOrderByTrainingIndex(Long packId);
 
+    List<TrainingPuzzle> findByRankAttemptCount(int rankAttemptCount);
+
     void deleteAllByPack_Id(Long packId);
 
     @Query("SELECT p FROM TrainingPuzzle p " +

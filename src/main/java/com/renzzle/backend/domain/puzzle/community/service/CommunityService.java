@@ -65,7 +65,7 @@ public class CommunityService {
                 .boardKey(boardKey)
                 .answer(request.answer())
                 .depth(request.depth())
-                .rating(RatingUtil.puzzleRating(request.depth(), winColor))
+                .rating(RatingUtil.puzzleRating(request.depth(), winColor, null))
                 .description(request.description())
                 .user(user)
                 .winColor(winColor)
@@ -80,6 +80,20 @@ public class CommunityService {
         return AddCommunityPuzzleResponse.builder()
                 .puzzleId(result.getId())
                 .build();
+    }
+
+    // Puzzles with rank results already moved toward their real difficulty, so only the rest are re-rated
+    @Transactional
+    public int recalculateUnrankedPuzzleRatings() {
+        List<CommunityPuzzle> changed = new ArrayList<>();
+        for (CommunityPuzzle puzzle : communityPuzzleRepository.findByRankAttemptCount(0)) {
+            double rating = RatingUtil.puzzleRating(puzzle.getDepth(), puzzle.getWinColor(), null);
+            if (rating != puzzle.getRating()) {
+                changed.add(puzzle.toBuilder().rating(rating).build());
+            }
+        }
+        communityPuzzleRepository.saveAll(changed);
+        return changed.size();
     }
 
     private void checkDailyUploadLimit(UserEntity user) {

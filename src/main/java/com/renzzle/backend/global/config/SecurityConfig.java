@@ -105,6 +105,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/training/pack/translation").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.PATCH, "/api/training/puzzle/**").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.PATCH, "/admin/community/puzzle-manage/**").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.POST, "/admin/puzzle/rating/recalculate").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.DELETE, "/api/training/puzzle/**").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.POST, "/admin/notice/**").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.PATCH, "/admin/notice/**").hasAuthority(ADMIN_PREFIX)

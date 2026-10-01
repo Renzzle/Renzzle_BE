@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.admin.api;
 
+import com.renzzle.backend.domain.admin.api.response.RecalculatePuzzleRatingResponse;
 import com.renzzle.backend.domain.auth.api.request.LoginRequest;
 import com.renzzle.backend.domain.auth.dao.AdminRepository;
 import com.renzzle.backend.domain.auth.service.AccountService;
@@ -354,6 +355,18 @@ public class AdminController {
                 request.isVerified()
         );
         return ApiUtils.success(puzzle);
+    }
+
+    @Operation(summary = "Recalculate puzzle ratings",
+            description = "Admin-only; re-rates puzzles that have no rank results yet with the current formula")
+    @SecurityRequirement(name = "Authorization")
+    @PostMapping("/puzzle/rating/recalculate")
+    @ResponseBody
+    public ApiResponse<RecalculatePuzzleRatingResponse> recalculatePuzzleRatings() {
+        return ApiUtils.success(new RecalculatePuzzleRatingResponse(
+                trainingService.recalculateUnrankedPuzzleRatings(),
+                communityService.recalculateUnrankedPuzzleRatings()
+        ));
     }
 
     // ===== Notices (announcements, system info, personal notice) =====
