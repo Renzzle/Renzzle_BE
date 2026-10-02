@@ -2,6 +2,7 @@ package com.renzzle.backend.domain.puzzle.training.service;
 
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.puzzle.cache.dao.PuzzleCacheRepository;
+import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
 import com.renzzle.backend.domain.puzzle.cache.service.PuzzleCacheService;
 import com.renzzle.backend.domain.puzzle.shared.util.RatingUtil;
 import com.renzzle.backend.domain.puzzle.training.api.request.*;
@@ -349,6 +350,36 @@ public class TrainingServiceTest {
             // then
             assertThat(modified.getRating()).isEqualTo(1234.5);
             assertThat(modified.getRankAttemptCount()).isEqualTo(12);
+        }
+
+        @Test
+        void modifyTrainingPuzzle_WhenBoardAndAnswerUnchanged_ThenKeepsTheCache() {
+            // given: the admin page sends every field on each save
+            Pack pack = pack(1L, "MIDDLE");
+            TrainingPuzzle existing = trainingPuzzle(10L, pack, 5, 1234.5, 12);
+            givenModifiable(existing, pack);
+
+            // when
+            trainingService.modifyTrainingPuzzle(10L, new ModifyTrainingPuzzleRequest(
+                    1L, null, existing.getBoardStatus(), existing.getAnswer(), 5, "BLACK"));
+
+            // then
+            verify(puzzleCacheService, never()).seedSolutionPath(any(), any(), any(), any());
+        }
+
+        @Test
+        void modifyTrainingPuzzle_WhenAnswerChanges_ThenReseedsTheCache() {
+            // given
+            Pack pack = pack(1L, "MIDDLE");
+            TrainingPuzzle existing = trainingPuzzle(10L, pack, 5, 1234.5, 12);
+            givenModifiable(existing, pack);
+
+            // when
+            trainingService.modifyTrainingPuzzle(10L, new ModifyTrainingPuzzleRequest(
+                    1L, null, existing.getBoardStatus(), "b3", 5, "BLACK"));
+
+            // then
+            verify(puzzleCacheService).seedSolutionPath(PuzzleType.TRAINING, 10L, existing.getBoardStatus(), "b3");
         }
 
         @Test
