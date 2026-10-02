@@ -24,7 +24,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     Optional<UserEntity> findByNickname(String nickname);
 
-    // Takes a row lock so that concurrent requests cannot read the same currency and both spend it.
+    // Row lock so concurrent spends can't both read the same balance
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT u FROM UserEntity u WHERE u.id = :userId")
     Optional<UserEntity> findByIdForUpdate(@Param("userId") Long userId);
@@ -61,7 +61,6 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
         return isUserQualifiedRaw(userId, minLikes, minPuzzleCount, minRating, minSolverCount) == 1L;
     }
 
-    //Ranking
     @Query("SELECT CASE WHEN (u.lastAccessedAt < CURRENT_DATE) THEN true ELSE false END FROM UserEntity u WHERE u.id = :userId")
     Boolean isLastAccessBeforeToday(@Param("userId") Long userId);
 

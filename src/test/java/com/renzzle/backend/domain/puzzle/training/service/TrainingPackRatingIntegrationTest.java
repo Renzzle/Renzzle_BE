@@ -20,7 +20,7 @@ import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// One persistence context end to end, so saving the pack merges into the managed instance as in production
+// One persistence context, so the pack save merges like in production
 @SpringBootTest
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = TestContainersConfig.class)

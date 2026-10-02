@@ -9,12 +9,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-/**
- * HTML for admins to enter the puzzle cache from a browser.
- * {@code GET /puzzle-cache}, {@code GET /puzzle-cache/training-pack},
- * and {@code GET /puzzle-cache/board} require the ADMIN authority.
- * The cache REST API ({@code /api/puzzle/cache/**}) can also be called by regular authenticated users.
- */
+// Pages are admin-only, but the /api/puzzle/cache REST API is open to any authenticated user
 @Controller
 public class PuzzleCachePageController {
 

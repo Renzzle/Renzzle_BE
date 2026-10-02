@@ -47,19 +47,15 @@ public class AccountService {
         }
 
         UserEntity user = createNewUser(request.email(), request.password(), request.nickname(), request.deviceId());
-        // Automatically grant packId = 1 on sign-up
         trainingService.grantPackToUser(user, 1L);
         return authService.createAuthTokens(user.getId());
     }
 
     private UserEntity createNewUser(String email, String password, String nickname, String deviceId) {
-        // validate email
         if(userRepository.existsByEmail(email))
             throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
-        // validate nickname
         if(userRepository.existsByNickname(nickname))
             throw new CustomException(ErrorCode.DUPLICATE_NICKNAME);
-        // validate duplicate sign-up
         if(userRepository.existsByDeviceId(deviceId))
             throw new CustomException(ErrorCode.DUPLICATE_DEVICE);
 

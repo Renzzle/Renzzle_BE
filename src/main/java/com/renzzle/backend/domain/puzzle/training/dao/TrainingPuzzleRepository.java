@@ -53,7 +53,7 @@ public interface TrainingPuzzleRepository extends JpaRepository<TrainingPuzzle, 
     @Query("SELECT p.rankAttemptCount FROM TrainingPuzzle p WHERE p.id = :id")
     Optional<Integer> findRankAttemptCountById(@Param("id") Long id);
 
-    // One statement, so concurrent results on the same puzzle add up instead of overwriting each other
+    // Single statement so concurrent results add up instead of overwriting
     @Modifying
     @Transactional
     @Query(value = "UPDATE training_puzzle " +

@@ -140,8 +140,7 @@ class RankServiceTest {
 
     @Test
     void startRankGame_WhenRatingAndMmrDiffer_ThenDerivesEachPenaltyFromItsOwnValue() {
-        // Given: rating and mmr must differ here. TestUserFactory sets both to the
-        // same value, which makes swapping the two penalty arguments invisible.
+        // Given: rating and mmr differ, so swapped penalty arguments would show
         UserEntity user = TestUserFactory.createTestUser("tester", 1400.0);
         ReflectionTestUtils.setField(user, "id", 1L);
         ReflectionTestUtils.setField(user, "mmr", 1600.0);
@@ -166,9 +165,7 @@ class RankServiceTest {
         // When
         rankService.startRankGame(user);
 
-        // mmr 1600 sits above MMR_THRESHOLD so its penalty is x1.5 -> -23 -> 1577, while
-        // rating 1400 sits below it so its penalty is x0.5 -> -2 -> 1398. Feeding each
-        // the other's value yields 1595 / 1389 instead.
+        // mmr 1600 (x1.5) -> 1577, rating 1400 (x0.5) -> 1398; swapped would give 1595 / 1389
         ArgumentCaptor<UserEntity> saved = ArgumentCaptor.forClass(UserEntity.class);
         verify(userRepository).save(saved.capture());
 
@@ -308,7 +305,7 @@ class RankServiceTest {
 
     @Test
     void resultRankGame_WhenSolvedAtMinTargetWinProbability_ThenNextAssignmentStaysAtMin() {
-        // Given: the previous round already sits at the floor, so one more solve must not push past it
+        // Given: already at the floor
         UserEntity user = TestUserFactory.createTestUser("u1", 1500);
         ReflectionTestUtils.setField(user, "id", 1L);
 
@@ -816,7 +813,7 @@ class RankServiceTest {
 
         List<UserPuzzlerRankInfo> captured = captor.getAllValues();
 
-        // user1 with the higher score should come first (higher score stored first = appears at the top with reverseRangeWithScores)
+        // Higher score first
         UserPuzzlerRankInfo first = captured.get(0);
         UserPuzzlerRankInfo second = captured.get(1);
 

@@ -25,7 +25,6 @@ public class BoardUtils {
 
         parseBoardStatus(boardStatus, blackPosLists, whitePosLists);
 
-        // sort all lists
         for(int i = 0; i < SYMMETRY_COUNT; i++) {
             Collections.sort(blackPosLists.get(i));
             Collections.sort(whitePosLists.get(i));
@@ -45,7 +44,7 @@ public class BoardUtils {
         return posLists;
     }
 
-    // parse board status string, distributing each symmetry variant into the black/white lists
+    // Fills the black/white lists for every symmetry
     private static void parseBoardStatus(
             String boardStatus,
             List<List<Integer>> blackPosLists,
@@ -62,12 +61,11 @@ public class BoardUtils {
                 else whitePosLists.get(j).add(posList.get(j));
             }
 
-            // calculate increment based on position
+            // Columns 1-9 take two characters, 10-15 take three
             i += ((p - 1) % 15 < 9) ? 2 : 3;
         }
     }
 
-    // find minimum value list
     private static List<Integer> findMinList(List<List<Integer>> posLists) {
         List<Integer> min = posLists.get(0);
         for(int i = 1; i < posLists.size(); i++) {
@@ -78,7 +76,6 @@ public class BoardUtils {
         return min;
     }
 
-    // make string key
     private static String joinPositions(List<Integer> blackPos, List<Integer> whitePos) {
         StringBuilder result = new StringBuilder();
         for (Integer num : blackPos) {
@@ -178,7 +175,6 @@ public class BoardUtils {
 
         int n = (charPart - 'a') * 15;
 
-        // determine the number of digits
         if(index + 1 >= boardStatus.length())
             throwIllegalBoardStatusException(boardStatus);
         if(isZeroDigit(boardStatus.charAt(index + 1)))

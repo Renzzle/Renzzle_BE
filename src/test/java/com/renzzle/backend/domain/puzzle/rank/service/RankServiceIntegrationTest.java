@@ -63,11 +63,7 @@ class RankServiceIntegrationTest {
     private UserEntity testUser;
     private String redisKey;
 
-    /*
-        These tests commit, and the MySQL container is shared with the rollback-based repository
-        tests, so anything left behind would leak into them. Clear the puzzle tables on both sides
-        of every test. Reference data seeded by DataInitializer is untouched.
-    */
+    // These tests commit to a shared container, so clear puzzle tables before and after each one
     private void clearPuzzleData() {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             em.createNativeQuery("DELETE FROM latest_rank_puzzle").executeUpdate();
@@ -176,9 +172,7 @@ class RankServiceIntegrationTest {
         double ratingAfterStart = userRepository.findById(testUser.getId()).orElseThrow().getRating();
         assertTrue(ratingAfterStart < 1500, "the assignment must pre-deduct the loss");
 
-        // Wipe the session the way a Redis restart or an eviction would, then restore only the
-        // liveness marker. The pre-deduction values live on the assignment row, so a solve must
-        // still revert the deduction rather than compound it.
+        // Lose the session like a Redis restart would, keeping only the liveness marker
         LatestRankPuzzle assigned = latestRankPuzzleRepository.findTopByUserOrderByIdDesc(testUser).orElseThrow();
         redisTemplate.delete(redisKey);
 
@@ -203,7 +197,7 @@ class RankServiceIntegrationTest {
 
     @Test
     void rankFlow_WhenPuzzleAnswered_ThenOnlyTheAnsweredPuzzleRatingMoves() {
-        // start hands out the first puzzle, a missed result hands out the second, end leaves it unanswered
+        // The second puzzle is left unanswered when the game ends
         rankService.startRankGame(testUser);
         LatestRankPuzzle answered = latestRankPuzzleRepository.findTopByUserOrderByIdDesc(testUser).orElseThrow();
 

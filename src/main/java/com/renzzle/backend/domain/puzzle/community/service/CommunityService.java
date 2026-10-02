@@ -82,7 +82,7 @@ public class CommunityService {
                 .build();
     }
 
-    // Puzzles with rank results already moved toward their real difficulty, so only the rest are re-rated
+    // Ranked puzzles keep their learned rating
     @Transactional
     public int recalculateUnrankedPuzzleRatings() {
         List<CommunityPuzzle> changed = new ArrayList<>();
@@ -136,9 +136,7 @@ public class CommunityService {
         return response;
     }
 
-    /**
-     * For admin cache entry: full board and answer. Does not increment the view count.
-     */
+    // Admin cache entry; not counted as a view
     @Transactional(readOnly = true)
     public GetTrainingPuzzleForAdminResponse getCommunityPuzzleForAdminDetail(Long puzzleId) {
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)

@@ -72,9 +72,6 @@ public class AdminController {
     private final NoticeService noticeService;
     private final Clock clock;
 
-    /**
-     * Admin login page
-     */
     @Operation(summary = "Admin login page", description = "Returns admin login page.")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Login page HTML",
@@ -85,9 +82,6 @@ public class AdminController {
         return "admin/login";
     }
 
-    /**
-     * Admin-only login API (12-hour token)
-     */
     @Operation(summary = "Admin login", description = "Admin-specific login that issues 12-hour access token.")
     @SecurityRequirement(name = "Authorization")
     @PostMapping("/login")
@@ -97,17 +91,14 @@ public class AdminController {
             HttpServletRequest servletRequest,
             HttpServletResponse response
     ) {
-        // Handle normal login
         var loginResponse = accountService.login(request);
 
-        // Verify admin
         long userId = jwtProvider.getUserId(loginResponse.accessToken());
         Optional<UserEntity> user = userRepository.findById(userId);
         if (user.isEmpty() || !adminRepository.existsByUser(user.get())) {
             throw new CustomException(ErrorCode.ADMIN_ACCESS_DENIED);
         }
 
-        // Reissue admin-only token (12 hours)
         String adminAccessToken = jwtProvider.createAdminAccessToken(userId);
         Instant expiredAt = clock.instant().plus(12, ChronoUnit.HOURS);
         ResponseCookie cookie = ResponseCookie.from("admin_accessToken", adminAccessToken)
@@ -126,9 +117,6 @@ public class AdminController {
         ));
     }
 
-    /**
-     * Admin dashboard
-     */
     @Operation(summary = "Admin dashboard", description = "Admin dashboard page (requires admin token from /admin/login)")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Dashboard HTML",
@@ -141,9 +129,6 @@ public class AdminController {
         return "redirect:/admin/pack-list";
     }
 
-    /**
-     * Admin pack list page (first screen)
-     */
     @Operation(summary = "Admin pack list page", description = "Pack list view - first screen after login")
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/pack-list")
@@ -156,9 +141,6 @@ public class AdminController {
         return "admin/pack-list";
     }
 
-    /**
-     * Admin pack create page
-     */
     @Operation(summary = "Admin pack create page", description = "Pack creation form only")
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/pack-create")
@@ -175,11 +157,6 @@ public class AdminController {
         return "admin/pack-create";
     }
 
-    /**
-     * Admin logout
-     * - Delete admin_accessToken stored in the browser cookie
-     * - Redirect to the login page (/admin)
-     */
     @Operation(summary = "Admin logout", description = "Clear admin_accessToken cookie and redirect to login page.")
     @GetMapping("/logout")
     public String logout(HttpServletRequest request, HttpServletResponse response) {
@@ -198,11 +175,6 @@ public class AdminController {
         return request.isSecure() || "https".equalsIgnoreCase(request.getHeader("X-Forwarded-Proto"));
     }
 
-    /**
-     * Admin-only pack list (for the dashboard)
-     * - Same logic as the user-facing /api/training/pack but requires admin privileges
-     * - Not accessible once the admin token has expired
-     */
     @Operation(summary = "Get training pack list (Admin only)", description = "Admin-only pack list for dashboard")
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/training/pack")
@@ -216,9 +188,6 @@ public class AdminController {
         return ApiUtils.success(packs);
     }
 
-    /**
-     * Admin-only pack detail API
-     */
     @Operation(summary = "Get pack detail (Admin only)", description = "Admin-only pack detail with translations")
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/training/pack/{packId}")
@@ -230,12 +199,6 @@ public class AdminController {
         return ApiUtils.success(detail);
     }
 
-    /**
-     * Admin pack detail screen (when navigating to a pack)
-     * - Top: title, author, description (selected language)
-     * - Top-right: create problem button
-     * - Body: pack ID (read-only), problem order
-     */
     @Operation(summary = "Admin pack detail page", description = "Pack detail view with problem list")
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/pack-detail")
@@ -250,11 +213,6 @@ public class AdminController {
         return "admin/pack-detail";
     }
 
-    /**
-     * Admin problem add screen
-     * - Top: pack ID, title, author, description
-     * - Body: board visualization, board status, answer, depth, win color, add problem button
-     */
     @Operation(summary = "Admin puzzle add page", description = "Add puzzle form for a pack")
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/puzzle-add")
@@ -294,10 +252,6 @@ public class AdminController {
         return "admin/community-puzzles";
     }
 
-    /**
-     * Admin-only problem list (for the dashboard)
-     * - Returns an empty list even for empty packs (used by pack-detail, puzzle-add)
-     */
     @Operation(summary = "Get training puzzle list (Admin only)", description = "Admin-only puzzle list for pack detail")
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/training/puzzle/{packId}")

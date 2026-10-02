@@ -268,8 +268,6 @@ public class TrainingServiceTest {
             // increasePuzzleCount is a void method, so handle it with doNothing()
             doNothing().when(packRepository).increasePuzzleCount(packId);
 
-            // The service logic builds a TrainingPuzzle entity and then calls trainingPuzzleRepository.save()
-            // The unsaved Puzzle is constructed internally; mock it to return the savedPuzzle with an assigned id.
             TrainingPuzzle savedPuzzle = TrainingPuzzle.builder()
                     .id(100L)
                     .pack(pack)
@@ -675,7 +673,7 @@ public class TrainingServiceTest {
                     argThat(arg -> arg.getName().equals("EN"))
             )).thenReturn(List.of(translation));
 
-            // userPackRepository: the user has no record for this pack, so return an empty list (locked = true, solvedCount = 0)
+            // No user pack record: locked, solvedCount 0
             when(userPackRepository.findAllByUserIdAndPackIdIn(100L, List.of(1L)))
                     .thenReturn(Collections.emptyList());
 

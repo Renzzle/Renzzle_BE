@@ -61,7 +61,7 @@ public class RankService {
 
     @Transactional
     public RankStartResponse startRankGame(UserEntity userData) {
-        // Row lock so that a concurrent start/result for the same user cannot interleave
+        // Row lock so concurrent start/result calls can't interleave
         UserEntity user = userRepository.findByIdForUpdate(userData.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
         Long userId = user.getId();
@@ -116,27 +116,18 @@ public class RankService {
 
         long currentTTL = getRemainingTtlOrThrow(redisKey);
 
-        // Look up the previous puzzle and update whether it was solved
         LatestRankPuzzle previousPuzzle = latestRankPuzzleRepository
                 .findTopByUserOrderByIdDesc(user)
                 .orElseThrow(() -> new CustomException(ErrorCode.LATEST_PUZZLE_NOT_FOUND));
 
         previousPuzzle.solvedUpdate(request.isSolved());
 
-        /*
-            Every input comes from the assignment row rather than the Redis session: the puzzle
-            was handed out with its loss already deducted, so these are the values to revert to.
-        */
+        // Revert from the assignment snapshot, not the Redis session
         double userBeforeMmr = previousPuzzle.getMmrBeforePenalty();
         double userBeforeRating = previousPuzzle.getRatingBeforePenalty();
         double lastProblemRating = previousPuzzle.getPuzzleRating();
         double winProbability = ELOUtils.nextTargetWinProbability(
                 previousPuzzle.getTargetWinProbability(), request.isSolved());
-        /*
-        If the previous puzzle was solved,
-        adjust the target win probability for the next puzzle,
-        apply the multiplier to adjust the mmr and rating values, and update the variables
-         */
         if (request.isSolved()) {
             double mmrIncrease = ELOUtils.calculateMMRIncrease(userBeforeMmr, lastProblemRating);
             double ratingIncrease = ELOUtils.calculateRatingIncrease(userBeforeRating, lastProblemRating);
@@ -159,7 +150,6 @@ public class RankService {
 
         applyResultToPuzzle(previousPuzzle, request.isSolved());
 
-        // Fetch a suitable puzzle based on the user's rating & target win probability
         NextPuzzleResult nextPuzzle = getNextPuzzle(userBeforeMmr, winProbability, user);
 
         double ratingPenalty = ELOUtils.calculateRatingDecrease(userBeforeRating, nextPuzzle.rating());
@@ -184,7 +174,6 @@ public class RankService {
                 .build();
     }
 
-    // Records a puzzle as handed out, snapshotting the values a later result has to revert to
     private LatestRankPuzzle assignPuzzle(
             UserEntity user,
             NextPuzzleResult puzzle,
@@ -290,7 +279,7 @@ public class RankService {
 
         user.getReward(reward);
 
-        // Dropping the session before the reward commits would strand the user with no way to claim it
+        // After commit, so a rollback can't strand the reward
         runAfterCommit(() -> redisTemplate.delete(redisKey));
 
         return RankEndResponse.builder()
@@ -300,21 +289,15 @@ public class RankService {
     }
 
     NextPuzzleResult getNextPuzzle(double originalMmr, double targetWinProbability, UserEntity user) {
-        /*
-            Fetch a suitable puzzle based on the user's rating & target win probability.
-            From each puzzle source, select windowSize candidates,
-            shuffle them, then pick one of them to use as the next puzzle.
-        */
+        // Take the closest candidates from each source, then pick one at random
         double desiredRating = ELOUtils.getProblemRatingForTargetWinProbability(originalMmr, targetWinProbability);
         int windowSize = 5;
 
-        // Fetch each puzzle candidate pool (sorted by rating)
         List<TrainingPuzzle> trainingPuzzles =
                 trainingPuzzleRepository.findAvailableTrainingPuzzlesSortedByRating(user);
         List<CommunityPuzzle> communityPuzzles =
                 communityPuzzleRepository.findAvailableCommunityPuzzlesSortedByRating(user);
 
-        // Slicing utility
         List<TrainingPuzzle> selectedTrainings = pickNearByWindow(trainingPuzzles, desiredRating, windowSize);
         List<CommunityPuzzle> selectedCommunities = pickNearByWindow(communityPuzzles, desiredRating, windowSize);
 
@@ -343,15 +326,11 @@ public class RankService {
     }
 
     private <T> List<T> pickNearByWindow(List<T> sorted, double targetRating, int windowSize) {
-        /*
-            1. From puzzles with a rating difference under 200, select windowSize of them (if possible)
-            2. If there are not windowSize puzzles under 200, select the closest windowSize puzzles without the rating-difference limit
-        */
+        // Closest windowSize within 200, falling back to the closest overall
         if (sorted.isEmpty()) return Collections.emptyList();
 
         double maxDiff = 200.0;
 
-        // First pass: select windowSize within a difference under 200
         List<T> within200 = new ArrayList<>();
         for (T item : sorted) {
             double rating = getRating(item);
@@ -364,14 +343,12 @@ public class RankService {
             return within200.subList(0, windowSize);
         }
 
-        // Second pass: select windowSize in order of closeness without a limit
         List<T> sortedByClosest = new ArrayList<>(sorted);
         sortedByClosest.sort(Comparator.comparingDouble(o -> Math.abs(getRating(o) - targetRating)));
         int limit = Math.min(windowSize, sortedByClosest.size());
         return sortedByClosest.subList(0, limit);
     }
 
-    // Utility to extract a puzzle's rating
     private double getRating(Object obj) {
         if (obj instanceof TrainingPuzzle tp) return tp.getRating();
         if (obj instanceof CommunityPuzzle cp) return cp.getRating();

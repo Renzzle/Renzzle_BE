@@ -51,7 +51,6 @@ public class TrainingService {
     private final UserRepository userRepository;
     private final Clock clock;
 
-    // service test, repo test
     @Transactional
     public TrainingPuzzle createTrainingPuzzle(AddTrainingPuzzleRequest request) {
         Pack pack = packRepository.findById(request.packId())
@@ -68,7 +67,6 @@ public class TrainingService {
         WinColor winColor = WinColor.getWinColor(request.winColor());
         double rating = RatingUtil.puzzleRating(request.depth(), winColor, pack.getDifficulty());
 
-        // increase puzzle_count
         packRepository.increasePuzzleCount(request.packId());
 
         TrainingPuzzle puzzle = TrainingPuzzle.builder()
@@ -125,7 +123,7 @@ public class TrainingService {
         }
 
         TrainingPuzzle edited = puzzleBuilder.build();
-        // The admin page resends every field on save, so compare values instead of checking for presence
+        // The admin page resends every field, so compare values
         if (changesRatingInputs(puzzle, edited)) {
             edited = edited.toBuilder()
                     .rating(RatingUtil.puzzleRating(
@@ -136,8 +134,7 @@ public class TrainingService {
 
         TrainingPuzzle modified = trainingPuzzleRepository.save(edited);
 
-        // cached replies are keyed by board position, so editing either the board or the solution
-        // line strands every existing entry; reseeding replaces them with the new line
+        // Cached replies are keyed by position, so board or answer edits need a reseed
         if (request.boardStatus() != null || request.answer() != null) {
             puzzleCacheService.seedSolutionPath(
                     PuzzleType.TRAINING, modified.getId(), modified.getBoardStatus(), modified.getAnswer());
@@ -154,7 +151,7 @@ public class TrainingService {
                 || !Objects.equals(before.getPack().getId(), after.getPack().getId());
     }
 
-    // Puzzles with rank results already moved toward their real difficulty, so only the rest are re-rated
+    // Ranked puzzles keep their learned rating
     @Transactional
     public int recalculateUnrankedPuzzleRatings() {
         return rerate(trainingPuzzleRepository.findByRankAttemptCount(0), puzzle -> puzzle.getPack().getDifficulty());
@@ -172,7 +169,6 @@ public class TrainingService {
         return changed.size();
     }
 
-    // service test, repo test
     @Transactional
     public void deleteTrainingPuzzle(Long puzzleId) {
         Optional<TrainingPuzzle> puzzle = trainingPuzzleRepository.findById(puzzleId);
@@ -195,7 +191,6 @@ public class TrainingService {
         packRepository.decreasePuzzleCount(puzzle.get().getPack().getId());
     }
 
-    // service test, repo test
     @Transactional
     public SolveTrainingPuzzleResponse solveTrainingPuzzle(UserEntity user, Long puzzleId, Boolean getReward) {
         UserEntity lockedUser = userRepository.findByIdForUpdate(user.getId())
@@ -204,8 +199,7 @@ public class TrainingService {
         return applySolveTrainingPuzzle(lockedUser, puzzleId, getReward);
     }
 
-    // The caller must pass a user loaded through findByIdForUpdate, so the reward below is applied
-    // to a locked row and the user lock is always taken before any other row in this transaction
+    // lockedUser must come from findByIdForUpdate so the user lock is taken first
     private SolveTrainingPuzzleResponse applySolveTrainingPuzzle(UserEntity lockedUser, Long puzzleId, Boolean getReward) {
         Optional<SolvedTrainingPuzzle> existInfo =
                 solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(lockedUser.getId(), puzzleId);
@@ -220,7 +214,6 @@ public class TrainingService {
         TrainingPuzzle trainingPuzzle = trainingPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
 
-        // If solved for the first time, save it and compute the reward based on difficulty
         solvedTrainingPuzzleRepository.save(SolvedTrainingPuzzle.builder()
                 .user(lockedUser)
                 .puzzle(trainingPuzzle)
@@ -238,7 +231,6 @@ public class TrainingService {
                 .build();
     }
 
-    // service test, repo test
     @Transactional(readOnly = true)
     public List<GetTrainingPuzzleResponse> getTrainingPuzzleList(UserEntity user, Long packId) {
         if(packId == null) {
@@ -267,7 +259,6 @@ public class TrainingService {
     }
 
 
-    // service test, repo test
     @Transactional
     public Pack createPack(CreateTrainingPackRequest request) {
         Pack pack = Pack.builder()
@@ -335,7 +326,6 @@ public class TrainingService {
         packRepository.delete(pack);
     }
 
-    // service test, repo test
     @Transactional
     public void addTranslation(TranslationRequest request) {
         Pack pack = packRepository.findById(request.packId())
@@ -358,7 +348,6 @@ public class TrainingService {
         packTranslationRepository.save(translation);
     }
 
-    // service test, repo test
     @Transactional(readOnly = true)
     public List<GetPackResponse> getTrainingPackList(UserEntity user, GetTrainingPackRequest request){
         List<Pack> packs = packRepository.findByDifficulty(Difficulty.getDifficulty(request.difficulty()));
@@ -477,7 +466,6 @@ public class TrainingService {
         return result;
     }
 
-    // service test, repo test
     @Transactional
     public GetPackPurchaseResponse purchaseTrainingPack(UserEntity user, PurchaseTrainingPackRequest request) {
         UserEntity lockedUser = userRepository.findByIdForUpdate(user.getId())
@@ -486,8 +474,7 @@ public class TrainingService {
         Pack pack = packRepository.findById(request.packId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
-        // The user row is already locked above, so concurrent purchases by the same user are
-        // serialized here and cannot both pass this check
+        // Serialized by the user row lock above
         if (userPackRepository.existsByUserIdAndPackId(lockedUser.getId(), pack.getId())) {
             throw new CustomException(ErrorCode.ALREADY_OWNED_PACK);
         }
@@ -523,10 +510,6 @@ public class TrainingService {
                 .build();
     }
 
-    /**
-     * Admin-only pack detail lookup
-     * - Returns id, translation info (title/author/description per language), price, difficulty, and total puzzle count
-     */
     @Transactional(readOnly = true)
     public GetPackDetailForAdminResponse getPackDetailForAdmin(Long packId) {
         Pack pack = packRepository.findById(packId)
@@ -551,9 +534,7 @@ public class TrainingService {
         );
     }
 
-    /**
-     * Admin-only puzzle list lookup - returns an empty list even for an empty pack
-     */
+    // Unlike the user-facing list, an empty pack returns an empty list; the admin pages rely on it
     @Transactional(readOnly = true)
     public List<GetTrainingPuzzleForAdminResponse> getTrainingPuzzleListForAdmin(Long packId) {
         if (packId == null) {
@@ -598,7 +579,7 @@ public class TrainingService {
                 .build();
     }
 
-    // Grant a specific Pack for free at signup (no balance deduction)
+    // Free at sign-up, no charge
     @Transactional
     public void grantPackToUser(UserEntity user, Long packId) {
         if (user == null || packId == null) {
@@ -608,7 +589,6 @@ public class TrainingService {
         Pack pack = packRepository.findById(packId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
-        // Ignore if the user already owns it
         if (userPackRepository.existsByUserIdAndPackId(user.getId(), packId)) {
             return;
         }

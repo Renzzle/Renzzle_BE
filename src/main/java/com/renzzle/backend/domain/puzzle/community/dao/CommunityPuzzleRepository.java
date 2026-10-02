@@ -55,7 +55,7 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
     @Query("SELECT p.rankAttemptCount FROM CommunityPuzzle p WHERE p.id = :id")
     Optional<Integer> findRankAttemptCountById(@Param("id") Long id);
 
-    // One statement, so concurrent results on the same puzzle add up instead of overwriting each other
+    // Single statement so concurrent results add up instead of overwriting
     @Modifying
     @Transactional
     @Query(value = "UPDATE community_puzzle " +

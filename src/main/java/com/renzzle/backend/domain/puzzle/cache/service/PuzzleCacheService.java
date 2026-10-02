@@ -64,20 +64,7 @@ public class PuzzleCacheService {
         puzzleCacheRepository.save(updated);
     }
 
-    /**
-     * Seeds the cache with the puzzle's intended solution line, so the most travelled path is
-     * answered without waiting for an admin to enter it by hand.
-     * <p>
-     * Only positions where the AI is to move become keys: the user plays the winning color and so
-     * always moves first from the root, which makes every odd move of {@code answer} the AI's reply
-     * to the user move before it. A trailing user move has no reply and contributes no entry.
-     * <p>
-     * The solution line replaces the cached DAG instead of merging into it, so this doubles as
-     * invalidation when a puzzle's board or answer is edited and the old entries no longer apply.
-     *
-     * @param rootBoardState the puzzle's initial board
-     * @param answer         the solution moves played from {@code rootBoardState}
-     */
+    // Keys only AI-to-move positions; replacing the DAG clears entries from old edits
     @Transactional
     public void seedSolutionPath(PuzzleType puzzleType, Long puzzleId, String rootBoardState, String answer) {
         if (puzzleType == null || puzzleId == null || rootBoardState == null || rootBoardState.isBlank()) {
@@ -107,10 +94,6 @@ public class PuzzleCacheService {
         puzzleCacheRepository.save(seeded);
     }
 
-    /**
-     * A seeded position is answered by the puzzle's own solution, so a manual save must not change
-     * it. Correcting the solution means editing the puzzle's answer, which reseeds the cache.
-     */
     private boolean isSeededPosition(PuzzleCache puzzle, long zobristHash) {
         String solutionLine = puzzle.getSolutionLine();
         if (solutionLine == null || solutionLine.isBlank()) {
@@ -164,15 +147,7 @@ public class PuzzleCacheService {
         return solutionDag.get(currentZobristHash);
     }
 
-    /**
-     * Enumerates every next move that is already cached for the given position, so the client can
-     * prefetch one ply ahead and answer the user's move without another round trip.
-     * <p>
-     * Unlike {@link #getAiResponse}, {@code currentBoardState} is a position where it is the
-     * <b>user's</b> turn. Each candidate is the user's move mapped to the AI's cached reply.
-     *
-     * @return user move index to AI reply index, both 0-based; empty when nothing is cached
-     */
+    // Takes a user-to-move position; maps each cached user move to the AI reply (0-based cells)
     @Transactional(readOnly = true)
     public Map<Integer, Integer> getNextMoveCandidates(PuzzleType puzzleType, Long puzzleId, String currentBoardState) {
         if (puzzleType == null || puzzleId == null || currentBoardState == null || currentBoardState.isBlank()) {

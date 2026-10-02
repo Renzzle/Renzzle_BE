@@ -61,7 +61,7 @@ class ELOUtilsTest {
 
     @Test
     void getProblemRatingForTargetWinProbability_WhenSolveStreakRunsLong_ThenNeverGetsEasier() {
-        // unclamped, the 14th straight solve pushed p below 0 and the next puzzle fell back to the user's own rating
+        // Unclamped, the 14th straight solve fell back to the user's own rating
         double p = TARGET_WIN_PROBABILITY;
         double previous = ELOUtils.getProblemRatingForTargetWinProbability(USER_MMR, p);
         for (int i = 0; i < 30; i++) {
@@ -74,7 +74,7 @@ class ELOUtilsTest {
 
     @Test
     void getProblemRatingForTargetWinProbability_WhenMissStreakRunsLong_ThenNeverGetsHarder() {
-        // unclamped, the 6th straight miss pushed p above 1 and the next puzzle jumped back to the user's own rating
+        // Unclamped, the 6th straight miss jumped back to the user's own rating
         double p = TARGET_WIN_PROBABILITY;
         double previous = ELOUtils.getProblemRatingForTargetWinProbability(USER_MMR, p);
         for (int i = 0; i < 30; i++) {
