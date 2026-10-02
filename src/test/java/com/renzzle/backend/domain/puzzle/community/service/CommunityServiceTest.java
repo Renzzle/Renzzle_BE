@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.puzzle.community.service;
 
+import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
 import com.renzzle.backend.domain.puzzle.cache.service.PuzzleCacheService;
 import com.renzzle.backend.domain.puzzle.community.api.request.AddCommunityPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzleRequest;
@@ -18,6 +19,7 @@ import com.renzzle.backend.domain.puzzle.shared.util.BoardUtils;
 import com.renzzle.backend.domain.puzzle.shared.util.RatingUtil;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
+import com.renzzle.backend.global.common.domain.Status;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import com.renzzle.backend.support.TestCommunityPuzzleBuilder;
@@ -109,6 +111,84 @@ class CommunityServiceTest {
         assertThat(response.puzzleId()).isEqualTo(mockPuzzle.getId());
 
         verify(communityPuzzleRepository, times(1)).save(any(CommunityPuzzle.class));
+    }
+
+    @Test
+    void addCommunityPuzzle_WhenVerified_ThenSeedsTheSolutionLine() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder().build();
+        AddCommunityPuzzleRequest request =
+                new AddCommunityPuzzleRequest("f8f9", "e5", 7, "description", "BLACK", true);
+        when(communityPuzzleRepository.save(any(CommunityPuzzle.class))).thenReturn(TestCommunityPuzzleBuilder
+                .builder(user).withId(1L).withBoardStatus("f8f9").withAnswer("e5").withVerified(true).build());
+
+        // When
+        communityService.addCommunityPuzzle(request, user);
+
+        // Then
+        verify(puzzleCacheService).seedSolutionPath(PuzzleType.COMMUNITY, 1L, "f8f9", "e5");
+    }
+
+    @Test
+    void addCommunityPuzzle_WhenUnverified_ThenLeavesTheCacheAlone() {
+        // Given: the answer was entered by hand and never checked by the engine
+        UserEntity user = TestUserEntityBuilder.builder().build();
+        AddCommunityPuzzleRequest request =
+                new AddCommunityPuzzleRequest("f8f9", "e5", 7, "description", "BLACK", false);
+        when(communityPuzzleRepository.save(any(CommunityPuzzle.class))).thenReturn(TestCommunityPuzzleBuilder
+                .builder(user).withId(1L).withBoardStatus("f8f9").withAnswer("e5").withVerified(false).build());
+
+        // When
+        communityService.addCommunityPuzzle(request, user);
+
+        // Then
+        verifyNoInteractions(puzzleCacheService);
+    }
+
+    @Test
+    void updateCommunityPuzzleVerificationForAdmin_WhenVerified_ThenMergesTheSolutionLine() {
+        // Given
+        CommunityPuzzle puzzle = verificationTarget(false);
+
+        // When
+        communityService.updateCommunityPuzzleVerificationForAdmin(1L, true);
+
+        // Then
+        verify(puzzleCacheService).mergeSolutionPath(PuzzleType.COMMUNITY, 1L, puzzle.getBoardStatus(), puzzle.getAnswer());
+    }
+
+    @Test
+    void updateCommunityPuzzleVerificationForAdmin_WhenUnverified_ThenKeepsTheSeededReplies() {
+        // Given
+        verificationTarget(true);
+
+        // When
+        communityService.updateCommunityPuzzleVerificationForAdmin(1L, false);
+
+        // Then
+        verifyNoInteractions(puzzleCacheService);
+    }
+
+    @Test
+    void updateCommunityPuzzleVerificationForAdmin_WhenUnchanged_ThenLeavesTheCacheAlone() {
+        // Given
+        verificationTarget(true);
+
+        // When
+        communityService.updateCommunityPuzzleVerificationForAdmin(1L, true);
+
+        // Then
+        verifyNoInteractions(puzzleCacheService);
+    }
+
+    private CommunityPuzzle verificationTarget(boolean verified) {
+        UserEntity author = TestUserEntityBuilder.builder().withStatus(Status.getDefaultStatus()).build();
+        CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(author)
+                .withId(1L).withBoardStatus("f8f9").withAnswer("e5")
+                .withVerified(verified).withCreatedAt(FIXED_INSTANT)
+                .build();
+        when(communityPuzzleRepository.findById(1L)).thenReturn(Optional.of(puzzle));
+        return puzzle;
     }
 
     @Test
