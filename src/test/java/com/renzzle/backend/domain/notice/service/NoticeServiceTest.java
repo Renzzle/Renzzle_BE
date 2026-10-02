@@ -370,8 +370,7 @@ class NoticeServiceTest {
         // Given
         when(systemInfoRepository.getSystemInfo()).thenReturn(Optional.of(systemInfo("1.0.5", "1.0.9", false)));
 
-        // When / Then: bean validation rejects this in the web layer first; the service
-        // must not quietly fall back to a default platform either.
+        // When / Then: no silent fallback to a default platform
         assertThrows(IllegalArgumentException.class, () -> noticeService.getPersonalNotice(
                 new GetPersonalNoticeRequest("EN", "WINDOWS", "1.0.5"), user));
     }

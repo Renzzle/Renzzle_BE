@@ -31,8 +31,7 @@ public class TestTokenService {
     private final LoginAttemptService loginAttemptService;
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    // Same credential check as login, but issues a longer lived access token.
-    // No refresh token is stored, so the login session of the account is left untouched.
+    // Longer-lived token with no refresh token, so the real login session is untouched
     @Transactional(readOnly = true)
     public TestTokenResponse createTestToken(TestTokenRequest request) {
         loginAttemptService.checkNotLocked(request.email());

@@ -9,9 +9,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @ConditionalOnProperty(name = "docs.enabled", havingValue = "true")
 public class ApiDocsConfig implements WebMvcConfigurer {
 
-    // Serves the Scalar API reference page (templates/docs.html) at /docs.
-    // A view controller renders the template in place, so unlike a forward it does
-    // not re-enter the security filter chain under a second path.
+    // Renders templates/docs.html in place, so it doesn't re-enter the security chain
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
         registry.addViewController("/docs").setViewName("docs");

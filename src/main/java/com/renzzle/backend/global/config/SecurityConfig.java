@@ -77,7 +77,7 @@ public class SecurityConfig {
                         .requestMatchers(permitAllRequestMatchers.toArray(new RequestMatcher[0])).permitAll()
                         // Admin logout must always be accessible regardless of token state
                         .requestMatchers(HttpMethod.GET, "/admin/logout").permitAll()
-                        // Admin page (when the token is expired the GET request itself fails, so no separate verify is needed)
+                        // Admin pages
                         .requestMatchers(HttpMethod.GET, "/admin/dashboard").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.GET, "/admin/pack-list").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.GET, "/admin/pack-create").hasAuthority(ADMIN_PREFIX)
@@ -105,6 +105,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/training/pack/translation").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.PATCH, "/api/training/puzzle/**").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.PATCH, "/admin/community/puzzle-manage/**").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.POST, "/admin/puzzle/rating/recalculate").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.DELETE, "/api/training/puzzle/**").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.POST, "/admin/notice/**").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.PATCH, "/admin/notice/**").hasAuthority(ADMIN_PREFIX)
@@ -120,7 +121,7 @@ public class SecurityConfig {
                 .addFilterBefore(new JwtAuthenticationFilter(jwtProvider, userRepository, adminRepository, permitAllRequestMatchers), UsernamePasswordAuthenticationFilter.class);
 
         if (!appKeys.isEmpty()) {
-            // Runs after authentication so admin dashboard requests, which cannot hold the key in a browser, are exempt
+            // After JWT auth so browser admin requests, which have no app key, pass
             httpSecurity.addFilterAfter(new AppKeyAuthenticationFilter(appKeys, appKeyRequestMatcher), JwtAuthenticationFilter.class);
         } else {
             log.warn("APP_KEY is empty, so app key verification is disabled");
@@ -129,7 +130,7 @@ public class SecurityConfig {
         return httpSecurity.build();
     }
 
-    // APP_KEY holds a comma separated list, so a new key can be accepted before the old one is dropped
+    // Comma separated, so keys can rotate without downtime
     private Set<String> parseAppKeys(String appKey) {
         return Arrays.stream(appKey.split(","))
                 .map(String::trim)

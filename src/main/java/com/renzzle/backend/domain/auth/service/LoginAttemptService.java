@@ -52,7 +52,7 @@ public class LoginAttemptService {
         loginAttemptRepository.deleteById(email);
     }
 
-    // The failure that hits the limit locks for the base duration and every further one doubles it
+    // Base duration at the limit, doubling with each further failure
     private long lockSecondOf(int failCount) {
         int step = Math.min(failCount - LOGIN_FAIL_LIMIT, MAX_LOCK_STEP);
         long lockSecond = (long) LOGIN_LOCK_BASE_SECOND << step;

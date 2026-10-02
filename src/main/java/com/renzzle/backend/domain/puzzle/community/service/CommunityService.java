@@ -5,6 +5,8 @@ import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzl
 import com.renzzle.backend.domain.puzzle.community.api.response.AddCommunityPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.cache.api.request.GetCommunityPuzzlesForCacheRequest;
 import com.renzzle.backend.domain.puzzle.cache.api.response.CommunityPuzzleCachePickerResponse;
+import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
+import com.renzzle.backend.domain.puzzle.cache.service.PuzzleCacheService;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleForAdminResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleAnswerResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlesResponse;
@@ -46,6 +48,7 @@ public class CommunityService {
     private final CommunityPuzzleRepository communityPuzzleRepository;
     private final UserCommunityPuzzleRepository userCommunityPuzzleRepository;
     private final UserRepository userRepository;
+    private final PuzzleCacheService puzzleCacheService;
 
     @Value("${community.puzzle.daily-upload-limit}")
     private int dailyUploadLimit;
@@ -62,7 +65,7 @@ public class CommunityService {
                 .boardKey(boardKey)
                 .answer(request.answer())
                 .depth(request.depth())
-                .rating(RatingUtil.puzzleRating(request.depth(), winColor))
+                .rating(RatingUtil.puzzleRating(request.depth(), winColor, null))
                 .description(request.description())
                 .user(user)
                 .winColor(winColor)
@@ -71,9 +74,26 @@ public class CommunityService {
 
         CommunityPuzzle result = communityPuzzleRepository.save(puzzle);
 
+        puzzleCacheService.seedSolutionPath(
+                PuzzleType.COMMUNITY, result.getId(), result.getBoardStatus(), result.getAnswer());
+
         return AddCommunityPuzzleResponse.builder()
                 .puzzleId(result.getId())
                 .build();
+    }
+
+    // Ranked puzzles keep their learned rating
+    @Transactional
+    public int recalculateUnrankedPuzzleRatings() {
+        List<CommunityPuzzle> changed = new ArrayList<>();
+        for (CommunityPuzzle puzzle : communityPuzzleRepository.findByRankAttemptCount(0)) {
+            double rating = RatingUtil.puzzleRating(puzzle.getDepth(), puzzle.getWinColor(), null);
+            if (rating != puzzle.getRating()) {
+                changed.add(puzzle.toBuilder().rating(rating).build());
+            }
+        }
+        communityPuzzleRepository.saveAll(changed);
+        return changed.size();
     }
 
     private void checkDailyUploadLimit(UserEntity user) {
@@ -116,9 +136,7 @@ public class CommunityService {
         return response;
     }
 
-    /**
-     * For admin cache entry: full board and answer. Does not increment the view count.
-     */
+    // Admin cache entry; not counted as a view
     @Transactional(readOnly = true)
     public GetTrainingPuzzleForAdminResponse getCommunityPuzzleForAdminDetail(Long puzzleId) {
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)

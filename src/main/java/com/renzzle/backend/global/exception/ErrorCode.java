@@ -72,7 +72,6 @@ public enum ErrorCode {
     NO_SUCH_TRAINING_PACKS(HttpStatus.NOT_FOUND, "P4043", "No training pack for that difficulty"),
 
 
-    CANNOT_FIND_PUZZLE(HttpStatus.NOT_FOUND, "P4044", "Puzzle not found"),
     NO_SUCH_PACK_TRANSLATION(HttpStatus.NOT_FOUND, "P4044", "Pack translation not found"),
     NO_USER_PROGRESS_FOR_PACK(HttpStatus.NOT_FOUND, "P4045", "No progress for this pack"),
     CANNOT_FIND_RANK_PUZZLE(HttpStatus.NOT_FOUND, "P4046", "Ranked puzzle not found"),
@@ -80,6 +79,7 @@ public enum ErrorCode {
     LATEST_PUZZLE_NOT_FOUND(HttpStatus.NOT_FOUND, "P4048", "No previous ranked puzzle"),
     TREND_PUZZLE_DUPLICATED(HttpStatus.CONFLICT, "P4090", "Duplicate trend puzzle"),
     ALREADY_OWNED_PACK(HttpStatus.CONFLICT, "P4091", "Training pack already owned"),
+    PROTECTED_SOLUTION_POSITION(HttpStatus.CONFLICT, "P4092", "Position belongs to the puzzle's solution line"),
     EXCEED_DAILY_PUZZLE_UPLOAD(HttpStatus.TOO_MANY_REQUESTS, "P429", "Daily puzzle upload limit reached"),
     SESSION_ALREADY_ENDED(HttpStatus.GONE, "P4100", "Session already ended"),
     SESSION_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "P5000", "Failed to generate session ID"),
