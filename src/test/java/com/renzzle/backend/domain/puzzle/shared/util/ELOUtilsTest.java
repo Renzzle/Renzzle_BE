@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.puzzle.shared.util;
 
+import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
 import org.junit.jupiter.api.Test;
 
 import static com.renzzle.backend.domain.puzzle.shared.util.ELOUtils.MAX_TARGET_WIN_PROBABILITY;
@@ -12,6 +13,8 @@ class ELOUtilsTest {
 
     private static final double EPS = 1e-9;
     private static final double USER_MMR = 1000.0;
+    private static final PuzzleType TRAINING = PuzzleType.TRAINING;
+    private static final PuzzleType COMMUNITY = PuzzleType.COMMUNITY;
 
     @Test
     void nextTargetWinProbability_WhenSolvedInRange_ThenStepsDownByDelta() {
@@ -84,33 +87,49 @@ class ELOUtilsTest {
 
     @Test
     void puzzleKFactor_WhenNoResultsYet_ThenStartsAtMax() {
-        assertEquals(40.0, ELOUtils.puzzleKFactor(0), EPS);
+        assertEquals(40.0, ELOUtils.puzzleKFactor(TRAINING, 0), EPS);
+        assertEquals(60.0, ELOUtils.puzzleKFactor(COMMUNITY, 0), EPS);
+    }
+
+    @Test
+    void puzzleKFactor_WhenPuzzleIsFromCommunity_ThenStaysAboveTrainingUntilBothSettle() {
+        // nobody curates community puzzles, so their starting rating needs correcting faster
+        for (int attempts = 0; attempts <= 40; attempts++) {
+            assertThat(ELOUtils.puzzleKFactor(COMMUNITY, attempts))
+                    .isGreaterThan(ELOUtils.puzzleKFactor(TRAINING, attempts));
+        }
+        assertEquals(ELOUtils.puzzleKFactor(TRAINING, 200), ELOUtils.puzzleKFactor(COMMUNITY, 200), EPS);
     }
 
     @Test
     void puzzleKFactor_WhenResultsAccumulate_ThenShrinksDownToMin() {
-        assertEquals(20.0, ELOUtils.puzzleKFactor(10), EPS);
+        assertEquals(20.0, ELOUtils.puzzleKFactor(TRAINING, 10), EPS);
+        assertEquals(30.0, ELOUtils.puzzleKFactor(COMMUNITY, 10), EPS);
 
-        double previous = ELOUtils.puzzleKFactor(0);
-        for (int attempts = 1; attempts <= 200; attempts++) {
-            double k = ELOUtils.puzzleKFactor(attempts);
-            assertThat(k).isLessThanOrEqualTo(previous).isGreaterThanOrEqualTo(8.0);
-            previous = k;
+        for (PuzzleType type : PuzzleType.values()) {
+            double previous = ELOUtils.puzzleKFactor(type, 0);
+            for (int attempts = 1; attempts <= 200; attempts++) {
+                double k = ELOUtils.puzzleKFactor(type, attempts);
+                assertThat(k).isLessThanOrEqualTo(previous).isGreaterThanOrEqualTo(8.0);
+                previous = k;
+            }
+            assertEquals(8.0, ELOUtils.puzzleKFactor(type, 200), EPS);
         }
-        assertEquals(8.0, ELOUtils.puzzleKFactor(200), EPS);
     }
 
     @Test
     void calculatePuzzleRatingChange_WhenEvenlyMatched_ThenMovesByHalfOfK() {
-        assertEquals(-20.0, ELOUtils.calculatePuzzleRatingChange(1000, 1000, 0, true), EPS);
-        assertEquals(20.0, ELOUtils.calculatePuzzleRatingChange(1000, 1000, 0, false), EPS);
+        assertEquals(-20.0, ELOUtils.calculatePuzzleRatingChange(TRAINING, 1000, 1000, 0, true), EPS);
+        assertEquals(20.0, ELOUtils.calculatePuzzleRatingChange(TRAINING, 1000, 1000, 0, false), EPS);
+        assertEquals(-30.0, ELOUtils.calculatePuzzleRatingChange(COMMUNITY, 1000, 1000, 0, true), EPS);
+        assertEquals(30.0, ELOUtils.calculatePuzzleRatingChange(COMMUNITY, 1000, 1000, 0, false), EPS);
     }
 
     @Test
     void calculatePuzzleRatingChange_WhenEasyPuzzleMissed_ThenRisesMoreThanHardPuzzleMissed() {
         // missing a puzzle the user was expected to solve says more about the puzzle
-        double easyMissed = ELOUtils.calculatePuzzleRatingChange(1500, 1200, 0, false);
-        double hardMissed = ELOUtils.calculatePuzzleRatingChange(1500, 1800, 0, false);
+        double easyMissed = ELOUtils.calculatePuzzleRatingChange(TRAINING, 1500, 1200, 0, false);
+        double hardMissed = ELOUtils.calculatePuzzleRatingChange(TRAINING, 1500, 1800, 0, false);
 
         assertThat(hardMissed).isPositive();
         assertThat(easyMissed).isGreaterThan(hardMissed);
@@ -118,8 +137,8 @@ class ELOUtilsTest {
 
     @Test
     void calculatePuzzleRatingChange_WhenHardPuzzleSolved_ThenDropsMoreThanEasyPuzzleSolved() {
-        double hardSolved = ELOUtils.calculatePuzzleRatingChange(1500, 1800, 0, true);
-        double easySolved = ELOUtils.calculatePuzzleRatingChange(1500, 1200, 0, true);
+        double hardSolved = ELOUtils.calculatePuzzleRatingChange(TRAINING, 1500, 1800, 0, true);
+        double easySolved = ELOUtils.calculatePuzzleRatingChange(TRAINING, 1500, 1200, 0, true);
 
         assertThat(easySolved).isNegative();
         assertThat(hardSolved).isLessThan(easySolved);
@@ -127,9 +146,11 @@ class ELOUtilsTest {
 
     @Test
     void calculatePuzzleRatingChange_WhenPuzzleWellAttempted_ThenMovesLess() {
-        double fresh = ELOUtils.calculatePuzzleRatingChange(1000, 1000, 0, false);
-        double settled = ELOUtils.calculatePuzzleRatingChange(1000, 1000, 100, false);
+        for (PuzzleType type : PuzzleType.values()) {
+            double fresh = ELOUtils.calculatePuzzleRatingChange(type, 1000, 1000, 0, false);
+            double settled = ELOUtils.calculatePuzzleRatingChange(type, 1000, 1000, 100, false);
 
-        assertThat(settled).isPositive().isLessThan(fresh);
+            assertThat(settled).isPositive().isLessThan(fresh);
+        }
     }
 }

@@ -225,7 +225,7 @@ public class RankService {
         }
 
         double delta = ELOUtils.calculatePuzzleRatingChange(
-                answered.getMmrBeforePenalty(), answered.getPuzzleRating(), rankAttemptCount.get(), solved);
+                type, answered.getMmrBeforePenalty(), answered.getPuzzleRating(), rankAttemptCount.get(), solved);
 
         switch (type) {
             case TRAINING -> trainingPuzzleRepository.applyRankResult(puzzleId, delta, MIN_RATING, MAX_RATING);

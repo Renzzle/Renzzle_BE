@@ -1,5 +1,7 @@
 package com.renzzle.backend.domain.puzzle.shared.util;
 
+import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
+
 public class ELOUtils {
 
     private ELOUtils() {}
@@ -15,8 +17,8 @@ public class ELOUtils {
     public static final double MIN_TARGET_WIN_PROBABILITY = 0.05;
     public static final double MAX_TARGET_WIN_PROBABILITY = 0.95;
     // A new puzzle's rating is only a guess from its depth, so K starts high and falls as results
-    // come in: half of K_PUZZLE_MAX after K_PUZZLE_HALVING_ATTEMPTS results, never below K_PUZZLE_MIN
-    private static final double K_PUZZLE_MAX = 40.0;
+    private static final double K_TRAINING_PUZZLE_MAX = 40.0;
+    private static final double K_COMMUNITY_PUZZLE_MAX = 60.0;
     private static final double K_PUZZLE_MIN = 8.0;
     private static final double K_PUZZLE_HALVING_ATTEMPTS = 10.0;
 
@@ -67,15 +69,16 @@ public class ELOUtils {
         return Math.round(-K_RATING * expected * getPenaltyMultiplier(userRating));
     }
 
-    public static double puzzleKFactor(int rankAttemptCount) {
-        double k = K_PUZZLE_MAX * K_PUZZLE_HALVING_ATTEMPTS / (K_PUZZLE_HALVING_ATTEMPTS + rankAttemptCount);
+    public static double puzzleKFactor(PuzzleType puzzleType, int rankAttemptCount) {
+        double max = puzzleType == PuzzleType.COMMUNITY ? K_COMMUNITY_PUZZLE_MAX : K_TRAINING_PUZZLE_MAX;
+        double k = max * K_PUZZLE_HALVING_ATTEMPTS / (K_PUZZLE_HALVING_ATTEMPTS + rankAttemptCount);
         return Math.max(K_PUZZLE_MIN, k);
     }
 
     public static double calculatePuzzleRatingChange(
-            double userMmr, double puzzleRating, int rankAttemptCount, boolean solved) {
+            PuzzleType puzzleType, double userMmr, double puzzleRating, int rankAttemptCount, boolean solved) {
         double expected = expectedWinProbability(userMmr, puzzleRating);
-        double k = puzzleKFactor(rankAttemptCount);
+        double k = puzzleKFactor(puzzleType, rankAttemptCount);
         return solved ? -k * (1 - expected) : k * expected;
     }
 }

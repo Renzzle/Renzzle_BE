@@ -406,8 +406,8 @@ class RankServiceTest {
         // When
         rankService.resultRankGame(user, new RankResultRequest(false));
 
-        // Then
-        verify(communityPuzzleRepository).applyRankResult(9L, 20.0, RatingUtil.MIN_RATING, RatingUtil.MAX_RATING);
+        // Then: evenly matched and never attempted, so community K = 60 and expected = 0.5
+        verify(communityPuzzleRepository).applyRankResult(9L, 30.0, RatingUtil.MIN_RATING, RatingUtil.MAX_RATING);
         verify(trainingPuzzleRepository, never()).applyRankResult(anyLong(), anyDouble(), anyDouble(), anyDouble());
     }
 

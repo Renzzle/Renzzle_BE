@@ -41,11 +41,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hibernate.validator.internal.util.Contracts.assertTrue;
 import static org.junit.jupiter.api.Assertions.*;
 
-/*
-    Deliberately not @Transactional: the service defers its Redis writes to afterCommit, so a
-    test-managed transaction that always rolls back would hide every session write. Each test
-    commits for real and cleans up beforehand instead.
-*/
 @SpringBootTest
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = TestContainersConfig.class)
@@ -219,7 +214,7 @@ class RankServiceIntegrationTest {
         rankService.endRankGame(testUser);
 
         double expected = answered.getPuzzleRating() + ELOUtils.calculatePuzzleRatingChange(
-                answered.getMmrBeforePenalty(), answered.getPuzzleRating(), 0, false);
+                answered.getPuzzleType(), answered.getMmrBeforePenalty(), answered.getPuzzleRating(), 0, false);
         assertEquals(expected, currentRating(answered), 0.0001);
         assertEquals(1, currentAttempts(answered));
 
