@@ -26,8 +26,7 @@ public class EmailSender {
     private final JavaMailSender javaMailSender;
     private final SpringTemplateEngine templateEngine;
 
-    // Sender address is separate from spring.mail.username:
-    // OCI Email Delivery uses an OCID-formatted SMTP username, not an email address.
+    // Separate from spring.mail.username, which is an OCID on OCI Email Delivery
     @Value("${app.mail.from}")
     private String senderEmail;
 
@@ -64,7 +63,7 @@ public class EmailSender {
         try {
             javaMailSender.send(message);
         } catch (MailException e) {
-            // @Async swallows exceptions from the caller's perspective; log so delivery failures are visible.
+            // @Async hides failures from the caller
             log.error("Failed to send email to {}: {}", address, e.getMessage(), e);
             throw e;
         }

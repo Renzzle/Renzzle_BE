@@ -20,6 +20,7 @@ public record AddTrainingPuzzleRequest(
 
         @NotEmpty(message = "Answer is required")
         @Size(max = 1023, message = "Answer must be at most 1023 characters")
+        @ValidBoardString
         String answer,
 
         @NotNull(message = "Depth is required")

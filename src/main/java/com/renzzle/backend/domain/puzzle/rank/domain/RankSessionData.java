@@ -4,16 +4,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+// Liveness marker only; rating state lives on LatestRankPuzzle
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class RankSessionData {
     private Long userId;
     private String boardState;
-    private double lastProblemRating;
     private String winnerColor;
-    private double mmrBeforePenalty;
-    private double ratingBeforePenalty;
-    private double targetWinProbability;
     private boolean isStarted = false;
 }

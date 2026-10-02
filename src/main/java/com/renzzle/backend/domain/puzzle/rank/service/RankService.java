@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.puzzle.rank.service;
 
+import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
@@ -24,6 +25,8 @@ import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -35,7 +38,8 @@ import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 
 import static com.renzzle.backend.domain.puzzle.shared.util.ELOUtils.TARGET_WIN_PROBABILITY;
-import static com.renzzle.backend.domain.puzzle.shared.util.ELOUtils.WIN_PROBABILITY_DELTA;
+import static com.renzzle.backend.domain.puzzle.shared.util.RatingUtil.MAX_RATING;
+import static com.renzzle.backend.domain.puzzle.shared.util.RatingUtil.MIN_RATING;
 import static com.renzzle.backend.global.common.constant.ItemPrice.RANK_REWARD;
 
 @Service
@@ -55,8 +59,10 @@ public class RankService {
     @Value("${rank.session.ttl}")
     private long sessionTTLSeconds;
 
+    @Transactional
     public RankStartResponse startRankGame(UserEntity userData) {
-        UserEntity user = userRepository.findById(userData.getId())
+        // Row lock so concurrent start/result calls can't interleave
+        UserEntity user = userRepository.findByIdForUpdate(userData.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
         Long userId = user.getId();
         String redisKey = String.valueOf(userId);
@@ -69,42 +75,36 @@ public class RankService {
         double originalMmr = user.getMmr();
         double originalRating = user.getRating();
 
-        NextPuzzleResult puzzleResult = getNextPuzzle(originalMmr, TARGET_WIN_PROBABILITY, user);
-        LatestRankPuzzle latestPuzzle = puzzleResult.latestPuzzle();
-        double puzzleRating = puzzleResult.rating();
+        NextPuzzleResult nextPuzzle = getNextPuzzle(originalMmr, TARGET_WIN_PROBABILITY, user);
 
-        latestRankPuzzleRepository.save(latestPuzzle);
-
-        double mmrPenalty = ELOUtils.calculateMMRDecrease(originalMmr, puzzleRating);
-        double ratingPenalty = ELOUtils.calculateRatingDecrease(originalRating, puzzleRating);
+        double mmrPenalty = ELOUtils.calculateMMRDecrease(originalMmr, nextPuzzle.rating());
+        double ratingPenalty = ELOUtils.calculateRatingDecrease(originalRating, nextPuzzle.rating());
 
         user.updateMmrTo(originalMmr + mmrPenalty);
         user.updateRatingTo(originalRating + ratingPenalty);
         userRepository.save(user);
 
-        RankSessionData sessionData = new RankSessionData();
+        latestRankPuzzleRepository.save(
+                assignPuzzle(user, nextPuzzle, originalRating, originalMmr, TARGET_WIN_PROBABILITY));
 
+        RankSessionData sessionData = new RankSessionData();
         sessionData.setUserId(userId);
-        sessionData.setBoardState(latestPuzzle.getBoardStatus());
-        sessionData.setLastProblemRating(puzzleRating);
-        sessionData.setMmrBeforePenalty(originalMmr);
-        sessionData.setRatingBeforePenalty(originalRating);
-        sessionData.setTargetWinProbability(TARGET_WIN_PROBABILITY);
-        sessionData.setWinnerColor(latestPuzzle.getWinColor().getName());
+        sessionData.setBoardState(nextPuzzle.boardStatus());
+        sessionData.setWinnerColor(nextPuzzle.winColor().getName());
         sessionData.setStarted(true);
 
-        redisTemplate.opsForValue().set(redisKey, sessionData, sessionTTLSeconds, TimeUnit.SECONDS);
+        writeSessionAfterCommit(redisKey, sessionData, sessionTTLSeconds);
 
         return RankStartResponse.builder()
-                .boardStatus(sessionData.getBoardState())
-                .winColor(sessionData.getWinnerColor())
+                .boardStatus(nextPuzzle.boardStatus())
+                .winColor(nextPuzzle.winColor().getName())
                 .build();
     }
 
     @Transactional
     public RankResultResponse resultRankGame(UserEntity userData, RankResultRequest request) {
 
-        UserEntity user = userRepository.findById(userData.getId())
+        UserEntity user = userRepository.findByIdForUpdate(userData.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
 
         String redisKey = String.valueOf(user.getId());
@@ -116,25 +116,19 @@ public class RankService {
 
         long currentTTL = getRemainingTtlOrThrow(redisKey);
 
-        // Look up the previous puzzle and update whether it was solved
         LatestRankPuzzle previousPuzzle = latestRankPuzzleRepository
-                .findTopByUserOrderByAssignedAtDesc(user)
+                .findTopByUserOrderByIdDesc(user)
                 .orElseThrow(() -> new CustomException(ErrorCode.LATEST_PUZZLE_NOT_FOUND));
 
         previousPuzzle.solvedUpdate(request.isSolved());
 
-        double userBeforeMmr = session.getMmrBeforePenalty();
-        double userBeforeRating = session.getRatingBeforePenalty();
-        double lastProblemRating = session.getLastProblemRating();
-        double winProbability = session.getTargetWinProbability();
-        /*
-        If the previous puzzle was solved,
-        adjust the target win probability for the next puzzle,
-        apply the multiplier to adjust the mmr and rating values, and update the variables
-         */
+        // Revert from the assignment snapshot, not the Redis session
+        double userBeforeMmr = previousPuzzle.getMmrBeforePenalty();
+        double userBeforeRating = previousPuzzle.getRatingBeforePenalty();
+        double lastProblemRating = previousPuzzle.getPuzzleRating();
+        double winProbability = ELOUtils.nextTargetWinProbability(
+                previousPuzzle.getTargetWinProbability(), request.isSolved());
         if (request.isSolved()) {
-            winProbability -= WIN_PROBABILITY_DELTA;
-
             double mmrIncrease = ELOUtils.calculateMMRIncrease(userBeforeMmr, lastProblemRating);
             double ratingIncrease = ELOUtils.calculateRatingIncrease(userBeforeRating, lastProblemRating);
 
@@ -144,7 +138,6 @@ public class RankService {
             userBeforeMmr = userBeforeMmr + mmrIncrease;
             userBeforeRating = userBeforeRating + ratingIncrease;
         } else {
-            winProbability += WIN_PROBABILITY_DELTA;
             double mmrDecrease = ELOUtils.calculateMMRDecrease(userBeforeMmr, lastProblemRating);
             double ratingDecrease = ELOUtils.calculateRatingDecrease(userBeforeRating, lastProblemRating);
 
@@ -155,43 +148,95 @@ public class RankService {
             userBeforeRating = userBeforeRating + ratingDecrease;
         }
 
-        // Fetch a suitable puzzle based on the user's rating & target win probability
-        NextPuzzleResult puzzleResult = getNextPuzzle(userBeforeMmr, winProbability, user);
-        LatestRankPuzzle latestPuzzle = puzzleResult.latestPuzzle();
-        double puzzleRating = puzzleResult.rating();
+        applyResultToPuzzle(previousPuzzle, request.isSolved());
 
-        double ratingPenalty = ELOUtils.calculateRatingDecrease(userBeforeRating, puzzleRating);
-        double mmrPenalty = ELOUtils.calculateMMRDecrease(userBeforeMmr, puzzleRating);
+        NextPuzzleResult nextPuzzle = getNextPuzzle(userBeforeMmr, winProbability, user);
+
+        double ratingPenalty = ELOUtils.calculateRatingDecrease(userBeforeRating, nextPuzzle.rating());
+        double mmrPenalty = ELOUtils.calculateMMRDecrease(userBeforeMmr, nextPuzzle.rating());
 
         user.updateMmrTo(userBeforeMmr + mmrPenalty);
         user.updateRatingTo(userBeforeRating + ratingPenalty);
 
         userRepository.save(user);
 
-        LatestRankPuzzle nextPuzzle = LatestRankPuzzle.builder()
-                .user(user)
-                .boardStatus(latestPuzzle.getBoardStatus())
-                .answer(latestPuzzle.getAnswer())
-                .isSolved(false)
-                .assignedAt(clock.instant())
-                .winColor(latestPuzzle.getWinColor())
-                .build();
+        latestRankPuzzleRepository.save(
+                assignPuzzle(user, nextPuzzle, userBeforeRating, userBeforeMmr, winProbability));
 
-        latestRankPuzzleRepository.save(nextPuzzle);
+        session.setBoardState(nextPuzzle.boardStatus());
+        session.setWinnerColor(nextPuzzle.winColor().getName());
 
-        session.setBoardState(latestPuzzle.getBoardStatus());
-        session.setLastProblemRating(puzzleRating);
-        session.setWinnerColor(latestPuzzle.getWinColor().getName());
-        session.setMmrBeforePenalty(userBeforeMmr);
-        session.setRatingBeforePenalty(userBeforeRating);
-        session.setTargetWinProbability(winProbability);
-
-        redisTemplate.opsForValue().set(redisKey, session, currentTTL, TimeUnit.SECONDS);
+        writeSessionAfterCommit(redisKey, session, currentTTL);
 
         return RankResultResponse.builder()
-                .boardStatus(latestPuzzle.getBoardStatus())
-                .winColor(latestPuzzle.getWinColor().getName())
+                .boardStatus(nextPuzzle.boardStatus())
+                .winColor(nextPuzzle.winColor().getName())
                 .build();
+    }
+
+    private LatestRankPuzzle assignPuzzle(
+            UserEntity user,
+            NextPuzzleResult puzzle,
+            double ratingBeforePenalty,
+            double mmrBeforePenalty,
+            double targetWinProbability
+    ) {
+        return LatestRankPuzzle.builder()
+                .user(user)
+                .puzzleType(puzzle.puzzleType())
+                .puzzleId(puzzle.puzzleId())
+                .boardStatus(puzzle.boardStatus())
+                .answer(puzzle.answer())
+                .winColor(puzzle.winColor())
+                .isSolved(false)
+                .assignedAt(clock.instant())
+                .puzzleRating(puzzle.rating())
+                .ratingBeforePenalty(ratingBeforePenalty)
+                .mmrBeforePenalty(mmrBeforePenalty)
+                .targetWinProbability(targetWinProbability)
+                .build();
+    }
+
+    private void applyResultToPuzzle(LatestRankPuzzle answered, boolean solved) {
+        PuzzleType type = answered.getPuzzleType();
+        Long puzzleId = answered.getPuzzleId();
+        if (type == null || puzzleId == null) {
+            return;
+        }
+
+        Optional<Integer> rankAttemptCount = switch (type) {
+            case TRAINING -> trainingPuzzleRepository.findRankAttemptCountById(puzzleId);
+            case COMMUNITY -> communityPuzzleRepository.findRankAttemptCountById(puzzleId);
+        };
+        // Deleted since it was handed out
+        if (rankAttemptCount.isEmpty()) {
+            return;
+        }
+
+        double delta = ELOUtils.calculatePuzzleRatingChange(
+                type, answered.getMmrBeforePenalty(), answered.getPuzzleRating(), rankAttemptCount.get(), solved);
+
+        switch (type) {
+            case TRAINING -> trainingPuzzleRepository.applyRankResult(puzzleId, delta, MIN_RATING, MAX_RATING);
+            case COMMUNITY -> communityPuzzleRepository.applyRankResult(puzzleId, delta, MIN_RATING, MAX_RATING);
+        }
+    }
+
+    private void writeSessionAfterCommit(String redisKey, RankSessionData session, long ttlSeconds) {
+        runAfterCommit(() -> redisTemplate.opsForValue().set(redisKey, session, ttlSeconds, TimeUnit.SECONDS));
+    }
+
+    private void runAfterCommit(Runnable action) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            action.run();
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                action.run();
+            }
+        });
     }
 
     private RankSessionData getSessionOrThrow(String redisKey) {
@@ -222,43 +267,37 @@ public class RankService {
             throw new CustomException(ErrorCode.IS_NOT_STARTED);
         }
 
-        redisTemplate.delete(redisKey);
+        UserEntity user = userRepository.findByIdForUpdate(userData.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
 
-        List<LatestRankPuzzle> solvedPuzzles = latestRankPuzzleRepository.findAllByUser(userData).stream()
+        List<LatestRankPuzzle> solvedPuzzles = latestRankPuzzleRepository.findAllByUser(user).stream()
                 .filter(LatestRankPuzzle::getIsSolved)
                 .toList();
 
         int solvedCount = solvedPuzzles.size();
         int reward = solvedCount * RANK_REWARD.getPrice();
 
-        UserEntity user = userRepository.findByIdForUpdate(userData.getId())
-                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
-
         user.getReward(reward);
 
+        // After commit, so a rollback can't strand the reward
+        runAfterCommit(() -> redisTemplate.delete(redisKey));
 
         return RankEndResponse.builder()
-                .rating(userData.getRating())
+                .rating(user.getRating())
                 .reward(reward)
                 .build();
     }
 
     NextPuzzleResult getNextPuzzle(double originalMmr, double targetWinProbability, UserEntity user) {
-        /*
-            Fetch a suitable puzzle based on the user's rating & target win probability.
-            From each puzzle source, select windowSize candidates,
-            shuffle them, then pick one of them to use as the next puzzle.
-        */
+        // Take the closest candidates from each source, then pick one at random
         double desiredRating = ELOUtils.getProblemRatingForTargetWinProbability(originalMmr, targetWinProbability);
         int windowSize = 5;
 
-        // Fetch each puzzle candidate pool (sorted by rating)
         List<TrainingPuzzle> trainingPuzzles =
                 trainingPuzzleRepository.findAvailableTrainingPuzzlesSortedByRating(user);
         List<CommunityPuzzle> communityPuzzles =
                 communityPuzzleRepository.findAvailableCommunityPuzzlesSortedByRating(user);
 
-        // Slicing utility
         List<TrainingPuzzle> selectedTrainings = pickNearByWindow(trainingPuzzles, desiredRating, windowSize);
         List<CommunityPuzzle> selectedCommunities = pickNearByWindow(communityPuzzles, desiredRating, windowSize);
 
@@ -275,43 +314,23 @@ public class RankService {
         Object selected = allCandidates.get(0);
 
         if (selected instanceof TrainingPuzzle puzzle) {
-            LatestRankPuzzle latest = LatestRankPuzzle.builder()
-                    .user(user)
-                    .boardStatus(puzzle.getBoardStatus())
-                    .answer(puzzle.getAnswer())
-                    .isSolved(false)
-                    .assignedAt(clock.instant())
-                    .winColor(puzzle.getWinColor())
-                    .build();
-
-            return new NextPuzzleResult(latest, puzzle.getRating());
+            return new NextPuzzleResult(PuzzleType.TRAINING, puzzle.getId(),
+                    puzzle.getBoardStatus(), puzzle.getAnswer(), puzzle.getWinColor(), puzzle.getRating());
         }
 
         if (selected instanceof CommunityPuzzle puzzle) {
-            LatestRankPuzzle latest = LatestRankPuzzle.builder()
-                    .user(user)
-                    .boardStatus(puzzle.getBoardStatus())
-                    .answer(puzzle.getAnswer())
-                    .isSolved(false)
-                    .assignedAt(clock.instant())
-                    .winColor(puzzle.getWinColor())
-                    .build();
-
-            return new NextPuzzleResult(latest, puzzle.getRating());
+            return new NextPuzzleResult(PuzzleType.COMMUNITY, puzzle.getId(),
+                    puzzle.getBoardStatus(), puzzle.getAnswer(), puzzle.getWinColor(), puzzle.getRating());
         }
         throw new CustomException(ErrorCode.INVALID_RANK_PUZZLE_TYPE);
     }
 
     private <T> List<T> pickNearByWindow(List<T> sorted, double targetRating, int windowSize) {
-        /*
-            1. From puzzles with a rating difference under 200, select windowSize of them (if possible)
-            2. If there are not windowSize puzzles under 200, select the closest windowSize puzzles without the rating-difference limit
-        */
+        // Closest windowSize within 200, falling back to the closest overall
         if (sorted.isEmpty()) return Collections.emptyList();
 
         double maxDiff = 200.0;
 
-        // First pass: select windowSize within a difference under 200
         List<T> within200 = new ArrayList<>();
         for (T item : sorted) {
             double rating = getRating(item);
@@ -324,14 +343,12 @@ public class RankService {
             return within200.subList(0, windowSize);
         }
 
-        // Second pass: select windowSize in order of closeness without a limit
         List<T> sortedByClosest = new ArrayList<>(sorted);
         sortedByClosest.sort(Comparator.comparingDouble(o -> Math.abs(getRating(o) - targetRating)));
         int limit = Math.min(windowSize, sortedByClosest.size());
         return sortedByClosest.subList(0, limit);
     }
 
-    // Utility to extract a puzzle's rating
     private double getRating(Object obj) {
         if (obj instanceof TrainingPuzzle tp) return tp.getRating();
         if (obj instanceof CommunityPuzzle cp) return cp.getRating();

@@ -54,7 +54,6 @@ public class NoticeService {
                 () -> new CustomException(ErrorCode.INTERNAL_SERVER_ERROR)
         );
 
-        // System Check
         if (systemInfo.isSystemCheck()) {
             return GetPersonalNoticeResponse.builder()
                     .description("system-check")
@@ -69,7 +68,6 @@ public class NoticeService {
                     .build();
         }
 
-        // Get notices context
         ArrayList<NoticeContext> contexts = new ArrayList<>();
 
         // 1. Personal message
@@ -133,10 +131,7 @@ public class NoticeService {
         return response;
     }
 
-    /**
-     * Creates one announcement row per language content in the request.
-     * The same expiration time is applied to every row so translations retire together.
-     */
+    // One row per language, sharing an expiry so translations retire together
     @Transactional
     public List<GetAnnouncementForAdminResponse> createAnnouncementsForAdmin(CreateAnnouncementRequest request) {
         Set<String> seenLangCodes = new HashSet<>();
@@ -192,9 +187,7 @@ public class NoticeService {
 
     // ===== Admin: personal notice =====
 
-    /**
-     * Looks up a non-deleted user by exact email first, then by exact nickname.
-     */
+    // Exact email first, then exact nickname
     @Transactional(readOnly = true)
     public GetNoticeRecipientResponse findNoticeRecipientForAdmin(String keyword) {
         String trimmed = keyword == null ? "" : keyword.trim();

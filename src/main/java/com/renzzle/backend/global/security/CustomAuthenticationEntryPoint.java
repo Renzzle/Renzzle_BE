@@ -8,11 +8,7 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 import java.io.IOException;
 
-/**
- * Handles authentication failures (401): missing token, expired token, etc.
- * - HTML requests (browser): redirect to the /admin login page
- * - API requests: JSON response
- */
+// 401: browser requests go to the /admin login page, API requests get JSON
 @Component
 public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
 

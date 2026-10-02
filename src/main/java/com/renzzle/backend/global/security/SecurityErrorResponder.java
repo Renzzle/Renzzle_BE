@@ -18,7 +18,7 @@ public final class SecurityErrorResponder {
 
     private SecurityErrorResponder() {}
 
-    // Browser (HTML) requests are redirected to the login page; API requests receive a JSON error body.
+    // Browser requests are redirected to login; API requests get a JSON error
     public static void respond(HttpServletRequest request, HttpServletResponse response, ErrorCode errorCode) throws IOException {
         String acceptHeader = request.getHeader("Accept");
         if (acceptHeader != null && acceptHeader.contains("text/html")) {
@@ -28,7 +28,6 @@ public final class SecurityErrorResponder {
         writeJsonError(response, errorCode);
     }
 
-    // Writes the standard ApiResponse error body as JSON.
     public static void writeJsonError(HttpServletResponse response, ErrorCode errorCode) {
         response.setStatus(errorCode.getStatus().value());
         response.setContentType("application/json");

@@ -43,16 +43,13 @@ public class ContentService {
 
         Long userId = user.getId();
 
-        // Query the single most recently solved puzzle
         Optional<SolvedTrainingPuzzle> recentSolvedOpt = solvedTrainingPuzzleRepository
                 .findTopByUserOrderBySolvedAtDesc(userId);
 
         if (recentSolvedOpt.isEmpty()) {
-            // New user who has never solved a puzzle -> provide default recommendation
             return createDefaultRecommendedPack(request);
         }
 
-        // When there is a record of solved puzzles
         SolvedTrainingPuzzle recentSolved = recentSolvedOpt.get();
         Pack pack = recentSolved.getPuzzle().getPack();
 
@@ -60,7 +57,6 @@ public class ContentService {
             throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK);
         }
 
-        // Query translation information
         LangCode requestedLang = LangCode.getLangCode(request.langCode());
         LangCode defaultLang = LangCode.getLangCode(LangCode.LangCodeName.EN);
 
@@ -70,7 +66,6 @@ public class ContentService {
                                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_PACK_TRANSLATION))
                 );
 
-        // Query the user's pack progress information
         UserPack userPack = userPackRepository
                 .findByUserIdAndPackId(userId, pack.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_USER_PROGRESS_FOR_PACK));
@@ -90,21 +85,18 @@ public class ContentService {
     }
 
     private GetRecommendPackResponse createDefaultRecommendedPack(GetRecommendRequest request) {
-        // Query the Pack with the lowest id
         Pack pack = packRepository.findFirstByOrderByIdAsc()
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
         LangCode requestedLang = LangCode.getLangCode(request.langCode());
         LangCode defaultLang = LangCode.getLangCode(LangCode.LangCodeName.EN);
 
-        // Query translation information
         PackTranslation translation = packTranslationRepository.findByPackAndLangCode(pack, requestedLang)
                 .orElseGet(() ->
                         packTranslationRepository.findByPackAndLangCode(pack, defaultLang)
                                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_PACK_TRANSLATION))
                 );
 
-        // Return the result
         return GetRecommendPackResponse.builder()
                 .id(pack.getId())
                 .title(translation.getTitle())
@@ -112,8 +104,8 @@ public class ContentService {
                 .description(translation.getDescription())
                 .price(pack.getPrice())
                 .totalPuzzleCount(pack.getPuzzleCount())
-                .solvedPuzzleCount(0) // No problems solved yet
-                .locked(false)        // Not locked because it is a default recommendation
+                .solvedPuzzleCount(0)
+                .locked(false)
                 .build();
     }
 
@@ -125,18 +117,16 @@ public class ContentService {
 
         Instant oneWeekAgo = instant.minus(7, ChronoUnit.DAYS);
 
-        // Query puzzles from within the last week
         List<CommunityPuzzle> puzzlesIn7Days = communityPuzzleRepository
                 .findByCreatedAtAfter(oneWeekAgo);
 
-        // Apply sort criteria, then select
         List<CommunityPuzzle> sortedRecent = puzzlesIn7Days.stream()
                 .sorted(trendComparator())
                 .toList();
 
         selectTrendPuzzles(sortedRecent, result, selectedIds, user);
 
-        // If insufficient -> the latest 30 puzzles from before the last week
+        // Fill up from the latest 30 older puzzles
         if (result.size() < 5) {
             List<CommunityPuzzle> latest30 = communityPuzzleRepository
                     .findTop30ByCreatedAtBeforeOrderByCreatedAtDesc(oneWeekAgo);

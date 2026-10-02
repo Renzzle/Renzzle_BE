@@ -396,8 +396,7 @@ class CommunityPuzzleRepositoryTest {
                     .save(communityPuzzleRepository);
         }
 
-        // near = |1500-1500| + [0,600) = [0,600), far = |3000-1500| + [0,600) = [1500,2100).
-        // The ranges cannot overlap, so the near five win for every seed.
+        // near scores fall in [0, 600), far in [1500, 2100), so near wins for any seed
         assertThat(recommendIds(user, 7, null, 5)).containsExactlyInAnyOrderElementsOf(nearIds);
     }
 

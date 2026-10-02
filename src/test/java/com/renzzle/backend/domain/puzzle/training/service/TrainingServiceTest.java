@@ -2,6 +2,7 @@ package com.renzzle.backend.domain.puzzle.training.service;
 
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.puzzle.cache.dao.PuzzleCacheRepository;
+import com.renzzle.backend.domain.puzzle.cache.service.PuzzleCacheService;
 import com.renzzle.backend.domain.puzzle.shared.util.RatingUtil;
 import com.renzzle.backend.domain.puzzle.training.api.request.*;
 import com.renzzle.backend.domain.puzzle.training.api.response.*;
@@ -35,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -57,6 +59,9 @@ public class TrainingServiceTest {
 
     @Mock
     private PuzzleCacheRepository puzzleCacheRepository;
+
+    @Mock
+    private PuzzleCacheService puzzleCacheService;
 
     @Mock
     private UserRepository userRepository;
@@ -263,8 +268,6 @@ public class TrainingServiceTest {
             // increasePuzzleCount is a void method, so handle it with doNothing()
             doNothing().when(packRepository).increasePuzzleCount(packId);
 
-            // The service logic builds a TrainingPuzzle entity and then calls trainingPuzzleRepository.save()
-            // The unsaved Puzzle is constructed internally; mock it to return the savedPuzzle with an assigned id.
             TrainingPuzzle savedPuzzle = TrainingPuzzle.builder()
                     .id(100L)
                     .pack(pack)
@@ -273,7 +276,7 @@ public class TrainingServiceTest {
                     .boardStatus(boardStatus)
                     .boardKey("generatedKey")
                     .depth(depth)
-                    .rating(RatingUtil.puzzleRating(depth, WinColor.getWinColor(winColorStr)))
+                    .rating(RatingUtil.puzzleRating(depth, WinColor.getWinColor(winColorStr), pack.getDifficulty()))
                     .winColor(WinColor.getWinColor(winColorStr))
                     .build();
 
@@ -290,12 +293,171 @@ public class TrainingServiceTest {
             assertEquals(boardStatus, result.getBoardStatus());
             assertEquals("generatedKey", result.getBoardKey());
             assertEquals(depth, result.getDepth());
-            assertEquals(RatingUtil.puzzleRating(depth, WinColor.getWinColor(winColorStr)), result.getRating());
+            assertEquals(RatingUtil.puzzleRating(depth, WinColor.getWinColor(winColorStr), pack.getDifficulty()), result.getRating());
 
             verify(trainingPuzzleRepository, times(1)).findTopIndex(packId);
             verify(packRepository, times(1)).findById(packId);
             verify(packRepository, times(1)).increasePuzzleCount(packId);
             verify(trainingPuzzleRepository, times(1)).save(any(TrainingPuzzle.class));
+        }
+
+        @Test
+        void modifyTrainingPuzzle_WhenDepthChanges_ThenRecalculatesRatingAndResetsRankAttempts() {
+            // given
+            Pack pack = pack(1L, "HIGH");
+            TrainingPuzzle existing = trainingPuzzle(10L, pack, 5, 1234.5, 12);
+            givenModifiable(existing, pack);
+
+            // when
+            TrainingPuzzle modified = trainingService.modifyTrainingPuzzle(10L, new ModifyTrainingPuzzleRequest(
+                    1L, null, existing.getBoardStatus(), existing.getAnswer(), 7, "BLACK"));
+
+            // then
+            assertThat(modified.getRating())
+                    .isEqualTo(RatingUtil.puzzleRating(7, WinColor.getWinColor("BLACK"), pack.getDifficulty()));
+            assertThat(modified.getRankAttemptCount()).isZero();
+        }
+
+        @Test
+        void modifyTrainingPuzzle_WhenAnswerChangesAtSameDepth_ThenStillRecalculatesRating() {
+            // given
+            Pack pack = pack(1L, "MIDDLE");
+            TrainingPuzzle existing = trainingPuzzle(10L, pack, 5, 1234.5, 12);
+            givenModifiable(existing, pack);
+
+            // when
+            TrainingPuzzle modified = trainingService.modifyTrainingPuzzle(10L, new ModifyTrainingPuzzleRequest(
+                    1L, null, existing.getBoardStatus(), "b3", 5, "BLACK"));
+
+            // then
+            assertThat(modified.getRating())
+                    .isEqualTo(RatingUtil.puzzleRating(5, WinColor.getWinColor("BLACK"), pack.getDifficulty()));
+            assertThat(modified.getRankAttemptCount()).isZero();
+        }
+
+        @Test
+        void modifyTrainingPuzzle_WhenAdminResendsSameValues_ThenKeepsLearnedRating() {
+            // given: the admin page sends every field on each save
+            Pack pack = pack(1L, "MIDDLE");
+            TrainingPuzzle existing = trainingPuzzle(10L, pack, 5, 1234.5, 12);
+            givenModifiable(existing, pack);
+
+            // when
+            TrainingPuzzle modified = trainingService.modifyTrainingPuzzle(10L, new ModifyTrainingPuzzleRequest(
+                    1L, null, existing.getBoardStatus(), existing.getAnswer(), 5, "BLACK"));
+
+            // then
+            assertThat(modified.getRating()).isEqualTo(1234.5);
+            assertThat(modified.getRankAttemptCount()).isEqualTo(12);
+        }
+
+        @Test
+        void modifyTrainingPuzzle_WhenMovedToAnotherPack_ThenRatesWithThatPackDifficulty() {
+            // given
+            Pack from = pack(1L, "MIDDLE");
+            Pack to = pack(2L, "LOW");
+            TrainingPuzzle existing = trainingPuzzle(10L, from, 7, 1234.5, 12);
+            givenModifiable(existing, to);
+
+            // when
+            TrainingPuzzle modified = trainingService.modifyTrainingPuzzle(10L, new ModifyTrainingPuzzleRequest(
+                    2L, null, existing.getBoardStatus(), existing.getAnswer(), 7, "BLACK"));
+
+            // then
+            assertThat(modified.getRating())
+                    .isEqualTo(RatingUtil.puzzleRating(7, WinColor.getWinColor("BLACK"), to.getDifficulty()));
+            assertThat(modified.getRankAttemptCount()).isZero();
+        }
+
+        @Test
+        void updatePack_WhenDifficultyChanges_ThenReratesOnlyPuzzlesWithoutRankResults() {
+            // given
+            Pack existingPack = pack(1L, "LOW");
+            TrainingPuzzle unranked = trainingPuzzle(10L, existingPack, 7, 800, 0);
+            TrainingPuzzle ranked = trainingPuzzle(11L, existingPack, 7, 1555, 3);
+
+            when(packRepository.findById(1L)).thenReturn(Optional.of(existingPack));
+            when(packRepository.save(any(Pack.class))).thenAnswer(inv -> inv.getArgument(0));
+            when(packTranslationRepository.findAllByPack_Id(1L)).thenReturn(Collections.emptyList());
+            when(trainingPuzzleRepository.findByPack_IdOrderByTrainingIndex(1L)).thenReturn(List.of(unranked, ranked));
+
+            // when
+            trainingService.updatePack(1L, new UpdateTrainingPackRequest(Collections.emptyList(), 0, "HIGH"));
+
+            // then
+            ArgumentCaptor<List<TrainingPuzzle>> rerated = ArgumentCaptor.captor();
+            verify(trainingPuzzleRepository).saveAll(rerated.capture());
+            assertThat(rerated.getValue()).singleElement().satisfies(puzzle -> {
+                assertThat(puzzle.getId()).isEqualTo(10L);
+                assertThat(puzzle.getRating()).isEqualTo(
+                        RatingUtil.puzzleRating(7, WinColor.getWinColor("BLACK"), Difficulty.getDifficulty("HIGH")));
+            });
+        }
+
+        @Test
+        void updatePack_WhenDifficultyUnchanged_ThenLeavesPuzzleRatingsAlone() {
+            // given
+            Pack existingPack = pack(1L, "LOW");
+            when(packRepository.findById(1L)).thenReturn(Optional.of(existingPack));
+            when(packRepository.save(any(Pack.class))).thenAnswer(inv -> inv.getArgument(0));
+            when(packTranslationRepository.findAllByPack_Id(1L)).thenReturn(Collections.emptyList());
+
+            // when
+            trainingService.updatePack(1L, new UpdateTrainingPackRequest(Collections.emptyList(), 500, "LOW"));
+
+            // then
+            verify(trainingPuzzleRepository, never()).findByPack_IdOrderByTrainingIndex(anyLong());
+        }
+
+        @Test
+        void recalculateUnrankedPuzzleRatings_WhenSomeRatingsAreStale_ThenSavesOnlyThoseAndCountsThem() {
+            // given
+            Pack pack = pack(1L, "MIDDLE");
+            TrainingPuzzle stale = trainingPuzzle(10L, pack, 7, 1300, 0);
+            TrainingPuzzle current = trainingPuzzle(11L, pack, 7, 1000, 0);
+            when(trainingPuzzleRepository.findByRankAttemptCount(0)).thenReturn(List.of(stale, current));
+
+            // when
+            int changed = trainingService.recalculateUnrankedPuzzleRatings();
+
+            // then
+            assertThat(changed).isEqualTo(1);
+            ArgumentCaptor<List<TrainingPuzzle>> saved = ArgumentCaptor.captor();
+            verify(trainingPuzzleRepository).saveAll(saved.capture());
+            assertThat(saved.getValue()).singleElement().satisfies(puzzle -> {
+                assertThat(puzzle.getId()).isEqualTo(10L);
+                assertThat(puzzle.getRating()).isEqualTo(1000.0);
+            });
+        }
+
+        private Pack pack(Long id, String difficulty) {
+            return Pack.builder()
+                    .id(id)
+                    .price(0)
+                    .puzzleCount(1)
+                    .difficulty(Difficulty.getDifficulty(difficulty))
+                    .build();
+        }
+
+        private TrainingPuzzle trainingPuzzle(Long id, Pack pack, int depth, double rating, int rankAttemptCount) {
+            return TrainingPuzzle.builder()
+                    .id(id)
+                    .pack(pack)
+                    .trainingIndex(0)
+                    .boardStatus("a1a2")
+                    .boardKey("key")
+                    .answer("a3")
+                    .depth(depth)
+                    .rating(rating)
+                    .rankAttemptCount(rankAttemptCount)
+                    .winColor(WinColor.getWinColor("BLACK"))
+                    .build();
+        }
+
+        private void givenModifiable(TrainingPuzzle existing, Pack targetPack) {
+            when(trainingPuzzleRepository.findById(existing.getId())).thenReturn(Optional.of(existing));
+            when(packRepository.findById(targetPack.getId())).thenReturn(Optional.of(targetPack));
+            when(trainingPuzzleRepository.save(any(TrainingPuzzle.class))).thenAnswer(inv -> inv.getArgument(0));
         }
 
         @Test
@@ -511,7 +673,7 @@ public class TrainingServiceTest {
                     argThat(arg -> arg.getName().equals("EN"))
             )).thenReturn(List.of(translation));
 
-            // userPackRepository: the user has no record for this pack, so return an empty list (locked = true, solvedCount = 0)
+            // No user pack record: locked, solvedCount 0
             when(userPackRepository.findAllByUserIdAndPackIdIn(100L, List.of(1L)))
                     .thenReturn(Collections.emptyList());
 

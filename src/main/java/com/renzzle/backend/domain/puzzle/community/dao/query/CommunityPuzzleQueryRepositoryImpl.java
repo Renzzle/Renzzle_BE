@@ -26,7 +26,7 @@ import static com.renzzle.backend.domain.user.domain.QUserEntity.userEntity;
 @RequiredArgsConstructor
 public class CommunityPuzzleQueryRepositoryImpl implements CommunityPuzzleQueryRepository {
 
-    /** Puzzles whose distance from the user's mmr differs by less than this are shuffled freely. */
+    // Distances closer than this are shuffled freely
     private static final int RECOMMEND_JITTER = 600;
 
     private final JPAQueryFactory queryFactory;
@@ -50,7 +50,7 @@ public class CommunityPuzzleQueryRepositoryImpl implements CommunityPuzzleQueryR
                 .fetch();
     }
 
-    /** RECOMMEND ordering key, lowest first. */
+    // Lowest first
     private NumberExpression<Double> recommendScore(QCommunityPuzzle puzzle, double userMmr, long seed) {
         return Expressions.numberTemplate(
                 Double.class,

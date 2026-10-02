@@ -23,10 +23,7 @@ public final class ZobristHashUtils {
         return hashFromCellIndexes(parseCellIndexes(boardStatus));
     }
 
-    /**
-     * Parses a board status string into 0-based cell indexes in move order.
-     * The index of each element is its move index, which determines the stone color.
-     */
+    // 0-based cell indexes in move order; the array index decides the stone color
     public static int[] parseCellIndexes(String boardStatus) {
         if (boardStatus == null || boardStatus.isBlank()) {
             throw new IllegalArgumentException("Board status is null or blank");
@@ -55,15 +52,7 @@ public final class ZobristHashUtils {
         return hash;
     }
 
-    /**
-     * Incrementally derives the hash of the position reached by adding one stone.
-     * Zobrist hashing is XOR-based, so appending a move costs a single XOR
-     * instead of re-hashing the whole board.
-     *
-     * @param hash      hash of the position before the move
-     * @param cellIndex 0-based cell the stone is placed on
-     * @param moveIndex 0-based index of the new stone, i.e. the stone count before the move
-     */
+    // One XOR per added stone; moveIndex is the stone count before the move
     public static long applyMove(long hash, int cellIndex, int moveIndex) {
         if (cellIndex < 0 || cellIndex >= TOTAL_CELLS) {
             throw new IllegalArgumentException("Invalid cell index: " + cellIndex);
@@ -92,9 +81,6 @@ public final class ZobristHashUtils {
         return rowBase + parseColumn(boardStatus, index);
     }
 
-    /**
-     * Parses the 1-based column number that follows the row character at {@code index}.
-     */
     private static int parseColumn(String boardStatus, int index) {
         char firstDigit = boardStatus.charAt(index + 1);
         if (firstDigit < '1' || firstDigit > '9') {

@@ -6,9 +6,6 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 
-/**
- * Parameters for querying the community puzzle list for the puzzle cache entry UI.
- */
 public record GetCommunityPuzzlesForCacheRequest(
         @Size(max = 31, message = "Nickname must be at most 31 characters")
         String authorNickname,

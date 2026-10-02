@@ -2,7 +2,7 @@ package com.renzzle.backend.domain.payment.service;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-// Decoded payload of a signed transaction (JWSTransactionDecodedPayload) from the App Store Server API
+// App Store Server API JWSTransactionDecodedPayload
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record AppleTransactionInfo(
         String transactionId,

@@ -38,7 +38,6 @@ public class RedisConfig {
         RedisTemplate<String, RankSessionData> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory);
 
-        // Serialize Key as a string and Value as JSON
         template.setKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
 
@@ -50,11 +49,9 @@ public class RedisConfig {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(redisConnectionFactory());
 
-        // Configure serialization for keys and values
         template.setKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
 
-        // Ensures score and rank serialize correctly when used in ZSET or LIST
         template.setHashKeySerializer(new StringRedisSerializer());
         template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
 

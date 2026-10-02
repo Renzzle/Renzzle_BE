@@ -113,8 +113,7 @@ public class EmailService {
             throw new CustomException(ErrorCode.INVALID_EMAIL_AUTH_CODE);
         }
 
-        // Guessing is cut off once the limit is hit; the caller has to request a new code.
-        // The record itself is kept so that the send count cannot be reset by burning attempts.
+        // The record stays, so burning attempts can't reset the send count
         if(emailEntity.attemptCount() >= EMAIL_CODE_ATTEMPT_LIMIT) {
             throw new CustomException(ErrorCode.EXCEED_EMAIL_AUTH_ATTEMPT);
         }

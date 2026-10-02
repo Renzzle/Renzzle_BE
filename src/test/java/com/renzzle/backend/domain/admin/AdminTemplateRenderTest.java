@@ -23,11 +23,7 @@ import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Renders every admin Thymeleaf template outside of Spring MVC.
- * Guards the shared fragments (siteNav / uiKit / languageSelect) against signature drift:
- * a caller passing the wrong arguments to a fragment only fails at render time.
- */
+// Renders every admin template; a wrong fragment call only fails at render time
 class AdminTemplateRenderTest {
 
     private static SpringTemplateEngine engine;
@@ -45,9 +41,7 @@ class AdminTemplateRenderTest {
         engine.setTemplateResolver(resolver);
     }
 
-    /**
-     * Superset of the model attributes AdminController / PuzzleCacheController put on their pages.
-     */
+    // Superset of the model attributes the admin pages use
     private static WebContext webContext() {
         MockServletContext servletContext = new MockServletContext();
         JakartaServletWebApplication application = JakartaServletWebApplication.buildApplication(servletContext);
@@ -66,12 +60,12 @@ class AdminTemplateRenderTest {
         return engine.process(template, webContext());
     }
 
-    /** Unprocessed Thymeleaf attribute left in the output, e.g. {@code th:text="..."}. */
+    // Unprocessed th: attribute left in the output
     private static final Pattern LEFTOVER_TH_ATTRIBUTE = Pattern.compile("\\sth:[a-z-]+=");
 
     private static final Pattern SITE_NAV = Pattern.compile("<nav class=\"site-nav-wrap\".*?</nav>", Pattern.DOTALL);
 
-    /** The main-menu anchor for {@code href}; header buttons may link to the same path, so search only inside the nav. */
+    // Search only the nav; header buttons can share the href
     private static String navAnchor(String html, String href) {
         Matcher nav = SITE_NAV.matcher(html);
         assertThat(nav.find()).as("site nav present").isTrue();
