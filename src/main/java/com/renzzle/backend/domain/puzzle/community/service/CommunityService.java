@@ -74,8 +74,11 @@ public class CommunityService {
 
         CommunityPuzzle result = communityPuzzleRepository.save(puzzle);
 
-        puzzleCacheService.seedSolutionPath(
-                PuzzleType.COMMUNITY, result.getId(), result.getBoardStatus(), result.getAnswer());
+        // An unverified answer is hand-entered and may not be the best defense, so it never drives the AI
+        if (Boolean.TRUE.equals(result.getIsVerified())) {
+            puzzleCacheService.seedSolutionPath(
+                    PuzzleType.COMMUNITY, result.getId(), result.getBoardStatus(), result.getAnswer());
+        }
 
         return AddCommunityPuzzleResponse.builder()
                 .puzzleId(result.getId())
@@ -166,7 +169,13 @@ public class CommunityService {
         }
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
+        boolean wasVerified = Boolean.TRUE.equals(puzzle.getIsVerified());
         puzzle.updateVerification(isVerified);
+
+        if (!wasVerified && isVerified) {
+            puzzleCacheService.mergeSolutionPath(
+                    PuzzleType.COMMUNITY, puzzle.getId(), puzzle.getBoardStatus(), puzzle.getAnswer());
+        }
         return toAdminCommunityPuzzleResponse(puzzle);
     }
 

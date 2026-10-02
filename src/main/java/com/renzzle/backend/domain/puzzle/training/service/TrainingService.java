@@ -123,7 +123,9 @@ public class TrainingService {
         }
 
         TrainingPuzzle edited = puzzleBuilder.build();
-        // The admin page resends every field, so compare values
+        // The admin page resends every field, so compare values, and before the save merges into puzzle
+        boolean solutionChanged = !Objects.equals(puzzle.getBoardStatus(), edited.getBoardStatus())
+                || !Objects.equals(puzzle.getAnswer(), edited.getAnswer());
         if (changesRatingInputs(puzzle, edited)) {
             edited = edited.toBuilder()
                     .rating(RatingUtil.puzzleRating(
@@ -135,7 +137,7 @@ public class TrainingService {
         TrainingPuzzle modified = trainingPuzzleRepository.save(edited);
 
         // Cached replies are keyed by position, so board or answer edits need a reseed
-        if (request.boardStatus() != null || request.answer() != null) {
+        if (solutionChanged) {
             puzzleCacheService.seedSolutionPath(
                     PuzzleType.TRAINING, modified.getId(), modified.getBoardStatus(), modified.getAnswer());
         }

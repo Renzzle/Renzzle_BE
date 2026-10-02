@@ -45,10 +45,6 @@ public class PuzzleCacheService {
                         .rootBoardState(currentBoardState)
                         .build());
 
-        if (isSeededPosition(puzzle, zobristHash)) {
-            throw new CustomException(ErrorCode.PROTECTED_SOLUTION_POSITION);
-        }
-
         Map<Long, Integer> solutionDag;
         byte[] existingDag = puzzle.getSolutionDag();
         if (existingDag != null && existingDag.length > 0) {
@@ -67,6 +63,17 @@ public class PuzzleCacheService {
     // Keys only AI-to-move positions; replacing the DAG clears entries from old edits
     @Transactional
     public void seedSolutionPath(PuzzleType puzzleType, Long puzzleId, String rootBoardState, String answer) {
+        writeSolutionPath(puzzleType, puzzleId, rootBoardState, answer, false);
+    }
+
+    // Keeps existing branches; the solution line wins where they overlap
+    @Transactional
+    public void mergeSolutionPath(PuzzleType puzzleType, Long puzzleId, String rootBoardState, String answer) {
+        writeSolutionPath(puzzleType, puzzleId, rootBoardState, answer, true);
+    }
+
+    private void writeSolutionPath(
+            PuzzleType puzzleType, Long puzzleId, String rootBoardState, String answer, boolean keepExisting) {
         if (puzzleType == null || puzzleId == null || rootBoardState == null || rootBoardState.isBlank()) {
             throw new CustomException(ErrorCode.NO_BOARD_STATUS);
         }
@@ -86,20 +93,22 @@ public class PuzzleCacheService {
                     .build();
         }
 
+        Map<Long, Integer> solutionDag = keepExisting ? existingDag(puzzle) : new HashMap<>();
+        solutionDag.putAll(solutionPath);
+
         PuzzleCache seeded = puzzle.toBuilder()
                 .rootBoardState(rootBoardState)
-                .solutionLine(answer)
-                .solutionDag(solutionSerializer.serialize(solutionPath))
+                .solutionDag(solutionSerializer.serialize(solutionDag))
                 .build();
         puzzleCacheRepository.save(seeded);
     }
 
-    private boolean isSeededPosition(PuzzleCache puzzle, long zobristHash) {
-        String solutionLine = puzzle.getSolutionLine();
-        if (solutionLine == null || solutionLine.isBlank()) {
-            return false;
+    private Map<Long, Integer> existingDag(PuzzleCache puzzle) {
+        byte[] dag = puzzle.getSolutionDag();
+        if (dag == null || dag.length == 0) {
+            return new HashMap<>();
         }
-        return buildSolutionPath(puzzle.getRootBoardState(), solutionLine).containsKey(zobristHash);
+        return new HashMap<>(solutionSerializer.deserialize(dag));
     }
 
     private Map<Long, Integer> buildSolutionPath(String rootBoardState, String answer) {
