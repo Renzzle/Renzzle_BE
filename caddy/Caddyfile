@@ -2,9 +2,8 @@
 	email {$ACME_EMAIL}
 }
 
-renzzle.com, www.renzzle.com {
-	tls /etc/caddy/origin/renzzle.com.pem /etc/caddy/origin/renzzle.com.key
-	
+# Rules shared by both entry points
+(renzzle_routes) {
 	handle /app-ads.txt {
 		header Content-Type text/plain
 		respond "google.com, pub-8517144519151386, DIRECT, f08c47fec0942fa0" 200
@@ -17,10 +16,35 @@ renzzle.com, www.renzzle.com {
 	handle @actuator_unauth {
 		respond 403
 	}
+}
+
+# Entry A: Cloudflare proxy -> host :443 -> app (kept as the rollback path)
+renzzle.com, www.renzzle.com {
+	tls /etc/caddy/origin/renzzle.com.pem /etc/caddy/origin/renzzle.com.key
+
+	import renzzle_routes
 
 	handle {
 		reverse_proxy app:9001 {
 			header_up X-Real-IP {remote_host}
+		}
+	}
+}
+
+# Entry B: Cloudflare Tunnel -> cloudflared -> caddy:8080 -> app
+# Plain HTTP on the compose network only; this port is not published to the host.
+:8080 {
+	import renzzle_routes
+
+	handle {
+		reverse_proxy app:9001 {
+			# {remote_host} would be the cloudflared container, so take the visitor IP from Cloudflare
+			header_up X-Real-IP {http.request.header.CF-Connecting-IP}
+			header_up X-Forwarded-For {http.request.header.CF-Connecting-IP}
+			# cloudflared -> caddy is plain HTTP, and this block has no HTTP->HTTPS redirect.
+			# It relies on Cloudflare "Always Use HTTPS" upgrading visitors at the edge.
+			# AdminController reads this to set the Secure flag on the admin cookie.
+			header_up X-Forwarded-Proto https
 		}
 	}
 }

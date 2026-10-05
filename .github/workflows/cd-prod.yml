@@ -160,6 +160,7 @@ jobs:
           echo "APPLE_IAP_PRIVATE_KEY_PATH=/app/secrets/apple-iap-key.p8" >> .env
           echo "ACME_EMAIL=${{ secrets.ACME_EMAIL }}" >> .env
           echo "ACTUATOR_TOKEN=${{ secrets.ACTUATOR_TOKEN }}" >> .env
+          echo "CLOUDFLARE_TUNNEL_TOKEN=${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}" >> .env
           if [ -n "${{ secrets.DOCS_ENABLED }}" ]; then
             echo "DOCS_ENABLED=${{ secrets.DOCS_ENABLED }}" >> .env
           fi
@@ -206,9 +207,9 @@ jobs:
             set -e
             cd /home/ubuntu/
             
-            docker compose -f docker-compose.yml --profile observability down
-            docker compose -f docker-compose.yml --profile observability pull
-            docker compose -f docker-compose.yml --profile observability up -d
+            docker compose -f docker-compose.yml --profile observability --profile tunnel down
+            docker compose -f docker-compose.yml --profile observability --profile tunnel pull
+            docker compose -f docker-compose.yml --profile observability --profile tunnel up -d
             
             # check container status
             echo "Running containers:"
