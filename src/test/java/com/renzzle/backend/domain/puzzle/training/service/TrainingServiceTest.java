@@ -4,6 +4,7 @@ import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.puzzle.cache.dao.PuzzleCacheRepository;
 import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
 import com.renzzle.backend.domain.puzzle.cache.service.PuzzleCacheService;
+import com.renzzle.backend.domain.puzzle.shared.util.BoardUtils;
 import com.renzzle.backend.domain.puzzle.shared.util.RatingUtil;
 import com.renzzle.backend.domain.puzzle.training.api.request.*;
 import com.renzzle.backend.domain.puzzle.training.api.response.*;
@@ -398,6 +399,36 @@ public class TrainingServiceTest {
             assertThat(modified.getRating())
                     .isEqualTo(RatingUtil.puzzleRating(7, WinColor.getWinColor("BLACK"), to.getDifficulty()));
             assertThat(modified.getRankAttemptCount()).isZero();
+        }
+
+        @Test
+        void createTrainingPuzzle_WhenCreated_ThenStoresTheAnswerKey() {
+            // given
+            Pack pack = pack(1L, "LOW");
+            when(packRepository.findById(1L)).thenReturn(Optional.of(pack));
+            when(trainingPuzzleRepository.save(any(TrainingPuzzle.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            // when
+            TrainingPuzzle created = trainingService.createTrainingPuzzle(
+                    new AddTrainingPuzzleRequest(1L, 0, "a1a2", "a3", 3, "BLACK"));
+
+            // then
+            assertThat(created.getAnswerKey()).isEqualTo(BoardUtils.makeAnswerKey("a1a2", "a3"));
+        }
+
+        @Test
+        void modifyTrainingPuzzle_WhenAnswerChanges_ThenRecomputesTheAnswerKey() {
+            // given
+            Pack pack = pack(1L, "MIDDLE");
+            TrainingPuzzle existing = trainingPuzzle(10L, pack, 5, 1234.5, 12);
+            givenModifiable(existing, pack);
+
+            // when
+            TrainingPuzzle modified = trainingService.modifyTrainingPuzzle(10L, new ModifyTrainingPuzzleRequest(
+                    1L, null, existing.getBoardStatus(), "b3", 5, "BLACK"));
+
+            // then
+            assertThat(modified.getAnswerKey()).isEqualTo(BoardUtils.makeAnswerKey(existing.getBoardStatus(), "b3"));
         }
 
         @Test

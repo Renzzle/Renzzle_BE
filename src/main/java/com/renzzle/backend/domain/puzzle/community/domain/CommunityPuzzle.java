@@ -26,7 +26,8 @@ import static com.renzzle.backend.global.common.domain.Status.STATUS_IS_NOT_DELE
         },
         indexes = {
                 @Index(columnList = "created_at"),
-                @Index(columnList = "like_count")
+                @Index(columnList = "like_count"),
+                @Index(columnList = "answer_key")
         }
 )
 @SQLRestriction(value = STATUS_IS_NOT_DELETED)
@@ -41,6 +42,10 @@ public class CommunityPuzzle {
 
     @Column(name = "board_key", nullable = false)
     private String boardKey;
+
+    // Null only for puzzles saved before the column existed, until the answer key recalculation runs
+    @Column(name = "answer_key")
+    private String answerKey;
 
     @Column(name = "answer", nullable = false, length = 1023)
     private String answer;

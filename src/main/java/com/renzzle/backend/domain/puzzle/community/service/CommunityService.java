@@ -15,9 +15,14 @@ import com.renzzle.backend.domain.puzzle.community.api.response.SolveCommunityPu
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleForAdminResponse;
 import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
+import com.renzzle.backend.domain.puzzle.community.dao.projection.CommunityBoardKeyProjection;
 import com.renzzle.backend.domain.puzzle.community.dao.projection.LikeDislikeProjection;
 import com.renzzle.backend.domain.puzzle.community.domain.*;
+import com.renzzle.backend.domain.puzzle.shared.dao.projection.AnswerKeyProjection;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
+import com.renzzle.backend.domain.puzzle.shared.dto.AnswerKeyRecalculationResult;
+import com.renzzle.backend.domain.puzzle.shared.dto.BoardKeyRecalculationResult;
+import com.renzzle.backend.domain.puzzle.training.dao.TrainingPuzzleRepository;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.domain.puzzle.shared.util.BoardUtils;
@@ -25,6 +30,7 @@ import com.renzzle.backend.domain.puzzle.shared.util.RatingUtil;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,12 +40,15 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.renzzle.backend.global.common.constant.ItemPrice.COMMUNITY_REWARD;
 import static com.renzzle.backend.global.common.constant.ItemPrice.HINT;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CommunityService {
@@ -47,6 +56,7 @@ public class CommunityService {
     private final Clock clock;
     private final CommunityPuzzleRepository communityPuzzleRepository;
     private final UserCommunityPuzzleRepository userCommunityPuzzleRepository;
+    private final TrainingPuzzleRepository trainingPuzzleRepository;
     private final UserRepository userRepository;
     private final PuzzleCacheService puzzleCacheService;
 
@@ -58,11 +68,14 @@ public class CommunityService {
         checkDailyUploadLimit(user);
 
         String boardKey = BoardUtils.makeBoardKey(request.boardStatus());
+        String answerKey = BoardUtils.makeAnswerKey(request.boardStatus(), request.answer());
+        checkDuplicatePuzzle(request, boardKey, answerKey);
         WinColor winColor = WinColor.getWinColor(request.winColor());
 
         CommunityPuzzle puzzle = CommunityPuzzle.builder()
                 .boardStatus(request.boardStatus())
                 .boardKey(boardKey)
+                .answerKey(answerKey)
                 .answer(request.answer())
                 .depth(request.depth())
                 .rating(RatingUtil.puzzleRating(request.depth(), winColor, null))
@@ -99,6 +112,52 @@ public class CommunityService {
         return changed.size();
     }
 
+    // Slots follow the (board_key, status, deleted_at) unique key; puzzles sharing one are reported instead
+    @Transactional
+    public BoardKeyRecalculationResult recalculateBoardKeys() {
+        Map<BoardKeySlot, List<CommunityBoardKeyProjection>> puzzlesBySlot =
+                communityPuzzleRepository.findAllBoardKeysIncludingDeleted().stream()
+                        .collect(Collectors.groupingBy(puzzle -> new BoardKeySlot(
+                                BoardUtils.makeBoardKey(puzzle.getBoardStatus()), puzzle.getStatus(), puzzle.getDeletedAt())));
+
+        int updatedCount = 0;
+        List<List<Long>> duplicates = new ArrayList<>();
+        for (Map.Entry<BoardKeySlot, List<CommunityBoardKeyProjection>> group : puzzlesBySlot.entrySet()) {
+            List<CommunityBoardKeyProjection> puzzles = group.getValue();
+            String boardKey = group.getKey().boardKey();
+            if (puzzles.size() > 1) {
+                duplicates.add(puzzles.stream().map(CommunityBoardKeyProjection::getId).toList());
+            } else if (!boardKey.equals(puzzles.get(0).getBoardKey())) {
+                communityPuzzleRepository.updateBoardKey(puzzles.get(0).getId(), boardKey);
+                updatedCount++;
+            }
+        }
+        return new BoardKeyRecalculationResult(updatedCount, duplicates);
+    }
+
+    private record BoardKeySlot(String boardKey, String status, Instant deletedAt) {}
+
+    // Deleted puzzles are never compared, so only live ones need a key
+    @Transactional
+    public AnswerKeyRecalculationResult recalculateAnswerKeys() {
+        int updatedCount = 0;
+        List<Long> invalidIds = new ArrayList<>();
+        for (AnswerKeyProjection puzzle : communityPuzzleRepository.findAllAnswerKeys()) {
+            String answerKey;
+            try {
+                answerKey = BoardUtils.makeAnswerKey(puzzle.getBoardStatus(), puzzle.getAnswer());
+            } catch (IllegalArgumentException e) {
+                invalidIds.add(puzzle.getId());
+                continue;
+            }
+            if (!answerKey.equals(puzzle.getAnswerKey())) {
+                communityPuzzleRepository.updateAnswerKey(puzzle.getId(), answerKey);
+                updatedCount++;
+            }
+        }
+        return new AnswerKeyRecalculationResult(updatedCount, invalidIds);
+    }
+
     private void checkDailyUploadLimit(UserEntity user) {
         Instant since = clock.instant().minus(24, ChronoUnit.HOURS);
         long uploaded = communityPuzzleRepository.countByAuthorSinceIncludingDeleted(user.getId(), since);
@@ -106,6 +165,32 @@ public class CommunityService {
         if (uploaded >= dailyUploadLimit) {
             throw new CustomException(ErrorCode.EXCEED_DAILY_PUZZLE_UPLOAD);
         }
+    }
+
+    // Checked up front for a clear error; deleted community puzzles don't count, as with the unique key
+    private void checkDuplicatePuzzle(AddCommunityPuzzleRequest request, String boardKey, String answerKey) {
+        trainingPuzzleRepository.findIdByBoardKey(boardKey)
+                .ifPresent(id -> rejectDuplicate(request, "same board", PuzzleType.TRAINING, id));
+        communityPuzzleRepository.findIdByBoardKey(boardKey)
+                .ifPresent(id -> rejectDuplicate(request, "same board", PuzzleType.COMMUNITY, id));
+        rejectCopies(request, PuzzleType.TRAINING, trainingPuzzleRepository.findByAnswerKey(answerKey));
+        rejectCopies(request, PuzzleType.COMMUNITY, communityPuzzleRepository.findByAnswerKey(answerKey));
+    }
+
+    private void rejectCopies(AddCommunityPuzzleRequest request, PuzzleType type, List<AnswerKeyProjection> originals) {
+        for (AnswerKeyProjection original : originals) {
+            if (BoardUtils.isCopyWithStonesAddedOrRemoved(
+                    request.boardStatus(), request.answer(), original.getBoardStatus(), original.getAnswer())) {
+                rejectDuplicate(request, "stones added or removed", type, original.getId());
+            }
+        }
+    }
+
+    // A rejected upload is never saved, so its board is logged for checking against the match
+    private void rejectDuplicate(AddCommunityPuzzleRequest request, String reason, PuzzleType matchedType, Long matchedId) {
+        log.info("Rejected duplicate community puzzle. reason={}, matchedType={}, matchedId={}, boardStatus={}, answer={}",
+                reason, matchedType, matchedId, request.boardStatus(), request.answer());
+        throw new CustomException(ErrorCode.DUPLICATE_PUZZLE);
     }
 
     @Transactional(readOnly = true)

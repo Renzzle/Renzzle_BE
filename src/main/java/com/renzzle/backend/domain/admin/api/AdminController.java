@@ -1,5 +1,7 @@
 package com.renzzle.backend.domain.admin.api;
 
+import com.renzzle.backend.domain.admin.api.response.RecalculateAnswerKeyResponse;
+import com.renzzle.backend.domain.admin.api.response.RecalculateBoardKeyResponse;
 import com.renzzle.backend.domain.admin.api.response.RecalculatePuzzleRatingResponse;
 import com.renzzle.backend.domain.auth.api.request.LoginRequest;
 import com.renzzle.backend.domain.auth.dao.AdminRepository;
@@ -320,6 +322,32 @@ public class AdminController {
         return ApiUtils.success(new RecalculatePuzzleRatingResponse(
                 trainingService.recalculateUnrankedPuzzleRatings(),
                 communityService.recalculateUnrankedPuzzleRatings()
+        ));
+    }
+
+    @Operation(summary = "Recalculate puzzle board keys",
+            description = "Admin-only; recomputes every puzzle's duplicate-detection key with the current formula. "
+                    + "Puzzles that turn out to be the same position keep their keys and are listed under duplicates")
+    @SecurityRequirement(name = "Authorization")
+    @PostMapping("/puzzle/board-key/recalculate")
+    @ResponseBody
+    public ApiResponse<RecalculateBoardKeyResponse> recalculateBoardKeys() {
+        return ApiUtils.success(new RecalculateBoardKeyResponse(
+                trainingService.recalculateBoardKeys(),
+                communityService.recalculateBoardKeys()
+        ));
+    }
+
+    @Operation(summary = "Recalculate puzzle answer keys",
+            description = "Admin-only; recomputes the key that finds uploads copying a puzzle with stones added or removed. "
+                    + "Puzzles whose board or answer cannot be parsed are listed under invalidIds")
+    @SecurityRequirement(name = "Authorization")
+    @PostMapping("/puzzle/answer-key/recalculate")
+    @ResponseBody
+    public ApiResponse<RecalculateAnswerKeyResponse> recalculateAnswerKeys() {
+        return ApiUtils.success(new RecalculateAnswerKeyResponse(
+                trainingService.recalculateAnswerKeys(),
+                communityService.recalculateAnswerKeys()
         ));
     }
 

@@ -17,6 +17,7 @@ import com.renzzle.backend.domain.puzzle.community.domain.UserCommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.puzzle.shared.util.BoardUtils;
 import com.renzzle.backend.domain.puzzle.shared.util.RatingUtil;
+import com.renzzle.backend.domain.puzzle.training.dao.TrainingPuzzleRepository;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.domain.Status;
@@ -58,6 +59,8 @@ class CommunityServiceTest {
     private CommunityPuzzleRepository communityPuzzleRepository;
     @Mock
     private UserCommunityPuzzleRepository userCommunityPuzzleRepository;
+    @Mock
+    private TrainingPuzzleRepository trainingPuzzleRepository;
     @Mock
     private UserRepository userRepository;
 
@@ -225,6 +228,42 @@ class CommunityServiceTest {
         // Then: rolling 24h, not the start of the calendar day
         verify(communityPuzzleRepository).countByAuthorSinceIncludingDeleted(
                 user.getId(), FIXED_INSTANT.minus(24, ChronoUnit.HOURS));
+    }
+
+    @Test
+    void addCommunityPuzzle_WhenTrainingPuzzleHasSamePosition_ThenThrowsAndSavesNothing() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder().withId(1L).build();
+        when(trainingPuzzleRepository.findIdByBoardKey(BoardUtils.makeBoardKey("f8f9"))).thenReturn(Optional.of(3L));
+
+        AddCommunityPuzzleRequest request =
+                new AddCommunityPuzzleRequest("f8f9", "e5", 7, "description", "BLACK", true);
+
+        // When
+        CustomException exception =
+                assertThrows(CustomException.class, () -> communityService.addCommunityPuzzle(request, user));
+
+        // Then
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.DUPLICATE_PUZZLE);
+        verify(communityPuzzleRepository, never()).save(any(CommunityPuzzle.class));
+    }
+
+    @Test
+    void addCommunityPuzzle_WhenCommunityPuzzleHasSamePosition_ThenThrowsAndSavesNothing() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder().withId(1L).build();
+        when(communityPuzzleRepository.findIdByBoardKey(BoardUtils.makeBoardKey("f8f9"))).thenReturn(Optional.of(4L));
+
+        AddCommunityPuzzleRequest request =
+                new AddCommunityPuzzleRequest("f8f9", "e5", 7, "description", "BLACK", true);
+
+        // When
+        CustomException exception =
+                assertThrows(CustomException.class, () -> communityService.addCommunityPuzzle(request, user));
+
+        // Then
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.DUPLICATE_PUZZLE);
+        verify(communityPuzzleRepository, never()).save(any(CommunityPuzzle.class));
     }
 
     @Test

@@ -18,6 +18,9 @@ import java.time.Instant;
         name = "training_puzzle",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {"pack_id", "training_index"})
+        },
+        indexes = {
+                @Index(columnList = "answer_key")
         }
 )
 public class TrainingPuzzle {
@@ -39,6 +42,10 @@ public class TrainingPuzzle {
 
         @Column(name = "board_key", unique = true, nullable = false)
         private String boardKey;
+
+        // Null only for puzzles saved before the column existed, until the answer key recalculation runs
+        @Column(name = "answer_key")
+        private String answerKey;
 
         @Column(name = "answer", nullable = false, length = 1023)
         private String answer;
