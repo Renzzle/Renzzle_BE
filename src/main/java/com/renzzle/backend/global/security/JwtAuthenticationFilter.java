@@ -32,6 +32,9 @@ import static com.renzzle.backend.domain.auth.domain.Admin.ADMIN_PREFIX;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    // With the space: an empty token arrives as a bare "Bearer" once the server trims the header
+    private static final String BEARER_PREFIX = GrantType.BEARER.getType() + " ";
+
     private final JwtProvider jwtProvider;
     private final UserRepository userRepository;
     private final AdminRepository adminRepository;
@@ -76,8 +79,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private String resolveToken(HttpServletRequest request) {
         String bearerToken = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(GrantType.BEARER.getType())) {
-            return bearerToken.substring(7);
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
+            return bearerToken.substring(BEARER_PREFIX.length());
         }
 
         String accessToken = resolveTokenFromCookie(request, "accessToken");

@@ -4,6 +4,9 @@ import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.puzzle.cache.dao.PuzzleCacheRepository;
 import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
 import com.renzzle.backend.domain.puzzle.cache.service.PuzzleCacheService;
+import com.renzzle.backend.domain.puzzle.shared.dao.projection.AnswerKeyProjection;
+import com.renzzle.backend.domain.puzzle.shared.dto.AnswerKeyRecalculationResult;
+import com.renzzle.backend.domain.puzzle.shared.dto.BoardKeyRecalculationResult;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackDetailForAdminResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackPurchaseResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackResponse;
@@ -13,6 +16,7 @@ import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzle
 import com.renzzle.backend.domain.puzzle.training.api.request.*;
 import com.renzzle.backend.domain.puzzle.training.api.response.SolveTrainingPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.training.dao.*;
+import com.renzzle.backend.domain.puzzle.training.dao.projection.TrainingBoardKeyProjection;
 import com.renzzle.backend.domain.puzzle.training.domain.*;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
@@ -75,6 +79,7 @@ public class TrainingService {
                 .answer(request.answer())
                 .boardStatus(request.boardStatus())
                 .boardKey(boardKey)
+                .answerKey(BoardUtils.makeAnswerKey(request.boardStatus(), request.answer()))
                 .depth(request.depth())
                 .rating(rating)
                 .winColor(winColor)
@@ -126,6 +131,11 @@ public class TrainingService {
         // The admin page resends every field, so compare values, and before the save merges into puzzle
         boolean solutionChanged = !Objects.equals(puzzle.getBoardStatus(), edited.getBoardStatus())
                 || !Objects.equals(puzzle.getAnswer(), edited.getAnswer());
+        if (solutionChanged) {
+            edited = edited.toBuilder()
+                    .answerKey(BoardUtils.makeAnswerKey(edited.getBoardStatus(), edited.getAnswer()))
+                    .build();
+        }
         if (changesRatingInputs(puzzle, edited)) {
             edited = edited.toBuilder()
                     .rating(RatingUtil.puzzleRating(
@@ -169,6 +179,46 @@ public class TrainingService {
         }
         trainingPuzzleRepository.saveAll(changed);
         return changed.size();
+    }
+
+    // Puzzles that turn out to be one position would collide on board_key, so they are reported instead
+    @Transactional
+    public BoardKeyRecalculationResult recalculateBoardKeys() {
+        Map<String, List<TrainingBoardKeyProjection>> puzzlesByKey = trainingPuzzleRepository.findAllBoardKeys().stream()
+                .collect(Collectors.groupingBy(puzzle -> BoardUtils.makeBoardKey(puzzle.getBoardStatus())));
+
+        int updatedCount = 0;
+        List<List<Long>> duplicates = new ArrayList<>();
+        for (Map.Entry<String, List<TrainingBoardKeyProjection>> group : puzzlesByKey.entrySet()) {
+            List<TrainingBoardKeyProjection> puzzles = group.getValue();
+            if (puzzles.size() > 1) {
+                duplicates.add(puzzles.stream().map(TrainingBoardKeyProjection::getId).toList());
+            } else if (!group.getKey().equals(puzzles.get(0).getBoardKey())) {
+                trainingPuzzleRepository.updateBoardKey(puzzles.get(0).getId(), group.getKey());
+                updatedCount++;
+            }
+        }
+        return new BoardKeyRecalculationResult(updatedCount, duplicates);
+    }
+
+    @Transactional
+    public AnswerKeyRecalculationResult recalculateAnswerKeys() {
+        int updatedCount = 0;
+        List<Long> invalidIds = new ArrayList<>();
+        for (AnswerKeyProjection puzzle : trainingPuzzleRepository.findAllAnswerKeys()) {
+            String answerKey;
+            try {
+                answerKey = BoardUtils.makeAnswerKey(puzzle.getBoardStatus(), puzzle.getAnswer());
+            } catch (IllegalArgumentException e) {
+                invalidIds.add(puzzle.getId());
+                continue;
+            }
+            if (!answerKey.equals(puzzle.getAnswerKey())) {
+                trainingPuzzleRepository.updateAnswerKey(puzzle.getId(), answerKey);
+                updatedCount++;
+            }
+        }
+        return new AnswerKeyRecalculationResult(updatedCount, invalidIds);
     }
 
     @Transactional
