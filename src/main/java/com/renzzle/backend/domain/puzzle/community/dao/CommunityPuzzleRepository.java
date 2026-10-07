@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.puzzle.community.dao;
 
+import com.renzzle.backend.domain.puzzle.community.dao.projection.CommunityBoardKeyProjection;
 import com.renzzle.backend.domain.puzzle.community.dao.query.CommunityPuzzleQueryRepository;
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.user.domain.UserEntity;
@@ -70,6 +71,16 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
 
     @Query(value = "SELECT * FROM community_puzzle WHERE id = :id", nativeQuery = true)
     CommunityPuzzle findByIdIncludingDeleted(@Param("id") Long id);
+
+    @Query(value = "SELECT id, board_status AS boardStatus, board_key AS boardKey, status, deleted_at AS deletedAt " +
+            "FROM community_puzzle", nativeQuery = true)
+    List<CommunityBoardKeyProjection> findAllBoardKeysIncludingDeleted();
+
+    // Native, so it reaches soft-deleted puzzles as well
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE community_puzzle SET board_key = :boardKey WHERE id = :id", nativeQuery = true)
+    void updateBoardKey(@Param("id") Long id, @Param("boardKey") String boardKey);
 
     List<CommunityPuzzle> findByCreatedAtAfter(Instant after);
 

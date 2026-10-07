@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.puzzle.training.dao;
 
+import com.renzzle.backend.domain.puzzle.training.dao.projection.TrainingBoardKeyProjection;
 import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -52,6 +53,14 @@ public interface TrainingPuzzleRepository extends JpaRepository<TrainingPuzzle, 
 
     @Query("SELECT p.rankAttemptCount FROM TrainingPuzzle p WHERE p.id = :id")
     Optional<Integer> findRankAttemptCountById(@Param("id") Long id);
+
+    @Query("SELECT p.id AS id, p.boardStatus AS boardStatus, p.boardKey AS boardKey FROM TrainingPuzzle p")
+    List<TrainingBoardKeyProjection> findAllBoardKeys();
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE training_puzzle SET board_key = :boardKey WHERE id = :id", nativeQuery = true)
+    void updateBoardKey(@Param("id") Long id, @Param("boardKey") String boardKey);
 
     // Single statement so concurrent results add up instead of overwriting
     @Modifying

@@ -6,6 +6,7 @@ import com.renzzle.backend.domain.auth.domain.Admin;
 import com.renzzle.backend.domain.auth.service.JwtProvider;
 import com.renzzle.backend.domain.puzzle.community.service.CommunityService;
 import com.renzzle.backend.domain.puzzle.rank.support.TestUserFactory;
+import com.renzzle.backend.domain.puzzle.shared.dto.BoardKeyRecalculationResult;
 import com.renzzle.backend.domain.puzzle.training.service.TrainingService;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
@@ -37,9 +38,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = TestContainersConfig.class)
-class AdminPuzzleRatingRecalculationTest {
+class AdminPuzzleRecalculationTest {
 
-    private static final String ENDPOINT = "/admin/puzzle/rating/recalculate";
+    private static final String RATING_ENDPOINT = "/admin/puzzle/rating/recalculate";
+    private static final String BOARD_KEY_ENDPOINT = "/admin/puzzle/board-key/recalculate";
 
     @Autowired private MockMvc mockMvc;
     @Autowired private JwtProvider jwtProvider;
@@ -64,7 +66,7 @@ class AdminPuzzleRatingRecalculationTest {
     void recalculatePuzzleRatings_WhenRegularUser_ThenForbidsAndRatesNothing() throws Exception {
         UserEntity user = createUser();
 
-        mockMvc.perform(withToken(post(ENDPOINT), user))
+        mockMvc.perform(withToken(post(RATING_ENDPOINT), user))
                 .andExpect(status().isForbidden());
 
         verify(trainingService, never()).recalculateUnrankedPuzzleRatings();
@@ -78,10 +80,38 @@ class AdminPuzzleRatingRecalculationTest {
         when(trainingService.recalculateUnrankedPuzzleRatings()).thenReturn(3);
         when(communityService.recalculateUnrankedPuzzleRatings()).thenReturn(5);
 
-        mockMvc.perform(withToken(post(ENDPOINT), user))
+        mockMvc.perform(withToken(post(RATING_ENDPOINT), user))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.response.trainingPuzzleCount").value(3))
                 .andExpect(jsonPath("$.response.communityPuzzleCount").value(5));
+    }
+
+    @Test
+    void recalculateBoardKeys_WhenRegularUser_ThenForbidsAndRewritesNothing() throws Exception {
+        UserEntity user = createUser();
+
+        mockMvc.perform(withToken(post(BOARD_KEY_ENDPOINT), user))
+                .andExpect(status().isForbidden());
+
+        verify(trainingService, never()).recalculateBoardKeys();
+        verify(communityService, never()).recalculateBoardKeys();
+    }
+
+    @Test
+    void recalculateBoardKeys_WhenAdmin_ThenReturnsUpdatesAndDuplicates() throws Exception {
+        UserEntity user = createUser();
+        adminRepository.save(Admin.builder().user(user).build());
+        when(trainingService.recalculateBoardKeys()).thenReturn(new BoardKeyRecalculationResult(3, List.of()));
+        when(communityService.recalculateBoardKeys())
+                .thenReturn(new BoardKeyRecalculationResult(5, List.of(List.of(7L, 9L))));
+
+        mockMvc.perform(withToken(post(BOARD_KEY_ENDPOINT), user))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.response.training.updatedCount").value(3))
+                .andExpect(jsonPath("$.response.training.duplicates").isEmpty())
+                .andExpect(jsonPath("$.response.community.updatedCount").value(5))
+                .andExpect(jsonPath("$.response.community.duplicates[0][0]").value(7))
+                .andExpect(jsonPath("$.response.community.duplicates[0][1]").value(9));
     }
 
     private UserEntity createUser() {

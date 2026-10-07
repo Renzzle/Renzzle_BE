@@ -15,9 +15,11 @@ import com.renzzle.backend.domain.puzzle.community.api.response.SolveCommunityPu
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleForAdminResponse;
 import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
+import com.renzzle.backend.domain.puzzle.community.dao.projection.CommunityBoardKeyProjection;
 import com.renzzle.backend.domain.puzzle.community.dao.projection.LikeDislikeProjection;
 import com.renzzle.backend.domain.puzzle.community.domain.*;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
+import com.renzzle.backend.domain.puzzle.shared.dto.BoardKeyRecalculationResult;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.domain.puzzle.shared.util.BoardUtils;
@@ -34,8 +36,10 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.renzzle.backend.global.common.constant.ItemPrice.COMMUNITY_REWARD;
 import static com.renzzle.backend.global.common.constant.ItemPrice.HINT;
@@ -98,6 +102,31 @@ public class CommunityService {
         communityPuzzleRepository.saveAll(changed);
         return changed.size();
     }
+
+    // Slots follow the (board_key, status, deleted_at) unique key; puzzles sharing one are reported instead
+    @Transactional
+    public BoardKeyRecalculationResult recalculateBoardKeys() {
+        Map<BoardKeySlot, List<CommunityBoardKeyProjection>> puzzlesBySlot =
+                communityPuzzleRepository.findAllBoardKeysIncludingDeleted().stream()
+                        .collect(Collectors.groupingBy(puzzle -> new BoardKeySlot(
+                                BoardUtils.makeBoardKey(puzzle.getBoardStatus()), puzzle.getStatus(), puzzle.getDeletedAt())));
+
+        int updatedCount = 0;
+        List<List<Long>> duplicates = new ArrayList<>();
+        for (Map.Entry<BoardKeySlot, List<CommunityBoardKeyProjection>> group : puzzlesBySlot.entrySet()) {
+            List<CommunityBoardKeyProjection> puzzles = group.getValue();
+            String boardKey = group.getKey().boardKey();
+            if (puzzles.size() > 1) {
+                duplicates.add(puzzles.stream().map(CommunityBoardKeyProjection::getId).toList());
+            } else if (!boardKey.equals(puzzles.get(0).getBoardKey())) {
+                communityPuzzleRepository.updateBoardKey(puzzles.get(0).getId(), boardKey);
+                updatedCount++;
+            }
+        }
+        return new BoardKeyRecalculationResult(updatedCount, duplicates);
+    }
+
+    private record BoardKeySlot(String boardKey, String status, Instant deletedAt) {}
 
     private void checkDailyUploadLimit(UserEntity user) {
         Instant since = clock.instant().minus(24, ChronoUnit.HOURS);

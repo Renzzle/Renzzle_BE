@@ -5,8 +5,15 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.IntBinaryOperator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 class BoardUtilsTest {
+
+    private static final Pattern STONE = Pattern.compile("([a-o])(\\d+)");
 
     @Test
     void getBoardPositionFromStringTest() throws Exception {
@@ -125,6 +132,52 @@ class BoardUtilsTest {
         s1 = BoardUtils.makeBoardKey("h8j9h7");
         s2 = BoardUtils.makeBoardKey("h8j9h7h6h5h4h3h2a11n7");
         Assertions.assertNotEquals(s1, s2);
+    }
+
+    @Test
+    void makeBoardKey_WhenBoardIsRotatedOrMirrored_ThenKeyIsUnchanged() {
+        List<String> boards = allSymmetries("h8h10i9k11g6");
+        Assertions.assertEquals(8, boards.stream().distinct().count());
+
+        String key = BoardUtils.makeBoardKey(boards.get(0));
+        for (String board : boards) {
+            Assertions.assertEquals(key, BoardUtils.makeBoardKey(board), board);
+        }
+    }
+
+    @Test
+    void makeBoardKey_WhenOnlyOneColorIsMirrored_ThenKeysDiffer() {
+        // Mirroring white h10 to h6 alone is not a symmetry of the whole board
+        Assertions.assertNotEquals(BoardUtils.makeBoardKey("h8h10i9"), BoardUtils.makeBoardKey("h8h6i9"));
+    }
+
+    @Test
+    void makeBoardKey_WhenCellNumbersRunTogetherAlike_ThenKeysDiffer() {
+        // Black [1, 23] + white [4] and black [1, 2] + white [34] both read "1234" without delimiters
+        Assertions.assertNotEquals(BoardUtils.makeBoardKey("a1a4b8"), BoardUtils.makeBoardKey("a1c4a2"));
+    }
+
+    // The board in all four rotations, each also mirrored
+    private static List<String> allSymmetries(String board) {
+        List<String> boards = new ArrayList<>();
+        String rotated = board;
+        for (int i = 0; i < 4; i++) {
+            boards.add(rotated);
+            boards.add(transform(rotated, (row, col) -> row * 15 + (14 - col)));
+            rotated = transform(rotated, (row, col) -> col * 15 + (14 - row));
+        }
+        return boards;
+    }
+
+    // Moves every stone to the cell index the mapping returns, keeping the move order
+    private static String transform(String board, IntBinaryOperator cellOf) {
+        StringBuilder result = new StringBuilder();
+        Matcher stone = STONE.matcher(board);
+        while (stone.find()) {
+            int cell = cellOf.applyAsInt(stone.group(1).charAt(0) - 'a', Integer.parseInt(stone.group(2)) - 1);
+            result.append((char) ('a' + cell / 15)).append(cell % 15 + 1);
+        }
+        return result.toString();
     }
 
 }

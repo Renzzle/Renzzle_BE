@@ -9,6 +9,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class BoardUtils {
 
@@ -30,10 +31,9 @@ public class BoardUtils {
             Collections.sort(whitePosLists.get(i));
         }
 
-        List<Integer> minB = findMinList(blackPosLists);
-        List<Integer> minW = findMinList(whitePosLists);
+        int min = findMinSymmetry(blackPosLists, whitePosLists);
 
-        return sha256Hex(joinPositions(minB, minW));
+        return sha256Hex(joinPositions(blackPosLists.get(min), whitePosLists.get(min)));
     }
 
     private static List<List<Integer>> createSymmetryLists() {
@@ -66,25 +66,26 @@ public class BoardUtils {
         }
     }
 
-    private static List<Integer> findMinList(List<List<Integer>> posLists) {
-        List<Integer> min = posLists.get(0);
-        for(int i = 1; i < posLists.size(); i++) {
-            if(compareList(min, posLists.get(i)) > 0) {
-                min = posLists.get(i);
-            }
+    // Both colors take one symmetry; minimizing each color on its own merges unrelated positions
+    private static int findMinSymmetry(List<List<Integer>> blackPosLists, List<List<Integer>> whitePosLists) {
+        int min = 0;
+        for(int i = 1; i < SYMMETRY_COUNT; i++) {
+            int cmp = compareList(blackPosLists.get(i), blackPosLists.get(min));
+            if(cmp == 0)
+                cmp = compareList(whitePosLists.get(i), whitePosLists.get(min));
+            if(cmp < 0)
+                min = i;
         }
         return min;
     }
 
+    // Delimited so [1, 23] + [4] and [1, 2] + [34] differ, and no key equals an old undelimited one
     private static String joinPositions(List<Integer> blackPos, List<Integer> whitePos) {
-        StringBuilder result = new StringBuilder();
-        for (Integer num : blackPos) {
-            result.append(num);
-        }
-        for (Integer num : whitePos) {
-            result.append(num);
-        }
-        return result.toString();
+        return joinCells(blackPos) + "/" + joinCells(whitePos);
+    }
+
+    private static String joinCells(List<Integer> cells) {
+        return cells.stream().map(String::valueOf).collect(Collectors.joining(","));
     }
 
     private static String sha256Hex(String value) {
