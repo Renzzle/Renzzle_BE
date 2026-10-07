@@ -20,6 +20,7 @@ import com.renzzle.backend.domain.puzzle.community.dao.projection.LikeDislikePro
 import com.renzzle.backend.domain.puzzle.community.domain.*;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.puzzle.shared.dto.BoardKeyRecalculationResult;
+import com.renzzle.backend.domain.puzzle.training.dao.TrainingPuzzleRepository;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.domain.puzzle.shared.util.BoardUtils;
@@ -51,6 +52,7 @@ public class CommunityService {
     private final Clock clock;
     private final CommunityPuzzleRepository communityPuzzleRepository;
     private final UserCommunityPuzzleRepository userCommunityPuzzleRepository;
+    private final TrainingPuzzleRepository trainingPuzzleRepository;
     private final UserRepository userRepository;
     private final PuzzleCacheService puzzleCacheService;
 
@@ -62,6 +64,7 @@ public class CommunityService {
         checkDailyUploadLimit(user);
 
         String boardKey = BoardUtils.makeBoardKey(request.boardStatus());
+        checkDuplicatePuzzle(boardKey);
         WinColor winColor = WinColor.getWinColor(request.winColor());
 
         CommunityPuzzle puzzle = CommunityPuzzle.builder()
@@ -134,6 +137,13 @@ public class CommunityService {
 
         if (uploaded >= dailyUploadLimit) {
             throw new CustomException(ErrorCode.EXCEED_DAILY_PUZZLE_UPLOAD);
+        }
+    }
+
+    // Checked up front for a clear error; deleted community puzzles don't count, as with the unique key
+    private void checkDuplicatePuzzle(String boardKey) {
+        if (trainingPuzzleRepository.existsByBoardKey(boardKey) || communityPuzzleRepository.existsByBoardKey(boardKey)) {
+            throw new CustomException(ErrorCode.DUPLICATE_PUZZLE);
         }
     }
 

@@ -42,6 +42,8 @@ public interface TrainingPuzzleRepository extends JpaRepository<TrainingPuzzle, 
 
     List<TrainingPuzzle> findByRankAttemptCount(int rankAttemptCount);
 
+    boolean existsByBoardKey(String boardKey);
+
     void deleteAllByPack_Id(Long packId);
 
     @Query("SELECT p FROM TrainingPuzzle p " +

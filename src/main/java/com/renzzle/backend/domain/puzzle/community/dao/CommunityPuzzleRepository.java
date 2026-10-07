@@ -53,6 +53,8 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
 
     List<CommunityPuzzle> findByRankAttemptCount(int rankAttemptCount);
 
+    boolean existsByBoardKey(String boardKey);
+
     @Query("SELECT p.rankAttemptCount FROM CommunityPuzzle p WHERE p.id = :id")
     Optional<Integer> findRankAttemptCountById(@Param("id") Long id);
 
