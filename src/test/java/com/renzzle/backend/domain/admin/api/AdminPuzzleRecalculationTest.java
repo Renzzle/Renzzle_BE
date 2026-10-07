@@ -6,6 +6,7 @@ import com.renzzle.backend.domain.auth.domain.Admin;
 import com.renzzle.backend.domain.auth.service.JwtProvider;
 import com.renzzle.backend.domain.puzzle.community.service.CommunityService;
 import com.renzzle.backend.domain.puzzle.rank.support.TestUserFactory;
+import com.renzzle.backend.domain.puzzle.shared.dto.AnswerKeyRecalculationResult;
 import com.renzzle.backend.domain.puzzle.shared.dto.BoardKeyRecalculationResult;
 import com.renzzle.backend.domain.puzzle.training.service.TrainingService;
 import com.renzzle.backend.domain.user.dao.UserRepository;
@@ -42,6 +43,7 @@ class AdminPuzzleRecalculationTest {
 
     private static final String RATING_ENDPOINT = "/admin/puzzle/rating/recalculate";
     private static final String BOARD_KEY_ENDPOINT = "/admin/puzzle/board-key/recalculate";
+    private static final String ANSWER_KEY_ENDPOINT = "/admin/puzzle/answer-key/recalculate";
 
     @Autowired private MockMvc mockMvc;
     @Autowired private JwtProvider jwtProvider;
@@ -112,6 +114,32 @@ class AdminPuzzleRecalculationTest {
                 .andExpect(jsonPath("$.response.community.updatedCount").value(5))
                 .andExpect(jsonPath("$.response.community.duplicates[0][0]").value(7))
                 .andExpect(jsonPath("$.response.community.duplicates[0][1]").value(9));
+    }
+
+    @Test
+    void recalculateAnswerKeys_WhenRegularUser_ThenForbidsAndRewritesNothing() throws Exception {
+        UserEntity user = createUser();
+
+        mockMvc.perform(withToken(post(ANSWER_KEY_ENDPOINT), user))
+                .andExpect(status().isForbidden());
+
+        verify(trainingService, never()).recalculateAnswerKeys();
+        verify(communityService, never()).recalculateAnswerKeys();
+    }
+
+    @Test
+    void recalculateAnswerKeys_WhenAdmin_ThenReturnsUpdatesAndInvalidPuzzles() throws Exception {
+        UserEntity user = createUser();
+        adminRepository.save(Admin.builder().user(user).build());
+        when(trainingService.recalculateAnswerKeys()).thenReturn(new AnswerKeyRecalculationResult(3, List.of()));
+        when(communityService.recalculateAnswerKeys()).thenReturn(new AnswerKeyRecalculationResult(5, List.of(7L)));
+
+        mockMvc.perform(withToken(post(ANSWER_KEY_ENDPOINT), user))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.response.training.updatedCount").value(3))
+                .andExpect(jsonPath("$.response.training.invalidIds").isEmpty())
+                .andExpect(jsonPath("$.response.community.updatedCount").value(5))
+                .andExpect(jsonPath("$.response.community.invalidIds[0]").value(7));
     }
 
     private UserEntity createUser() {

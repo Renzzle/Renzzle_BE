@@ -3,6 +3,7 @@ package com.renzzle.backend.domain.puzzle.community.dao;
 import com.renzzle.backend.domain.puzzle.community.dao.projection.CommunityBoardKeyProjection;
 import com.renzzle.backend.domain.puzzle.community.dao.query.CommunityPuzzleQueryRepository;
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
+import com.renzzle.backend.domain.puzzle.shared.dao.projection.AnswerKeyProjection;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -53,7 +54,10 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
 
     List<CommunityPuzzle> findByRankAttemptCount(int rankAttemptCount);
 
-    boolean existsByBoardKey(String boardKey);
+    @Query("SELECT p.id FROM CommunityPuzzle p WHERE p.boardKey = :boardKey")
+    Optional<Long> findIdByBoardKey(@Param("boardKey") String boardKey);
+
+    List<AnswerKeyProjection> findByAnswerKey(String answerKey);
 
     @Query("SELECT p.rankAttemptCount FROM CommunityPuzzle p WHERE p.id = :id")
     Optional<Integer> findRankAttemptCountById(@Param("id") Long id);
@@ -83,6 +87,15 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
     @Transactional
     @Query(value = "UPDATE community_puzzle SET board_key = :boardKey WHERE id = :id", nativeQuery = true)
     void updateBoardKey(@Param("id") Long id, @Param("boardKey") String boardKey);
+
+    @Query("SELECT p.id AS id, p.boardStatus AS boardStatus, p.answer AS answer, p.answerKey AS answerKey " +
+            "FROM CommunityPuzzle p")
+    List<AnswerKeyProjection> findAllAnswerKeys();
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE community_puzzle SET answer_key = :answerKey WHERE id = :id", nativeQuery = true)
+    void updateAnswerKey(@Param("id") Long id, @Param("answerKey") String answerKey);
 
     List<CommunityPuzzle> findByCreatedAtAfter(Instant after);
 

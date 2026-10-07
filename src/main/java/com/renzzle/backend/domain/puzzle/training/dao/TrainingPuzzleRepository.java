@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.puzzle.training.dao;
 
+import com.renzzle.backend.domain.puzzle.shared.dao.projection.AnswerKeyProjection;
 import com.renzzle.backend.domain.puzzle.training.dao.projection.TrainingBoardKeyProjection;
 import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.user.domain.UserEntity;
@@ -42,7 +43,10 @@ public interface TrainingPuzzleRepository extends JpaRepository<TrainingPuzzle, 
 
     List<TrainingPuzzle> findByRankAttemptCount(int rankAttemptCount);
 
-    boolean existsByBoardKey(String boardKey);
+    @Query("SELECT p.id FROM TrainingPuzzle p WHERE p.boardKey = :boardKey")
+    Optional<Long> findIdByBoardKey(@Param("boardKey") String boardKey);
+
+    List<AnswerKeyProjection> findByAnswerKey(String answerKey);
 
     void deleteAllByPack_Id(Long packId);
 
@@ -63,6 +67,15 @@ public interface TrainingPuzzleRepository extends JpaRepository<TrainingPuzzle, 
     @Transactional
     @Query(value = "UPDATE training_puzzle SET board_key = :boardKey WHERE id = :id", nativeQuery = true)
     void updateBoardKey(@Param("id") Long id, @Param("boardKey") String boardKey);
+
+    @Query("SELECT p.id AS id, p.boardStatus AS boardStatus, p.answer AS answer, p.answerKey AS answerKey " +
+            "FROM TrainingPuzzle p")
+    List<AnswerKeyProjection> findAllAnswerKeys();
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE training_puzzle SET answer_key = :answerKey WHERE id = :id", nativeQuery = true)
+    void updateAnswerKey(@Param("id") Long id, @Param("answerKey") String answerKey);
 
     // Single statement so concurrent results add up instead of overwriting
     @Modifying

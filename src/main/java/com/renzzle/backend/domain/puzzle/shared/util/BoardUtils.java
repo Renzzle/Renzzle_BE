@@ -8,12 +8,18 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class BoardUtils {
 
     private static final int SYMMETRY_COUNT = 8;
+    // A smaller original fits inside too many unrelated boards to call each of them a padded copy
+    private static final int MIN_PADDED_ORIGINAL_STONES = 5;
+    // A trimmed copy keeps most of the original, so a far larger board cannot swallow a small one
+    private static final double MIN_TRIMMED_STONE_RATIO = 0.8;
 
     private BoardUtils() {}
 
@@ -86,6 +92,101 @@ public class BoardUtils {
 
     private static String joinCells(List<Integer> cells) {
         return cells.stream().map(String::valueOf).collect(Collectors.joining(","));
+    }
+
+    // Who moves first is part of the key, since the same line played by the other color is another puzzle
+    public static String makeAnswerKey(String boardStatus, String answer) {
+        List<Cell> moves = parseCells(answer);
+        String minShape = null;
+        for(int i = 0; i < SYMMETRY_COUNT; i++) {
+            String shape = joinShape(place(moves, i, moves.get(0), new Cell(0, 0)));
+            if(minShape == null || shape.compareTo(minShape) < 0)
+                minShape = shape;
+        }
+        return sha256Hex(parseCells(boardStatus).size() % 2 + ":" + minShape);
+    }
+
+    // A copy lays its answer exactly on the original's after some rotation, reflection and shift, then
+    // holds every original stone (stones added) or keeps most of them and nothing else (stones removed)
+    public static boolean isCopyWithStonesAddedOrRemoved(
+            String boardStatus, String answer, String originalBoardStatus, String originalAnswer) {
+        List<Cell> board = parseCells(boardStatus);
+        List<Cell> moves = parseCells(answer);
+        List<Cell> original = parseCells(originalBoardStatus);
+        List<Cell> originalMoves = parseCells(originalAnswer);
+        if(board.size() % 2 != original.size() % 2)
+            return false;
+
+        boolean paddingCounts = original.size() >= MIN_PADDED_ORIGINAL_STONES;
+        boolean trimmingCounts = board.size() >= original.size() * MIN_TRIMMED_STONE_RATIO;
+        for(int i = 0; i < SYMMETRY_COUNT; i++) {
+            if(!place(originalMoves, i, originalMoves.get(0), moves.get(0)).equals(moves))
+                continue;
+            List<Cell> placed = place(original, i, originalMoves.get(0), moves.get(0));
+            if((paddingCounts && containsStones(board, placed)) || (trimmingCounts && containsStones(placed, board)))
+                return true;
+        }
+        return false;
+    }
+
+    private record Cell(int row, int col) {}
+
+    private static List<Cell> parseCells(String boardStatus) {
+        if(boardStatus == null || boardStatus.isBlank())
+            throwIllegalBoardStatusException(boardStatus);
+
+        List<Cell> cells = new ArrayList<>();
+        int i = 0;
+        while(i < boardStatus.length()) {
+            int p = getBoardPositionFromString(boardStatus, i);
+            cells.add(new Cell((p - 1) / 15, (p - 1) % 15));
+            i += ((p - 1) % 15 < 9) ? 2 : 3;
+        }
+        return cells;
+    }
+
+    // Rotates or reflects every cell, then shifts them all so that anchor lands on target
+    private static List<Cell> place(List<Cell> cells, int symmetry, Cell anchor, Cell target) {
+        Cell movedAnchor = transform(anchor, symmetry);
+        List<Cell> placed = new ArrayList<>();
+        for(Cell cell : cells) {
+            Cell moved = transform(cell, symmetry);
+            placed.add(new Cell(
+                    moved.row() - movedAnchor.row() + target.row(),
+                    moved.col() - movedAnchor.col() + target.col()));
+        }
+        return placed;
+    }
+
+    private static Cell transform(Cell cell, int symmetry) {
+        int r = cell.row();
+        int c = cell.col();
+        return switch(symmetry) {
+            case 0 -> new Cell(r, c);
+            case 1 -> new Cell(c, -r);
+            case 2 -> new Cell(-r, -c);
+            case 3 -> new Cell(-c, r);
+            case 4 -> new Cell(r, -c);
+            case 5 -> new Cell(-r, c);
+            case 6 -> new Cell(c, r);
+            default -> new Cell(-c, -r);
+        };
+    }
+
+    private static String joinShape(List<Cell> cells) {
+        return cells.stream().map(cell -> cell.row() + "," + cell.col()).collect(Collectors.joining("/"));
+    }
+
+    // Colors alternate in board order, so a stone's color is the parity of its index
+    private static boolean containsStones(List<Cell> board, List<Cell> stones) {
+        List<Set<Cell>> boardByColor = List.of(new HashSet<>(), new HashSet<>());
+        for(int i = 0; i < board.size(); i++)
+            boardByColor.get(i % 2).add(board.get(i));
+        for(int i = 0; i < stones.size(); i++) {
+            if(!boardByColor.get(i % 2).contains(stones.get(i)))
+                return false;
+        }
+        return true;
     }
 
     private static String sha256Hex(String value) {

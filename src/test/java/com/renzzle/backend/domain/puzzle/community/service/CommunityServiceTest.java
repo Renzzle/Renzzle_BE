@@ -234,7 +234,7 @@ class CommunityServiceTest {
     void addCommunityPuzzle_WhenTrainingPuzzleHasSamePosition_ThenThrowsAndSavesNothing() {
         // Given
         UserEntity user = TestUserEntityBuilder.builder().withId(1L).build();
-        when(trainingPuzzleRepository.existsByBoardKey(BoardUtils.makeBoardKey("f8f9"))).thenReturn(true);
+        when(trainingPuzzleRepository.findIdByBoardKey(BoardUtils.makeBoardKey("f8f9"))).thenReturn(Optional.of(3L));
 
         AddCommunityPuzzleRequest request =
                 new AddCommunityPuzzleRequest("f8f9", "e5", 7, "description", "BLACK", true);
@@ -252,7 +252,7 @@ class CommunityServiceTest {
     void addCommunityPuzzle_WhenCommunityPuzzleHasSamePosition_ThenThrowsAndSavesNothing() {
         // Given
         UserEntity user = TestUserEntityBuilder.builder().withId(1L).build();
-        when(communityPuzzleRepository.existsByBoardKey(BoardUtils.makeBoardKey("f8f9"))).thenReturn(true);
+        when(communityPuzzleRepository.findIdByBoardKey(BoardUtils.makeBoardKey("f8f9"))).thenReturn(Optional.of(4L));
 
         AddCommunityPuzzleRequest request =
                 new AddCommunityPuzzleRequest("f8f9", "e5", 7, "description", "BLACK", true);

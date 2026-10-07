@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.admin.api;
 
+import com.renzzle.backend.domain.admin.api.response.RecalculateAnswerKeyResponse;
 import com.renzzle.backend.domain.admin.api.response.RecalculateBoardKeyResponse;
 import com.renzzle.backend.domain.admin.api.response.RecalculatePuzzleRatingResponse;
 import com.renzzle.backend.domain.auth.api.request.LoginRequest;
@@ -334,6 +335,19 @@ public class AdminController {
         return ApiUtils.success(new RecalculateBoardKeyResponse(
                 trainingService.recalculateBoardKeys(),
                 communityService.recalculateBoardKeys()
+        ));
+    }
+
+    @Operation(summary = "Recalculate puzzle answer keys",
+            description = "Admin-only; recomputes the key that finds uploads copying a puzzle with stones added or removed. "
+                    + "Puzzles whose board or answer cannot be parsed are listed under invalidIds")
+    @SecurityRequirement(name = "Authorization")
+    @PostMapping("/puzzle/answer-key/recalculate")
+    @ResponseBody
+    public ApiResponse<RecalculateAnswerKeyResponse> recalculateAnswerKeys() {
+        return ApiUtils.success(new RecalculateAnswerKeyResponse(
+                trainingService.recalculateAnswerKeys(),
+                communityService.recalculateAnswerKeys()
         ));
     }
 

@@ -15,6 +15,10 @@ class BoardUtilsTest {
 
     private static final Pattern STONE = Pattern.compile("([a-o])(\\d+)");
 
+    // Black h8-h10 against white i8-i10; black h11, white h12, black h7 makes five
+    private static final String PUZZLE_BOARD = "h8i8h9i9h10i10";
+    private static final String PUZZLE_ANSWER = "h11h12h7";
+
     @Test
     void getBoardPositionFromStringTest() throws Exception {
         // get private method
@@ -155,6 +159,71 @@ class BoardUtilsTest {
     void makeBoardKey_WhenCellNumbersRunTogetherAlike_ThenKeysDiffer() {
         // Black [1, 23] + white [4] and black [1, 2] + white [34] both read "1234" without delimiters
         Assertions.assertNotEquals(BoardUtils.makeBoardKey("a1a4b8"), BoardUtils.makeBoardKey("a1c4a2"));
+    }
+
+    @Test
+    void makeAnswerKey_WhenAnswerIsTurnedOrShifted_ThenKeyIsUnchanged() {
+        String key = BoardUtils.makeAnswerKey(PUZZLE_BOARD, PUZZLE_ANSWER);
+
+        // Transposed, then the transposed line moved one row and one column
+        Assertions.assertEquals(key, BoardUtils.makeAnswerKey(PUZZLE_BOARD, "k8l8g8"));
+        Assertions.assertEquals(key, BoardUtils.makeAnswerKey(PUZZLE_BOARD, "l9m9h9"));
+    }
+
+    @Test
+    void makeAnswerKey_WhenTheOtherColorMovesFirst_ThenKeysDiffer() {
+        Assertions.assertNotEquals(
+                BoardUtils.makeAnswerKey(PUZZLE_BOARD, PUZZLE_ANSWER),
+                BoardUtils.makeAnswerKey(PUZZLE_BOARD + "a1", PUZZLE_ANSWER));
+    }
+
+    @Test
+    void isCopyWithStonesAddedOrRemoved_WhenStonesAreAdded_ThenMatches() {
+        Assertions.assertTrue(BoardUtils.isCopyWithStonesAddedOrRemoved(
+                PUZZLE_BOARD + "a1o15", PUZZLE_ANSWER, PUZZLE_BOARD, PUZZLE_ANSWER));
+    }
+
+    @Test
+    void isCopyWithStonesAddedOrRemoved_WhenCopyIsTurnedShiftedAndPadded_ThenMatches() {
+        // A quarter turn that puts the first answer move on e5, plus a far pair of stones
+        Assertions.assertTrue(BoardUtils.isCopyWithStonesAddedOrRemoved(
+                "b5b4c5c4d5d4o1o15", "e5f5a5", PUZZLE_BOARD, PUZZLE_ANSWER));
+    }
+
+    @Test
+    void isCopyWithStonesAddedOrRemoved_WhenMostStonesAreKept_ThenMatches() {
+        // Eight of the original ten stones
+        Assertions.assertTrue(BoardUtils.isCopyWithStonesAddedOrRemoved(
+                PUZZLE_BOARD + "m13n12", PUZZLE_ANSWER, PUZZLE_BOARD + "c3d4m13n12", PUZZLE_ANSWER));
+    }
+
+    @Test
+    void isCopyWithStonesAddedOrRemoved_WhenAnswerOrStonesDiffer_ThenDoesNotMatch() {
+        // Answer reordered, one stone moved, two stones swapping colors, the other color moving first
+        Assertions.assertFalse(BoardUtils.isCopyWithStonesAddedOrRemoved(
+                PUZZLE_BOARD, "h11h7h12", PUZZLE_BOARD, PUZZLE_ANSWER));
+        Assertions.assertFalse(BoardUtils.isCopyWithStonesAddedOrRemoved(
+                "h8i8h9i9h10i11", PUZZLE_ANSWER, PUZZLE_BOARD, PUZZLE_ANSWER));
+        Assertions.assertFalse(BoardUtils.isCopyWithStonesAddedOrRemoved(
+                "h8i8h9i9i10h10", PUZZLE_ANSWER, PUZZLE_BOARD, PUZZLE_ANSWER));
+        Assertions.assertFalse(BoardUtils.isCopyWithStonesAddedOrRemoved(
+                PUZZLE_BOARD + "a1", PUZZLE_ANSWER, PUZZLE_BOARD, PUZZLE_ANSWER));
+    }
+
+    @Test
+    void isCopyWithStonesAddedOrRemoved_WhenOriginalHasFewStones_ThenOnlyAnExactCopyMatches() {
+        Assertions.assertFalse(BoardUtils.isCopyWithStonesAddedOrRemoved(
+                "h8i8h9i9a1o15", "h10h11h7", "h8i8h9i9", "h10h11h7"));
+        // Shifted one column, nothing added
+        Assertions.assertTrue(BoardUtils.isCopyWithStonesAddedOrRemoved(
+                "h9i9h10i10", "h11h12h8", "h8i8h9i9", "h10h11h7"));
+    }
+
+    @Test
+    void isCopyWithStonesAddedOrRemoved_WhenOriginalIsFarLarger_ThenDoesNotMatch() {
+        // Six of the original ten stones
+        Assertions.assertFalse(BoardUtils.isCopyWithStonesAddedOrRemoved(
+                PUZZLE_BOARD, PUZZLE_ANSWER, PUZZLE_BOARD + "c3d4m13n12", PUZZLE_ANSWER));
     }
 
     // The board in all four rotations, each also mirrored
