@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.notice.service;
 
+import com.renzzle.backend.domain.appinfo.service.AppInfoService;
 import com.renzzle.backend.domain.notice.api.request.AnnouncementContentRequest;
 import com.renzzle.backend.domain.notice.api.request.CreateAnnouncementRequest;
 import com.renzzle.backend.domain.notice.api.request.GetPersonalNoticeRequest;
@@ -19,10 +20,12 @@ import com.renzzle.backend.domain.notice.dao.SystemInfoRepository;
 import com.renzzle.backend.domain.notice.domain.Announcement;
 import com.renzzle.backend.domain.notice.domain.Notice;
 import com.renzzle.backend.domain.notice.domain.SystemInfo;
+import com.renzzle.backend.domain.notice.util.AppVersionUtil;
 import com.renzzle.backend.domain.notice.util.NoticeTextBuilderUtil;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 
 import com.renzzle.backend.domain.user.domain.UserEntity;
+import com.renzzle.backend.global.common.constant.ItemPrice;
 import com.renzzle.backend.global.common.domain.AppPlatform;
 import com.renzzle.backend.global.common.domain.LangCode;
 import com.renzzle.backend.global.exception.CustomException;
@@ -47,6 +50,7 @@ public class NoticeService {
     private final AnnouncementRepository announcementRepository;
     private final SystemInfoRepository systemInfoRepository;
     private final UserRepository userRepository;
+    private final AppInfoService appInfoService;
 
     @Transactional
     public GetPersonalNoticeResponse getPersonalNotice(GetPersonalNoticeRequest request, UserEntity user) {
@@ -59,9 +63,9 @@ public class NoticeService {
                     .description("system-check")
                     .build();
         }
-        // App version check, against the required version for the caller's OS
+        // Only clients older than the required version for their OS are asked to update
         String requiredVersion = systemInfo.getRequiredVersion(AppPlatform.from(request.platform()));
-        if (!request.version().trim().equals(requiredVersion)) {
+        if (AppVersionUtil.compare(request.version(), requiredVersion) < 0) {
             return GetPersonalNoticeResponse.builder()
                     .description("update")
                     .version(requiredVersion)
@@ -82,10 +86,10 @@ public class NoticeService {
 
         // 2. Attendance price
         if (Boolean.TRUE.equals(userRepository.isLastAccessBeforeToday(user.getId()))) {
-            int price = 200;
-            userRepository.addUserCurrency(user.getId(), price);
+            int reward = appInfoService.getPrice(ItemPrice.ATTENDANCE_REWARD);
+            userRepository.addUserCurrency(user.getId(), reward);
             contexts.add(NoticeContext.builder()
-                    .context(NoticeTextBuilderUtil.buildAttendanceMessage(LangCode.getLangCode(request.langCode()), price))
+                    .context(NoticeTextBuilderUtil.buildAttendanceMessage(LangCode.getLangCode(request.langCode()), reward))
                     .build()
             );
         }
@@ -180,7 +184,6 @@ public class NoticeService {
     @Transactional
     public GetSystemInfoForAdminResponse updateSystemInfoForAdmin(UpdateSystemInfoRequest request) {
         SystemInfo systemInfo = loadSystemInfo();
-        // Stored trimmed because getPersonalNotice compares against the trimmed client version
         systemInfo.update(request.androidVersion().trim(), request.iosVersion().trim(), request.isSystemCheck());
         return toSystemInfoResponse(systemInfo);
     }

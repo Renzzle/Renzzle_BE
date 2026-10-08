@@ -16,10 +16,18 @@ import java.util.stream.Collectors;
 public class BoardUtils {
 
     private static final int SYMMETRY_COUNT = 8;
-    // A smaller original fits inside too many unrelated boards to call each of them a padded copy
-    private static final int MIN_PADDED_ORIGINAL_STONES = 5;
-    // A trimmed copy keeps most of the original, so a far larger board cannot swallow a small one
-    private static final double MIN_TRIMMED_STONE_RATIO = 0.8;
+    // Ratios of the original's stone count
+    private static final double MIN_KEPT_STONE_RATIO = 0.8;
+    private static final double MAX_ADDED_STONE_RATIO = 0.8;
+    // Only stones this close to an answer move are compared
+    private static final int RELEVANT_RADIUS = 5;
+
+    public enum CopyMatch {
+        NEAR_COPY,
+        // Keeps most of the original but adds many stones
+        HEAVILY_PADDED,
+        NONE
+    }
 
     private BoardUtils() {}
 
@@ -106,27 +114,33 @@ public class BoardUtils {
         return sha256Hex(parseCells(boardStatus).size() % 2 + ":" + minShape);
     }
 
-    // A copy lays its answer exactly on the original's after some rotation, reflection and shift, then
-    // holds every original stone (stones added) or keeps most of them and nothing else (stones removed)
-    public static boolean isCopyWithStonesAddedOrRemoved(
+    // Aligns the answers by rotation, reflection and shift; a copy keeps most stones and adds few
+    public static CopyMatch matchCopy(
             String boardStatus, String answer, String originalBoardStatus, String originalAnswer) {
         List<Cell> board = parseCells(boardStatus);
         List<Cell> moves = parseCells(answer);
         List<Cell> original = parseCells(originalBoardStatus);
         List<Cell> originalMoves = parseCells(originalAnswer);
         if(board.size() % 2 != original.size() % 2)
-            return false;
+            return CopyMatch.NONE;
 
-        boolean paddingCounts = original.size() >= MIN_PADDED_ORIGINAL_STONES;
-        boolean trimmingCounts = board.size() >= original.size() * MIN_TRIMMED_STONE_RATIO;
+        List<Set<Cell>> relevantBoard = relevantStonesByColor(board, moves);
+        int boardCount = relevantBoard.get(0).size() + relevantBoard.get(1).size();
+        CopyMatch match = CopyMatch.NONE;
         for(int i = 0; i < SYMMETRY_COUNT; i++) {
             if(!place(originalMoves, i, originalMoves.get(0), moves.get(0)).equals(moves))
                 continue;
-            List<Cell> placed = place(original, i, originalMoves.get(0), moves.get(0));
-            if((paddingCounts && containsStones(board, placed)) || (trimmingCounts && containsStones(placed, board)))
-                return true;
+            List<Set<Cell>> relevantOriginal =
+                    relevantStonesByColor(place(original, i, originalMoves.get(0), moves.get(0)), moves);
+            int originalCount = relevantOriginal.get(0).size() + relevantOriginal.get(1).size();
+            int kept = countSharedStones(relevantBoard, relevantOriginal);
+            if(kept < originalCount * MIN_KEPT_STONE_RATIO)
+                continue;
+            if(boardCount - kept < originalCount * MAX_ADDED_STONE_RATIO)
+                return CopyMatch.NEAR_COPY;
+            match = CopyMatch.HEAVILY_PADDED;
         }
-        return false;
+        return match;
     }
 
     private record Cell(int row, int col) {}
@@ -178,15 +192,32 @@ public class BoardUtils {
     }
 
     // Colors alternate in board order, so a stone's color is the parity of its index
-    private static boolean containsStones(List<Cell> board, List<Cell> stones) {
-        List<Set<Cell>> boardByColor = List.of(new HashSet<>(), new HashSet<>());
-        for(int i = 0; i < board.size(); i++)
-            boardByColor.get(i % 2).add(board.get(i));
+    private static List<Set<Cell>> relevantStonesByColor(List<Cell> stones, List<Cell> moves) {
+        List<Set<Cell>> byColor = List.of(new HashSet<>(), new HashSet<>());
         for(int i = 0; i < stones.size(); i++) {
-            if(!boardByColor.get(i % 2).contains(stones.get(i)))
-                return false;
+            if(isNearAnyMove(stones.get(i), moves))
+                byColor.get(i % 2).add(stones.get(i));
         }
-        return true;
+        return byColor;
+    }
+
+    private static boolean isNearAnyMove(Cell cell, List<Cell> moves) {
+        for(Cell move : moves) {
+            if(Math.max(Math.abs(cell.row() - move.row()), Math.abs(cell.col() - move.col())) <= RELEVANT_RADIUS)
+                return true;
+        }
+        return false;
+    }
+
+    private static int countSharedStones(List<Set<Cell>> board, List<Set<Cell>> stones) {
+        int shared = 0;
+        for(int color = 0; color < 2; color++) {
+            for(Cell cell : stones.get(color)) {
+                if(board.get(color).contains(cell))
+                    shared++;
+            }
+        }
+        return shared;
     }
 
     private static String sha256Hex(String value) {

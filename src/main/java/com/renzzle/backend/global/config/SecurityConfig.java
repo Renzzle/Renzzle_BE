@@ -112,6 +112,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/admin/notice/**").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.PATCH, "/admin/notice/**").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.DELETE, "/admin/notice/**").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.POST, "/api/app-info").hasAuthority(ADMIN_PREFIX)
                         // All remaining requests require authentication (including regular users)
                         .anyRequest().authenticated()
                 )

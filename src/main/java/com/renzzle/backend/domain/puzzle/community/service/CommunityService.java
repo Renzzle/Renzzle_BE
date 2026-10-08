@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.puzzle.community.service;
 
+import com.renzzle.backend.domain.appinfo.service.AppInfoService;
 import com.renzzle.backend.domain.puzzle.community.api.request.AddCommunityPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.community.api.response.AddCommunityPuzzleResponse;
@@ -59,6 +60,7 @@ public class CommunityService {
     private final TrainingPuzzleRepository trainingPuzzleRepository;
     private final UserRepository userRepository;
     private final PuzzleCacheService puzzleCacheService;
+    private final AppInfoService appInfoService;
 
     @Value("${community.puzzle.daily-upload-limit}")
     private int dailyUploadLimit;
@@ -69,7 +71,7 @@ public class CommunityService {
 
         String boardKey = BoardUtils.makeBoardKey(request.boardStatus());
         String answerKey = BoardUtils.makeAnswerKey(request.boardStatus(), request.answer());
-        checkDuplicatePuzzle(request, boardKey, answerKey);
+        List<MatchedPuzzle> paddedOriginals = checkDuplicatePuzzle(request, boardKey, answerKey);
         WinColor winColor = WinColor.getWinColor(request.winColor());
 
         CommunityPuzzle puzzle = CommunityPuzzle.builder()
@@ -86,6 +88,11 @@ public class CommunityService {
                 .build();
 
         CommunityPuzzle result = communityPuzzleRepository.save(puzzle);
+        // For manual review of possible copies
+        for (MatchedPuzzle original : paddedOriginals) {
+            log.info("Accepted community puzzle holding most of an existing one under many added stones. "
+                    + "puzzleId={}, matchedType={}, matchedId={}", result.getId(), original.type(), original.id());
+        }
 
         // An unverified answer is hand-entered and may not be the best defense, so it never drives the AI
         if (Boolean.TRUE.equals(result.getIsVerified())) {
@@ -168,23 +175,32 @@ public class CommunityService {
     }
 
     // Checked up front for a clear error; deleted community puzzles don't count, as with the unique key
-    private void checkDuplicatePuzzle(AddCommunityPuzzleRequest request, String boardKey, String answerKey) {
+    private List<MatchedPuzzle> checkDuplicatePuzzle(AddCommunityPuzzleRequest request, String boardKey, String answerKey) {
         trainingPuzzleRepository.findIdByBoardKey(boardKey)
                 .ifPresent(id -> rejectDuplicate(request, "same board", PuzzleType.TRAINING, id));
         communityPuzzleRepository.findIdByBoardKey(boardKey)
                 .ifPresent(id -> rejectDuplicate(request, "same board", PuzzleType.COMMUNITY, id));
-        rejectCopies(request, PuzzleType.TRAINING, trainingPuzzleRepository.findByAnswerKey(answerKey));
-        rejectCopies(request, PuzzleType.COMMUNITY, communityPuzzleRepository.findByAnswerKey(answerKey));
+        List<MatchedPuzzle> paddedOriginals = new ArrayList<>();
+        rejectCopies(request, PuzzleType.TRAINING, trainingPuzzleRepository.findByAnswerKey(answerKey), paddedOriginals);
+        rejectCopies(request, PuzzleType.COMMUNITY, communityPuzzleRepository.findByAnswerKey(answerKey), paddedOriginals);
+        return paddedOriginals;
     }
 
-    private void rejectCopies(AddCommunityPuzzleRequest request, PuzzleType type, List<AnswerKeyProjection> originals) {
+    private void rejectCopies(AddCommunityPuzzleRequest request, PuzzleType type,
+                              List<AnswerKeyProjection> originals, List<MatchedPuzzle> paddedOriginals) {
         for (AnswerKeyProjection original : originals) {
-            if (BoardUtils.isCopyWithStonesAddedOrRemoved(
-                    request.boardStatus(), request.answer(), original.getBoardStatus(), original.getAnswer())) {
-                rejectDuplicate(request, "stones added or removed", type, original.getId());
+            BoardUtils.CopyMatch match = BoardUtils.matchCopy(
+                    request.boardStatus(), request.answer(), original.getBoardStatus(), original.getAnswer());
+            if (match == BoardUtils.CopyMatch.NEAR_COPY) {
+                rejectDuplicate(request, "near copy", type, original.getId());
+            }
+            if (match == BoardUtils.CopyMatch.HEAVILY_PADDED) {
+                paddedOriginals.add(new MatchedPuzzle(type, original.getId()));
             }
         }
     }
+
+    private record MatchedPuzzle(PuzzleType type, Long id) {}
 
     // A rejected upload is never saved, so its board is logged for checking against the match
     private void rejectDuplicate(AddCommunityPuzzleRequest request, String reason, PuzzleType matchedType, Long matchedId) {
@@ -361,13 +377,14 @@ public class CommunityService {
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
 
-        persistedUser.purchase(HINT.getPrice());
+        int price = appInfoService.getPrice(HINT);
+        persistedUser.purchase(price);
 
         applySolveCommunityPuzzle(puzzleId, persistedUser);
 
         return GetCommunityPuzzleAnswerResponse.builder()
                 .answer(puzzle.getAnswer())
-                .price(HINT.getPrice())
+                .price(price)
                 .build();
     }
 
@@ -383,7 +400,7 @@ public class CommunityService {
         boolean firstSolve = applySolveCommunityPuzzle(puzzleId, persistedUser);
 
         // Solving your own puzzle or one you have solved before pays nothing
-        int reward = (firstSolve && !ownPuzzle) ? COMMUNITY_REWARD.getPrice() : 0;
+        int reward = (firstSolve && !ownPuzzle) ? appInfoService.getPrice(COMMUNITY_REWARD) : 0;
         persistedUser.getReward(reward);
 
         return SolveCommunityPuzzleResponse.builder()

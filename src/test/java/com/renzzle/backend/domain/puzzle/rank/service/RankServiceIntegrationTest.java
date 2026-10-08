@@ -268,7 +268,7 @@ class RankServiceIntegrationTest {
 
         // Then
         assertThat(response.rating()).isEqualTo(testUser.getRating());
-        assertThat(response.reward()).isEqualTo(2 * RANK_REWARD.getPrice()); // 2 correct answers
+        assertThat(response.reward()).isEqualTo(2 * RANK_REWARD.getDefaultPrice()); // 2 correct answers
     }
 
     @Test

@@ -1,7 +1,6 @@
 package com.renzzle.backend.domain.user.domain;
 
 import com.renzzle.backend.global.common.constant.DoubleConstant;
-import com.renzzle.backend.global.common.constant.ItemPrice;
 import com.renzzle.backend.global.common.domain.Status;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
@@ -132,8 +131,8 @@ public class UserEntity {
         this.mmr = newMmr;
     }
 
-    public void changeNickname(String nickname) {
-        purchase(ItemPrice.CHANGE_NICKNAME.getPrice());
+    public void changeNickname(String nickname, int price) {
+        purchase(price);
         this.nickname = nickname;
     }
 

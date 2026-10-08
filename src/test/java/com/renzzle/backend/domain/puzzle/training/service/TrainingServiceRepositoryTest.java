@@ -445,12 +445,12 @@ class TrainingServiceRepositoryTest {
         user = userRepository.save(user);
 
         // When
-        user.purchase(ItemPrice.HINT.getPrice());
+        user.purchase(ItemPrice.HINT.getDefaultPrice());
         user = userRepository.save(user);
 
         // Then
         UserEntity updatedUser = userRepository.findById(user.getId()).orElseThrow();
-        assertThat(updatedUser.getCurrency()).isEqualTo(500 - ItemPrice.HINT.getPrice());
+        assertThat(updatedUser.getCurrency()).isEqualTo(500 - ItemPrice.HINT.getDefaultPrice());
     }
 
 }

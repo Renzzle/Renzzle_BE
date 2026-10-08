@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.puzzle.training.service;
 
+import com.renzzle.backend.domain.appinfo.service.AppInfoService;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.puzzle.cache.dao.PuzzleCacheRepository;
 import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
@@ -18,6 +19,7 @@ import com.renzzle.backend.global.common.domain.Status;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import com.renzzle.backend.support.TestUserEntityBuilder;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -71,8 +73,16 @@ public class TrainingServiceTest {
     @Mock
     private Clock clock;
 
+    @Mock
+    private AppInfoService appInfoService;
+
     @InjectMocks
     private TrainingService trainingService;
+
+    @BeforeEach
+    void setup() {
+        lenient().when(appInfoService.getPrice(any())).thenAnswer(invocation -> invocation.<ItemPrice>getArgument(0).getDefaultPrice());
+    }
 
     @Nested
     class Success {
@@ -620,7 +630,7 @@ public class TrainingServiceTest {
             verify(solvedTrainingPuzzleRepository).save(any(SolvedTrainingPuzzle.class));
             verify(userPackRepository).increaseSolvedCount(userId, packId);
 
-            assertThat(response.reward()).isEqualTo(ItemPrice.TRAINING_REWARD.getPrice());
+            assertThat(response.reward()).isEqualTo(ItemPrice.TRAINING_REWARD.getDefaultPrice());
         }
 
         @Test
@@ -802,7 +812,7 @@ public class TrainingServiceTest {
                     .build();
 
             Long puzzleId = 1L;
-            int hintPrice = ItemPrice.HINT.getPrice();
+            int hintPrice = ItemPrice.HINT.getDefaultPrice();
             TrainingPuzzle puzzle = TrainingPuzzle.builder()
                     .id(puzzleId)
                     .answer("Correct Answer")

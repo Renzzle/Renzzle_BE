@@ -333,6 +333,11 @@
         setFormMessage('systemMsg', adminT('notices.versionRequired'), 'error');
         return;
       }
+      const versionPattern = /^\d+(\.\d+)*$/;
+      if (!versionPattern.test(androidVersion) || !versionPattern.test(iosVersion)) {
+        setFormMessage('systemMsg', adminT('notices.versionFormat'), 'error');
+        return;
+      }
       if (isSystemCheck && !(systemState && systemState.isSystemCheck)) {
         const ok = await adminConfirm(adminT('notices.systemCheckConfirm'));
         if (!ok) return;

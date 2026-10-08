@@ -1,6 +1,7 @@
 package com.renzzle.backend.util;
 
 import com.renzzle.backend.domain.puzzle.shared.util.BoardUtils;
+import com.renzzle.backend.domain.puzzle.shared.util.BoardUtils.CopyMatch;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import java.lang.reflect.InvocationTargetException;
@@ -178,52 +179,77 @@ class BoardUtilsTest {
     }
 
     @Test
-    void isCopyWithStonesAddedOrRemoved_WhenStonesAreAdded_ThenMatches() {
-        Assertions.assertTrue(BoardUtils.isCopyWithStonesAddedOrRemoved(
-                PUZZLE_BOARD + "a1o15", PUZZLE_ANSWER, PUZZLE_BOARD, PUZZLE_ANSWER));
+    void matchCopy_WhenFewStonesAreAdded_ThenNearCopy() {
+        Assertions.assertEquals(CopyMatch.NEAR_COPY, BoardUtils.matchCopy(
+                PUZZLE_BOARD + "j11k11", PUZZLE_ANSWER, PUZZLE_BOARD, PUZZLE_ANSWER));
     }
 
     @Test
-    void isCopyWithStonesAddedOrRemoved_WhenCopyIsTurnedShiftedAndPadded_ThenMatches() {
+    void matchCopy_WhenCopyIsTurnedShiftedAndPadded_ThenNearCopy() {
         // A quarter turn that puts the first answer move on e5, plus a far pair of stones
-        Assertions.assertTrue(BoardUtils.isCopyWithStonesAddedOrRemoved(
+        Assertions.assertEquals(CopyMatch.NEAR_COPY, BoardUtils.matchCopy(
                 "b5b4c5c4d5d4o1o15", "e5f5a5", PUZZLE_BOARD, PUZZLE_ANSWER));
     }
 
     @Test
-    void isCopyWithStonesAddedOrRemoved_WhenMostStonesAreKept_ThenMatches() {
+    void matchCopy_WhenMostStonesAreKept_ThenNearCopy() {
         // Eight of the original ten stones
-        Assertions.assertTrue(BoardUtils.isCopyWithStonesAddedOrRemoved(
-                PUZZLE_BOARD + "m13n12", PUZZLE_ANSWER, PUZZLE_BOARD + "c3d4m13n12", PUZZLE_ANSWER));
+        Assertions.assertEquals(CopyMatch.NEAR_COPY, BoardUtils.matchCopy(
+                PUZZLE_BOARD + "f9g9", PUZZLE_ANSWER, PUZZLE_BOARD + "f8g8f9g9", PUZZLE_ANSWER));
     }
 
     @Test
-    void isCopyWithStonesAddedOrRemoved_WhenAnswerOrStonesDiffer_ThenDoesNotMatch() {
-        // Answer reordered, one stone moved, two stones swapping colors, the other color moving first
-        Assertions.assertFalse(BoardUtils.isCopyWithStonesAddedOrRemoved(
-                PUZZLE_BOARD, "h11h7h12", PUZZLE_BOARD, PUZZLE_ANSWER));
-        Assertions.assertFalse(BoardUtils.isCopyWithStonesAddedOrRemoved(
+    void matchCopy_WhenOneStoneIsMoved_ThenNearCopy() {
+        // White i10 moved to i11, so neither board holds the other
+        Assertions.assertEquals(CopyMatch.NEAR_COPY, BoardUtils.matchCopy(
                 "h8i8h9i9h10i11", PUZZLE_ANSWER, PUZZLE_BOARD, PUZZLE_ANSWER));
-        Assertions.assertFalse(BoardUtils.isCopyWithStonesAddedOrRemoved(
+    }
+
+    @Test
+    void matchCopy_WhenAddedStonesReachEightyPercentOfOriginal_ThenHeavilyPadded() {
+        String original = PUZZLE_BOARD + "f8g8f9g9";
+        // Six new stones on a ten-stone original
+        Assertions.assertEquals(CopyMatch.NEAR_COPY, BoardUtils.matchCopy(
+                original + "j11k11j12k12j13k13", PUZZLE_ANSWER, original, PUZZLE_ANSWER));
+        // Eight new stones
+        Assertions.assertEquals(CopyMatch.HEAVILY_PADDED, BoardUtils.matchCopy(
+                original + "j11k11j12k12j13k13j6k6", PUZZLE_ANSWER, original, PUZZLE_ANSWER));
+    }
+
+    @Test
+    void matchCopy_WhenStonesAreAddedOnlyBeyondReachOfAnswer_ThenNearCopy() {
+        // Eight stones far from the answer
+        Assertions.assertEquals(CopyMatch.NEAR_COPY, BoardUtils.matchCopy(
+                PUZZLE_BOARD + "a1o15a15o1b1n15b15n1", PUZZLE_ANSWER, PUZZLE_BOARD, PUZZLE_ANSWER));
+    }
+
+    @Test
+    void matchCopy_WhenAnswerOrStonesDiffer_ThenNone() {
+        // Answer reordered, two of six stones swapping colors, the other color moving first
+        Assertions.assertEquals(CopyMatch.NONE, BoardUtils.matchCopy(
+                PUZZLE_BOARD, "h11h7h12", PUZZLE_BOARD, PUZZLE_ANSWER));
+        Assertions.assertEquals(CopyMatch.NONE, BoardUtils.matchCopy(
                 "h8i8h9i9i10h10", PUZZLE_ANSWER, PUZZLE_BOARD, PUZZLE_ANSWER));
-        Assertions.assertFalse(BoardUtils.isCopyWithStonesAddedOrRemoved(
+        Assertions.assertEquals(CopyMatch.NONE, BoardUtils.matchCopy(
                 PUZZLE_BOARD + "a1", PUZZLE_ANSWER, PUZZLE_BOARD, PUZZLE_ANSWER));
     }
 
     @Test
-    void isCopyWithStonesAddedOrRemoved_WhenOriginalHasFewStones_ThenOnlyAnExactCopyMatches() {
-        Assertions.assertFalse(BoardUtils.isCopyWithStonesAddedOrRemoved(
-                "h8i8h9i9a1o15", "h10h11h7", "h8i8h9i9", "h10h11h7"));
+    void matchCopy_WhenOriginalHasFewStones_ThenOnlyNearlyEqualBoardsAreNearCopies() {
+        Assertions.assertEquals(CopyMatch.NEAR_COPY, BoardUtils.matchCopy(
+                "h8i8h9i9j9k9", "h10h11h7", "h8i8h9i9", "h10h11h7"));
+        Assertions.assertEquals(CopyMatch.HEAVILY_PADDED, BoardUtils.matchCopy(
+                "h8i8h9i9j9k9j10k10", "h10h11h7", "h8i8h9i9", "h10h11h7"));
         // Shifted one column, nothing added
-        Assertions.assertTrue(BoardUtils.isCopyWithStonesAddedOrRemoved(
+        Assertions.assertEquals(CopyMatch.NEAR_COPY, BoardUtils.matchCopy(
                 "h9i9h10i10", "h11h12h8", "h8i8h9i9", "h10h11h7"));
     }
 
     @Test
-    void isCopyWithStonesAddedOrRemoved_WhenOriginalIsFarLarger_ThenDoesNotMatch() {
+    void matchCopy_WhenOriginalIsFarLarger_ThenNone() {
         // Six of the original ten stones
-        Assertions.assertFalse(BoardUtils.isCopyWithStonesAddedOrRemoved(
-                PUZZLE_BOARD, PUZZLE_ANSWER, PUZZLE_BOARD + "c3d4m13n12", PUZZLE_ANSWER));
+        Assertions.assertEquals(CopyMatch.NONE, BoardUtils.matchCopy(
+                PUZZLE_BOARD, PUZZLE_ANSWER, PUZZLE_BOARD + "f8g8f9g9", PUZZLE_ANSWER));
     }
 
     // The board in all four rotations, each also mirrored
