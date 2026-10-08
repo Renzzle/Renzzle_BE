@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.auth.api.request;
 
+import com.renzzle.backend.global.util.EmailUtils;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
@@ -24,4 +25,8 @@ public record SignupRequest(
 
         @NotEmpty(message = "Device ID is required")
         String deviceId
-) { }
+) {
+    public SignupRequest {
+        email = EmailUtils.normalize(email);
+    }
+}
