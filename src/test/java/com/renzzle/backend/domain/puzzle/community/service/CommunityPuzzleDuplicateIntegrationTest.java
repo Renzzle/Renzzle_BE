@@ -106,11 +106,11 @@ class CommunityPuzzleDuplicateIntegrationTest {
 
     @Test
     void addCommunityPuzzle_WhenStonesAreRemovedFromCommunityPuzzle_ThenRejectsAsDuplicate() {
-        upload(PUZZLE_BOARD + "c3d4m13n12", PUZZLE_ANSWER);
+        upload(PUZZLE_BOARD + "f8g8f9g9", PUZZLE_ANSWER);
 
         // Eight of the original ten stones
         CustomException exception = assertThrows(CustomException.class,
-                () -> upload(PUZZLE_BOARD + "m13n12", PUZZLE_ANSWER));
+                () -> upload(PUZZLE_BOARD + "f9g9", PUZZLE_ANSWER));
 
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.DUPLICATE_PUZZLE);
     }
@@ -121,16 +121,40 @@ class CommunityPuzzleDuplicateIntegrationTest {
 
         assertThrows(CustomException.class, () -> upload(PUZZLE_BOARD + "a1o15", PUZZLE_ANSWER));
 
-        assertThat(output).contains("reason=stones added or removed, matchedType=COMMUNITY, matchedId=" + originalId
+        assertThat(output).contains("reason=near copy, matchedType=COMMUNITY, matchedId=" + originalId
                 + ", boardStatus=" + PUZZLE_BOARD + "a1o15");
     }
 
     @Test
-    void addCommunityPuzzle_WhenSameAnswerOnAnotherBoard_ThenAcceptsIt() {
+    void addCommunityPuzzle_WhenOneStoneOfCommunityPuzzleIsMoved_ThenRejectsAsDuplicate() {
         upload(PUZZLE_BOARD, PUZZLE_ANSWER);
 
         // White i10 moved to i11, so neither board holds the other
-        assertThatNoException().isThrownBy(() -> upload("h8i8h9i9h10i11", PUZZLE_ANSWER));
+        CustomException exception = assertThrows(CustomException.class,
+                () -> upload("h8i8h9i9h10i11", PUZZLE_ANSWER));
+
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.DUPLICATE_PUZZLE);
+    }
+
+    @Test
+    void addCommunityPuzzle_WhenStonesAreAddedOnlyBeyondReachOfAnswer_ThenRejectsAsDuplicate() {
+        upload(PUZZLE_BOARD, PUZZLE_ANSWER);
+
+        // Eight stones far from the answer
+        CustomException exception = assertThrows(CustomException.class,
+                () -> upload(PUZZLE_BOARD + "a1o15a15o1b1n15b15n1", PUZZLE_ANSWER));
+
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.DUPLICATE_PUZZLE);
+    }
+
+    @Test
+    void addCommunityPuzzle_WhenManyStonesAreAddedNearAnswer_ThenAcceptsAndLogsTheOriginal(CapturedOutput output) {
+        Long originalId = upload(PUZZLE_BOARD, PUZZLE_ANSWER);
+
+        // Six stones near the answer
+        Long puzzleId = upload(PUZZLE_BOARD + "j11k11j12k12j13k13", PUZZLE_ANSWER);
+
+        assertThat(output).contains("puzzleId=" + puzzleId + ", matchedType=COMMUNITY, matchedId=" + originalId);
     }
 
     private Long upload(String boardStatus) {

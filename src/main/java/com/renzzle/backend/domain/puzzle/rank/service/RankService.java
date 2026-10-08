@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.puzzle.rank.service;
 
+import com.renzzle.backend.domain.appinfo.service.AppInfoService;
 import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
@@ -55,6 +56,7 @@ public class RankService {
     private final UserCommunityPuzzleRepository userCommunityPuzzleRepository;
     private final Clock clock;
     private final RedisTemplate<String, Object> redisRankingTemplate;
+    private final AppInfoService appInfoService;
 
     @Value("${rank.session.ttl}")
     private long sessionTTLSeconds;
@@ -275,7 +277,7 @@ public class RankService {
                 .toList();
 
         int solvedCount = solvedPuzzles.size();
-        int reward = solvedCount * RANK_REWARD.getPrice();
+        int reward = solvedCount * appInfoService.getPrice(RANK_REWARD);
 
         user.getReward(reward);
 

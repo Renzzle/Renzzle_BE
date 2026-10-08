@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.puzzle.rank.service;
 
+import com.renzzle.backend.domain.appinfo.service.AppInfoService;
 import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
@@ -16,6 +17,7 @@ import com.renzzle.backend.domain.puzzle.training.dao.TrainingPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
+import com.renzzle.backend.global.common.constant.ItemPrice;
 import com.renzzle.backend.global.common.domain.Status;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
@@ -67,9 +69,12 @@ class RankServiceTest {
     private UserCommunityPuzzleRepository userCommunityPuzzleRepository;
     @Mock
     private Clock clock;
+    @Mock
+    private AppInfoService appInfoService;
     @BeforeEach
     void setup() {
         lenient().when(clock.instant()).thenReturn(Instant.parse("2025-01-01T00:00:00Z"));
+        lenient().when(appInfoService.getPrice(any())).thenAnswer(invocation -> invocation.<ItemPrice>getArgument(0).getDefaultPrice());
         rankService = new RankService(
                 redisSessionTemplate,
                 trainingPuzzleRepository,
@@ -78,7 +83,8 @@ class RankServiceTest {
                 latestRankPuzzleRepository,
                 userCommunityPuzzleRepository,
                 clock,
-                redisRankingTemplate
+                redisRankingTemplate,
+                appInfoService
         );
 
         lenient().when(redisSessionTemplate.opsForValue()).thenReturn(valueOperations);
@@ -542,7 +548,7 @@ class RankServiceTest {
         RankEndResponse response = rankService.endRankGame(user);
         // Then
         assertThat(response.rating()).isEqualTo(1600);
-        assertThat(response.reward()).isEqualTo(2 * RANK_REWARD.getPrice());
+        assertThat(response.reward()).isEqualTo(2 * RANK_REWARD.getDefaultPrice());
         verify(redisSessionTemplate).delete("3");
     }
 

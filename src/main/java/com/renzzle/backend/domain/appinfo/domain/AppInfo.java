@@ -34,4 +34,8 @@ public class AppInfo {
     @Column(name = "value", nullable = false, length = 2047)
     private String value;
 
+    public void updateValue(String value) {
+        this.value = value;
+    }
+
 }

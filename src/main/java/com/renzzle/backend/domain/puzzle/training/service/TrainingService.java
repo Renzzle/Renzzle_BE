@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.puzzle.training.service;
 
+import com.renzzle.backend.domain.appinfo.service.AppInfoService;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.puzzle.cache.dao.PuzzleCacheRepository;
 import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
@@ -20,7 +21,6 @@ import com.renzzle.backend.domain.puzzle.training.dao.projection.TrainingBoardKe
 import com.renzzle.backend.domain.puzzle.training.domain.*;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
-import com.renzzle.backend.global.common.constant.ItemPrice;
 import com.renzzle.backend.global.common.domain.LangCode;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
@@ -53,6 +53,7 @@ public class TrainingService {
     private final PuzzleCacheRepository puzzleCacheRepository;
     private final PuzzleCacheService puzzleCacheService;
     private final UserRepository userRepository;
+    private final AppInfoService appInfoService;
     private final Clock clock;
 
     @Transactional
@@ -273,7 +274,7 @@ public class TrainingService {
 
         userPackRepository.increaseSolvedCount(lockedUser.getId(), trainingPuzzle.getPack().getId());
 
-        int reward = TRAINING_REWARD.getPrice();
+        int reward = appInfoService.getPrice(TRAINING_REWARD);
         if(Boolean.TRUE.equals(getReward)){
             lockedUser.getReward(reward);
         }
@@ -552,13 +553,14 @@ public class TrainingService {
         TrainingPuzzle puzzle = trainingPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
 
-        lockedUser.purchase(ItemPrice.HINT.getPrice());
+        int price = appInfoService.getPrice(HINT);
+        lockedUser.purchase(price);
 
         applySolveTrainingPuzzle(lockedUser, puzzle.getId(), false);
 
         return GetTrainingPuzzleAnswerResponse.builder()
                 .answer(puzzle.getAnswer())
-                .price(ItemPrice.HINT.getPrice())
+                .price(price)
                 .build();
     }
 

@@ -1,13 +1,17 @@
 package com.renzzle.backend.domain.appinfo.api;
 
+import com.renzzle.backend.domain.appinfo.api.request.UpsertAppInfoRequest;
 import com.renzzle.backend.domain.appinfo.api.response.GetAppInfoResponse;
 import com.renzzle.backend.domain.appinfo.service.AppInfoService;
 import com.renzzle.backend.global.common.response.ApiResponse;
 import com.renzzle.backend.global.util.ApiUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,6 +29,12 @@ public class AppInfoController {
     @GetMapping
     public ApiResponse<List<GetAppInfoResponse>> getAppInfoList() {
         return ApiUtils.success(appInfoService.getAppInfoList());
+    }
+
+    @Operation(summary = "Upsert app info", description = "Create an app info entry, or replace the value if the tag exists & Only admins are available")
+    @PostMapping
+    public ApiResponse<GetAppInfoResponse> upsertAppInfo(@Valid @RequestBody UpsertAppInfoRequest request) {
+        return ApiUtils.success(appInfoService.upsertAppInfo(request));
     }
 
 }
