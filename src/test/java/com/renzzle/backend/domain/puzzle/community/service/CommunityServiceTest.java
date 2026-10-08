@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.puzzle.community.service;
 
+import com.renzzle.backend.domain.appinfo.service.AppInfoService;
 import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
 import com.renzzle.backend.domain.puzzle.cache.service.PuzzleCacheService;
 import com.renzzle.backend.domain.puzzle.community.api.request.AddCommunityPuzzleRequest;
@@ -20,6 +21,7 @@ import com.renzzle.backend.domain.puzzle.shared.util.RatingUtil;
 import com.renzzle.backend.domain.puzzle.training.dao.TrainingPuzzleRepository;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
+import com.renzzle.backend.global.common.constant.ItemPrice;
 import com.renzzle.backend.global.common.domain.Status;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
@@ -67,6 +69,9 @@ class CommunityServiceTest {
     @Mock
     private PuzzleCacheService puzzleCacheService;
 
+    @Mock
+    private AppInfoService appInfoService;
+
     @InjectMocks
     private CommunityService communityService;
 
@@ -74,6 +79,7 @@ class CommunityServiceTest {
     void setup() {
         ReflectionTestUtils.setField(communityService, "dailyUploadLimit", DAILY_UPLOAD_LIMIT);
         lenient().when(clock.instant()).thenReturn(FIXED_INSTANT);
+        lenient().when(appInfoService.getPrice(any())).thenAnswer(invocation -> invocation.<ItemPrice>getArgument(0).getDefaultPrice());
     }
 
     @Test
@@ -325,13 +331,31 @@ class CommunityServiceTest {
 
         // Then
         assertThat(result.answer()).isEqualTo("e5");
-        assertThat(result.price()).isEqualTo(HINT.getPrice());
+        assertThat(result.price()).isEqualTo(HINT.getDefaultPrice());
+    }
+
+    @Test
+    void getCommunityPuzzleAnswer_WhenHintPriceConfigured_ThenChargesConfiguredPrice() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder().withCurrency(1000).save(userRepository);
+        CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user).withAnswer("e5").save(communityPuzzleRepository);
+
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
+        when(communityPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
+        when(appInfoService.getPrice(HINT)).thenReturn(350);
+
+        // When
+        GetCommunityPuzzleAnswerResponse result = communityService.getCommunityPuzzleAnswer(puzzle.getId(), user);
+
+        // Then
+        assertThat(result.price()).isEqualTo(350);
+        assertThat(user.getCurrency()).isEqualTo(650);
     }
 
     @Test
     void getCommunityPuzzleAnswer_WhenNotEnoughCurrency_ThenThrowsInsufficientCurrencyException() {
         // Given
-        UserEntity user = TestUserEntityBuilder.builder().withCurrency(HINT.getPrice() - 1).save(userRepository);
+        UserEntity user = TestUserEntityBuilder.builder().withCurrency(HINT.getDefaultPrice() - 1).save(userRepository);
         CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user).withAnswer("e5").save(communityPuzzleRepository);
 
         when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
@@ -381,8 +405,8 @@ class CommunityServiceTest {
         SolveCommunityPuzzleResponse response = communityService.solveCommunityPuzzle(puzzle.getId(), solver);
 
         // Then
-        assertThat(response.reward()).isEqualTo(COMMUNITY_REWARD.getPrice());
-        assertThat(solver.getCurrency()).isEqualTo(COMMUNITY_REWARD.getPrice());
+        assertThat(response.reward()).isEqualTo(COMMUNITY_REWARD.getDefaultPrice());
+        assertThat(solver.getCurrency()).isEqualTo(COMMUNITY_REWARD.getDefaultPrice());
         assertThat(puzzle.getSolvedCount()).isEqualTo(solvedCountBefore + 1);
     }
 

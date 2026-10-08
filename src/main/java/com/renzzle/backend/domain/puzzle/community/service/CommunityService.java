@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.puzzle.community.service;
 
+import com.renzzle.backend.domain.appinfo.service.AppInfoService;
 import com.renzzle.backend.domain.puzzle.community.api.request.AddCommunityPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.community.api.response.AddCommunityPuzzleResponse;
@@ -59,6 +60,7 @@ public class CommunityService {
     private final TrainingPuzzleRepository trainingPuzzleRepository;
     private final UserRepository userRepository;
     private final PuzzleCacheService puzzleCacheService;
+    private final AppInfoService appInfoService;
 
     @Value("${community.puzzle.daily-upload-limit}")
     private int dailyUploadLimit;
@@ -361,13 +363,14 @@ public class CommunityService {
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
 
-        persistedUser.purchase(HINT.getPrice());
+        int price = appInfoService.getPrice(HINT);
+        persistedUser.purchase(price);
 
         applySolveCommunityPuzzle(puzzleId, persistedUser);
 
         return GetCommunityPuzzleAnswerResponse.builder()
                 .answer(puzzle.getAnswer())
-                .price(HINT.getPrice())
+                .price(price)
                 .build();
     }
 
@@ -383,7 +386,7 @@ public class CommunityService {
         boolean firstSolve = applySolveCommunityPuzzle(puzzleId, persistedUser);
 
         // Solving your own puzzle or one you have solved before pays nothing
-        int reward = (firstSolve && !ownPuzzle) ? COMMUNITY_REWARD.getPrice() : 0;
+        int reward = (firstSolve && !ownPuzzle) ? appInfoService.getPrice(COMMUNITY_REWARD) : 0;
         persistedUser.getReward(reward);
 
         return SolveCommunityPuzzleResponse.builder()

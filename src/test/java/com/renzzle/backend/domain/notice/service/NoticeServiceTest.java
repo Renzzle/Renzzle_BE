@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.notice.service;
 
+import com.renzzle.backend.domain.appinfo.service.AppInfoService;
 import com.renzzle.backend.domain.notice.api.request.AnnouncementContentRequest;
 import com.renzzle.backend.domain.notice.api.request.CreateAnnouncementRequest;
 import com.renzzle.backend.domain.notice.api.request.GetPersonalNoticeRequest;
@@ -19,6 +20,7 @@ import com.renzzle.backend.domain.notice.domain.Notice;
 import com.renzzle.backend.domain.notice.domain.SystemInfo;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
+import com.renzzle.backend.global.common.constant.ItemPrice;
 import com.renzzle.backend.global.common.domain.LangCode;
 import com.renzzle.backend.global.common.domain.Status;
 import com.renzzle.backend.global.exception.CustomException;
@@ -62,6 +64,8 @@ class NoticeServiceTest {
     private SystemInfoRepository systemInfoRepository;
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private AppInfoService appInfoService;
 
     @InjectMocks
     private NoticeService noticeService;
@@ -379,6 +383,24 @@ class NoticeServiceTest {
         // Then
         assertThat(response.description()).isEqualTo("update");
         assertThat(response.version()).isEqualTo("2.0.0.0");
+    }
+
+    @Test
+    void getPersonalNotice_WhenFirstAccessToday_ThenPaysConfiguredAttendanceReward() {
+        // Given
+        when(systemInfoRepository.getSystemInfo()).thenReturn(Optional.of(systemInfo("1.0.5", "1.0.9", false)));
+        when(noticeRepository.findAllByUser(user)).thenReturn(List.of());
+        when(userRepository.isLastAccessBeforeToday(user.getId())).thenReturn(true);
+        when(appInfoService.getPrice(ItemPrice.ATTENDANCE_REWARD)).thenReturn(300);
+
+        // When
+        GetPersonalNoticeResponse response = noticeService.getPersonalNotice(
+                new GetPersonalNoticeRequest("EN", "IOS", "1.0.9"), user);
+
+        // Then
+        verify(userRepository).addUserCurrency(user.getId(), 300);
+        assertThat(response.notice()).extracting(NoticeContext::context)
+                .singleElement().asString().contains("300");
     }
 
     @Test

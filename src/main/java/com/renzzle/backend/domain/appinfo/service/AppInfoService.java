@@ -4,6 +4,7 @@ import com.renzzle.backend.domain.appinfo.api.request.UpsertAppInfoRequest;
 import com.renzzle.backend.domain.appinfo.api.response.GetAppInfoResponse;
 import com.renzzle.backend.domain.appinfo.dao.AppInfoRepository;
 import com.renzzle.backend.domain.appinfo.domain.AppInfo;
+import com.renzzle.backend.global.common.constant.ItemPrice;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,13 @@ public class AppInfoService {
                 .orElseGet(() -> AppInfo.builder().tag(tag).build());
         appInfo.updateValue(request.value().trim());
         return toResponse(appInfoRepository.save(appInfo));
+    }
+
+    @Transactional(readOnly = true)
+    public int getPrice(ItemPrice item) {
+        return appInfoRepository.findByTag(item.getTag())
+                .map(appInfo -> Integer.parseInt(appInfo.getValue().trim()))
+                .orElse(item.getDefaultPrice());
     }
 
     private GetAppInfoResponse toResponse(AppInfo appInfo) {

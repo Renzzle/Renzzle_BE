@@ -7,6 +7,7 @@ import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.Title;
 import com.renzzle.backend.domain.user.domain.UserEntity;
+import com.renzzle.backend.global.common.constant.ItemPrice;
 import com.renzzle.backend.global.common.domain.LangCode;
 import com.renzzle.backend.global.common.domain.Status;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,15 @@ public class DataInitializer implements CommandLineRunner {
         initializeDefaultValue();
         addAdminAccount();
         initializeSystemInfo();
+        initializeItemPrices();
+    }
+
+    // Leaves existing rows alone so prices changed through the admin API survive restarts
+    private void initializeItemPrices() {
+        for (ItemPrice item : ItemPrice.values()) {
+            jdbcTemplate.update("INSERT IGNORE INTO app_info (tag, value) VALUES (?, ?)",
+                    item.getTag(), String.valueOf(item.getDefaultPrice()));
+        }
     }
 
     private void initializeSystemInfo() {

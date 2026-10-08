@@ -9,6 +9,7 @@ import com.renzzle.backend.domain.auth.service.JwtProvider;
 import com.renzzle.backend.domain.puzzle.rank.support.TestUserFactory;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
+import com.renzzle.backend.global.common.constant.ItemPrice;
 import com.renzzle.backend.global.security.AppKeyAuthenticationFilter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -56,6 +57,13 @@ class AppInfoControllerTest {
                 .toList());
         userRepository.deleteAll(createdUsers);
         createdUsers.clear();
+    }
+
+    @Test
+    void itemPrices_WhenAppStarts_ThenEverySeededIntoAppInfo() {
+        for (ItemPrice item : ItemPrice.values()) {
+            assertThat(appInfoRepository.findByTag(item.getTag())).as(item.getTag()).isPresent();
+        }
     }
 
     @Test

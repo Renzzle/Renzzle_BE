@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.user.service;
 
+import com.renzzle.backend.domain.appinfo.service.AppInfoService;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlesResponse;
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
@@ -29,6 +30,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final CommunityPuzzleRepository communityPuzzleRepository;
     private final UserCommunityPuzzleRepository userCommunityPuzzleRepository;
+    private final AppInfoService appInfoService;
 
     public UserResponse getUserResponse(UserEntity user) {
         return UserResponse.builder()
@@ -61,9 +63,10 @@ public class UserService {
             throw new CustomException(ErrorCode.DUPLICATE_NICKNAME);
         }
 
-        persistedUser.get().changeNickname(nickname);
+        int price = appInfoService.getPrice(ItemPrice.CHANGE_NICKNAME);
+        persistedUser.get().changeNickname(nickname, price);
         return ChangeNicknameResponse.builder()
-                .price(ItemPrice.CHANGE_NICKNAME.getPrice())
+                .price(price)
                 .build();
     }
 
