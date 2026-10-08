@@ -339,7 +339,7 @@ public class AdminController {
     }
 
     @Operation(summary = "Recalculate puzzle answer keys",
-            description = "Admin-only; recomputes the key that finds uploads copying a puzzle with stones added or removed. "
+            description = "Admin-only; recomputes the key that finds uploads copying a puzzle with a few stones changed. "
                     + "Puzzles whose board or answer cannot be parsed are listed under invalidIds")
     @SecurityRequirement(name = "Authorization")
     @PostMapping("/puzzle/answer-key/recalculate")
