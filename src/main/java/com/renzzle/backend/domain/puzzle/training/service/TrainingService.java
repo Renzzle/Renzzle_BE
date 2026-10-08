@@ -239,7 +239,7 @@ public class TrainingService {
 
         puzzleCacheRepository.deleteAllByPuzzleTypeAndPuzzleId(PuzzleType.TRAINING, puzzleId);
         trainingPuzzleRepository.deleteById(puzzleId);
-        trainingPuzzleRepository.decreaseIndexesFrom(puzzle.get().getTrainingIndex());
+        trainingPuzzleRepository.decreaseIndexesFrom(pack.getId(), puzzle.get().getTrainingIndex());
 
         packRepository.decreasePuzzleCount(puzzle.get().getPack().getId());
     }
@@ -248,6 +248,9 @@ public class TrainingService {
     public SolveTrainingPuzzleResponse solveTrainingPuzzle(UserEntity user, Long puzzleId, Boolean getReward) {
         UserEntity lockedUser = userRepository.findByIdForUpdate(user.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
+        TrainingPuzzle puzzle = trainingPuzzleRepository.findById(puzzleId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
+        checkPackOwned(lockedUser.getId(), puzzle.getPack().getId());
 
         return applySolveTrainingPuzzle(lockedUser, puzzleId, getReward);
     }
@@ -289,6 +292,7 @@ public class TrainingService {
         if(packId == null) {
             throw new CustomException(ErrorCode.VALIDATION_ERROR);
         }
+        checkPackOwned(user.getId(), packId);
 
         List<TrainingPuzzle> trainingPuzzles = trainingPuzzleRepository.findByPack_IdOrderByTrainingIndex(packId);
 
@@ -362,6 +366,9 @@ public class TrainingService {
 
     @Transactional
     public void deletePack(Long packId) {
+        if (Pack.STARTER_PACK_ID.equals(packId)) {
+            throw new CustomException(ErrorCode.CANNOT_DELETE_STARTER_PACK);
+        }
         Pack pack = packRepository.findById(packId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
@@ -552,6 +559,7 @@ public class TrainingService {
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
         TrainingPuzzle puzzle = trainingPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
+        checkPackOwned(lockedUser.getId(), puzzle.getPack().getId());
 
         int price = appInfoService.getPrice(HINT);
         lockedUser.purchase(price);
@@ -631,6 +639,12 @@ public class TrainingService {
                 .trainingIndex(puzzle.getTrainingIndex())
                 .isSolved(false)
                 .build();
+    }
+
+    private void checkPackOwned(Long userId, Long packId) {
+        if (!userPackRepository.existsByUserIdAndPackId(userId, packId)) {
+            throw new CustomException(ErrorCode.PACK_NOT_OWNED);
+        }
     }
 
     // Free at sign-up, no charge

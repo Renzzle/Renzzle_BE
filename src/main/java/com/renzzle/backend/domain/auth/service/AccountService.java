@@ -7,6 +7,7 @@ import com.renzzle.backend.domain.auth.api.request.SignupRequest;
 import com.renzzle.backend.domain.auth.api.response.LoginResponse;
 import com.renzzle.backend.domain.auth.dao.AdminRepository;
 import com.renzzle.backend.domain.user.dao.UserRepository;
+import com.renzzle.backend.domain.puzzle.training.domain.Pack;
 import com.renzzle.backend.domain.puzzle.training.service.TrainingService;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.exception.CustomException;
@@ -47,7 +48,7 @@ public class AccountService {
         }
 
         UserEntity user = createNewUser(request.email(), request.password(), request.nickname(), request.deviceId());
-        trainingService.grantPackToUser(user, 1L);
+        trainingService.grantPackToUser(user, Pack.STARTER_PACK_ID);
         return authService.createAuthTokens(user.getId());
     }
 

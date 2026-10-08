@@ -38,6 +38,29 @@ class CommunityPuzzleRepositoryTest {
     private UserCommunityPuzzleRepository userCommunityPuzzleRepository;
 
     @Test
+    void increaseViews_WhenRankResultChangedTheRowMeanwhile_ThenKeepsTheNewRating() {
+        // Given: the entity is loaded, then a rank result updates the row directly
+        UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
+        CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user).withRating(1000.0).save(communityPuzzleRepository);
+        entityManager.flush();
+        entityManager.clear();
+
+        CommunityPuzzle loaded = communityPuzzleRepository.findById(puzzle.getId()).orElseThrow();
+        communityPuzzleRepository.applyRankResult(puzzle.getId(), 50.0, 0.0, 5000.0);
+
+        // When
+        loaded.increaseViews();
+        entityManager.flush();
+        entityManager.clear();
+
+        // Then
+        CommunityPuzzle stored = communityPuzzleRepository.findById(puzzle.getId()).orElseThrow();
+        assertThat(stored.getRating()).isEqualTo(1050.0);
+        assertThat(stored.getRankAttemptCount()).isEqualTo(1);
+        assertThat(stored.getView()).isEqualTo(loaded.getView());
+    }
+
+    @Test
     void searchCommunityPuzzles_WhenVariousConditions_ThenReturnsExpectedResults() {
         // Given
         UserEntity user = TestUserEntityBuilder.builder()

@@ -85,7 +85,7 @@ public class NoticeService {
         noticeRepository.deleteAllByUser(user);
 
         // 2. Attendance price
-        if (Boolean.TRUE.equals(userRepository.isLastAccessBeforeToday(user.getId()))) {
+        if (userRepository.markFirstAccessToday(user.getId(), clock.instant()) == 1) {
             int reward = appInfoService.getPrice(ItemPrice.ATTENDANCE_REWARD);
             userRepository.addUserCurrency(user.getId(), reward);
             contexts.add(NoticeContext.builder()

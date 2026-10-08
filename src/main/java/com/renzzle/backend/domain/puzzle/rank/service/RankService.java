@@ -168,7 +168,7 @@ public class RankService {
         session.setBoardState(nextPuzzle.boardStatus());
         session.setWinnerColor(nextPuzzle.winColor().getName());
 
-        writeSessionAfterCommit(redisKey, session, currentTTL);
+        replaceSessionAfterCommit(redisKey, session, currentTTL);
 
         return RankResultResponse.builder()
                 .boardStatus(nextPuzzle.boardStatus())
@@ -228,6 +228,11 @@ public class RankService {
         runAfterCommit(() -> redisTemplate.opsForValue().set(redisKey, session, ttlSeconds, TimeUnit.SECONDS));
     }
 
+    // Overwrite only, so an ended session isn't revived
+    private void replaceSessionAfterCommit(String redisKey, RankSessionData session, long ttlSeconds) {
+        runAfterCommit(() -> redisTemplate.opsForValue().setIfPresent(redisKey, session, ttlSeconds, TimeUnit.SECONDS));
+    }
+
     private void runAfterCommit(Runnable action) {
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
             action.run();
@@ -237,6 +242,20 @@ public class RankService {
             @Override
             public void afterCommit() {
                 action.run();
+            }
+        });
+    }
+
+    private void runAfterRollback(Runnable action) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status == STATUS_ROLLED_BACK) {
+                    action.run();
+                }
             }
         });
     }
@@ -259,18 +278,23 @@ public class RankService {
 
     @Transactional
     public RankEndResponse endRankGame(UserEntity userData) {
-        String redisKey = String.valueOf(userData.getId());
-        RankSessionData session = redisTemplate.opsForValue().get(redisKey);
+        // Lock first so a repeated end finds the session already claimed
+        UserEntity user = userRepository.findByIdForUpdate(userData.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
 
-        if (session == null) {
-            throw new CustomException(ErrorCode.EMPTY_SESSION_DATA);
-        }
+        String redisKey = String.valueOf(user.getId());
+        RankSessionData session = getSessionOrThrow(redisKey);
         if (!session.isStarted()) {
             throw new CustomException(ErrorCode.IS_NOT_STARTED);
         }
 
-        UserEntity user = userRepository.findByIdForUpdate(userData.getId())
-                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
+        Long remainingTtl = redisTemplate.getExpire(redisKey, TimeUnit.SECONDS);
+        long restoreTtl = (remainingTtl != null && remainingTtl > 0) ? remainingTtl : sessionTTLSeconds;
+        if (!Boolean.TRUE.equals(redisTemplate.delete(redisKey))) {
+            throw new CustomException(ErrorCode.EMPTY_SESSION_DATA);
+        }
+        // Restore on rollback so the game can still be ended
+        runAfterRollback(() -> redisTemplate.opsForValue().set(redisKey, session, restoreTtl, TimeUnit.SECONDS));
 
         List<LatestRankPuzzle> solvedPuzzles = latestRankPuzzleRepository.findAllByUser(user).stream()
                 .filter(LatestRankPuzzle::getIsSolved)
@@ -280,9 +304,6 @@ public class RankService {
         int reward = solvedCount * appInfoService.getPrice(RANK_REWARD);
 
         user.getReward(reward);
-
-        // After commit, so a rollback can't strand the reward
-        runAfterCommit(() -> redisTemplate.delete(redisKey));
 
         return RankEndResponse.builder()
                 .rating(user.getRating())

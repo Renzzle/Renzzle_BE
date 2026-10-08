@@ -343,7 +343,7 @@ class NoticeServiceTest {
         when(systemInfoRepository.getSystemInfo()).thenReturn(Optional.of(systemInfo("1.0.5", "1.0.9", false)));
         when(noticeRepository.findAllByUser(user)).thenReturn(List.of(
                 Notice.builder().user(user).context("hello").build()));
-        when(userRepository.isLastAccessBeforeToday(user.getId())).thenReturn(false);
+        when(userRepository.markFirstAccessToday(user.getId(), FIXED_INSTANT)).thenReturn(0);
 
         // When
         GetPersonalNoticeResponse response = noticeService.getPersonalNotice(
@@ -360,7 +360,7 @@ class NoticeServiceTest {
         // Given: 1.0.10 is newer than 1.0.9 numerically, though not lexically
         when(systemInfoRepository.getSystemInfo()).thenReturn(Optional.of(systemInfo("1.0.5", "1.0.9", false)));
         when(noticeRepository.findAllByUser(user)).thenReturn(List.of());
-        when(userRepository.isLastAccessBeforeToday(user.getId())).thenReturn(false);
+        when(userRepository.markFirstAccessToday(user.getId(), FIXED_INSTANT)).thenReturn(0);
 
         // When
         GetPersonalNoticeResponse response = noticeService.getPersonalNotice(
@@ -390,7 +390,7 @@ class NoticeServiceTest {
         // Given
         when(systemInfoRepository.getSystemInfo()).thenReturn(Optional.of(systemInfo("1.0.5", "1.0.9", false)));
         when(noticeRepository.findAllByUser(user)).thenReturn(List.of());
-        when(userRepository.isLastAccessBeforeToday(user.getId())).thenReturn(true);
+        when(userRepository.markFirstAccessToday(user.getId(), FIXED_INSTANT)).thenReturn(1);
         when(appInfoService.getPrice(ItemPrice.ATTENDANCE_REWARD)).thenReturn(300);
 
         // When

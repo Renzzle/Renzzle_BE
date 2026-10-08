@@ -2,6 +2,7 @@ package com.renzzle.backend.domain.user.api;
 
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlesResponse;
 import com.renzzle.backend.domain.user.api.request.ChangeNicknameRequest;
+import com.renzzle.backend.domain.user.api.request.GetUserPuzzleRequest;
 import com.renzzle.backend.domain.user.api.response.ChangeNicknameResponse;
 import com.renzzle.backend.domain.user.api.response.UserResponse;
 import com.renzzle.backend.domain.user.service.UserService;
@@ -13,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -50,20 +52,18 @@ public class UserController {
     @GetMapping("/like")
     public ApiResponse<List<GetCommunityPuzzlesResponse>> getUserLikedPuzzles(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @RequestParam(value = "id", required = false) Long cursorId,
-            @RequestParam(value = "size", defaultValue = "10") int size) {
+            @Valid @ParameterObject @ModelAttribute GetUserPuzzleRequest request) {
 
-        return ApiUtils.success(userService.getUserLikedPuzzleList(userDetails.getUser(), cursorId, size));
+        return ApiUtils.success(userService.getUserLikedPuzzleList(userDetails.getUser(), request.id(), request.sizeOrDefault()));
     }
 
     @Operation(summary = "Get user puzzle data", description = "Return puzzle list for a user")
     @GetMapping("/puzzle")
     public ApiResponse<List<GetCommunityPuzzlesResponse>> getUserPuzzles(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @RequestParam(value = "id", required = false) Long cursorId,
-            @RequestParam(value = "size", defaultValue = "10") int size) {
+            @Valid @ParameterObject @ModelAttribute GetUserPuzzleRequest request) {
 
-        return ApiUtils.success(userService.getUserPuzzleList(userDetails.getUser(), cursorId, size));
+        return ApiUtils.success(userService.getUserPuzzleList(userDetails.getUser(), request.id(), request.sizeOrDefault()));
     }
 
     @Operation(summary = "Delete user puzzle", description = "Delete user puzzle")

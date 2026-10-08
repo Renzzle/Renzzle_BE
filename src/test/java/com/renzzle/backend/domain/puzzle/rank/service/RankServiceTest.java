@@ -306,7 +306,7 @@ class RankServiceTest {
         assertThat(response.winColor()).isEqualTo("BLACK");
 
         verify(redisSessionTemplate.opsForValue())
-                .set(eq("1"), any(RankSessionData.class), anyLong(), eq(TimeUnit.SECONDS));
+                .setIfPresent(eq("1"), any(RankSessionData.class), anyLong(), eq(TimeUnit.SECONDS));
     }
 
     @Test
@@ -501,6 +501,7 @@ class RankServiceTest {
         UserEntity user = TestUserFactory.createTestUser("user1", 1500);
         ReflectionTestUtils.setField(user, "id", 1L);
 
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(valueOperations.get("1")).thenReturn(null); // no session
         // When
         CustomException ex = assertThrows(CustomException.class, () ->
@@ -519,6 +520,7 @@ class RankServiceTest {
         RankSessionData session = new RankSessionData();
         session.setStarted(false); // session that has not been started
 
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(valueOperations.get("2")).thenReturn(session);
         // When
         CustomException ex = assertThrows(CustomException.class, () ->
@@ -538,6 +540,8 @@ class RankServiceTest {
         session.setStarted(true);
 
         when(valueOperations.get("3")).thenReturn(session);
+        when(redisSessionTemplate.getExpire("3", TimeUnit.SECONDS)).thenReturn(60L);
+        when(redisSessionTemplate.delete("3")).thenReturn(true);
         when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(latestRankPuzzleRepository.findAllByUser(user))
                 .thenReturn(List.of(
@@ -553,6 +557,30 @@ class RankServiceTest {
     }
 
     @Test
+    void endRankGame_WhenSessionAlreadyClaimedByAnotherEnd_ThenThrowsWithoutReward() {
+        // Given: a repeated end read the session, but the first end deleted it first
+        UserEntity user = TestUserFactory.createTestUser("user3", 1600);
+        ReflectionTestUtils.setField(user, "id", 3L);
+        int currencyBefore = user.getCurrency();
+
+        RankSessionData session = new RankSessionData();
+        session.setStarted(true);
+
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
+        when(valueOperations.get("3")).thenReturn(session);
+        when(redisSessionTemplate.getExpire("3", TimeUnit.SECONDS)).thenReturn(60L);
+        when(redisSessionTemplate.delete("3")).thenReturn(false);
+
+        // When
+        CustomException ex = assertThrows(CustomException.class, () -> rankService.endRankGame(user));
+
+        // Then
+        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.EMPTY_SESSION_DATA);
+        assertThat(user.getCurrency()).isEqualTo(currencyBefore);
+        verify(latestRankPuzzleRepository, never()).findAllByUser(any());
+    }
+
+    @Test
     void endRankGame_WhenGameEnds_ThenLeavesLastPuzzleRatingAlone() {
         // Given: the puzzle still on screen ran out of time, which says nothing about how hard it is
         UserEntity user = TestUserFactory.createTestUser("user3", 1600);
@@ -562,6 +590,8 @@ class RankServiceTest {
         session.setStarted(true);
 
         when(valueOperations.get("3")).thenReturn(session);
+        when(redisSessionTemplate.getExpire("3", TimeUnit.SECONDS)).thenReturn(60L);
+        when(redisSessionTemplate.delete("3")).thenReturn(true);
         when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(latestRankPuzzleRepository.findAllByUser(user))
                 .thenReturn(List.of(LatestRankPuzzle.builder()

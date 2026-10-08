@@ -39,7 +39,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiResponse<Object>> handleTypeMismatchException(MethodArgumentTypeMismatchException e) {
-        return handleException(e, ErrorCode.VALIDATION_ERROR, e.getMessage());
+        return handleException(e, ErrorCode.VALIDATION_ERROR, "Invalid value for " + e.getName());
     }
 
     @ExceptionHandler(EmptyResultDataAccessException.class)
@@ -52,9 +52,11 @@ public class GlobalExceptionHandler {
         return handleException(e, ErrorCode.CONSTRAINT_VIOLATION_ERROR, ErrorCode.CONSTRAINT_VIOLATION_ERROR.getMessage());
     }
 
+    // IllegalArgumentException mostly comes from parsing request values
     @ExceptionHandler({
             HttpMessageNotReadableException.class,
-            MissingServletRequestParameterException.class
+            MissingServletRequestParameterException.class,
+            IllegalArgumentException.class
     })
     private ResponseEntity<ApiResponse<Object>> handleBadRequestException(Exception e) {
         return handleException(e, ErrorCode.VALIDATION_ERROR, ErrorCode.VALIDATION_ERROR.getMessage());

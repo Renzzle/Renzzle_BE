@@ -312,12 +312,34 @@ class ContentServiceTest {
         // then
         assertThat(response.puzzles()).hasSize(5);
 
-        // Additional verification: confirm sorting by highest likes + highest views + lowest id
-        List<Long> puzzleIds = response.puzzles().stream()
-                    .map(GetCommunityPuzzlesResponse::id)
-                .toList();
+        // Likes minus dislikes per id: 1→8, 3→7, 2→6, 4→5, 6→4
+        assertThat(response.puzzles()).extracting(GetCommunityPuzzlesResponse::id)
+                .containsExactly(1L, 3L, 2L, 4L, 6L);
+    }
 
-        System.out.println("selected puzzle IDs: " + puzzleIds);
+    @Test
+    void getTrendCommunityPuzzles_WhenScoresTie_ThenMoreViewedPuzzleComesFirst() {
+        // Given
+        Instant now = Instant.parse("2024-04-28T00:00:00Z");
+        lenient().when(clock.instant()).thenReturn(now);
+
+        List<CommunityPuzzle> puzzles = List.of(
+                TestCommunityPuzzleBuilder.builder(user).withId(1L).withCreatedAt(now)
+                        .withLikeCount(5).withDislikeCount(0).withView(100).build(),
+                TestCommunityPuzzleBuilder.builder(user).withId(2L).withCreatedAt(now)
+                        .withLikeCount(6).withDislikeCount(1).withView(300).build(),
+                TestCommunityPuzzleBuilder.builder(user).withId(3L).withCreatedAt(now)
+                        .withLikeCount(9).withDislikeCount(0).withView(10).build()
+        );
+        when(communityPuzzleRepository.findByCreatedAtAfter(any())).thenReturn(puzzles);
+        when(communityPuzzleRepository.findTop30ByCreatedAtBeforeOrderByCreatedAtDesc(any())).thenReturn(List.of());
+
+        // When
+        GetTrendPuzzlesResponse response = contentService.getTrendCommunityPuzzles(user);
+
+        // Then
+        assertThat(response.puzzles()).extracting(GetCommunityPuzzlesResponse::id)
+                .containsExactly(3L, 2L, 1L);
     }
 
     @Test

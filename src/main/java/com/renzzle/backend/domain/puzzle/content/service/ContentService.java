@@ -183,7 +183,7 @@ public class ContentService {
     private Comparator<CommunityPuzzle> trendComparator() {
         return Comparator
                 .comparingInt((CommunityPuzzle p) -> p.getLikeCount() - p.getDislikeCount()).reversed()
-                .thenComparingInt(CommunityPuzzle::getView).reversed()
+                .thenComparing(CommunityPuzzle::getView, Comparator.reverseOrder())
                 .thenComparingLong(CommunityPuzzle::getId);
     }
 }
