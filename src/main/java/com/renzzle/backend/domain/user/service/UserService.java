@@ -1,6 +1,7 @@
 package com.renzzle.backend.domain.user.service;
 
 import com.renzzle.backend.domain.appinfo.service.AppInfoService;
+import com.renzzle.backend.domain.auth.service.AuthService;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlesResponse;
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
@@ -31,6 +32,7 @@ public class UserService {
     private final CommunityPuzzleRepository communityPuzzleRepository;
     private final UserCommunityPuzzleRepository userCommunityPuzzleRepository;
     private final AppInfoService appInfoService;
+    private final AuthService authService;
 
     public UserResponse getUserResponse(UserEntity user) {
         return UserResponse.builder()
@@ -48,6 +50,7 @@ public class UserService {
         if (updatedRows == 0) {
             throw new CustomException(ErrorCode.CANNOT_FIND_USER);
         }
+        authService.revokeAllSessions(user.getId());
         return user.getId();
     }
 

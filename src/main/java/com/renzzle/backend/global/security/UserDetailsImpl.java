@@ -20,11 +20,19 @@ public class UserDetailsImpl implements UserDetails {
     private final transient UserEntity user;
     private final String password;
     private final List<String> authorities;
+    // Null for admin and test tokens, which aren't tied to a login session
+    @Getter
+    private final String sessionId;
 
     public UserDetailsImpl(UserEntity user, String password, List<String> authorities) {
+        this(user, password, authorities, null);
+    }
+
+    public UserDetailsImpl(UserEntity user, String password, List<String> authorities, String sessionId) {
         this.user = user;
         this.password = password;
         this.authorities = authorities;
+        this.sessionId = sessionId;
     }
 
     @Override

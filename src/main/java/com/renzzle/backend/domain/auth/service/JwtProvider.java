@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Map;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -30,6 +31,12 @@ public class JwtProvider {
 
     private static final String CLAIM_USER_ID_KEY = "userId";
     private static final String CLAIM_EMAIL_KEY = "email";
+    private static final String CLAIM_TOKEN_TYPE_KEY = "typ";
+    private static final String CLAIM_SESSION_ID_KEY = "sid";
+    private static final String ACCESS_TOKEN_TYPE = "access";
+    private static final String REFRESH_TOKEN_TYPE = "refresh";
+
+    public record TokenClaims(long userId, String sessionId) {}
 
     @Value("${spring.jwt.secret}")
     private String jwtSecretKey;
@@ -45,7 +52,9 @@ public class JwtProvider {
         Date issuedAt = Date.from(now);
         Date validity = Date.from(now.plus(validMin, ChronoUnit.MINUTES));
 
+        // Unique per token, so one reissued within the same second never equals the old one
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .issuedAt(issuedAt)
                 .expiration(validity)
                 .claims().add(claims).and()
@@ -73,29 +82,59 @@ public class JwtProvider {
         }
     }
 
-    public String createAccessToken(long userId) {
-        return createToken(Map.of(CLAIM_USER_ID_KEY, userId), ACCESS_TOKEN_VALID_MINUTE);
+    public String createAccessToken(long userId, String sessionId) {
+        return createToken(Map.of(
+                CLAIM_USER_ID_KEY, userId,
+                CLAIM_TOKEN_TYPE_KEY, ACCESS_TOKEN_TYPE,
+                CLAIM_SESSION_ID_KEY, sessionId), ACCESS_TOKEN_VALID_MINUTE);
     }
 
     public String createAdminAccessToken(long userId) {
-        return createToken(Map.of(CLAIM_USER_ID_KEY, userId), ADMIN_ACCESS_TOKEN_VALID_MINUTE);
+        return createToken(Map.of(
+                CLAIM_USER_ID_KEY, userId,
+                CLAIM_TOKEN_TYPE_KEY, ACCESS_TOKEN_TYPE), ADMIN_ACCESS_TOKEN_VALID_MINUTE);
     }
 
     public String createTestAccessToken(long userId) {
-        return createToken(Map.of(CLAIM_USER_ID_KEY, userId), TEST_ACCESS_TOKEN_VALID_MINUTE);
+        return createToken(Map.of(
+                CLAIM_USER_ID_KEY, userId,
+                CLAIM_TOKEN_TYPE_KEY, ACCESS_TOKEN_TYPE), TEST_ACCESS_TOKEN_VALID_MINUTE);
     }
 
-    public String createRefreshToken(long userId) {
-        return createToken(Map.of(CLAIM_USER_ID_KEY, userId), REFRESH_TOKEN_VALID_MINUTE);
+    public String createRefreshToken(long userId, String sessionId) {
+        return createToken(Map.of(
+                CLAIM_USER_ID_KEY, userId,
+                CLAIM_TOKEN_TYPE_KEY, REFRESH_TOKEN_TYPE,
+                CLAIM_SESSION_ID_KEY, sessionId), REFRESH_TOKEN_VALID_MINUTE);
     }
 
     public String createAuthVerityToken(String email) {
         return createToken(Map.of(CLAIM_EMAIL_KEY, email), AUTH_VERITY_TOKEN_VALID_MINUTE);
     }
 
-    public long getUserId(String token) {
-        Jws<Claims> claims = parseToken(token);
-        Object userId = claims.getPayload().get(CLAIM_USER_ID_KEY);
+    public TokenClaims parseAccessToken(String token) {
+        return parseTokenOfType(token, ACCESS_TOKEN_TYPE);
+    }
+
+    public TokenClaims parseRefreshToken(String token) {
+        TokenClaims claims = parseTokenOfType(token, REFRESH_TOKEN_TYPE);
+        if (claims.sessionId() == null) {
+            throw new CustomException(ErrorCode.ILLEGAL_TOKEN);
+        }
+        return claims;
+    }
+
+    // Reported as expired so the app reissues; old untyped tokens then fail and send the user to login
+    private TokenClaims parseTokenOfType(String token, String expectedType) {
+        Claims claims = parseToken(token).getPayload();
+        if (!expectedType.equals(claims.get(CLAIM_TOKEN_TYPE_KEY))) {
+            throw new CustomException(ErrorCode.EXPIRED_JWT_TOKEN);
+        }
+        return new TokenClaims(readUserId(claims), claims.get(CLAIM_SESSION_ID_KEY, String.class));
+    }
+
+    private long readUserId(Claims claims) {
+        Object userId = claims.get(CLAIM_USER_ID_KEY);
 
         if (userId instanceof Integer i) {
             return i.longValue();

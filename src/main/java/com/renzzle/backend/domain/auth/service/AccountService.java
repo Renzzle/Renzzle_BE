@@ -95,8 +95,9 @@ public class AccountService {
         return authService.createAuthTokens(userId);
     }
 
+    // Other devices are signed out; the one changing the password stays logged in
     @Transactional
-    public Long changePassword(UserEntity user, ChangePasswordRequest request) {
+    public Long changePassword(UserEntity user, String currentSessionId, ChangePasswordRequest request) {
         UserEntity persistedUser = userRepository.findById(user.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
 
@@ -105,6 +106,7 @@ public class AccountService {
         }
 
         persistedUser.changePassword(passwordEncoder.encode(request.newPassword()));
+        authService.revokeOtherSessions(persistedUser.getId(), currentSessionId);
         return persistedUser.getId();
     }
 
@@ -118,7 +120,7 @@ public class AccountService {
                 .orElseThrow(() -> new CustomException(ErrorCode.INVALID_EMAIL));
 
         user.changePassword(passwordEncoder.encode(request.newPassword()));
-        authService.deleteRefreshToken(user);
+        authService.revokeAllSessions(user.getId());
         return user.getId();
     }
 

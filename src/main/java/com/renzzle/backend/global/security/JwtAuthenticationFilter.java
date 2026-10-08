@@ -49,9 +49,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(@Nonnull HttpServletRequest request, @Nonnull HttpServletResponse response, @Nonnull FilterChain filterChain) {
         try {
             String accessToken = resolveToken(request);
-            Long userId = jwtProvider.getUserId(accessToken);
-            MDC.put("userId", String.valueOf(userId));
-            UserDetails userDetails = loadUserByUserId(userId);
+            JwtProvider.TokenClaims claims = jwtProvider.parseAccessToken(accessToken);
+            MDC.put("userId", String.valueOf(claims.userId()));
+            UserDetails userDetails = loadUserByUserId(claims.userId(), claims.sessionId());
             Authentication authentication = UsernamePasswordAuthenticationToken.authenticated(userDetails, userDetails.getPassword(), userDetails.getAuthorities());
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -65,7 +65,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
     }
 
-    public UserDetails loadUserByUserId(Long userId) throws CustomException {
+    public UserDetails loadUserByUserId(Long userId, String sessionId) throws CustomException {
         Optional<UserEntity> user = userRepository.findById(userId);
         if(user.isEmpty())
             throw new CustomException(ErrorCode.GLOBAL_NOT_FOUND);
@@ -74,7 +74,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if(adminRepository.existsByUser(user.get()))
             authorities.add(ADMIN_PREFIX);
 
-        return new UserDetailsImpl(user.get(), user.get().getPassword(), authorities);
+        return new UserDetailsImpl(user.get(), user.get().getPassword(), authorities, sessionId);
     }
 
     private String resolveToken(HttpServletRequest request) {

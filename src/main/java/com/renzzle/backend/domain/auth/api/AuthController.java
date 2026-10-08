@@ -61,7 +61,7 @@ public class AuthController {
     @PatchMapping("/password")
     public ApiResponse<Long> changePassword(@AuthenticationPrincipal UserDetailsImpl userDetails,
                                             @Valid @RequestBody ChangePasswordRequest request) {
-        return ApiUtils.success(accountService.changePassword(userDetails.getUser(), request));
+        return ApiUtils.success(accountService.changePassword(userDetails.getUser(), userDetails.getSessionId(), request));
     }
 
     @Operation(summary = "Send password reset code", description = "Send a confirmation code to a registered email")
@@ -79,7 +79,7 @@ public class AuthController {
     @Operation(summary = "Logout to service", description = "Delete the refresh token to prevent reissuing the authentication tokens")
     @PostMapping("/logout")
     public ApiResponse<Long> logout(@AuthenticationPrincipal UserDetailsImpl userDetails) {
-        Long id = authService.deleteRefreshToken(userDetails.getUser());
+        Long id = authService.logout(userDetails.getUser(), userDetails.getSessionId());
         return ApiUtils.success(id);
     }
 

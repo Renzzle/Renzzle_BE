@@ -38,11 +38,11 @@ class JwtAuthenticationFilterTest {
 
     @Test
     void doFilter_WhenBearerTokenIsGiven_ThenParsesWhatFollowsTheScheme() throws Exception {
-        when(jwtProvider.getUserId("abc.def.ghi")).thenThrow(new CustomException(ErrorCode.MALFORMED_JWT_TOKEN));
+        when(jwtProvider.parseAccessToken("abc.def.ghi")).thenThrow(new CustomException(ErrorCode.MALFORMED_JWT_TOKEN));
 
         jwtAuthenticationFilter.doFilter(requestWithAuthorization("Bearer abc.def.ghi"), response, filterChain);
 
-        verify(jwtProvider).getUserId("abc.def.ghi");
+        verify(jwtProvider).parseAccessToken("abc.def.ghi");
         assertRejectedWith(ErrorCode.MALFORMED_JWT_TOKEN);
     }
 

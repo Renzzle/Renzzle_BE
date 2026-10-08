@@ -95,7 +95,7 @@ public class AdminController {
     ) {
         var loginResponse = accountService.login(request);
 
-        long userId = jwtProvider.getUserId(loginResponse.accessToken());
+        long userId = jwtProvider.parseAccessToken(loginResponse.accessToken()).userId();
         Optional<UserEntity> user = userRepository.findById(userId);
         if (user.isEmpty() || !adminRepository.existsByUser(user.get())) {
             throw new CustomException(ErrorCode.ADMIN_ACCESS_DENIED);
