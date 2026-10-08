@@ -352,6 +352,36 @@ class NoticeServiceTest {
     }
 
     @Test
+    void getPersonalNotice_WhenClientNewerThanRequired_ThenReturnsContextsWithoutUpdate() {
+        // Given: 1.0.10 is newer than 1.0.9 numerically, though not lexically
+        when(systemInfoRepository.getSystemInfo()).thenReturn(Optional.of(systemInfo("1.0.5", "1.0.9", false)));
+        when(noticeRepository.findAllByUser(user)).thenReturn(List.of());
+        when(userRepository.isLastAccessBeforeToday(user.getId())).thenReturn(false);
+
+        // When
+        GetPersonalNoticeResponse response = noticeService.getPersonalNotice(
+                new GetPersonalNoticeRequest("EN", "IOS", "1.0.10"), user);
+
+        // Then
+        assertThat(response.description()).isEqualTo("context");
+        assertThat(response.version()).isNull();
+    }
+
+    @Test
+    void getPersonalNotice_WhenEarlierSegmentOlder_ThenAsksToUpdateDespiteLargerLaterSegments() {
+        // Given
+        when(systemInfoRepository.getSystemInfo()).thenReturn(Optional.of(systemInfo("2.0.0.0", "1.0.9", false)));
+
+        // When
+        GetPersonalNoticeResponse response = noticeService.getPersonalNotice(
+                new GetPersonalNoticeRequest("EN", "ANDROID", "1.9.9.9"), user);
+
+        // Then
+        assertThat(response.description()).isEqualTo("update");
+        assertThat(response.version()).isEqualTo("2.0.0.0");
+    }
+
+    @Test
     void getPersonalNotice_WhenSystemCheckOn_ThenShortCircuitsBeforeVersionCheck() {
         // Given
         when(systemInfoRepository.getSystemInfo()).thenReturn(Optional.of(systemInfo("1.0.5", "1.0.9", true)));

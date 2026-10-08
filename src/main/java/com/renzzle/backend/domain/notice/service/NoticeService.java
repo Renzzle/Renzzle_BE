@@ -19,6 +19,7 @@ import com.renzzle.backend.domain.notice.dao.SystemInfoRepository;
 import com.renzzle.backend.domain.notice.domain.Announcement;
 import com.renzzle.backend.domain.notice.domain.Notice;
 import com.renzzle.backend.domain.notice.domain.SystemInfo;
+import com.renzzle.backend.domain.notice.util.AppVersionUtil;
 import com.renzzle.backend.domain.notice.util.NoticeTextBuilderUtil;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 
@@ -59,9 +60,9 @@ public class NoticeService {
                     .description("system-check")
                     .build();
         }
-        // App version check, against the required version for the caller's OS
+        // Only clients older than the required version for their OS are asked to update
         String requiredVersion = systemInfo.getRequiredVersion(AppPlatform.from(request.platform()));
-        if (!request.version().trim().equals(requiredVersion)) {
+        if (AppVersionUtil.compare(request.version(), requiredVersion) < 0) {
             return GetPersonalNoticeResponse.builder()
                     .description("update")
                     .version(requiredVersion)
@@ -180,7 +181,6 @@ public class NoticeService {
     @Transactional
     public GetSystemInfoForAdminResponse updateSystemInfoForAdmin(UpdateSystemInfoRequest request) {
         SystemInfo systemInfo = loadSystemInfo();
-        // Stored trimmed because getPersonalNotice compares against the trimmed client version
         systemInfo.update(request.androidVersion().trim(), request.iosVersion().trim(), request.isSystemCheck());
         return toSystemInfoResponse(systemInfo);
     }
