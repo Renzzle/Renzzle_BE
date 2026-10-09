@@ -570,7 +570,7 @@ public class RankService {
         });
     }
 
-    @Scheduled(fixedRate = 1000 * 60 * 60) // Runs every 60 minutes
+    @Scheduled(fixedDelay = 1000 * 60 * 5) // Runs at startup, then 5 minutes after each run ends
     public void updateRankingCache() {
         Instant oneMonthAgo = Instant.now(clock).minus(30, ChronoUnit.DAYS);
 
