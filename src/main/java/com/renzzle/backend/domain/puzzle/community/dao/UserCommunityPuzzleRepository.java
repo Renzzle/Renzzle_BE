@@ -1,6 +1,7 @@
 package com.renzzle.backend.domain.puzzle.community.dao;
 
 import com.renzzle.backend.domain.puzzle.community.dao.projection.LikeDislikeProjection;
+import com.renzzle.backend.domain.puzzle.community.dao.projection.SolvedCountProjection;
 import com.renzzle.backend.domain.puzzle.community.domain.UserCommunityPuzzle;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -40,7 +42,9 @@ public interface UserCommunityPuzzleRepository extends JpaRepository<UserCommuni
     @Query("SELECT DISTINCT ucp.user FROM UserCommunityPuzzle ucp WHERE ucp.solvedAt >= :since")
     List<UserEntity> findUsersWhoSolvedPuzzlesSince(@Param("since") Instant since);
 
-    @Query("SELECT COUNT(ucp) FROM UserCommunityPuzzle ucp WHERE ucp.user.id = :userId AND ucp.isSolved = true")
-    long countSolvedByUser(@Param("userId") Long userId);
+    // One grouped query for every ranked user; users with no solves are left out
+    @Query("SELECT ucp.user.id AS userId, COUNT(ucp) AS solvedCount FROM UserCommunityPuzzle ucp " +
+            "WHERE ucp.user.id IN :userIds AND ucp.isSolved = true GROUP BY ucp.user.id")
+    List<SolvedCountProjection> countSolvedByUserIds(@Param("userIds") Collection<Long> userIds);
 
 }

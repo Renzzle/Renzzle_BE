@@ -1,6 +1,7 @@
 package com.renzzle.backend.domain.puzzle.community.dao;
 
 import com.renzzle.backend.domain.puzzle.community.dao.projection.LikeDislikeProjection;
+import com.renzzle.backend.domain.puzzle.community.dao.projection.SolvedCountProjection;
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.community.domain.UserCommunityPuzzle;
 import com.renzzle.backend.domain.user.dao.UserRepository;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -106,6 +108,29 @@ class UserCommunityPuzzleRepositoryTest {
         assertThat(updated.isSolved()).isTrue();
         assertThat(updated.getSolvedAt().truncatedTo(ChronoUnit.MICROS))
                 .isEqualTo(fixedTime.truncatedTo(ChronoUnit.MICROS));
+    }
+
+    @Test
+    void countSolvedByUserIds_WhenARowIsOnlyLiked_ThenCountsSolvesOnly() {
+        // Given
+        UserEntity author = TestUserEntityBuilder.builder().save(userRepository);
+        UserEntity solver = TestUserEntityBuilder.builder().save(userRepository);
+        UserEntity liker = TestUserEntityBuilder.builder().save(userRepository);
+        CommunityPuzzle first = TestCommunityPuzzleBuilder.builder(author).save(communityPuzzleRepository);
+        CommunityPuzzle second = TestCommunityPuzzleBuilder.builder(author).save(communityPuzzleRepository);
+        TestUserCommunityPuzzleBuilder.builder(solver, first).withSolved(true).save(userCommunityPuzzleRepository);
+        TestUserCommunityPuzzleBuilder.builder(solver, second).withSolved(true).save(userCommunityPuzzleRepository);
+        TestUserCommunityPuzzleBuilder.builder(liker, first).withLiked(true).save(userCommunityPuzzleRepository);
+
+        // When
+        List<SolvedCountProjection> counts =
+                userCommunityPuzzleRepository.countSolvedByUserIds(List.of(solver.getId(), liker.getId()));
+
+        // Then: the liker solved nothing, so they get no row
+        assertThat(counts).singleElement().satisfies(count -> {
+            assertThat(count.getUserId()).isEqualTo(solver.getId());
+            assertThat(count.getSolvedCount()).isEqualTo(2);
+        });
     }
 
 }

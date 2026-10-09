@@ -15,7 +15,13 @@ import java.time.Instant;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder(toBuilder = true)
-@Table(name = "latest_rank_puzzle")
+@Table(
+        name = "latest_rank_puzzle",
+        // The ranking rebuild looks up who played within the last 30 days
+        indexes = {
+                @Index(columnList = "assigned_at")
+        }
+)
 public class LatestRankPuzzle {
 
     @Id

@@ -4,6 +4,7 @@ import com.renzzle.backend.domain.appinfo.service.AppInfoService;
 import com.renzzle.backend.domain.auth.service.AuthService;
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
+import com.renzzle.backend.domain.puzzle.rank.service.RankService;
 import com.renzzle.backend.domain.user.api.response.ChangeNicknameResponse;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
@@ -43,6 +44,8 @@ class UserServiceTest {
     private AppInfoService appInfoService;
     @Mock
     private AuthService authService;
+    @Mock
+    private RankService rankService;
 
     @InjectMocks
     private UserService userService;
@@ -88,6 +91,19 @@ class UserServiceTest {
 
         // Then
         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.DUPLICATE_NICKNAME);
+    }
+
+    @Test
+    void deleteUser_WhenUserExists_ThenTakesThemOutOfTheRankings() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder().withId(1L).build();
+        when(userRepository.softDelete(eq(1L), any())).thenReturn(1);
+
+        // When
+        userService.deleteUser(user);
+
+        // Then: gone from the rankings now, not shown as DELETED_USER until the next rebuild
+        verify(rankService).removeFromRankings(1L);
     }
 
 }

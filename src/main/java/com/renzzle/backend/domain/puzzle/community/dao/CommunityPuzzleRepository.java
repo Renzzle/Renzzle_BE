@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.puzzle.community.dao;
 
+import com.renzzle.backend.domain.puzzle.community.dao.projection.AuthorStatsProjection;
 import com.renzzle.backend.domain.puzzle.community.dao.projection.CommunityBoardKeyProjection;
 import com.renzzle.backend.domain.puzzle.community.dao.query.CommunityPuzzleQueryRepository;
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
@@ -12,6 +13,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -139,18 +141,15 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
                                                @Param("halfLifeSeconds") long halfLifeSeconds,
                                                @Param("size") int size);
 
-    @Query("SELECT COUNT(p) FROM CommunityPuzzle p WHERE p.user.id = :userId")
-    long countByAuthor(@Param("userId") Long userId);
-
     @Query(value = "SELECT COUNT(*) FROM community_puzzle " +
             "WHERE author_id = :userId AND created_at > :since", nativeQuery = true)
     long countByAuthorSinceIncludingDeleted(@Param("userId") Long userId, @Param("since") Instant since);
 
-    @Query("SELECT COALESCE(SUM(p.likeCount), 0) FROM CommunityPuzzle p WHERE p.user.id = :userId")
-    int sumLikesByUser(@Param("userId") Long userId);
-
-    @Query("SELECT COALESCE(SUM(p.dislikeCount), 0) FROM CommunityPuzzle p WHERE p.user.id = :userId")
-    int sumDislikesByUser(@Param("userId") Long userId);
+    // Puzzle count and vote totals for every ranked author in one query; deleted puzzles don't count
+    @Query("SELECT p.user.id AS userId, COUNT(p) AS puzzleCount, " +
+            "COALESCE(SUM(p.likeCount), 0) AS likeSum, COALESCE(SUM(p.dislikeCount), 0) AS dislikeSum " +
+            "FROM CommunityPuzzle p WHERE p.user.id IN :userIds GROUP BY p.user.id")
+    List<AuthorStatsProjection> sumAuthorStatsByUserIds(@Param("userIds") Collection<Long> userIds);
 
     @Query("SELECT DISTINCT p.user FROM CommunityPuzzle p WHERE p.createdAt >= :since")
     List<UserEntity> findUsersWhoCreatedPuzzlesSince(@Param("since") Instant since);

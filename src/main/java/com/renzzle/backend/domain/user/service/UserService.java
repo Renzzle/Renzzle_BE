@@ -6,6 +6,7 @@ import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzz
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
+import com.renzzle.backend.domain.puzzle.rank.service.RankService;
 import com.renzzle.backend.domain.user.api.response.ChangeNicknameResponse;
 import com.renzzle.backend.domain.user.api.response.UserResponse;
 import com.renzzle.backend.domain.user.dao.UserRepository;
@@ -34,6 +35,7 @@ public class UserService {
     private final UserCommunityPuzzleRepository userCommunityPuzzleRepository;
     private final AppInfoService appInfoService;
     private final AuthService authService;
+    private final RankService rankService;
 
     public UserResponse getUserResponse(UserEntity user) {
         return UserResponse.builder()
@@ -52,6 +54,7 @@ public class UserService {
             throw new CustomException(ErrorCode.CANNOT_FIND_USER);
         }
         authService.revokeAllSessions(user.getId());
+        rankService.removeFromRankings(user.getId());
         return user.getId();
     }
 

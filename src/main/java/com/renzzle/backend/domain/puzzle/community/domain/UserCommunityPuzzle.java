@@ -17,6 +17,10 @@ import java.time.Instant;
         name = "user_community_puzzle",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {"user_id", "community_id"})
+        },
+        // The ranking rebuild looks up who solved within the last 30 days
+        indexes = {
+                @Index(columnList = "solved_at")
         }
 )
 public class UserCommunityPuzzle {

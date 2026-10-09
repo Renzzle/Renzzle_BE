@@ -2,6 +2,7 @@ package com.renzzle.backend.domain.puzzle.community.dao;
 
 import com.renzzle.backend.support.DataJpaTestWithInitContainers;
 import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzleRequest;
+import com.renzzle.backend.domain.puzzle.community.dao.projection.AuthorStatsProjection;
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.community.domain.UserCommunityPuzzle;
 import com.renzzle.backend.domain.user.dao.UserRepository;
@@ -410,7 +411,38 @@ class CommunityPuzzleRepositoryTest {
         assertThat(communityPuzzleRepository.countByAuthorSinceIncludingDeleted(user.getId(), since))
                 .isEqualTo(2);
         // the JPQL sibling drops it, which is exactly why the native query exists
-        assertThat(communityPuzzleRepository.countByAuthor(user.getId())).isEqualTo(1);
+        assertThat(communityPuzzleRepository.sumAuthorStatsByUserIds(List.of(user.getId())))
+                .singleElement()
+                .extracting(AuthorStatsProjection::getPuzzleCount)
+                .isEqualTo(1L);
+    }
+
+    @Test
+    void sumAuthorStatsByUserIds_WhenAPuzzleIsDeleted_ThenLeavesItOut() {
+        // Given
+        UserEntity author = TestUserEntityBuilder.builder().save(userRepository);
+        UserEntity other = TestUserEntityBuilder.builder().save(userRepository);
+        UserEntity idle = TestUserEntityBuilder.builder().save(userRepository);
+        TestCommunityPuzzleBuilder.builder(author).withLikeCount(10).withDislikeCount(2).save(communityPuzzleRepository);
+        TestCommunityPuzzleBuilder.builder(author).withLikeCount(3).withDislikeCount(5).save(communityPuzzleRepository);
+        CommunityPuzzle removed = TestCommunityPuzzleBuilder.builder(author).withLikeCount(50).save(communityPuzzleRepository);
+        TestCommunityPuzzleBuilder.builder(other).withLikeCount(1).save(communityPuzzleRepository);
+
+        communityPuzzleRepository.softDelete(removed.getId(), FIXED_INSTANT);
+        entityManager.flush();
+        entityManager.clear();
+
+        // When
+        List<AuthorStatsProjection> stats =
+                communityPuzzleRepository.sumAuthorStatsByUserIds(List.of(author.getId(), idle.getId()));
+
+        // Then: one row per asked author with puzzles, so neither the idle user nor the other author shows up
+        assertThat(stats).singleElement().satisfies(authorStats -> {
+            assertThat(authorStats.getUserId()).isEqualTo(author.getId());
+            assertThat(authorStats.getPuzzleCount()).isEqualTo(2);
+            assertThat(authorStats.getLikeSum()).isEqualTo(13);
+            assertThat(authorStats.getDislikeSum()).isEqualTo(7);
+        });
     }
 
     @Test
