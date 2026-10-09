@@ -38,12 +38,35 @@ class JwtAuthenticationFilterTest {
 
     @Test
     void doFilter_WhenBearerTokenIsGiven_ThenParsesWhatFollowsTheScheme() throws Exception {
-        when(jwtProvider.getUserId("abc.def.ghi")).thenThrow(new CustomException(ErrorCode.MALFORMED_JWT_TOKEN));
+        when(jwtProvider.parseAccessToken("abc.def.ghi")).thenThrow(new CustomException(ErrorCode.MALFORMED_JWT_TOKEN));
 
         jwtAuthenticationFilter.doFilter(requestWithAuthorization("Bearer abc.def.ghi"), response, filterChain);
 
-        verify(jwtProvider).getUserId("abc.def.ghi");
+        verify(jwtProvider).parseAccessToken("abc.def.ghi");
         assertRejectedWith(ErrorCode.MALFORMED_JWT_TOKEN);
+    }
+
+    @Test
+    void doFilter_WhenBrowserRequestHasNoToken_ThenRedirectsToLoginPage() throws Exception {
+        // An admin page opened after the admin cookie expired
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/admin/dashboard");
+        request.addHeader(HttpHeaders.ACCEPT, "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+
+        jwtAuthenticationFilter.doFilter(request, response, filterChain);
+
+        assertNull(filterChain.getRequest());
+        assertEquals("/admin", response.getRedirectedUrl());
+    }
+
+    @Test
+    void doFilter_WhenAppRequestHasNoToken_ThenStillRespondsWithJson() throws Exception {
+        // The Accept header axios sends by default
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/user");
+        request.addHeader(HttpHeaders.ACCEPT, "application/json, text/plain, */*");
+
+        jwtAuthenticationFilter.doFilter(request, response, filterChain);
+
+        assertRejectedWith(ErrorCode.ILLEGAL_TOKEN);
     }
 
     private MockHttpServletRequest requestWithAuthorization(String authorization) {

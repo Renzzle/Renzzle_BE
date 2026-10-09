@@ -73,7 +73,7 @@ class PuzzleCachePerformanceTest {
         puzzleCacheRepository.deleteAll();
 
         UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
-        String token = jwtProvider.createAccessToken(user.getId());
+        String token = jwtProvider.createAccessToken(user.getId(), "test-session");
 
         authHeaders = new HttpHeaders();
         authHeaders.setBearerAuth(token);

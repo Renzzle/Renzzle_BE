@@ -10,6 +10,9 @@ import lombok.*;
 @Builder(toBuilder = true)
 public class Pack {
 
+    // Granted on sign-up
+    public static final Long STARTER_PACK_ID = 1L;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

@@ -7,6 +7,7 @@ import com.renzzle.backend.domain.auth.api.request.SignupRequest;
 import com.renzzle.backend.domain.auth.api.response.LoginResponse;
 import com.renzzle.backend.domain.auth.dao.AdminRepository;
 import com.renzzle.backend.domain.user.dao.UserRepository;
+import com.renzzle.backend.domain.puzzle.training.domain.Pack;
 import com.renzzle.backend.domain.puzzle.training.service.TrainingService;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.exception.CustomException;
@@ -47,7 +48,7 @@ public class AccountService {
         }
 
         UserEntity user = createNewUser(request.email(), request.password(), request.nickname(), request.deviceId());
-        trainingService.grantPackToUser(user, 1L);
+        trainingService.grantPackToUser(user, Pack.STARTER_PACK_ID);
         return authService.createAuthTokens(user.getId());
     }
 
@@ -94,8 +95,9 @@ public class AccountService {
         return authService.createAuthTokens(userId);
     }
 
+    // Other devices are signed out; the one changing the password stays logged in
     @Transactional
-    public Long changePassword(UserEntity user, ChangePasswordRequest request) {
+    public Long changePassword(UserEntity user, String currentSessionId, ChangePasswordRequest request) {
         UserEntity persistedUser = userRepository.findById(user.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
 
@@ -104,6 +106,7 @@ public class AccountService {
         }
 
         persistedUser.changePassword(passwordEncoder.encode(request.newPassword()));
+        authService.revokeOtherSessions(persistedUser.getId(), currentSessionId);
         return persistedUser.getId();
     }
 
@@ -117,7 +120,7 @@ public class AccountService {
                 .orElseThrow(() -> new CustomException(ErrorCode.INVALID_EMAIL));
 
         user.changePassword(passwordEncoder.encode(request.newPassword()));
-        authService.deleteRefreshToken(user);
+        authService.revokeAllSessions(user.getId());
         return user.getId();
     }
 

@@ -14,6 +14,8 @@ import java.time.Instant;
 import static com.renzzle.backend.global.common.constant.TimeConstant.CONST_FUTURE_INSTANT;
 import static com.renzzle.backend.global.common.domain.Status.STATUS_IS_NOT_DELETED;
 
+// Writes only changed columns, so entity saves don't overwrite counters and rank results updated in place
+@DynamicUpdate
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -114,30 +116,6 @@ public class CommunityPuzzle {
         if(deletedAt == null) {
             this.deletedAt = CONST_FUTURE_INSTANT;
         }
-    }
-
-    public void increaseViews() {
-        this.view++;
-    }
-
-    public void increaseSolvedCount() {
-        this.solvedCount++;
-    }
-
-    public void increaseLikedCount() {
-        this.likeCount++;
-    }
-
-    public void increaseDislikedCount() {
-        this.dislikeCount++;
-    }
-
-    public void decreaseLikedCount() {
-        this.likeCount--;
-    }
-
-    public void decreaseDislikedCount() {
-        this.dislikeCount--;
     }
 
     public void updateVerification(boolean isVerified) {

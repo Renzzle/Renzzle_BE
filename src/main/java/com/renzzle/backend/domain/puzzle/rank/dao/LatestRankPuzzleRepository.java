@@ -14,6 +14,9 @@ public interface LatestRankPuzzleRepository extends JpaRepository<LatestRankPuzz
     // By id, not assignedAt: two assignments can share an instant
     Optional<LatestRankPuzzle> findTopByUserOrderByIdDesc(UserEntity user);
 
+    // The assignment handed out just before the given one
+    Optional<LatestRankPuzzle> findTopByUserAndIdLessThanOrderByIdDesc(UserEntity user, Long id);
+
     List<LatestRankPuzzle> findAllByUserOrderByAssignedAtAsc(UserEntity user);
 
     List<LatestRankPuzzle> findAllByUser(UserEntity user);

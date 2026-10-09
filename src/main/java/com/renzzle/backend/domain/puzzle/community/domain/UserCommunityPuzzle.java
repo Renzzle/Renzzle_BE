@@ -17,6 +17,11 @@ import java.time.Instant;
         name = "user_community_puzzle",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {"user_id", "community_id"})
+        },
+        // The ranking rebuild looks up who solved within the last 30 days; with user_id in it,
+        // the index alone answers that, so MySQL uses it even when many rows are recent
+        indexes = {
+                @Index(columnList = "solved_at, user_id")
         }
 )
 public class UserCommunityPuzzle {
@@ -53,13 +58,12 @@ public class UserCommunityPuzzle {
     @Column(name = "liked_at")
     private Instant likedAt;
 
+    // Unliking keeps likedAt, since the liked list may still page from this row as its cursor
     public boolean toggleLike(Instant likedAt) {
         isLiked = !isLiked;
         if (isLiked) {
             isDisliked = false;
             this.likedAt = likedAt;
-        } else {
-            this.likedAt = null;
         }
         return isLiked;
     }

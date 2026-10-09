@@ -2,7 +2,9 @@ package com.renzzle.backend.domain.puzzle.community.dao;
 
 import com.renzzle.backend.support.DataJpaTestWithInitContainers;
 import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzleRequest;
+import com.renzzle.backend.domain.puzzle.community.dao.projection.AuthorStatsProjection;
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
+import com.renzzle.backend.domain.puzzle.community.domain.UserCommunityPuzzle;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.domain.Status;
@@ -13,6 +15,7 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -36,6 +39,62 @@ class CommunityPuzzleRepositoryTest {
 
     @Autowired
     private UserCommunityPuzzleRepository userCommunityPuzzleRepository;
+
+    @Test
+    void updateVerification_WhenRankResultAndViewChangedTheRowMeanwhile_ThenKeepsBoth() {
+        // Given: the entity is loaded, then a rank result and a view update the row directly
+        UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
+        CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user)
+                .withRating(1000.0)
+                .withView(10)
+                .withVerified(false)
+                .save(communityPuzzleRepository);
+        entityManager.flush();
+        entityManager.clear();
+
+        CommunityPuzzle loaded = communityPuzzleRepository.findById(puzzle.getId()).orElseThrow();
+        communityPuzzleRepository.applyRankResult(puzzle.getId(), 50.0, 0.0, 5000.0);
+        communityPuzzleRepository.increaseView(puzzle.getId());
+
+        // When
+        loaded.updateVerification(true);
+        entityManager.flush();
+        entityManager.clear();
+
+        // Then
+        CommunityPuzzle stored = communityPuzzleRepository.findById(puzzle.getId()).orElseThrow();
+        assertThat(stored.getIsVerified()).isTrue();
+        assertThat(stored.getRating()).isEqualTo(1050.0);
+        assertThat(stored.getRankAttemptCount()).isEqualTo(1);
+        assertThat(stored.getView()).isEqualTo(11);
+    }
+
+    @Test
+    void counterUpdates_WhenApplied_ThenAddToTheStoredValues() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
+        CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user)
+                .withView(10)
+                .withSolvedCount(4)
+                .withLikeCount(2)
+                .withDislikeCount(1)
+                .save(communityPuzzleRepository);
+        entityManager.flush();
+        entityManager.clear();
+
+        // When: a like replacing a dislike, a view and a first solve
+        communityPuzzleRepository.addVoteCounts(puzzle.getId(), 1, -1);
+        communityPuzzleRepository.increaseView(puzzle.getId());
+        communityPuzzleRepository.increaseSolvedCount(puzzle.getId());
+        entityManager.clear();
+
+        // Then
+        CommunityPuzzle stored = communityPuzzleRepository.findById(puzzle.getId()).orElseThrow();
+        assertThat(stored.getLikeCount()).isEqualTo(3);
+        assertThat(stored.getDislikeCount()).isZero();
+        assertThat(stored.getView()).isEqualTo(11);
+        assertThat(stored.getSolvedCount()).isEqualTo(5);
+    }
 
     @Test
     void searchCommunityPuzzles_WhenVariousConditions_ThenReturnsExpectedResults() {
@@ -222,6 +281,43 @@ class CommunityPuzzleRepositoryTest {
     }
 
     @Test
+    void getUserLikedPuzzles_WhenCursorPuzzleWasUnliked_ThenStillReturnsOlderPuzzles() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
+
+        CommunityPuzzle puzzle1 = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
+        CommunityPuzzle puzzle2 = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
+        CommunityPuzzle puzzle3 = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
+
+        Instant now = FIXED_INSTANT;
+
+        TestUserCommunityPuzzleBuilder.builder(user, puzzle1)
+                .withLiked(true)
+                .withLikedAt(now.minusSeconds(30))
+                .save(userCommunityPuzzleRepository);
+
+        TestUserCommunityPuzzleBuilder.builder(user, puzzle2)
+                .withLiked(true)
+                .withLikedAt(now.minusSeconds(20))
+                .save(userCommunityPuzzleRepository);
+
+        UserCommunityPuzzle cursorLike = TestUserCommunityPuzzleBuilder.builder(user, puzzle3)
+                .withLiked(true)
+                .withLikedAt(now.minusSeconds(10))
+                .save(userCommunityPuzzleRepository);
+
+        // When: the last puzzle of the loaded page is unliked before the next page is requested
+        cursorLike.toggleLike(now);
+        entityManager.flush();
+        List<CommunityPuzzle> result = communityPuzzleRepository.getUserLikedPuzzles(user.getId(), puzzle3.getId(), 10);
+
+        // Then
+        assertThat(result)
+                .extracting("id")
+                .containsExactly(puzzle2.getId(), puzzle1.getId());
+    }
+
+    @Test
     void getUserPuzzles_WhenCursorIsNull_ThenReturnSortedList() {
         // Given
         UserEntity user1 = TestUserEntityBuilder.builder().save(userRepository);
@@ -315,7 +411,38 @@ class CommunityPuzzleRepositoryTest {
         assertThat(communityPuzzleRepository.countByAuthorSinceIncludingDeleted(user.getId(), since))
                 .isEqualTo(2);
         // the JPQL sibling drops it, which is exactly why the native query exists
-        assertThat(communityPuzzleRepository.countByAuthor(user.getId())).isEqualTo(1);
+        assertThat(communityPuzzleRepository.sumAuthorStatsByUserIds(List.of(user.getId())))
+                .singleElement()
+                .extracting(AuthorStatsProjection::getPuzzleCount)
+                .isEqualTo(1L);
+    }
+
+    @Test
+    void sumAuthorStatsByUserIds_WhenAPuzzleIsDeleted_ThenLeavesItOut() {
+        // Given
+        UserEntity author = TestUserEntityBuilder.builder().save(userRepository);
+        UserEntity other = TestUserEntityBuilder.builder().save(userRepository);
+        UserEntity idle = TestUserEntityBuilder.builder().save(userRepository);
+        TestCommunityPuzzleBuilder.builder(author).withLikeCount(10).withDislikeCount(2).save(communityPuzzleRepository);
+        TestCommunityPuzzleBuilder.builder(author).withLikeCount(3).withDislikeCount(5).save(communityPuzzleRepository);
+        CommunityPuzzle removed = TestCommunityPuzzleBuilder.builder(author).withLikeCount(50).save(communityPuzzleRepository);
+        TestCommunityPuzzleBuilder.builder(other).withLikeCount(1).save(communityPuzzleRepository);
+
+        communityPuzzleRepository.softDelete(removed.getId(), FIXED_INSTANT);
+        entityManager.flush();
+        entityManager.clear();
+
+        // When
+        List<AuthorStatsProjection> stats =
+                communityPuzzleRepository.sumAuthorStatsByUserIds(List.of(author.getId(), idle.getId()));
+
+        // Then: one row per asked author with puzzles, so neither the idle user nor the other author shows up
+        assertThat(stats).singleElement().satisfies(authorStats -> {
+            assertThat(authorStats.getUserId()).isEqualTo(author.getId());
+            assertThat(authorStats.getPuzzleCount()).isEqualTo(2);
+            assertThat(authorStats.getLikeSum()).isEqualTo(13);
+            assertThat(authorStats.getDislikeSum()).isEqualTo(7);
+        });
     }
 
     @Test
@@ -456,4 +583,90 @@ class CommunityPuzzleRepositoryTest {
                 .map(CommunityPuzzle::getId)
                 .toList();
     }
+
+    // Far in the future, so rows other tests committed are all older than the trend week
+    private static final Instant TREND_NOW = Instant.parse("2100-01-10T00:00:00Z");
+    private static final Instant TREND_WEEK_START = TREND_NOW.minus(7, ChronoUnit.DAYS);
+    private static final long TREND_HALF_LIFE_SECONDS = Duration.ofDays(2).toSeconds();
+
+    @Test
+    void findTrendPuzzlesSince_WhenUnverifiedDislikedOrDeleted_ThenLeavesThemOut() {
+        // Given: all uploaded yesterday
+        UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
+        CommunityPuzzle liked = createdAgo(TestCommunityPuzzleBuilder.builder(user).withLikeCount(2), Duration.ofDays(1));
+        CommunityPuzzle even = createdAgo(TestCommunityPuzzleBuilder.builder(user)
+                .withLikeCount(1).withDislikeCount(1), Duration.ofDays(1));
+        createdAgo(TestCommunityPuzzleBuilder.builder(user).withLikeCount(10).withVerified(false), Duration.ofDays(1));
+        createdAgo(TestCommunityPuzzleBuilder.builder(user).withLikeCount(1).withDislikeCount(3), Duration.ofDays(1));
+        createdAgo(TestCommunityPuzzleBuilder.builder(user).withLikeCount(10)
+                .withStatus(Status.getStatus(Status.StatusName.DELETED)), Duration.ofDays(1));
+
+        // When
+        List<CommunityPuzzle> result = communityPuzzleRepository.findTrendPuzzlesSince(
+                TREND_WEEK_START, TREND_NOW, TREND_HALF_LIFE_SECONDS, 5);
+
+        // Then
+        assertThat(result).extracting("id").containsExactly(liked.getId(), even.getId());
+    }
+
+    @Test
+    void findTrendPuzzlesSince_WhenNewerPuzzleHasFewerLikes_ThenItCanRankAbove() {
+        // Given: 10 likes six days ago weigh 10 x 0.5^3 = 1.25, 3 likes a day ago weigh 3 x 0.5^0.5 = 2.1
+        UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
+        CommunityPuzzle older = createdAgo(TestCommunityPuzzleBuilder.builder(user).withLikeCount(10), Duration.ofDays(6));
+        CommunityPuzzle newer = createdAgo(TestCommunityPuzzleBuilder.builder(user).withLikeCount(3), Duration.ofDays(1));
+
+        // When
+        List<CommunityPuzzle> result = communityPuzzleRepository.findTrendPuzzlesSince(
+                TREND_WEEK_START, TREND_NOW, TREND_HALF_LIFE_SECONDS, 5);
+
+        // Then
+        assertThat(result).extracting("id").containsExactly(newer.getId(), older.getId());
+    }
+
+    @Test
+    void findTrendPuzzlesSince_WhenScoresTie_ThenMoreViewedThenNewerComesFirst() {
+        // Given: no votes, so views decide and then the later upload
+        UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
+        CommunityPuzzle first = createdAgo(TestCommunityPuzzleBuilder.builder(user).withView(10), Duration.ofDays(1));
+        CommunityPuzzle second = createdAgo(TestCommunityPuzzleBuilder.builder(user).withView(10), Duration.ofDays(1));
+        CommunityPuzzle mostViewed = createdAgo(TestCommunityPuzzleBuilder.builder(user).withView(50), Duration.ofDays(1));
+
+        // When
+        List<CommunityPuzzle> result = communityPuzzleRepository.findTrendPuzzlesSince(
+                TREND_WEEK_START, TREND_NOW, TREND_HALF_LIFE_SECONDS, 5);
+
+        // Then
+        assertThat(result).extracting("id").containsExactly(mostViewed.getId(), second.getId(), first.getId());
+    }
+
+    @Test
+    void findOlderTrendPuzzles_WhenWeekIsQuiet_ThenRanksOnlyEligiblePuzzlesFromBeforeIt() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
+        CommunityPuzzle eightDays = createdAgo(TestCommunityPuzzleBuilder.builder(user).withLikeCount(5), Duration.ofDays(8));
+        CommunityPuzzle tenDays = createdAgo(TestCommunityPuzzleBuilder.builder(user).withLikeCount(9), Duration.ofDays(10));
+        createdAgo(TestCommunityPuzzleBuilder.builder(user).withLikeCount(20).withVerified(false), Duration.ofDays(9));
+        createdAgo(TestCommunityPuzzleBuilder.builder(user).withLikeCount(20), Duration.ofDays(1));
+
+        // When
+        List<CommunityPuzzle> result = communityPuzzleRepository.findOlderTrendPuzzles(
+                TREND_WEEK_START, TREND_NOW, TREND_HALF_LIFE_SECONDS, 2);
+
+        // Then: 5 x 0.5^4 = 0.31 beats 9 x 0.5^5 = 0.28
+        assertThat(result).extracting("id").containsExactly(eightDays.getId(), tenDays.getId());
+    }
+
+    private CommunityPuzzle createdAgo(TestCommunityPuzzleBuilder builder, Duration age) {
+        CommunityPuzzle puzzle = builder.save(communityPuzzleRepository);
+        entityManager.flush();
+        // created_at is set on insert, so move it afterwards
+        entityManager.createNativeQuery("UPDATE community_puzzle SET created_at = :createdAt WHERE id = :id")
+                .setParameter("createdAt", TREND_NOW.minus(age))
+                .setParameter("id", puzzle.getId())
+                .executeUpdate();
+        entityManager.clear();
+        return puzzle;
+    }
+
 }

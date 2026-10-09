@@ -165,10 +165,11 @@ class AccountServiceTest {
         ChangePasswordRequest request = new ChangePasswordRequest(password, "newPassword123");
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
-        Long changedUserId = accountService.changePassword(user, request);
+        Long changedUserId = accountService.changePassword(user, "session-1", request);
 
         assertEquals(1L, changedUserId);
         assertTrue(new BCryptPasswordEncoder().matches(request.newPassword(), user.getPassword()));
+        verify(authService).revokeOtherSessions(1L, "session-1");
     }
 
     @Test
@@ -184,14 +185,15 @@ class AccountServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
         CustomException ex = assertThrows(CustomException.class,
-                () -> accountService.changePassword(user, request));
+                () -> accountService.changePassword(user, "session-1", request));
 
         assertEquals(ErrorCode.INVALID_PASSWORD, ex.getErrorCode());
         assertTrue(new BCryptPasswordEncoder().matches(password, user.getPassword()));
+        verify(authService, never()).revokeOtherSessions(anyLong(), anyString());
     }
 
     @Test
-    void resetPassword_ShouldChangePasswordAndDeleteRefreshToken_WhenTokenIsValid() {
+    void resetPassword_ShouldChangePasswordAndEndEverySession_WhenTokenIsValid() {
         UserEntity user = UserEntity.builder()
                 .id(1L)
                 .email(email)
@@ -207,7 +209,7 @@ class AccountServiceTest {
 
         assertEquals(1L, resetUserId);
         assertTrue(new BCryptPasswordEncoder().matches(request.newPassword(), user.getPassword()));
-        verify(authService).deleteRefreshToken(user);
+        verify(authService).revokeAllSessions(1L);
     }
 
     @Test

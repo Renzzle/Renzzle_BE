@@ -7,6 +7,7 @@ import com.renzzle.backend.global.security.AppKeyAuthenticationFilter;
 import com.renzzle.backend.global.security.CustomAccessDeniedHandler;
 import com.renzzle.backend.global.security.CustomAuthenticationEntryPoint;
 import com.renzzle.backend.global.security.JwtAuthenticationFilter;
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -51,6 +52,7 @@ public class SecurityConfig {
         List<RequestMatcher> permitAllRequestMatchers = Arrays.asList(
                 AntPathRequestMatcher.antMatcher("/admin"),  // Admin login page (excluded from JWT filter)
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/admin/login"),  // Admin login API (called without a token)
+                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/admin/logout"),  // Clears the admin cookie, so it must work with an expired token
                 AntPathRequestMatcher.antMatcher("/assets/**"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/favicon.ico"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/email"),
@@ -74,9 +76,9 @@ public class SecurityConfig {
                         sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(request -> request
+                        // The container forwards failed requests to /error without their login, so keep their status
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(permitAllRequestMatchers.toArray(new RequestMatcher[0])).permitAll()
-                        // Admin logout must always be accessible regardless of token state
-                        .requestMatchers(HttpMethod.GET, "/admin/logout").permitAll()
                         // Admin pages
                         .requestMatchers(HttpMethod.GET, "/admin/dashboard").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.GET, "/admin/pack-list").hasAuthority(ADMIN_PREFIX)

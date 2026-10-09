@@ -12,7 +12,12 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.util.Date;
+import java.util.Map;
 import static com.renzzle.backend.domain.auth.service.JwtProviderTest.JWT_TEST_PROPERTY;
 import static com.renzzle.backend.support.TestTime.FIXED_INSTANT;
 import static com.renzzle.backend.support.TestTime.FIXED_ZONE;
@@ -26,6 +31,7 @@ import static org.mockito.Mockito.when;
 class JwtProviderTest {
 
     public static final String JWT_TEST_PROPERTY = "spring.jwt.secret=ad3sf2sf98a7sd9f87a0ds98f70a98sd7f098asd70f98";
+    private static final String SESSION_ID = "session-1";
 
     @MockBean
     private Clock clock;
@@ -47,8 +53,8 @@ class JwtProviderTest {
 
         testUserId = 1L;
         testEmail = "test@example.com";
-        accessToken = jwtProvider.createAccessToken(testUserId);
-        refreshToken = jwtProvider.createRefreshToken(testUserId);
+        accessToken = jwtProvider.createAccessToken(testUserId, SESSION_ID);
+        refreshToken = jwtProvider.createRefreshToken(testUserId, SESSION_ID);
         authVerityToken = jwtProvider.createAuthVerityToken(testEmail);
 
         when(clock.instant()).thenReturn(FIXED_INSTANT.plusSeconds(1));
@@ -57,13 +63,13 @@ class JwtProviderTest {
     @Test
     void createAccessToken_ShouldReturnValidToken() {
         assertNotNull(accessToken);
-        assertNotEquals(accessToken, jwtProvider.createAccessToken(testUserId));
+        assertNotEquals(accessToken, jwtProvider.createAccessToken(testUserId, SESSION_ID));
     }
 
     @Test
     void createRefreshToken_ShouldReturnValidToken() {
         assertNotNull(refreshToken);
-        assertNotEquals(refreshToken, jwtProvider.createRefreshToken(testUserId));
+        assertNotEquals(refreshToken, jwtProvider.createRefreshToken(testUserId, SESSION_ID));
     }
 
     @Test
@@ -73,9 +79,54 @@ class JwtProviderTest {
     }
 
     @Test
-    void getUserId_ShouldReturnCorrectUserId() {
-        long extractedUserId = jwtProvider.getUserId(accessToken);
-        assertEquals(testUserId, extractedUserId);
+    void parseAccessToken_ShouldReturnUserAndSession() {
+        JwtProvider.TokenClaims claims = jwtProvider.parseAccessToken(accessToken);
+        assertEquals(testUserId, claims.userId());
+        assertEquals(SESSION_ID, claims.sessionId());
+    }
+
+    @Test
+    void parseRefreshToken_ShouldReturnUserAndSession() {
+        JwtProvider.TokenClaims claims = jwtProvider.parseRefreshToken(refreshToken);
+        assertEquals(testUserId, claims.userId());
+        assertEquals(SESSION_ID, claims.sessionId());
+    }
+
+    @Test
+    void parseAccessToken_WithAdminToken_ShouldHaveNoSession() {
+        JwtProvider.TokenClaims claims = jwtProvider.parseAccessToken(jwtProvider.createAdminAccessToken(testUserId));
+        assertEquals(testUserId, claims.userId());
+        assertNull(claims.sessionId());
+    }
+
+    @Test
+    void parseAccessToken_WithRefreshToken_ShouldBeRejected() {
+        CustomException exception = assertThrows(CustomException.class,
+                () -> jwtProvider.parseAccessToken(refreshToken));
+        assertEquals(ErrorCode.EXPIRED_JWT_TOKEN, exception.getErrorCode());
+    }
+
+    @Test
+    void parseRefreshToken_WithAccessToken_ShouldBeRejected() {
+        CustomException exception = assertThrows(CustomException.class,
+                () -> jwtProvider.parseRefreshToken(accessToken));
+        assertEquals(ErrorCode.EXPIRED_JWT_TOKEN, exception.getErrorCode());
+    }
+
+    @Test
+    void parseAccessToken_WithTokenFromBeforeTypes_ShouldBeRejected() {
+        // Signed with the same key, but issued before tokens carried a type
+        String secret = JWT_TEST_PROPERTY.substring(JWT_TEST_PROPERTY.indexOf('=') + 1);
+        String legacyToken = Jwts.builder()
+                .issuedAt(Date.from(FIXED_INSTANT))
+                .expiration(Date.from(FIXED_INSTANT.plusSeconds(3600)))
+                .claims().add(Map.of("userId", testUserId)).and()
+                .signWith(Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8)), Jwts.SIG.HS256)
+                .compact();
+
+        CustomException exception = assertThrows(CustomException.class,
+                () -> jwtProvider.parseAccessToken(legacyToken));
+        assertEquals(ErrorCode.EXPIRED_JWT_TOKEN, exception.getErrorCode());
     }
 
     @Test
@@ -89,7 +140,7 @@ class JwtProviderTest {
         String malformedToken = "this.is.not.a.valid.jwt";
 
         CustomException exception = assertThrows(CustomException.class, () -> {
-            jwtProvider.getUserId(malformedToken);
+            jwtProvider.parseAccessToken(malformedToken);
         });
 
         assertEquals(ErrorCode.MALFORMED_JWT_TOKEN, exception.getErrorCode());
@@ -98,7 +149,7 @@ class JwtProviderTest {
     @Test
     void parseToken_WithEmptyToken_ShouldThrowException() {
         CustomException exception = assertThrows(CustomException.class, () -> {
-            jwtProvider.getUserId("");
+            jwtProvider.parseAccessToken("");
         });
 
         assertEquals(ErrorCode.ILLEGAL_TOKEN, exception.getErrorCode());

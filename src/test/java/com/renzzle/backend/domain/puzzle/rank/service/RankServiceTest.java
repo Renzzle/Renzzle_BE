@@ -4,6 +4,8 @@ import com.renzzle.backend.domain.appinfo.service.AppInfoService;
 import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
+import com.renzzle.backend.domain.puzzle.community.dao.projection.AuthorStatsProjection;
+import com.renzzle.backend.domain.puzzle.community.dao.projection.SolvedCountProjection;
 import com.renzzle.backend.domain.puzzle.rank.api.request.RankResultRequest;
 import com.renzzle.backend.domain.puzzle.rank.api.response.*;
 import com.renzzle.backend.domain.puzzle.rank.dao.LatestRankPuzzleRepository;
@@ -16,6 +18,7 @@ import com.renzzle.backend.domain.puzzle.shared.util.RatingUtil;
 import com.renzzle.backend.domain.puzzle.training.dao.TrainingPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.user.dao.UserRepository;
+import com.renzzle.backend.domain.user.dao.projection.UserNicknameProjection;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.constant.ItemPrice;
 import com.renzzle.backend.global.common.domain.Status;
@@ -30,6 +33,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.DefaultTypedTuple;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -38,8 +42,10 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static com.renzzle.backend.global.common.constant.ItemPrice.RANK_REWARD;
+import static com.renzzle.backend.global.common.constant.StringConstant.DELETED_USER;
 import static com.renzzle.backend.support.TestTime.FIXED_INSTANT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -50,9 +56,9 @@ import static org.mockito.Mockito.*;
 class RankServiceTest {
     private RankService rankService;
     @Mock
-    private RedisTemplate<String, Object> redisRankingTemplate;
+    private StringRedisTemplate redisRankingTemplate;
     @Mock
-    private ZSetOperations<String, Object> zSetOperations;
+    private ZSetOperations<String, String> zSetOperations;
     @Mock
     private RedisTemplate<String, RankSessionData> redisSessionTemplate;
     @Mock
@@ -188,7 +194,7 @@ class RankServiceTest {
         when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(valueOperations.get("1")).thenReturn(null);
 
-        RankResultRequest request = new RankResultRequest(true);
+        RankResultRequest request = new RankResultRequest(true, null);
 
         // When
         CustomException ex = assertThrows(CustomException.class, () -> rankService.resultRankGame(user, request));
@@ -208,7 +214,7 @@ class RankServiceTest {
         when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(valueOperations.get("1")).thenReturn(session);
 
-        RankResultRequest request = new RankResultRequest(true);
+        RankResultRequest request = new RankResultRequest(true, null);
 
         // When
         CustomException ex = assertThrows(CustomException.class, () -> rankService.resultRankGame(user, request));
@@ -229,7 +235,7 @@ class RankServiceTest {
         when(valueOperations.get("1")).thenReturn(session);
         when(redisSessionTemplate.getExpire("1", TimeUnit.SECONDS)).thenReturn(0L); // or null
 
-        RankResultRequest request = new RankResultRequest(true);
+        RankResultRequest request = new RankResultRequest(true, null);
         // When
         CustomException ex = assertThrows(CustomException.class, () -> rankService.resultRankGame(user, request));
         // Then
@@ -250,7 +256,7 @@ class RankServiceTest {
         when(redisSessionTemplate.getExpire("1", TimeUnit.SECONDS)).thenReturn(60L);
         when(latestRankPuzzleRepository.findTopByUserOrderByIdDesc(user)).thenReturn(Optional.empty());
         // When
-        RankResultRequest request = new RankResultRequest(true);
+        RankResultRequest request = new RankResultRequest(true, null);
 
         CustomException ex = assertThrows(CustomException.class, () -> rankService.resultRankGame(user, request));
         // Then
@@ -298,7 +304,7 @@ class RankServiceTest {
         when(communityPuzzleRepository.findAvailableCommunityPuzzlesSortedByRating(user)).thenReturn(Collections.emptyList());
         when(clock.instant()).thenReturn(Instant.parse("2025-01-01T00:00:00Z"));
 
-        RankResultRequest request = new RankResultRequest(true);
+        RankResultRequest request = new RankResultRequest(true, null);
         RankResultResponse response = rankService.resultRankGame(user, request);
 
         // Then
@@ -306,7 +312,7 @@ class RankServiceTest {
         assertThat(response.winColor()).isEqualTo("BLACK");
 
         verify(redisSessionTemplate.opsForValue())
-                .set(eq("1"), any(RankSessionData.class), anyLong(), eq(TimeUnit.SECONDS));
+                .setIfPresent(eq("1"), any(RankSessionData.class), anyLong(), eq(TimeUnit.SECONDS));
     }
 
     @Test
@@ -347,7 +353,7 @@ class RankServiceTest {
         when(communityPuzzleRepository.findAvailableCommunityPuzzlesSortedByRating(user)).thenReturn(Collections.emptyList());
 
         // When
-        rankService.resultRankGame(user, new RankResultRequest(true));
+        rankService.resultRankGame(user, new RankResultRequest(true, null));
 
         // Then
         ArgumentCaptor<LatestRankPuzzle> assigned = ArgumentCaptor.forClass(LatestRankPuzzle.class);
@@ -393,7 +399,7 @@ class RankServiceTest {
         when(trainingPuzzleRepository.findRankAttemptCountById(7L)).thenReturn(Optional.of(0));
 
         // When
-        rankService.resultRankGame(user, new RankResultRequest(true));
+        rankService.resultRankGame(user, new RankResultRequest(true, null));
 
         // Then: evenly matched and never attempted, so K = 40 and expected = 0.5
         verify(trainingPuzzleRepository).applyRankResult(7L, -20.0, RatingUtil.MIN_RATING, RatingUtil.MAX_RATING);
@@ -407,7 +413,7 @@ class RankServiceTest {
         when(communityPuzzleRepository.findRankAttemptCountById(9L)).thenReturn(Optional.of(0));
 
         // When
-        rankService.resultRankGame(user, new RankResultRequest(false));
+        rankService.resultRankGame(user, new RankResultRequest(false, null));
 
         // Then: evenly matched and never attempted, so community K = 60 and expected = 0.5
         verify(communityPuzzleRepository).applyRankResult(9L, 30.0, RatingUtil.MIN_RATING, RatingUtil.MAX_RATING);
@@ -421,7 +427,7 @@ class RankServiceTest {
         when(trainingPuzzleRepository.findRankAttemptCountById(7L)).thenReturn(Optional.of(10));
 
         // When
-        rankService.resultRankGame(user, new RankResultRequest(false));
+        rankService.resultRankGame(user, new RankResultRequest(false, null));
 
         // Then: K is down to 20 after 10 results
         verify(trainingPuzzleRepository).applyRankResult(7L, 10.0, RatingUtil.MIN_RATING, RatingUtil.MAX_RATING);
@@ -433,7 +439,7 @@ class RankServiceTest {
         UserEntity user = givenAnsweredRound(null, null);
 
         // When
-        rankService.resultRankGame(user, new RankResultRequest(true));
+        rankService.resultRankGame(user, new RankResultRequest(true, null));
 
         // Then
         verify(trainingPuzzleRepository, never()).applyRankResult(anyLong(), anyDouble(), anyDouble(), anyDouble());
@@ -447,10 +453,87 @@ class RankServiceTest {
         when(communityPuzzleRepository.findRankAttemptCountById(9L)).thenReturn(Optional.empty());
 
         // When
-        rankService.resultRankGame(user, new RankResultRequest(false));
+        rankService.resultRankGame(user, new RankResultRequest(false, null));
 
         // Then
         verify(communityPuzzleRepository, never()).applyRankResult(anyLong(), anyDouble(), anyDouble(), anyDouble());
+    }
+
+    @Test
+    void resultRankGame_WhenBoardIsTheCurrentPuzzle_ThenAppliesTheResult() {
+        // Given
+        UserEntity user = givenAnsweredRound(PuzzleType.TRAINING, 7L);
+
+        // When
+        RankResultResponse response = rankService.resultRankGame(user, new RankResultRequest(true, "a1a2"));
+
+        // Then
+        assertThat(response.boardStatus()).isEqualTo("nextBoard");
+    }
+
+    @Test
+    void resultRankGame_WhenResentForThePuzzleJustAnswered_ThenReturnsTheCurrentPuzzleWithoutApplying() {
+        // Given: the answer to a1a2 went through, but its response with c1c2 never reached the app
+        UserEntity user = TestUserFactory.createTestUser("u1", 1000);
+        ReflectionTestUtils.setField(user, "id", 1L);
+        LatestRankPuzzle current = givenResendableRound(user);
+
+        // When: the app, still showing a1a2, sends a result again
+        RankResultResponse response = rankService.resultRankGame(user, new RankResultRequest(false, "a1a2"));
+
+        // Then
+        assertThat(response.boardStatus()).isEqualTo("c1c2");
+        assertThat(response.winColor()).isEqualTo("WHITE");
+        assertThat(current.getIsSolved()).isFalse();
+        assertThat(user.getRating()).isEqualTo(1000.0);
+        verify(latestRankPuzzleRepository, never()).save(any());
+    }
+
+    @Test
+    void resultRankGame_WhenBoardMatchesNeitherRecentPuzzle_ThenRejectsWithoutApplying() {
+        // Given
+        UserEntity user = TestUserFactory.createTestUser("u1", 1000);
+        ReflectionTestUtils.setField(user, "id", 1L);
+        givenResendableRound(user);
+
+        // When
+        CustomException ex = assertThrows(CustomException.class,
+                () -> rankService.resultRankGame(user, new RankResultRequest(true, "z9z9")));
+
+        // Then
+        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.RANK_PUZZLE_MISMATCH);
+        verify(latestRankPuzzleRepository, never()).save(any());
+    }
+
+    // a1a2 already answered, c1c2 handed out next; returns the c1c2 assignment
+    private LatestRankPuzzle givenResendableRound(UserEntity user) {
+        RankSessionData session = new RankSessionData();
+        session.setStarted(true);
+
+        LatestRankPuzzle answered = LatestRankPuzzle.builder()
+                .id(10L)
+                .user(user)
+                .boardStatus("a1a2")
+                .isSolved(true)
+                .winColor(WinColor.getWinColor("BLACK"))
+                .assignedAt(clock.instant())
+                .build();
+        LatestRankPuzzle current = LatestRankPuzzle.builder()
+                .id(11L)
+                .user(user)
+                .boardStatus("c1c2")
+                .isSolved(false)
+                .winColor(WinColor.getWinColor("WHITE"))
+                .assignedAt(clock.instant())
+                .build();
+
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
+        when(valueOperations.get("1")).thenReturn(session);
+        when(redisSessionTemplate.getExpire("1", TimeUnit.SECONDS)).thenReturn(120L);
+        when(latestRankPuzzleRepository.findTopByUserOrderByIdDesc(user)).thenReturn(Optional.of(current));
+        when(latestRankPuzzleRepository.findTopByUserAndIdLessThanOrderByIdDesc(user, 11L))
+                .thenReturn(Optional.of(answered));
+        return current;
     }
 
     // A started game whose current puzzle (mmr 1000 vs puzzle 1000) is about to be answered
@@ -501,6 +584,7 @@ class RankServiceTest {
         UserEntity user = TestUserFactory.createTestUser("user1", 1500);
         ReflectionTestUtils.setField(user, "id", 1L);
 
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(valueOperations.get("1")).thenReturn(null); // no session
         // When
         CustomException ex = assertThrows(CustomException.class, () ->
@@ -519,6 +603,7 @@ class RankServiceTest {
         RankSessionData session = new RankSessionData();
         session.setStarted(false); // session that has not been started
 
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(valueOperations.get("2")).thenReturn(session);
         // When
         CustomException ex = assertThrows(CustomException.class, () ->
@@ -538,6 +623,8 @@ class RankServiceTest {
         session.setStarted(true);
 
         when(valueOperations.get("3")).thenReturn(session);
+        when(redisSessionTemplate.getExpire("3", TimeUnit.SECONDS)).thenReturn(60L);
+        when(redisSessionTemplate.delete("3")).thenReturn(true);
         when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(latestRankPuzzleRepository.findAllByUser(user))
                 .thenReturn(List.of(
@@ -553,6 +640,30 @@ class RankServiceTest {
     }
 
     @Test
+    void endRankGame_WhenSessionAlreadyClaimedByAnotherEnd_ThenThrowsWithoutReward() {
+        // Given: a repeated end read the session, but the first end deleted it first
+        UserEntity user = TestUserFactory.createTestUser("user3", 1600);
+        ReflectionTestUtils.setField(user, "id", 3L);
+        int currencyBefore = user.getCurrency();
+
+        RankSessionData session = new RankSessionData();
+        session.setStarted(true);
+
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
+        when(valueOperations.get("3")).thenReturn(session);
+        when(redisSessionTemplate.getExpire("3", TimeUnit.SECONDS)).thenReturn(60L);
+        when(redisSessionTemplate.delete("3")).thenReturn(false);
+
+        // When
+        CustomException ex = assertThrows(CustomException.class, () -> rankService.endRankGame(user));
+
+        // Then
+        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.EMPTY_SESSION_DATA);
+        assertThat(user.getCurrency()).isEqualTo(currencyBefore);
+        verify(latestRankPuzzleRepository, never()).findAllByUser(any());
+    }
+
+    @Test
     void endRankGame_WhenGameEnds_ThenLeavesLastPuzzleRatingAlone() {
         // Given: the puzzle still on screen ran out of time, which says nothing about how hard it is
         UserEntity user = TestUserFactory.createTestUser("user3", 1600);
@@ -562,6 +673,8 @@ class RankServiceTest {
         session.setStarted(true);
 
         when(valueOperations.get("3")).thenReturn(session);
+        when(redisSessionTemplate.getExpire("3", TimeUnit.SECONDS)).thenReturn(60L);
+        when(redisSessionTemplate.delete("3")).thenReturn(true);
         when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(latestRankPuzzleRepository.findAllByUser(user))
                 .thenReturn(List.of(LatestRankPuzzle.builder()
@@ -637,43 +750,103 @@ class RankServiceTest {
         assertThat(archives.get(1).winColor()).isEqualTo("BLACK");
     }
 
+    @Test
+    void getRankArchive_WhenGameInProgress_ThenHidesThePuzzleBeingSolved() {
+        // Given: one puzzle answered, the next one still on the board
+        UserEntity user = TestUserFactory.createTestUser("tester", 1500.0);
+        ReflectionTestUtils.setField(user, "id", 1L);
+
+        LatestRankPuzzle answered = LatestRankPuzzle.builder()
+                .id(10L)
+                .user(user)
+                .boardStatus("a1a2")
+                .answer("a3")
+                .isSolved(true)
+                .winColor(WinColor.getWinColor("WHITE"))
+                .assignedAt(FIXED_INSTANT)
+                .build();
+        LatestRankPuzzle current = LatestRankPuzzle.builder()
+                .id(11L)
+                .user(user)
+                .boardStatus("b1b2")
+                .answer("b3")
+                .isSolved(false)
+                .winColor(WinColor.getWinColor("BLACK"))
+                .assignedAt(FIXED_INSTANT.plusSeconds(10))
+                .build();
+
+        RankSessionData session = new RankSessionData();
+        session.setStarted(true);
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(latestRankPuzzleRepository.findAllByUserOrderByAssignedAtAsc(user))
+                .thenReturn(List.of(answered, current));
+        when(valueOperations.get("1")).thenReturn(session);
+
+        // When
+        List<RankArchive> archives = rankService.getRankArchive(user);
+
+        // Then
+        assertThat(archives).extracting(RankArchive::answer).containsExactly("a3");
+    }
+
     // getRanking test
 
     @Test
     void getRanking_WhenUsersHaveSameRating_ThenAssignsSameRank() {
         // Given
-        UserEntity user = TestUserFactory.createTestUser("me", 1300.0);
+        UserEntity me = rankedUser(3L, "me");
 
-        UserRatingRankInfo info1 = UserRatingRankInfo.builder().nickname("user1").rating(1500).rank(0).build();
-        UserRatingRankInfo info2 = UserRatingRankInfo.builder().nickname("user2").rating(1500).rank(0).build();
-        UserRatingRankInfo myInfo = UserRatingRankInfo.builder().nickname("me").rating(1300).rank(0).build();
+        Set<ZSetOperations.TypedTuple<String>> zset = new LinkedHashSet<>();
+        zset.add(new DefaultTypedTuple<>("1", 1500.0));
+        zset.add(new DefaultTypedTuple<>("2", 1500.0));
+        zset.add(new DefaultTypedTuple<>("3", 1300.0));
 
-        Set<ZSetOperations.TypedTuple<Object>> zset = new LinkedHashSet<>();
-        zset.add(new DefaultTypedTuple<>(info1, 1500.0));
-        zset.add(new DefaultTypedTuple<>(info2, 1500.0));
-        zset.add(new DefaultTypedTuple<>(myInfo, 1300.0));
-
-        when(zSetOperations.reverseRangeWithScores("user:ranking", 0, 99)).thenReturn(zset);
-        when(zSetOperations.reverseRangeWithScores("user:ranking", 0, -1)).thenReturn(zset);
         when(redisRankingTemplate.opsForZSet()).thenReturn(zSetOperations);
+        when(zSetOperations.reverseRangeWithScores("ranking:rating", 0, 99)).thenReturn(zset);
+        when(userRepository.findNicknamesByIdIn(List.of(1L, 2L, 3L)))
+                .thenReturn(List.of(nickname(1L, "user1"), nickname(2L, "user2"), nickname(3L, "me")));
+        when(zSetOperations.score("ranking:rating", "3")).thenReturn(1300.0);
+        // Only scores strictly above mine count
+        when(zSetOperations.count("ranking:rating", Math.nextUp(1300.0), Double.POSITIVE_INFINITY)).thenReturn(2L);
 
         // When
-        GetRatingRankingResponse response = rankService.getRatingRanking(user);
+        GetRatingRankingResponse response = rankService.getRatingRanking(me);
 
         // Then
-        assertThat(response.top100()).hasSize(3);
-        assertThat(response.top100().get(0).rank()).isEqualTo(1);
-        assertThat(response.top100().get(1).rank()).isEqualTo(1);
-        assertThat(response.top100().get(2).rank()).isEqualTo(3);
+        assertThat(response.top100()).extracting(UserRatingRankInfo::rank).containsExactly(1, 1, 3);
         assertThat(response.myRatingRank().rank()).isEqualTo(3);
+    }
+
+    @Test
+    void getRatingRanking_WhenRenamedOrWithdrawnSinceRefresh_ThenShowsCurrentNicknames() {
+        // Given: built before user 1 changed nickname and user 2 withdrew
+        UserEntity me = rankedUser(1L, "renamed");
+
+        Set<ZSetOperations.TypedTuple<String>> zset = new LinkedHashSet<>();
+        zset.add(new DefaultTypedTuple<>("1", 1600.0));
+        zset.add(new DefaultTypedTuple<>("2", 1500.0));
+
+        when(redisRankingTemplate.opsForZSet()).thenReturn(zSetOperations);
+        when(zSetOperations.reverseRangeWithScores("ranking:rating", 0, 99)).thenReturn(zset);
+        when(userRepository.findNicknamesByIdIn(List.of(1L, 2L))).thenReturn(List.of(nickname(1L, "renamed")));
+        when(zSetOperations.score("ranking:rating", "1")).thenReturn(1600.0);
+        when(zSetOperations.count("ranking:rating", Math.nextUp(1600.0), Double.POSITIVE_INFINITY)).thenReturn(0L);
+
+        // When
+        GetRatingRankingResponse response = rankService.getRatingRanking(me);
+
+        // Then: found by id, so the new nickname still has its rank
+        assertThat(response.top100()).extracting(UserRatingRankInfo::nickname).containsExactly("renamed", DELETED_USER);
+        assertThat(response.myRatingRank().rank()).isEqualTo(1);
     }
 
     // updateRankingCache test
     @Test
     void updateRankingCache_WhenCalled_ThenStoresTopUsersInRedis() {
         // Given
-        UserEntity user1 = TestUserFactory.createTestUser("u1", 1400);
-        UserEntity user2 = TestUserFactory.createTestUser("u2", 1600);
+        UserEntity user1 = TestUserEntityBuilder.builder().withId(1L).withRating(1400).build();
+        UserEntity user2 = TestUserEntityBuilder.builder().withId(2L).withRating(1600).build();
         List<UserEntity> activeUsers = List.of(user1, user2);
 
         when(latestRankPuzzleRepository.findActiveUsersWithinPeriod(any())).thenReturn(activeUsers);
@@ -683,46 +856,97 @@ class RankServiceTest {
         rankService.updateRankingCache();
 
         // Then
-        verify(redisRankingTemplate).delete("user:ranking");
-        verify(latestRankPuzzleRepository).findActiveUsersWithinPeriod(any());
+        verify(redisRankingTemplate).delete("ranking:rating:tmp");
+        assertThat(storedScores("ranking:rating:tmp")).isEqualTo(Map.of("1", 1400.0, "2", 1600.0));
+    }
 
-        verify(zSetOperations, times(2)).add(eq("user:ranking"), any(UserRatingRankInfo.class), anyDouble());
+    @Test
+    void updateRankingCache_WhenRebuilt_ThenSwapsTheNewRankingInWithoutClearingIt() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder().withId(1L).withRating(1400).build();
+        when(latestRankPuzzleRepository.findActiveUsersWithinPeriod(any())).thenReturn(List.of(user));
+        when(communityPuzzleRepository.findUsersWhoCreatedPuzzlesSince(any())).thenReturn(List.of(user));
+        when(redisRankingTemplate.opsForZSet()).thenReturn(zSetOperations);
 
-        verify(zSetOperations).add(eq("user:ranking"),
-                argThat(info -> ((UserRatingRankInfo) info).nickname().equals("u1")),
-                eq(1400.0));
-        verify(zSetOperations).add(eq("user:ranking"),
-                argThat(info -> ((UserRatingRankInfo) info).nickname().equals("u2")),
-                eq(1600.0));
+        // When
+        rankService.updateRankingCache();
+
+        // Then: readers keep seeing the old ranking until the rename
+        verify(redisRankingTemplate).rename("ranking:rating:tmp", "ranking:rating");
+        verify(redisRankingTemplate).rename("ranking:puzzler:tmp", "ranking:puzzler");
+        verify(redisRankingTemplate, never()).delete("ranking:rating");
+        verify(redisRankingTemplate, never()).delete("ranking:puzzler");
+    }
+
+    @Test
+    void removeFromRankings_WhenCalled_ThenRemovesTheUserFromBothRankings() {
+        // Given
+        when(redisRankingTemplate.opsForZSet()).thenReturn(zSetOperations);
+
+        // When: no transaction is active, so it runs at once
+        rankService.removeFromRankings(1L);
+
+        // Then
+        verify(zSetOperations).remove("ranking:rating", "1");
+        verify(zSetOperations).remove("ranking:puzzler", "1");
+    }
+
+    @Test
+    void updateRankingCache_WhenNoUserIsActive_ThenClearsTheRanking() {
+        // When
+        rankService.updateRankingCache();
+
+        // Then: nothing was written to the temporary keys, so there is nothing to rename
+        verify(redisRankingTemplate).delete("ranking:rating");
+        verify(redisRankingTemplate).delete("ranking:puzzler");
+        verify(redisRankingTemplate, never()).rename(anyString(), anyString());
     }
     @Test
     void getPuzzlerRanking_WhenUsersHaveSameScore_ThenAssignsSameRank() {
         // Given
-        UserEntity me = TestUserFactory.createTestUser("me", 0.0);
+        UserEntity me = rankedUser(3L, "me");
 
-        UserPuzzlerRankInfo info1 = UserPuzzlerRankInfo.builder().nickname("user1").score(1500).rank(0).build();
-        UserPuzzlerRankInfo info2 = UserPuzzlerRankInfo.builder().nickname("user2").score(1500).rank(0).build();
-        UserPuzzlerRankInfo myInfo = UserPuzzlerRankInfo.builder().nickname("me").score(1300).rank(0).build();
-
-        Set<ZSetOperations.TypedTuple<Object>> zset = new LinkedHashSet<>();
-        zset.add(new DefaultTypedTuple<>(info1, 1500.0));
-        zset.add(new DefaultTypedTuple<>(info2, 1500.0));
-        zset.add(new DefaultTypedTuple<>(myInfo, 1300.0));
+        Set<ZSetOperations.TypedTuple<String>> zset = new LinkedHashSet<>();
+        zset.add(new DefaultTypedTuple<>("1", 1500.0));
+        zset.add(new DefaultTypedTuple<>("2", 1500.0));
+        zset.add(new DefaultTypedTuple<>("3", 1300.0));
 
         when(redisRankingTemplate.opsForZSet()).thenReturn(zSetOperations);
-        when(zSetOperations.reverseRangeWithScores("user:puzzler:ranking", 0, 99)).thenReturn(zset);
-        when(zSetOperations.reverseRangeWithScores("user:puzzler:ranking", 0, -1)).thenReturn(zset);
+        when(zSetOperations.reverseRangeWithScores("ranking:puzzler", 0, 99)).thenReturn(zset);
+        when(userRepository.findNicknamesByIdIn(List.of(1L, 2L, 3L)))
+                .thenReturn(List.of(nickname(1L, "user1"), nickname(2L, "user2"), nickname(3L, "me")));
+        when(zSetOperations.score("ranking:puzzler", "3")).thenReturn(1300.0);
+        when(zSetOperations.count("ranking:puzzler", Math.nextUp(1300.0), Double.POSITIVE_INFINITY)).thenReturn(2L);
 
         // When
         GetPuzzlerRankingResponse response = rankService.getPuzzlerRanking(me);
 
         // Then
-        assertThat(response.top100()).hasSize(3);
-        assertThat(response.top100().get(0).rank()).isEqualTo(1);
-        assertThat(response.top100().get(1).rank()).isEqualTo(1);
-        assertThat(response.top100().get(2).rank()).isEqualTo(3);
+        assertThat(response.top100()).extracting(UserPuzzlerRankInfo::rank).containsExactly(1, 1, 3);
         assertThat(response.myPuzzlerRank().rank()).isEqualTo(3);
         assertThat(response.myPuzzlerRank().nickname()).isEqualTo("me");
+    }
+
+    @Test
+    void getPuzzlerRanking_WhenUserIsOutsideTop100_ThenStillReturnsTheirScore() {
+        // Given: the top 100 doesn't reach the user, but the full ranking does
+        UserEntity me = rankedUser(2L, "me");
+
+        Set<ZSetOperations.TypedTuple<String>> top100 = new LinkedHashSet<>();
+        top100.add(new DefaultTypedTuple<>("1", 1500.0));
+
+        when(redisRankingTemplate.opsForZSet()).thenReturn(zSetOperations);
+        when(zSetOperations.reverseRangeWithScores("ranking:puzzler", 0, 99)).thenReturn(top100);
+        when(userRepository.findNicknamesByIdIn(List.of(1L))).thenReturn(List.of(nickname(1L, "top")));
+        when(zSetOperations.score("ranking:puzzler", "2")).thenReturn(700.0);
+        when(zSetOperations.count("ranking:puzzler", Math.nextUp(700.0), Double.POSITIVE_INFINITY)).thenReturn(1L);
+
+        // When
+        GetPuzzlerRankingResponse response = rankService.getPuzzlerRanking(me);
+
+        // Then
+        assertThat(response.myPuzzlerRank().rank()).isEqualTo(2);
+        assertThat(response.myPuzzlerRank().score()).isEqualTo(700.0);
     }
 
     @Test
@@ -746,27 +970,20 @@ class RankServiceTest {
         when(communityPuzzleRepository.findUsersWhoCreatedPuzzlesSince(any())).thenReturn(creators);
         when(userCommunityPuzzleRepository.findUsersWhoSolvedPuzzlesSince(any())).thenReturn(solvers);
 
-        // Mocking for calculating the user's activity score
-        when(communityPuzzleRepository.countByAuthor(anyLong())).thenReturn(1L); // number of puzzles created
-        when(communityPuzzleRepository.sumLikesByUser(anyLong())).thenReturn(10);
-        when(communityPuzzleRepository.sumDislikesByUser(anyLong())).thenReturn(2);
-        when(userCommunityPuzzleRepository.countSolvedByUser(anyLong())).thenReturn(3L); // number of puzzles solved
+        // Both users' stats come from one grouped query each: 3 solved, 1 created, 10 likes, 2 dislikes
+        when(userCommunityPuzzleRepository.countSolvedByUserIds(Set.of(1L, 2L)))
+                .thenReturn(List.of(solvedCount(1L, 3), solvedCount(2L, 3)));
+        when(communityPuzzleRepository.sumAuthorStatsByUserIds(Set.of(1L, 2L)))
+                .thenReturn(List.of(authorStats(1L, 1, 10, 2), authorStats(2L, 1, 10, 2)));
 
         when(redisRankingTemplate.opsForZSet()).thenReturn(zSetOperations);
 
         // When
         rankService.updateRankingCache();
 
-        // Then
-        verify(redisRankingTemplate).delete("user:puzzler:ranking");
-
-        verify(zSetOperations, times(2)).add(eq("user:puzzler:ranking"), any(UserPuzzlerRankInfo.class), anyDouble());
-
-        verify(zSetOperations).add(eq("user:puzzler:ranking"),
-                argThat(info -> ((UserPuzzlerRankInfo) info).nickname().equals("user1")), anyDouble());
-
-        verify(zSetOperations).add(eq("user:puzzler:ranking"),
-                argThat(info -> ((UserPuzzlerRankInfo) info).nickname().equals("user2")), anyDouble());
+        // Then: floor(100 * ln(4 * 2^2 * 9^3 + 1))
+        verify(redisRankingTemplate).delete("ranking:puzzler:tmp");
+        assertThat(storedScores("ranking:puzzler:tmp")).isEqualTo(Map.of("1", 936.0, "2", 936.0));
     }
 
 
@@ -794,18 +1011,11 @@ class RankServiceTest {
         when(communityPuzzleRepository.findUsersWhoCreatedPuzzlesSince(any())).thenReturn(creators);
         when(userCommunityPuzzleRepository.findUsersWhoSolvedPuzzlesSince(any())).thenReturn(solvers);
 
-        // Set up activity metrics
-        when(communityPuzzleRepository.countByAuthor(1L)).thenReturn(2L);
-        when(communityPuzzleRepository.countByAuthor(2L)).thenReturn(2L);
-
-        when(userCommunityPuzzleRepository.countSolvedByUser(1L)).thenReturn(1L);
-        when(userCommunityPuzzleRepository.countSolvedByUser(2L)).thenReturn(0L);
-
-        when(communityPuzzleRepository.sumLikesByUser(1L)).thenReturn(10);
-        when(communityPuzzleRepository.sumDislikesByUser(1L)).thenReturn(3);
-
-        when(communityPuzzleRepository.sumLikesByUser(2L)).thenReturn(10);
-        when(communityPuzzleRepository.sumDislikesByUser(2L)).thenReturn(3);
+        // Set up activity metrics; user2 solved nothing, so the grouped count leaves them out
+        when(userCommunityPuzzleRepository.countSolvedByUserIds(Set.of(1L, 2L)))
+                .thenReturn(List.of(solvedCount(1L, 1)));
+        when(communityPuzzleRepository.sumAuthorStatsByUserIds(Set.of(1L, 2L)))
+                .thenReturn(List.of(authorStats(1L, 2, 10, 3), authorStats(2L, 2, 10, 3)));
 
         when(redisRankingTemplate.opsForZSet()).thenReturn(zSetOperations);
 
@@ -813,18 +1023,76 @@ class RankServiceTest {
         rankService.updateRankingCache();
 
         // Then
-        ArgumentCaptor<UserPuzzlerRankInfo> captor = ArgumentCaptor.forClass(UserPuzzlerRankInfo.class);
+        Map<String, Double> scores = storedScores("ranking:puzzler:tmp");
+        assertThat(scores.get("1")).isGreaterThan(scores.get("2"));
+    }
 
-        verify(zSetOperations, times(2)).add(eq("user:puzzler:ranking"), captor.capture(), anyDouble());
+    private static UserEntity rankedUser(Long id, String nickname) {
+        return TestUserEntityBuilder.builder()
+                .withId(id)
+                .withNickname(nickname)
+                .withStatus(Status.getDefaultStatus())
+                .build();
+    }
 
-        List<UserPuzzlerRankInfo> captured = captor.getAllValues();
+    private static SolvedCountProjection solvedCount(Long userId, long solved) {
+        return new SolvedCountProjection() {
+            @Override
+            public Long getUserId() {
+                return userId;
+            }
 
-        // Higher score first
-        UserPuzzlerRankInfo first = captured.get(0);
-        UserPuzzlerRankInfo second = captured.get(1);
+            @Override
+            public long getSolvedCount() {
+                return solved;
+            }
+        };
+    }
 
-        assertThat(first.nickname()).isEqualTo("user1");
-        assertThat(second.nickname()).isEqualTo("user2");
+    private static AuthorStatsProjection authorStats(Long userId, long puzzles, long likes, long dislikes) {
+        return new AuthorStatsProjection() {
+            @Override
+            public Long getUserId() {
+                return userId;
+            }
+
+            @Override
+            public long getPuzzleCount() {
+                return puzzles;
+            }
+
+            @Override
+            public long getLikeSum() {
+                return likes;
+            }
+
+            @Override
+            public long getDislikeSum() {
+                return dislikes;
+            }
+        };
+    }
+
+    private static UserNicknameProjection nickname(Long id, String nickname) {
+        return new UserNicknameProjection() {
+            @Override
+            public Long getId() {
+                return id;
+            }
+
+            @Override
+            public String getNickname() {
+                return nickname;
+            }
+        };
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Double> storedScores(String key) {
+        ArgumentCaptor<Set<ZSetOperations.TypedTuple<String>>> captor = ArgumentCaptor.forClass(Set.class);
+        verify(zSetOperations).add(eq(key), captor.capture());
+        return captor.getValue().stream()
+                .collect(Collectors.toMap(ZSetOperations.TypedTuple::getValue, ZSetOperations.TypedTuple::getScore));
     }
 
     // getMyRating Test

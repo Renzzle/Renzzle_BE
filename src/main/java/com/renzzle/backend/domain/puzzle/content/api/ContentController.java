@@ -32,7 +32,7 @@ public class ContentController {
         return ApiUtils.success(response);
     }
 
-    @Operation(summary = "Get Trend Puzzles", description = "Get 5 Trend Puzzles")
+    @Operation(summary = "Get Trend Puzzles", description = "Get up to 5 trend puzzles; fewer when not enough qualify")
     @GetMapping("/trend")
     public ApiResponse<GetTrendPuzzlesResponse> getTrendPuzzles(
             @AuthenticationPrincipal UserDetailsImpl user

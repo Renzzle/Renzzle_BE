@@ -15,6 +15,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -58,6 +59,39 @@ class UserControllerTest {
 
         // check if userService.getUser() is called
         Mockito.verify(userService).getUserResponse(userEntity);
+    }
+
+    @Test
+    void getUserLikedPuzzles_WhenSizeOutOfRange_ThenRejectsWithoutQuerying() throws Exception {
+        UserEntity userEntity = authenticate();
+
+        mockMvc.perform(get("/api/user/like").param("size", "0"))
+                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/user/puzzle").param("size", "101"))
+                .andExpect(status().isBadRequest());
+
+        Mockito.verify(userService, Mockito.never()).getUserLikedPuzzleList(Mockito.any(), Mockito.any(), Mockito.anyInt());
+        Mockito.verify(userService, Mockito.never()).getUserPuzzleList(Mockito.any(), Mockito.any(), Mockito.anyInt());
+    }
+
+    @Test
+    void getUserPuzzles_WhenSizeOmitted_ThenUsesDefaultSize() throws Exception {
+        UserEntity userEntity = authenticate();
+        Mockito.when(userService.getUserPuzzleList(userEntity, 7L, 10)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/user/puzzle").param("id", "7"))
+                .andExpect(status().isOk());
+
+        Mockito.verify(userService).getUserPuzzleList(userEntity, 7L, 10);
+    }
+
+    private UserEntity authenticate() {
+        UserEntity userEntity = UserEntity.builder().id(1L).build();
+        UserDetailsImpl userDetails = new UserDetailsImpl(userEntity, "", new ArrayList<>());
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities())
+        );
+        return userEntity;
     }
 
 }
