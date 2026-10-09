@@ -15,7 +15,7 @@
       <span class="user-info" th:if="${userEmail}" th:text="${userEmail}"></span>
     </div>
     <div class="header-actions">
-      <a href="/puzzle-cache" class="btn" data-i18n="common.responseEntryList">AI Response List</a>
+      <a href="/admin/puzzle-cache" class="btn" data-i18n="common.responseEntryList">AI Response List</a>
       <th:block th:replace="~{admin/fragments :: languageSelect}"></th:block>
       <a href="/admin/logout" class="btn" data-i18n="common.logout">Log out</a>
     </div>
@@ -30,7 +30,7 @@
         <h2 data-i18n="cacheTraining.heading">Training AI Responses</h2>
         <p data-i18n="cacheTraining.description">Choose a puzzle from this pack.</p>
       </div>
-      <a href="/puzzle-cache" class="btn" data-i18n="common.backToList">Back to List</a>
+      <a href="/admin/puzzle-cache" class="btn" data-i18n="common.backToList">Back to List</a>
     </div>
 
     <section class="section">
@@ -161,7 +161,7 @@
       const puzzleNumber = getPuzzleNumber(pz, idx);
       const boardStatus = pz['boardStatus'] || '-';
       const winColor = pz['winColor'] || '-';
-      const href = '/puzzle-cache/board?puzzleType=TRAINING&packId=' + encodeURIComponent(packId) + '&puzzleId=' + encodeURIComponent(puzzleIdValue);
+      const href = '/admin/puzzle-cache/board?puzzleType=TRAINING&packId=' + encodeURIComponent(packId) + '&puzzleId=' + encodeURIComponent(puzzleIdValue);
 
       const card = document.createElement('a');
       card.href = href;
@@ -217,7 +217,7 @@
         const data = await res.json();
         if (!data.isSuccess) {
           adminToast(adminT('packDetail.failedLoadPack'), 'error');
-          globalThis.location.href = '/puzzle-cache';
+          globalThis.location.href = '/admin/puzzle-cache';
           return;
         }
         renderPackInfo(data.response);

@@ -112,7 +112,7 @@ class AdminTemplateRenderTest {
         assertThat(navAnchor(html, "/admin/notices")).contains("class=\"active\"");
         assertThat(navAnchor(html, "/admin/pack-list")).doesNotContain("active");
         assertThat(navAnchor(html, "/admin/community-puzzles")).doesNotContain("active");
-        assertThat(navAnchor(html, "/puzzle-cache")).doesNotContain("active");
+        assertThat(navAnchor(html, "/admin/puzzle-cache")).doesNotContain("active");
     }
 
     @Test
@@ -128,7 +128,7 @@ class AdminTemplateRenderTest {
     void communityAndCachePages_MarkTheirOwnTabActive() {
         assertThat(navAnchor(render("admin/community-puzzles"), "/admin/community-puzzles")).contains("class=\"active\"");
         for (String template : new String[]{"admin/puzzle-cache", "admin/puzzle-cache-board", "admin/puzzle-cache-training-pack"}) {
-            assertThat(navAnchor(render(template), "/puzzle-cache")).as(template).contains("class=\"active\"");
+            assertThat(navAnchor(render(template), "/admin/puzzle-cache")).as(template).contains("class=\"active\"");
         }
     }
 

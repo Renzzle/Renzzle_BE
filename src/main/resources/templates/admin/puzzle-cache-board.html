@@ -15,8 +15,8 @@
       <span class="user-info" th:if="${userEmail}" th:text="${userEmail}"></span>
     </div>
     <div class="header-actions">
-      <a th:if="${puzzleType == 'TRAINING' and packId != null}" th:href="@{/puzzle-cache/training-pack(packId=${packId})}" class="btn" data-i18n="common.responseEntryList">AI Response List</a>
-      <a th:unless="${puzzleType == 'TRAINING' and packId != null}" th:href="@{/puzzle-cache}" class="btn" data-i18n="common.responseEntryList">AI Response List</a>
+      <a th:if="${puzzleType == 'TRAINING' and packId != null}" th:href="@{/admin/puzzle-cache/training-pack(packId=${packId})}" class="btn" data-i18n="common.responseEntryList">AI Response List</a>
+      <a th:unless="${puzzleType == 'TRAINING' and packId != null}" th:href="@{/admin/puzzle-cache}" class="btn" data-i18n="common.responseEntryList">AI Response List</a>
       <th:block th:replace="~{admin/fragments :: languageSelect}"></th:block>
       <a href="/admin/logout" class="btn" data-i18n="common.logout">Log out</a>
     </div>
@@ -30,8 +30,8 @@
       <div>
         <h2 data-i18n="cacheBoard.heading">AI Response Board</h2>
       </div>
-      <a th:if="${puzzleType == 'TRAINING' and packId != null}" th:href="@{/puzzle-cache/training-pack(packId=${packId})}" class="btn" data-i18n="common.backToList">Back to List</a>
-      <a th:unless="${puzzleType == 'TRAINING' and packId != null}" th:href="@{/puzzle-cache}" class="btn" data-i18n="common.backToList">Back to List</a>
+      <a th:if="${puzzleType == 'TRAINING' and packId != null}" th:href="@{/admin/puzzle-cache/training-pack(packId=${packId})}" class="btn" data-i18n="common.backToList">Back to List</a>
+      <a th:unless="${puzzleType == 'TRAINING' and packId != null}" th:href="@{/admin/puzzle-cache}" class="btn" data-i18n="common.backToList">Back to List</a>
     </div>
 
   <section class="section">
@@ -600,7 +600,7 @@
         const data = await res.json();
         if (!data.isSuccess) {
           alert(adminT('puzzleForm.failedLoadPuzzle'));
-          globalThis.location.href = '/puzzle-cache';
+          globalThis.location.href = '/admin/puzzle-cache';
           return;
         }
 
