@@ -188,7 +188,7 @@ class RankServiceTest {
         when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(valueOperations.get("1")).thenReturn(null);
 
-        RankResultRequest request = new RankResultRequest(true);
+        RankResultRequest request = new RankResultRequest(true, null);
 
         // When
         CustomException ex = assertThrows(CustomException.class, () -> rankService.resultRankGame(user, request));
@@ -208,7 +208,7 @@ class RankServiceTest {
         when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(valueOperations.get("1")).thenReturn(session);
 
-        RankResultRequest request = new RankResultRequest(true);
+        RankResultRequest request = new RankResultRequest(true, null);
 
         // When
         CustomException ex = assertThrows(CustomException.class, () -> rankService.resultRankGame(user, request));
@@ -229,7 +229,7 @@ class RankServiceTest {
         when(valueOperations.get("1")).thenReturn(session);
         when(redisSessionTemplate.getExpire("1", TimeUnit.SECONDS)).thenReturn(0L); // or null
 
-        RankResultRequest request = new RankResultRequest(true);
+        RankResultRequest request = new RankResultRequest(true, null);
         // When
         CustomException ex = assertThrows(CustomException.class, () -> rankService.resultRankGame(user, request));
         // Then
@@ -250,7 +250,7 @@ class RankServiceTest {
         when(redisSessionTemplate.getExpire("1", TimeUnit.SECONDS)).thenReturn(60L);
         when(latestRankPuzzleRepository.findTopByUserOrderByIdDesc(user)).thenReturn(Optional.empty());
         // When
-        RankResultRequest request = new RankResultRequest(true);
+        RankResultRequest request = new RankResultRequest(true, null);
 
         CustomException ex = assertThrows(CustomException.class, () -> rankService.resultRankGame(user, request));
         // Then
@@ -298,7 +298,7 @@ class RankServiceTest {
         when(communityPuzzleRepository.findAvailableCommunityPuzzlesSortedByRating(user)).thenReturn(Collections.emptyList());
         when(clock.instant()).thenReturn(Instant.parse("2025-01-01T00:00:00Z"));
 
-        RankResultRequest request = new RankResultRequest(true);
+        RankResultRequest request = new RankResultRequest(true, null);
         RankResultResponse response = rankService.resultRankGame(user, request);
 
         // Then
@@ -347,7 +347,7 @@ class RankServiceTest {
         when(communityPuzzleRepository.findAvailableCommunityPuzzlesSortedByRating(user)).thenReturn(Collections.emptyList());
 
         // When
-        rankService.resultRankGame(user, new RankResultRequest(true));
+        rankService.resultRankGame(user, new RankResultRequest(true, null));
 
         // Then
         ArgumentCaptor<LatestRankPuzzle> assigned = ArgumentCaptor.forClass(LatestRankPuzzle.class);
@@ -393,7 +393,7 @@ class RankServiceTest {
         when(trainingPuzzleRepository.findRankAttemptCountById(7L)).thenReturn(Optional.of(0));
 
         // When
-        rankService.resultRankGame(user, new RankResultRequest(true));
+        rankService.resultRankGame(user, new RankResultRequest(true, null));
 
         // Then: evenly matched and never attempted, so K = 40 and expected = 0.5
         verify(trainingPuzzleRepository).applyRankResult(7L, -20.0, RatingUtil.MIN_RATING, RatingUtil.MAX_RATING);
@@ -407,7 +407,7 @@ class RankServiceTest {
         when(communityPuzzleRepository.findRankAttemptCountById(9L)).thenReturn(Optional.of(0));
 
         // When
-        rankService.resultRankGame(user, new RankResultRequest(false));
+        rankService.resultRankGame(user, new RankResultRequest(false, null));
 
         // Then: evenly matched and never attempted, so community K = 60 and expected = 0.5
         verify(communityPuzzleRepository).applyRankResult(9L, 30.0, RatingUtil.MIN_RATING, RatingUtil.MAX_RATING);
@@ -421,7 +421,7 @@ class RankServiceTest {
         when(trainingPuzzleRepository.findRankAttemptCountById(7L)).thenReturn(Optional.of(10));
 
         // When
-        rankService.resultRankGame(user, new RankResultRequest(false));
+        rankService.resultRankGame(user, new RankResultRequest(false, null));
 
         // Then: K is down to 20 after 10 results
         verify(trainingPuzzleRepository).applyRankResult(7L, 10.0, RatingUtil.MIN_RATING, RatingUtil.MAX_RATING);
@@ -433,7 +433,7 @@ class RankServiceTest {
         UserEntity user = givenAnsweredRound(null, null);
 
         // When
-        rankService.resultRankGame(user, new RankResultRequest(true));
+        rankService.resultRankGame(user, new RankResultRequest(true, null));
 
         // Then
         verify(trainingPuzzleRepository, never()).applyRankResult(anyLong(), anyDouble(), anyDouble(), anyDouble());
@@ -447,10 +447,87 @@ class RankServiceTest {
         when(communityPuzzleRepository.findRankAttemptCountById(9L)).thenReturn(Optional.empty());
 
         // When
-        rankService.resultRankGame(user, new RankResultRequest(false));
+        rankService.resultRankGame(user, new RankResultRequest(false, null));
 
         // Then
         verify(communityPuzzleRepository, never()).applyRankResult(anyLong(), anyDouble(), anyDouble(), anyDouble());
+    }
+
+    @Test
+    void resultRankGame_WhenBoardIsTheCurrentPuzzle_ThenAppliesTheResult() {
+        // Given
+        UserEntity user = givenAnsweredRound(PuzzleType.TRAINING, 7L);
+
+        // When
+        RankResultResponse response = rankService.resultRankGame(user, new RankResultRequest(true, "a1a2"));
+
+        // Then
+        assertThat(response.boardStatus()).isEqualTo("nextBoard");
+    }
+
+    @Test
+    void resultRankGame_WhenResentForThePuzzleJustAnswered_ThenReturnsTheCurrentPuzzleWithoutApplying() {
+        // Given: the answer to a1a2 went through, but its response with c1c2 never reached the app
+        UserEntity user = TestUserFactory.createTestUser("u1", 1000);
+        ReflectionTestUtils.setField(user, "id", 1L);
+        LatestRankPuzzle current = givenResendableRound(user);
+
+        // When: the app, still showing a1a2, sends a result again
+        RankResultResponse response = rankService.resultRankGame(user, new RankResultRequest(false, "a1a2"));
+
+        // Then
+        assertThat(response.boardStatus()).isEqualTo("c1c2");
+        assertThat(response.winColor()).isEqualTo("WHITE");
+        assertThat(current.getIsSolved()).isFalse();
+        assertThat(user.getRating()).isEqualTo(1000.0);
+        verify(latestRankPuzzleRepository, never()).save(any());
+    }
+
+    @Test
+    void resultRankGame_WhenBoardMatchesNeitherRecentPuzzle_ThenRejectsWithoutApplying() {
+        // Given
+        UserEntity user = TestUserFactory.createTestUser("u1", 1000);
+        ReflectionTestUtils.setField(user, "id", 1L);
+        givenResendableRound(user);
+
+        // When
+        CustomException ex = assertThrows(CustomException.class,
+                () -> rankService.resultRankGame(user, new RankResultRequest(true, "z9z9")));
+
+        // Then
+        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.RANK_PUZZLE_MISMATCH);
+        verify(latestRankPuzzleRepository, never()).save(any());
+    }
+
+    // a1a2 already answered, c1c2 handed out next; returns the c1c2 assignment
+    private LatestRankPuzzle givenResendableRound(UserEntity user) {
+        RankSessionData session = new RankSessionData();
+        session.setStarted(true);
+
+        LatestRankPuzzle answered = LatestRankPuzzle.builder()
+                .id(10L)
+                .user(user)
+                .boardStatus("a1a2")
+                .isSolved(true)
+                .winColor(WinColor.getWinColor("BLACK"))
+                .assignedAt(clock.instant())
+                .build();
+        LatestRankPuzzle current = LatestRankPuzzle.builder()
+                .id(11L)
+                .user(user)
+                .boardStatus("c1c2")
+                .isSolved(false)
+                .winColor(WinColor.getWinColor("WHITE"))
+                .assignedAt(clock.instant())
+                .build();
+
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
+        when(valueOperations.get("1")).thenReturn(session);
+        when(redisSessionTemplate.getExpire("1", TimeUnit.SECONDS)).thenReturn(120L);
+        when(latestRankPuzzleRepository.findTopByUserOrderByIdDesc(user)).thenReturn(Optional.of(current));
+        when(latestRankPuzzleRepository.findTopByUserAndIdLessThanOrderByIdDesc(user, 11L))
+                .thenReturn(Optional.of(answered));
+        return current;
     }
 
     // A started game whose current puzzle (mmr 1000 vs puzzle 1000) is about to be answered

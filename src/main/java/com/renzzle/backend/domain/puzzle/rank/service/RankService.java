@@ -125,6 +125,11 @@ public class RankService {
                 .findTopByUserOrderByIdDesc(user)
                 .orElseThrow(() -> new CustomException(ErrorCode.LATEST_PUZZLE_NOT_FOUND));
 
+        // Another board means the app is resending a result whose response it never got
+        if (request.boardStatus() != null && !request.boardStatus().equals(previousPuzzle.getBoardStatus())) {
+            return replayLostResponse(user, request.boardStatus(), previousPuzzle);
+        }
+
         previousPuzzle.solvedUpdate(request.isSolved());
 
         // Revert from the assignment snapshot, not the Redis session
@@ -181,6 +186,22 @@ public class RankService {
         return RankResultResponse.builder()
                 .boardStatus(nextPuzzle.boardStatus())
                 .winColor(nextPuzzle.winColor().getName())
+                .build();
+    }
+
+    // The answer already counted, so hand back the puzzle the lost response carried instead of applying it again
+    private RankResultResponse replayLostResponse(UserEntity user, String boardStatus, LatestRankPuzzle current) {
+        LatestRankPuzzle answered = latestRankPuzzleRepository
+                .findTopByUserAndIdLessThanOrderByIdDesc(user, current.getId())
+                .filter(puzzle -> boardStatus.equals(puzzle.getBoardStatus()))
+                .orElseThrow(() -> new CustomException(ErrorCode.RANK_PUZZLE_MISMATCH));
+
+        log.info("Rank result resent after a lost response. puzzleType={}, puzzleId={}",
+                answered.getPuzzleType(), answered.getPuzzleId());
+
+        return RankResultResponse.builder()
+                .boardStatus(current.getBoardStatus())
+                .winColor(current.getWinColor().getName())
                 .build();
     }
 

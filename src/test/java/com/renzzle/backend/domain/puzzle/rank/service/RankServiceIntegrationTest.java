@@ -112,7 +112,7 @@ class RankServiceIntegrationTest {
         assertThat(startResponse.winColor()).isNotBlank();
 
         // resultRankGame
-        RankResultRequest resultRequest = new RankResultRequest(true);
+        RankResultRequest resultRequest = new RankResultRequest(true, null);
         RankResultResponse resultResponse = rankService.resultRankGame(testUser, resultRequest);
 
         assertThat(resultResponse.boardStatus()).isNotBlank();
@@ -146,7 +146,7 @@ class RankServiceIntegrationTest {
         assertTrue(afterStart.getMmr() < 1500, "mmr must be deducted");
 
         // Call result API - assume the problem is answered correctly
-        RankResultRequest resultRequest = new RankResultRequest(true);
+        RankResultRequest resultRequest = new RankResultRequest(true, null);
         rankService.resultRankGame(testUser, resultRequest);
 
         RankSessionData sessionAfterResult = redisTemplate.opsForValue().get(redisKey);
@@ -181,7 +181,7 @@ class RankServiceIntegrationTest {
         revived.setStarted(true);
         redisTemplate.opsForValue().set(redisKey, revived, 60, java.util.concurrent.TimeUnit.SECONDS);
 
-        rankService.resultRankGame(testUser, new RankResultRequest(true));
+        rankService.resultRankGame(testUser, new RankResultRequest(true, null));
 
         double expectedAfterSolve = assigned.getRatingBeforePenalty()
                 + ELOUtils.calculateRatingIncrease(assigned.getRatingBeforePenalty(), assigned.getPuzzleRating());
@@ -201,7 +201,7 @@ class RankServiceIntegrationTest {
         rankService.startRankGame(testUser);
         LatestRankPuzzle answered = latestRankPuzzleRepository.findTopByUserOrderByIdDesc(testUser).orElseThrow();
 
-        rankService.resultRankGame(testUser, new RankResultRequest(false));
+        rankService.resultRankGame(testUser, new RankResultRequest(false, null));
         LatestRankPuzzle unanswered = latestRankPuzzleRepository.findTopByUserOrderByIdDesc(testUser).orElseThrow();
         double unansweredBefore = currentRating(unanswered);
 
@@ -272,12 +272,28 @@ class RankServiceIntegrationTest {
     }
 
     @Test
+    void resultRankGame_WhenResentAfterALostResponse_ThenCountsTheAnswerOnce() {
+        // Given: the first result went through, but the app never saw its response
+        RankStartResponse start = rankService.startRankGame(testUser);
+        RankResultResponse next = rankService.resultRankGame(testUser, new RankResultRequest(true, start.boardStatus()));
+        double ratingAfterAnswer = userRepository.findById(testUser.getId()).orElseThrow().getRating();
+
+        // When: the app, still on the first board, sends a result again
+        RankResultResponse replayed = rankService.resultRankGame(testUser, new RankResultRequest(false, start.boardStatus()));
+
+        // Then: it gets the puzzle it missed, and nothing else moves
+        assertThat(replayed.boardStatus()).isEqualTo(next.boardStatus());
+        assertThat(userRepository.findById(testUser.getId()).orElseThrow().getRating()).isEqualTo(ratingAfterAnswer);
+        assertThat(latestRankPuzzleRepository.findAllByUser(testUser)).hasSize(2);
+    }
+
+    @Test
     void getRankArchive_WhenGameInProgress_ThenHidesOnlyThePuzzleBeingSolved() {
         // The puzzle on the board stays out of the archive until the game ends
         rankService.startRankGame(testUser);
         assertThat(rankService.getRankArchive(testUser)).isEmpty();
 
-        rankService.resultRankGame(testUser, new RankResultRequest(true));
+        rankService.resultRankGame(testUser, new RankResultRequest(true, null));
         assertThat(rankService.getRankArchive(testUser)).hasSize(1);
 
         rankService.endRankGame(testUser);
