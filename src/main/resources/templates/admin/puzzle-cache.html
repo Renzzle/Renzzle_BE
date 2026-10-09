@@ -257,7 +257,7 @@
             const tr = document.createElement('tr');
             tr.classList.add('clickable-row');
             tr.addEventListener('click', function() {
-              globalThis.location.href = '/puzzle-cache/training-pack?packId=' + encodeURIComponent(packIdValue);
+              globalThis.location.href = '/admin/puzzle-cache/training-pack?packId=' + encodeURIComponent(packIdValue);
             });
 
             const titleTd = document.createElement('td');
@@ -321,7 +321,7 @@
           return;
         }
         const puzzle = data.response;
-        const href = '/puzzle-cache/board?puzzleType=COMMUNITY&puzzleId=' + encodeURIComponent(puzzle['id'] ?? puzzleIdValue);
+        const href = '/admin/puzzle-cache/board?puzzleType=COMMUNITY&puzzleId=' + encodeURIComponent(puzzle['id'] ?? puzzleIdValue);
         globalThis.location.href = href;
       } catch (err) {
         showCommError(adminT('common.errorPrefix', { message: err.message || '' }));

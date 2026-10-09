@@ -15,7 +15,7 @@ public class PuzzleCachePageController {
 
     private static final String USER_EMAIL_ATTRIBUTE = "userEmail";
 
-    @GetMapping("/puzzle-cache")
+    @GetMapping("/admin/puzzle-cache")
     public String puzzleCachePage(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             Model model
@@ -27,7 +27,7 @@ public class PuzzleCachePageController {
         return "admin/puzzle-cache";
     }
 
-    @GetMapping("/puzzle-cache/board")
+    @GetMapping("/admin/puzzle-cache/board")
     public String puzzleCacheBoard(
             @RequestParam(value = "puzzleType", defaultValue = "TRAINING") PuzzleType puzzleType,
             @RequestParam("puzzleId") Long puzzleId,
@@ -44,7 +44,7 @@ public class PuzzleCachePageController {
         return "admin/puzzle-cache-board";
     }
 
-    @GetMapping("/puzzle-cache/training-pack")
+    @GetMapping("/admin/puzzle-cache/training-pack")
     public String puzzleCacheTrainingPack(
             @RequestParam("packId") Long packId,
             @AuthenticationPrincipal UserDetailsImpl userDetails,
