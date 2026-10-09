@@ -116,9 +116,28 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
     @Query(value = "UPDATE community_puzzle SET answer_key = :answerKey WHERE id = :id", nativeQuery = true)
     void updateAnswerKey(@Param("id") Long id, @Param("answerKey") String answerKey);
 
-    List<CommunityPuzzle> findByCreatedAtAfter(Instant after);
+    // Trend candidates: verified, not deleted, and not disliked more than liked
+    String TREND_FILTER = "cp.status != 'DELETED' AND cp.is_verified = TRUE AND cp.like_count >= cp.dislike_count ";
+    // Net likes halve every half-life, so a newer puzzle can overtake an older one with more likes
+    String TREND_ORDER = "ORDER BY (cp.like_count - cp.dislike_count) "
+            + "* POW(0.5, TIMESTAMPDIFF(SECOND, cp.created_at, :now) / :halfLifeSeconds) DESC, "
+            + "cp.view DESC, cp.id DESC ";
 
-    List<CommunityPuzzle> findTop30ByCreatedAtBeforeOrderByCreatedAtDesc(Instant before);
+    @Query(value = "SELECT cp.* FROM community_puzzle cp WHERE " + TREND_FILTER
+            + "AND cp.created_at > :since " + TREND_ORDER + "LIMIT :size", nativeQuery = true)
+    List<CommunityPuzzle> findTrendPuzzlesSince(@Param("since") Instant since,
+                                               @Param("now") Instant now,
+                                               @Param("halfLifeSeconds") long halfLifeSeconds,
+                                               @Param("size") int size);
+
+    // For a quiet week: the latest 30 older candidates, ranked the same way
+    @Query(value = "SELECT cp.* FROM (SELECT * FROM community_puzzle cp WHERE " + TREND_FILTER
+            + "AND cp.created_at <= :since ORDER BY cp.created_at DESC LIMIT 30) cp "
+            + TREND_ORDER + "LIMIT :size", nativeQuery = true)
+    List<CommunityPuzzle> findOlderTrendPuzzles(@Param("since") Instant since,
+                                               @Param("now") Instant now,
+                                               @Param("halfLifeSeconds") long halfLifeSeconds,
+                                               @Param("size") int size);
 
     @Query("SELECT COUNT(p) FROM CommunityPuzzle p WHERE p.user.id = :userId")
     long countByAuthor(@Param("userId") Long userId);

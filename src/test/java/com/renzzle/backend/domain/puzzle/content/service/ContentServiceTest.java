@@ -30,7 +30,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -39,6 +41,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -248,105 +252,57 @@ class ContentServiceTest {
     }
 
     @Test
-    void getTrendCommunityPuzzles_WhenDuplicatePuzzle_ThenThrowsTrendPuzzleDuplicatedException() {
+    void getTrendCommunityPuzzles_WhenWeekFillsTheList_ThenSkipsOlderPuzzles() {
         // Given
         Instant now = Instant.parse("2024-04-28T00:00:00Z");
-        lenient().when(clock.instant()).thenReturn(now);
+        when(clock.instant()).thenReturn(now);
 
-        CommunityPuzzle puzzle1 = TestCommunityPuzzleBuilder.builder(user)
-                .withId(1L)
-                .withCreatedAt(now)
-                .withLikeCount(10)
-                .withDislikeCount(0)
-                .withView(100)
-                .build();
-
-        List<CommunityPuzzle> puzzlesIn7Days = List.of(puzzle1, puzzle1); // intentionally duplicated puzzle list
-
-        when(communityPuzzleRepository.findByCreatedAtAfter(any()))
-                .thenReturn(puzzlesIn7Days);
-
-        lenient().when(communityPuzzleRepository.findTop30ByCreatedAtBeforeOrderByCreatedAtDesc(any()))
-                .thenReturn(List.of());
-
-        // when & then
-        assertThatThrownBy(() -> contentService.getTrendCommunityPuzzles(user))
-                .isInstanceOf(CustomException.class)
-                .hasMessageContaining(ErrorCode.TREND_PUZZLE_DUPLICATED.getMessage());
-    }
-
-    @Test
-    void getTrendCommunityPuzzles_WhenValidPuzzlesExist_ThenReturnTop5Puzzles() {
-        // Given
-        Instant now = Instant.parse("2024-04-28T00:00:00Z");
-        lenient().when(clock.instant()).thenReturn(now);
-
-        List<CommunityPuzzle> puzzles = new ArrayList<>();
-        for (long i = 1; i <= 10; i++) {
-            puzzles.add(
-                    TestCommunityPuzzleBuilder.builder(user)
-                            .withId(i)
-                            .withCreatedAt(now.minusSeconds(i * 60)) // vary only the time slightly
-                            .withLikeCount((int) (10 - i)) // vary the like count
-                            .withDislikeCount((int) (i % 3)) // vary the dislike count too
-                            .withView((int) (100 + i * 10)) // vary the view count
-                            .build()
-            );
+        List<CommunityPuzzle> week = new ArrayList<>();
+        for (long id = 1; id <= 5; id++) {
+            week.add(TestCommunityPuzzleBuilder.builder(user).withId(id).withCreatedAt(now).build());
         }
-
-        when(communityPuzzleRepository.findByCreatedAtAfter(any()))
-                .thenReturn(puzzles);
-
-        lenient().when(communityPuzzleRepository.findTop30ByCreatedAtBeforeOrderByCreatedAtDesc(any()))
-                .thenReturn(List.of()); // no backup puzzles
-
-        for (CommunityPuzzle puzzle : puzzles) {
-            lenient().when(userCommunityPuzzleRepository.checkIsSolvedPuzzle(user.getId(), puzzle.getId()))
-                    .thenReturn(false);
-        }
-
-
-        // when
-        GetTrendPuzzlesResponse response = contentService.getTrendCommunityPuzzles(user);
-
-        // then
-        assertThat(response.puzzles()).hasSize(5);
-
-        // Likes minus dislikes per id: 1→8, 3→7, 2→6, 4→5, 6→4
-        assertThat(response.puzzles()).extracting(GetCommunityPuzzlesResponse::id)
-                .containsExactly(1L, 3L, 2L, 4L, 6L);
-    }
-
-    @Test
-    void getTrendCommunityPuzzles_WhenScoresTie_ThenMoreViewedPuzzleComesFirst() {
-        // Given
-        Instant now = Instant.parse("2024-04-28T00:00:00Z");
-        lenient().when(clock.instant()).thenReturn(now);
-
-        List<CommunityPuzzle> puzzles = List.of(
-                TestCommunityPuzzleBuilder.builder(user).withId(1L).withCreatedAt(now)
-                        .withLikeCount(5).withDislikeCount(0).withView(100).build(),
-                TestCommunityPuzzleBuilder.builder(user).withId(2L).withCreatedAt(now)
-                        .withLikeCount(6).withDislikeCount(1).withView(300).build(),
-                TestCommunityPuzzleBuilder.builder(user).withId(3L).withCreatedAt(now)
-                        .withLikeCount(9).withDislikeCount(0).withView(10).build()
-        );
-        when(communityPuzzleRepository.findByCreatedAtAfter(any())).thenReturn(puzzles);
-        when(communityPuzzleRepository.findTop30ByCreatedAtBeforeOrderByCreatedAtDesc(any())).thenReturn(List.of());
+        // A week back, likes halving every two days
+        when(communityPuzzleRepository.findTrendPuzzlesSince(
+                now.minus(7, ChronoUnit.DAYS), now, Duration.ofDays(2).toSeconds(), 5))
+                .thenReturn(week);
 
         // When
         GetTrendPuzzlesResponse response = contentService.getTrendCommunityPuzzles(user);
 
-        // Then
+        // Then: kept in the order the database ranked them
         assertThat(response.puzzles()).extracting(GetCommunityPuzzlesResponse::id)
-                .containsExactly(3L, 2L, 1L);
+                .containsExactly(1L, 2L, 3L, 4L, 5L);
+        verify(communityPuzzleRepository, never()).findOlderTrendPuzzles(any(), any(), anyLong(), anyInt());
+    }
+
+    @Test
+    void getTrendCommunityPuzzles_WhenWeekIsQuiet_ThenFillsTheRestFromOlderPuzzles() {
+        // Given: only two puzzles qualify this week, and one older one
+        Instant now = Instant.parse("2024-04-28T00:00:00Z");
+        when(clock.instant()).thenReturn(now);
+
+        when(communityPuzzleRepository.findTrendPuzzlesSince(any(), any(), anyLong(), eq(5)))
+                .thenReturn(List.of(
+                        TestCommunityPuzzleBuilder.builder(user).withId(1L).withCreatedAt(now).build(),
+                        TestCommunityPuzzleBuilder.builder(user).withId(2L).withCreatedAt(now).build()));
+        when(communityPuzzleRepository.findOlderTrendPuzzles(any(), any(), anyLong(), eq(3)))
+                .thenReturn(List.of(
+                        TestCommunityPuzzleBuilder.builder(user).withId(3L)
+                                .withCreatedAt(now.minus(10, ChronoUnit.DAYS)).build()));
+
+        // When
+        GetTrendPuzzlesResponse response = contentService.getTrendCommunityPuzzles(user);
+
+        // Then: fewer than five when no more qualify
+        assertThat(response.puzzles()).extracting(GetCommunityPuzzlesResponse::id)
+                .containsExactly(1L, 2L, 3L);
     }
 
     @Test
     void getTrendCommunityPuzzles_WhenPuzzleSelected_ThenResponseFieldsMappedCorrectly() {
         // Given
         Instant now = Instant.parse("2024-04-28T00:00:00Z");
-        lenient().when(clock.instant()).thenReturn(now);
+        when(clock.instant()).thenReturn(now);
 
         CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user)
                 .withId(1L)
@@ -360,13 +316,11 @@ class ContentServiceTest {
                 .withColor(WinColor.getWinColor("BLACK"))
                 .build();
 
-        when(communityPuzzleRepository.findByCreatedAtAfter(any()))
+        when(communityPuzzleRepository.findTrendPuzzlesSince(any(), any(), anyLong(), anyInt()))
                 .thenReturn(List.of(puzzle));
-
-        lenient().when(communityPuzzleRepository.findTop30ByCreatedAtBeforeOrderByCreatedAtDesc(any()))
+        when(communityPuzzleRepository.findOlderTrendPuzzles(any(), any(), anyLong(), anyInt()))
                 .thenReturn(List.of());
-
-        lenient().when(userCommunityPuzzleRepository.checkIsSolvedPuzzle(user.getId(), puzzle.getId()))
+        when(userCommunityPuzzleRepository.checkIsSolvedPuzzle(user.getId(), puzzle.getId()))
                 .thenReturn(true);
 
         // When
