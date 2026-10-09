@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.user.dao;
 
+import com.renzzle.backend.domain.user.dao.projection.UserNicknameProjection;
 import com.renzzle.backend.domain.user.domain.Title;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import jakarta.persistence.LockModeType;
@@ -10,6 +11,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<UserEntity, Long> {
@@ -23,6 +26,10 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     Optional<UserEntity> findByEmail(String email);
 
     Optional<UserEntity> findByNickname(String nickname);
+
+    // Only the nickname, so the eager status and title aren't loaded for every user
+    @Query("SELECT u.id AS id, u.nickname AS nickname FROM UserEntity u WHERE u.id IN :ids")
+    List<UserNicknameProjection> findNicknamesByIdIn(@Param("ids") Collection<Long> ids);
 
     // Row lock so concurrent spends can't both read the same balance
     @Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -61,8 +68,10 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
         return isUserQualifiedRaw(userId, minLikes, minPuzzleCount, minRating, minSolverCount) == 1L;
     }
 
-    @Query("SELECT CASE WHEN (u.lastAccessedAt < CURRENT_DATE) THEN true ELSE false END FROM UserEntity u WHERE u.id = :userId")
-    Boolean isLastAccessBeforeToday(@Param("userId") Long userId);
+    // Single statement so concurrent requests can't both claim today's reward
+    @Modifying
+    @Query("UPDATE UserEntity u SET u.lastAccessedAt = :now WHERE u.id = :userId AND u.lastAccessedAt < CURRENT_DATE")
+    int markFirstAccessToday(@Param("userId") Long userId, @Param("now") Instant now);
 
     @Modifying
     @Query("UPDATE UserEntity u SET u.lastAccessedAt = :lastAccessedAt WHERE u.id = :userId")

@@ -4,5 +4,8 @@ import jakarta.validation.constraints.NotNull;
 
 public record RankResultRequest(
         @NotNull(message = "Solved flag is required")
-        Boolean isSolved
+        Boolean isSolved,
+
+        // optional
+        String boardStatus
 ) { }

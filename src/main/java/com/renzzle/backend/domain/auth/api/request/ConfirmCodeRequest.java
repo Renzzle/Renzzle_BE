@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.auth.api.request;
 
+import com.renzzle.backend.global.util.EmailUtils;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
@@ -12,4 +13,8 @@ public record ConfirmCodeRequest(
         @NotEmpty(message = "Verification code is required")
         @Pattern(regexp = "^\\d{6}$", message = "Invalid code format")
         String code
-) { }
+) {
+    public ConfirmCodeRequest {
+        email = EmailUtils.normalize(email);
+    }
+}

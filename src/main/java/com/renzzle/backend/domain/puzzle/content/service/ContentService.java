@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -32,6 +33,10 @@ import java.util.*;
 @RequiredArgsConstructor
 @Slf4j
 public class ContentService {
+    private static final int TREND_SIZE = 5;
+    // A like counts half after two days and a quarter after four
+    private static final Duration TREND_HALF_LIFE = Duration.ofDays(2);
+
     private final SolvedTrainingPuzzleRepository solvedTrainingPuzzleRepository;
     private final CommunityPuzzleRepository communityPuzzleRepository;
     private final PackTranslationRepository packTranslationRepository;
@@ -109,55 +114,25 @@ public class ContentService {
                 .build();
     }
 
+    // Ranked in the database, so only the puzzles shown are loaded; may return fewer than TREND_SIZE
     public GetTrendPuzzlesResponse getTrendCommunityPuzzles(UserEntity user) {
-        Set<Long> selectedIds = new HashSet<>();
-        List<GetCommunityPuzzlesResponse> result = new ArrayList<>();
+        Instant now = clock.instant();
+        Instant oneWeekAgo = now.minus(7, ChronoUnit.DAYS);
+        long halfLifeSeconds = TREND_HALF_LIFE.toSeconds();
 
-        Instant instant = clock.instant();
+        List<CommunityPuzzle> puzzles = new ArrayList<>(communityPuzzleRepository
+                .findTrendPuzzlesSince(oneWeekAgo, now, halfLifeSeconds, TREND_SIZE));
 
-        Instant oneWeekAgo = instant.minus(7, ChronoUnit.DAYS);
+        // A quiet week is filled from the latest older puzzles
+        if (puzzles.size() < TREND_SIZE) {
+            puzzles.addAll(communityPuzzleRepository
+                    .findOlderTrendPuzzles(oneWeekAgo, now, halfLifeSeconds, TREND_SIZE - puzzles.size()));
+        }
 
-        List<CommunityPuzzle> puzzlesIn7Days = communityPuzzleRepository
-                .findByCreatedAtAfter(oneWeekAgo);
-
-        List<CommunityPuzzle> sortedRecent = puzzlesIn7Days.stream()
-                .sorted(trendComparator())
+        List<GetCommunityPuzzlesResponse> result = puzzles.stream()
+                .map(puzzle -> convertToResponse(puzzle, user))
                 .toList();
-
-        selectTrendPuzzles(sortedRecent, result, selectedIds, user);
-
-        // Fill up from the latest 30 older puzzles
-        if (result.size() < 5) {
-            List<CommunityPuzzle> latest30 = communityPuzzleRepository
-                    .findTop30ByCreatedAtBeforeOrderByCreatedAtDesc(oneWeekAgo);
-
-            List<CommunityPuzzle> sortedBackup = latest30.stream()
-                    .filter(p -> !selectedIds.contains(p.getId()))
-                    .sorted(trendComparator())
-                    .toList();
-
-            selectTrendPuzzles(sortedBackup, result, selectedIds, user);
-        }
-
         return new GetTrendPuzzlesResponse(result);
-    }
-
-    private void selectTrendPuzzles(
-            List<CommunityPuzzle> puzzles,
-            List<GetCommunityPuzzlesResponse> result,
-            Set<Long> selectedIds,
-            UserEntity user
-    ) {
-        for (CommunityPuzzle p : puzzles) {
-            if (result.size() >= 5) break;
-
-            boolean added = selectedIds.add(p.getId());
-            if (!added) {
-                throw new CustomException(ErrorCode.TREND_PUZZLE_DUPLICATED);
-            }
-
-            result.add(convertToResponse(p, user));
-        }
     }
 
     private GetCommunityPuzzlesResponse convertToResponse(CommunityPuzzle puzzle, UserEntity user) {
@@ -178,12 +153,5 @@ public class ContentService {
                 .isSolved(isSolved)
                 .isVerified(puzzle.getIsVerified())
                 .build();
-    }
-
-    private Comparator<CommunityPuzzle> trendComparator() {
-        return Comparator
-                .comparingInt((CommunityPuzzle p) -> p.getLikeCount() - p.getDislikeCount()).reversed()
-                .thenComparingInt(CommunityPuzzle::getView).reversed()
-                .thenComparingLong(CommunityPuzzle::getId);
     }
 }

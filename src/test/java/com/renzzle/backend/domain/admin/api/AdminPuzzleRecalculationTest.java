@@ -151,7 +151,7 @@ class AdminPuzzleRecalculationTest {
 
     private MockHttpServletRequestBuilder withToken(MockHttpServletRequestBuilder request, UserEntity user) {
         return request
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtProvider.createAccessToken(user.getId()))
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtProvider.createAccessToken(user.getId(), "test-session"))
                 .header(AppKeyAuthenticationFilter.APP_KEY_HEADER, "test-app-key");
     }
 }

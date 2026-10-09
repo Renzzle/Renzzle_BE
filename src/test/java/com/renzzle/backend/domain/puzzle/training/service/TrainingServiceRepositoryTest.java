@@ -146,7 +146,7 @@ class TrainingServiceRepositoryTest {
 
         // When
         trainingPuzzleRepository.deleteById(savedPuzzle1.getId());
-        trainingPuzzleRepository.decreaseIndexesFrom(savedPuzzle1.getTrainingIndex());
+        trainingPuzzleRepository.decreaseIndexesFrom(savedPack.getId(), savedPuzzle1.getTrainingIndex());
         entityManager.flush();
         entityManager.clear();
 
@@ -161,6 +161,46 @@ class TrainingServiceRepositoryTest {
         TrainingPuzzle updatedPuzzle2 = trainingPuzzleRepository.findById(savedPuzzle2.getId())
                 .orElseThrow();
         assertThat(updatedPuzzle2.getTrainingIndex()).isEqualTo(1);
+    }
+
+    @Test
+    @Transactional
+    void decreaseIndexesFrom_WhenAnotherPackHasLaterIndexes_ThenLeavesThatPackAlone() {
+        // Given
+        Difficulty difficulty = Difficulty.getDifficulty("LOW");
+        WinColor winColor = WinColor.getWinColor("WHITE");
+
+        Pack packA = packRepository.save(Pack.builder().price(1000).difficulty(difficulty).puzzleCount(2).build());
+        Pack packB = packRepository.save(Pack.builder().price(1000).difficulty(difficulty).puzzleCount(2).build());
+
+        TrainingPuzzle a1 = trainingPuzzleRepository.save(puzzleAt(packA, 1, "a1", winColor));
+        TrainingPuzzle a2 = trainingPuzzleRepository.save(puzzleAt(packA, 2, "a2", winColor));
+        TrainingPuzzle b2 = trainingPuzzleRepository.save(puzzleAt(packB, 2, "b2", winColor));
+        TrainingPuzzle b3 = trainingPuzzleRepository.save(puzzleAt(packB, 3, "b3", winColor));
+
+        // When
+        trainingPuzzleRepository.deleteById(a1.getId());
+        trainingPuzzleRepository.decreaseIndexesFrom(packA.getId(), a1.getTrainingIndex());
+        entityManager.flush();
+        entityManager.clear();
+
+        // Then
+        assertThat(trainingPuzzleRepository.findById(a2.getId()).orElseThrow().getTrainingIndex()).isEqualTo(1);
+        assertThat(trainingPuzzleRepository.findById(b2.getId()).orElseThrow().getTrainingIndex()).isEqualTo(2);
+        assertThat(trainingPuzzleRepository.findById(b3.getId()).orElseThrow().getTrainingIndex()).isEqualTo(3);
+    }
+
+    private static TrainingPuzzle puzzleAt(Pack pack, int index, String key, WinColor winColor) {
+        return TrainingPuzzle.builder()
+                .pack(pack)
+                .trainingIndex(index)
+                .boardStatus("status-" + key)
+                .boardKey("key-" + key)
+                .answer("answer-" + key)
+                .depth(3)
+                .rating(600.0)
+                .winColor(winColor)
+                .build();
     }
 
     @Test

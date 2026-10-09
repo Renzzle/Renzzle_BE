@@ -573,7 +573,7 @@ public class TrainingServiceTest {
             // then
             verify(trainingPuzzleRepository, times(1)).findById(puzzleId);
             verify(trainingPuzzleRepository, times(1)).deleteById(puzzleId);
-            verify(trainingPuzzleRepository, times(1)).decreaseIndexesFrom(trainingIndex);
+            verify(trainingPuzzleRepository, times(1)).decreaseIndexesFrom(packId, trainingIndex);
             verify(packRepository, times(1)).decreasePuzzleCount(packId);
             verify(userPackRepository, times(1)).decreaseSolvedCount(userId, packId);
         }
@@ -618,6 +618,7 @@ public class TrainingServiceTest {
             // User lookup succeeds (returns a locked, managed entity)
             when(userRepository.findByIdForUpdate(userId))
                     .thenReturn(Optional.of(user));
+            when(userPackRepository.existsByUserIdAndPackId(userId, packId)).thenReturn(true);
 
             // Set up a dummy save result
             when(solvedTrainingPuzzleRepository.save(any(SolvedTrainingPuzzle.class)))
@@ -648,8 +649,13 @@ public class TrainingServiceTest {
                     .status(Status.getDefaultStatus())
                     .build();
 
+            Pack pack = Pack.builder().id(1L).build();
+            TrainingPuzzle puzzle = TrainingPuzzle.builder().id(puzzleId).pack(pack).build();
+
             SolvedTrainingPuzzle existingSolvedPuzzle = mock(SolvedTrainingPuzzle.class);
             when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
+            when(trainingPuzzleRepository.findById(puzzleId)).thenReturn(Optional.of(puzzle));
+            when(userPackRepository.existsByUserIdAndPackId(user.getId(), pack.getId())).thenReturn(true);
             when(solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId))
                     .thenReturn(Optional.of(existingSolvedPuzzle));
 
@@ -660,7 +666,7 @@ public class TrainingServiceTest {
             assertThat(response.reward()).isZero();
             verify(existingSolvedPuzzle, times(1)).updateSolvedAtToNow(clock);
             verify(solvedTrainingPuzzleRepository, never()).save(any());
-            verify(trainingPuzzleRepository, never()).findById(any());
+            verify(userPackRepository, never()).increaseSolvedCount(anyLong(), anyLong());
         }
 
         @Test
@@ -687,6 +693,7 @@ public class TrainingServiceTest {
                     .winColor(winColor)
                     .build();
             List<TrainingPuzzle> puzzles = Collections.singletonList(puzzle);
+            when(userPackRepository.existsByUserIdAndPackId(user.getId(), packId)).thenReturn(true);
             when(trainingPuzzleRepository.findByPack_IdOrderByTrainingIndex(packId)).thenReturn(puzzles);
 
             // Assume solvedTrainingPuzzleRepository.existsByUserAndPuzzle(user, puzzle) returns false
@@ -836,6 +843,7 @@ public class TrainingServiceTest {
 
             when(userRepository.findByIdForUpdate(user.getId()))
                     .thenReturn(Optional.of(user));
+            when(userPackRepository.existsByUserIdAndPackId(user.getId(), pack.getId())).thenReturn(true);
 
             // when
             GetTrainingPuzzleAnswerResponse response = trainingService.purchaseTrainingPuzzleAnswer(user, puzzleId);
@@ -893,6 +901,43 @@ public class TrainingServiceTest {
             // then
             assertEquals(ErrorCode.NO_SUCH_TRAINING_PACK, exception.getErrorCode());
             verify(packTranslationRepository, never()).save(any(PackTranslation.class));
+        }
+
+        @Test
+        void createPack_WhenSameLanguageTwice_ThenThrowsWithoutSaving() {
+            // given: language codes are matched without case
+            List<PackTranslationRequest> translationRequests = Arrays.asList(
+                    new PackTranslationRequest("KO", "초보용 1", "강상민", "설명"),
+                    new PackTranslationRequest("ko", "초보용 2", "강상민", "설명")
+            );
+            CreateTrainingPackRequest request = new CreateTrainingPackRequest(translationRequests, 1000, "LOW");
+
+            // when
+            CustomException exception = assertThrows(CustomException.class, () -> trainingService.createPack(request));
+
+            // then
+            assertEquals(ErrorCode.VALIDATION_ERROR, exception.getErrorCode());
+            verify(packRepository, never()).save(any(Pack.class));
+            verify(packTranslationRepository, never()).saveAll(anyList());
+        }
+
+        @Test
+        void updatePack_WhenSameLanguageTwice_ThenThrowsWithoutChangingThePack() {
+            // given
+            List<PackTranslationRequest> translationRequests = Arrays.asList(
+                    new PackTranslationRequest("EN", "Beginner 1", "Kang", "Description"),
+                    new PackTranslationRequest("EN", "Beginner 2", "Kang", "Description")
+            );
+            UpdateTrainingPackRequest request = new UpdateTrainingPackRequest(translationRequests, 1200, "HIGH");
+
+            // when
+            CustomException exception = assertThrows(CustomException.class, () -> trainingService.updatePack(1L, request));
+
+            // then
+            assertEquals(ErrorCode.VALIDATION_ERROR, exception.getErrorCode());
+            verify(packRepository, never()).save(any(Pack.class));
+            verify(packTranslationRepository, never()).deleteAll(anyList());
+            verify(packTranslationRepository, never()).saveAll(anyList());
         }
 
         @Test
@@ -962,7 +1007,7 @@ public class TrainingServiceTest {
 
             verify(trainingPuzzleRepository, times(1)).findById(puzzleId);
             verify(trainingPuzzleRepository, never()).deleteById(anyLong());
-            verify(trainingPuzzleRepository, never()).decreaseIndexesFrom(anyInt());
+            verify(trainingPuzzleRepository, never()).decreaseIndexesFrom(anyLong(), anyInt());
         }
 
 
@@ -982,10 +1027,8 @@ public class TrainingServiceTest {
                     .status(Status.getDefaultStatus())
                     .build();
 
-            // No existing solve record, and the puzzle does not exist
+            // The puzzle does not exist
             when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
-            when(solvedTrainingPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId))
-                    .thenReturn(Optional.empty());
             when(trainingPuzzleRepository.findById(puzzleId))
                     .thenReturn(Optional.empty());
 
@@ -996,11 +1039,77 @@ public class TrainingServiceTest {
             // then
             assertEquals(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE, exception.getErrorCode());
 
-            verify(solvedTrainingPuzzleRepository, times(1))
-                    .findByUserIdAndPuzzleId(user.getId(), puzzleId);
             verify(trainingPuzzleRepository, times(1))
                     .findById(puzzleId);
             verify(solvedTrainingPuzzleRepository, never()).save(any(SolvedTrainingPuzzle.class));
+        }
+
+        @Test
+        void solveTrainingPuzzle_WhenPackNotOwned_ThenThrowsWithoutReward() {
+            // given
+            Pack pack = Pack.builder().id(5L).build();
+            TrainingPuzzle puzzle = TrainingPuzzle.builder().id(1L).pack(pack).build();
+            UserEntity user = TestUserEntityBuilder.builder().withId(100L).withCurrency(0).build();
+
+            when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
+            when(trainingPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
+            when(userPackRepository.existsByUserIdAndPackId(user.getId(), pack.getId())).thenReturn(false);
+
+            // when
+            CustomException exception = assertThrows(CustomException.class,
+                    () -> trainingService.solveTrainingPuzzle(user, puzzle.getId(), true));
+
+            // then
+            assertEquals(ErrorCode.PACK_NOT_OWNED, exception.getErrorCode());
+            assertThat(user.getCurrency()).isZero();
+            verify(solvedTrainingPuzzleRepository, never()).save(any(SolvedTrainingPuzzle.class));
+        }
+
+        @Test
+        void purchaseTrainingPuzzleAnswer_WhenPackNotOwned_ThenThrowsWithoutCharging() {
+            // given
+            Pack pack = Pack.builder().id(5L).build();
+            TrainingPuzzle puzzle = TrainingPuzzle.builder().id(1L).answer("h11").pack(pack).build();
+            UserEntity user = TestUserEntityBuilder.builder().withId(100L).withCurrency(1000).build();
+
+            when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
+            when(trainingPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
+            when(userPackRepository.existsByUserIdAndPackId(user.getId(), pack.getId())).thenReturn(false);
+
+            // when
+            CustomException exception = assertThrows(CustomException.class,
+                    () -> trainingService.purchaseTrainingPuzzleAnswer(user, puzzle.getId()));
+
+            // then
+            assertEquals(ErrorCode.PACK_NOT_OWNED, exception.getErrorCode());
+            assertThat(user.getCurrency()).isEqualTo(1000);
+        }
+
+        @Test
+        void getTrainingPuzzleList_WhenPackNotOwned_ThenThrowsWithoutListing() {
+            // given
+            UserEntity user = TestUserEntityBuilder.builder().withId(100L).build();
+            when(userPackRepository.existsByUserIdAndPackId(user.getId(), 5L)).thenReturn(false);
+
+            // when
+            CustomException exception = assertThrows(CustomException.class,
+                    () -> trainingService.getTrainingPuzzleList(user, 5L));
+
+            // then
+            assertEquals(ErrorCode.PACK_NOT_OWNED, exception.getErrorCode());
+            verify(trainingPuzzleRepository, never()).findByPack_IdOrderByTrainingIndex(anyLong());
+        }
+
+        @Test
+        void deletePack_WhenStarterPack_ThenThrowsAndDeletesNothing() {
+            // when
+            CustomException exception = assertThrows(CustomException.class,
+                    () -> trainingService.deletePack(Pack.STARTER_PACK_ID));
+
+            // then
+            assertEquals(ErrorCode.CANNOT_DELETE_STARTER_PACK, exception.getErrorCode());
+            verify(packRepository, never()).delete(any());
+            verify(userPackRepository, never()).deleteAllByPack_Id(anyLong());
         }
 
         @Test
@@ -1018,6 +1127,7 @@ public class TrainingServiceTest {
                     .status(Status.getDefaultStatus())
                     .build();
 
+            when(userPackRepository.existsByUserIdAndPackId(user.getId(), packId)).thenReturn(true);
             when(trainingPuzzleRepository.findByPack_IdOrderByTrainingIndex(packId)).thenReturn(Collections.emptyList());
 
             // when & then
@@ -1053,6 +1163,22 @@ public class TrainingServiceTest {
                     trainingService.getTrainingPackList(user, request)
             );
             assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.NO_SUCH_TRAINING_PACKS);
+        }
+
+        @Test
+        void getTrainingPackListForAdmin_WhenDifficultyOrLangUnknown_ThenThrowsValidationError() {
+            // given
+            UserEntity user = TestUserEntityBuilder.builder().withId(100L).build();
+
+            // when & then
+            CustomException badDifficulty = assertThrows(CustomException.class, () ->
+                    trainingService.getTrainingPackListForAdmin(user, "EXTREME", "EN"));
+            CustomException badLang = assertThrows(CustomException.class, () ->
+                    trainingService.getTrainingPackListForAdmin(user, "LOW", "XX"));
+
+            assertThat(badDifficulty.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_ERROR);
+            assertThat(badLang.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_ERROR);
+            verify(packRepository, never()).findByDifficulty(any(Difficulty.class));
         }
 
         @Test

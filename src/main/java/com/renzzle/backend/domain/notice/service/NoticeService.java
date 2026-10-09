@@ -85,7 +85,7 @@ public class NoticeService {
         noticeRepository.deleteAllByUser(user);
 
         // 2. Attendance price
-        if (Boolean.TRUE.equals(userRepository.isLastAccessBeforeToday(user.getId()))) {
+        if (userRepository.markFirstAccessToday(user.getId(), clock.instant()) == 1) {
             int reward = appInfoService.getPrice(ItemPrice.ATTENDANCE_REWARD);
             userRepository.addUserCurrency(user.getId(), reward);
             contexts.add(NoticeContext.builder()
@@ -125,7 +125,7 @@ public class NoticeService {
     public List<GetAnnouncementForAdminResponse> getAnnouncementsForAdmin(String langCode) {
         List<Announcement> announcements = (langCode == null || langCode.isBlank())
                 ? announcementRepository.findAllByOrderByCreatedAtDescIdDesc()
-                : announcementRepository.findAllByLangCodeOrderByCreatedAtDescIdDesc(LangCode.getLangCode(langCode));
+                : announcementRepository.findAllByLangCodeOrderByCreatedAtDescIdDesc(parseLangFilter(langCode));
 
         Instant now = clock.instant();
         List<GetAnnouncementForAdminResponse> response = new ArrayList<>();
@@ -215,6 +215,15 @@ public class NoticeService {
     }
 
     // ===== helpers =====
+
+    // A raw query value, so an unknown code is the caller's mistake
+    private LangCode parseLangFilter(String langCode) {
+        try {
+            return LangCode.getLangCode(langCode);
+        } catch (IllegalArgumentException e) {
+            throw new CustomException(e.getMessage(), ErrorCode.VALIDATION_ERROR);
+        }
+    }
 
     private SystemInfo loadSystemInfo() {
         return systemInfoRepository.getSystemInfo()

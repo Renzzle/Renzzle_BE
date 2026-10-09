@@ -23,6 +23,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -46,26 +47,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(@Nonnull HttpServletRequest request, @Nonnull HttpServletResponse response, @Nonnull FilterChain filterChain) {
+    protected void doFilterInternal(@Nonnull HttpServletRequest request, @Nonnull HttpServletResponse response, @Nonnull FilterChain filterChain) throws IOException {
         try {
             String accessToken = resolveToken(request);
-            Long userId = jwtProvider.getUserId(accessToken);
-            MDC.put("userId", String.valueOf(userId));
-            UserDetails userDetails = loadUserByUserId(userId);
+            JwtProvider.TokenClaims claims = jwtProvider.parseAccessToken(accessToken);
+            MDC.put("userId", String.valueOf(claims.userId()));
+            UserDetails userDetails = loadUserByUserId(claims.userId(), claims.sessionId());
             Authentication authentication = UsernamePasswordAuthenticationToken.authenticated(userDetails, userDetails.getPassword(), userDetails.getAuthorities());
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
             filterChain.doFilter(request, response);
         } catch(CustomException e) {
             log.warn("Authentication failed: [{}] {}: {}", e.getErrorCode(), e.getClass().getSimpleName(), e.getMessage());
-            SecurityErrorResponder.writeJsonError(response, e.getErrorCode());
+            // Like the entry point, so an expired admin session lands on the login page
+            SecurityErrorResponder.respond(request, response, e.getErrorCode());
         } catch(Exception e) {
             log.error("Unexpected error during authentication", e);
             SecurityErrorResponder.writeJsonError(response, ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
-    public UserDetails loadUserByUserId(Long userId) throws CustomException {
+    public UserDetails loadUserByUserId(Long userId, String sessionId) throws CustomException {
         Optional<UserEntity> user = userRepository.findById(userId);
         if(user.isEmpty())
             throw new CustomException(ErrorCode.GLOBAL_NOT_FOUND);
@@ -74,7 +76,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if(adminRepository.existsByUser(user.get()))
             authorities.add(ADMIN_PREFIX);
 
-        return new UserDetailsImpl(user.get(), user.get().getPassword(), authorities);
+        return new UserDetailsImpl(user.get(), user.get().getPassword(), authorities, sessionId);
     }
 
     private String resolveToken(HttpServletRequest request) {

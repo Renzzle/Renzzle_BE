@@ -32,10 +32,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -239,7 +241,7 @@ public class TrainingService {
 
         puzzleCacheRepository.deleteAllByPuzzleTypeAndPuzzleId(PuzzleType.TRAINING, puzzleId);
         trainingPuzzleRepository.deleteById(puzzleId);
-        trainingPuzzleRepository.decreaseIndexesFrom(puzzle.get().getTrainingIndex());
+        trainingPuzzleRepository.decreaseIndexesFrom(pack.getId(), puzzle.get().getTrainingIndex());
 
         packRepository.decreasePuzzleCount(puzzle.get().getPack().getId());
     }
@@ -248,6 +250,9 @@ public class TrainingService {
     public SolveTrainingPuzzleResponse solveTrainingPuzzle(UserEntity user, Long puzzleId, Boolean getReward) {
         UserEntity lockedUser = userRepository.findByIdForUpdate(user.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
+        TrainingPuzzle puzzle = trainingPuzzleRepository.findById(puzzleId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
+        checkPackOwned(lockedUser.getId(), puzzle.getPack().getId());
 
         return applySolveTrainingPuzzle(lockedUser, puzzleId, getReward);
     }
@@ -289,6 +294,7 @@ public class TrainingService {
         if(packId == null) {
             throw new CustomException(ErrorCode.VALIDATION_ERROR);
         }
+        checkPackOwned(user.getId(), packId);
 
         List<TrainingPuzzle> trainingPuzzles = trainingPuzzleRepository.findByPack_IdOrderByTrainingIndex(packId);
 
@@ -314,6 +320,8 @@ public class TrainingService {
 
     @Transactional
     public Pack createPack(CreateTrainingPackRequest request) {
+        checkNoDuplicateLanguage(request.info());
+
         Pack pack = Pack.builder()
                 .price(request.price())
                 .difficulty(Difficulty.getDifficulty(request.difficulty()))
@@ -331,6 +339,8 @@ public class TrainingService {
 
     @Transactional
     public Pack updatePack(Long packId, UpdateTrainingPackRequest request) {
+        checkNoDuplicateLanguage(request.info());
+
         Pack pack = packRepository.findById(packId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
@@ -362,6 +372,9 @@ public class TrainingService {
 
     @Transactional
     public void deletePack(Long packId) {
+        if (Pack.STARTER_PACK_ID.equals(packId)) {
+            throw new CustomException(ErrorCode.CANNOT_DELETE_STARTER_PACK);
+        }
         Pack pack = packRepository.findById(packId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
@@ -431,14 +444,23 @@ public class TrainingService {
 
     @Transactional(readOnly = true)
     public List<GetPackResponse> getTrainingPackListForAdmin(UserEntity user, String difficulty, String preferredLang) {
-        List<Pack> packs = packRepository.findByDifficulty(Difficulty.getDifficulty(difficulty));
+        // Raw query values, so a bad one is the caller's mistake
+        final Difficulty requestedDifficulty;
+        final LangCode requestedLangCode;
+        try {
+            requestedDifficulty = Difficulty.getDifficulty(difficulty);
+            requestedLangCode = LangCode.getLangCode(preferredLang);
+        } catch (IllegalArgumentException e) {
+            throw new CustomException(e.getMessage(), ErrorCode.VALIDATION_ERROR);
+        }
+
+        List<Pack> packs = packRepository.findByDifficulty(requestedDifficulty);
 
         if (packs.isEmpty()) {
             throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACKS);
         }
 
         List<Long> packIds = packs.stream().map(Pack::getId).toList();
-        LangCode requestedLangCode = LangCode.getLangCode(preferredLang);
         LangCode defaultLangCode = LangCode.getLangCode(LangCode.LangCodeName.EN);
 
         Map<Long, List<PackTranslation>> translationsByPack = packTranslationRepository.findAllByPack_IdIn(packIds).stream()
@@ -472,6 +494,16 @@ public class TrainingService {
             }
         }
         return translations.get(0);
+    }
+
+    // A second row for one language makes the pack list and recommendation lookups fail
+    private void checkNoDuplicateLanguage(List<PackTranslationRequest> infoList) {
+        Set<String> seenLangCodes = new HashSet<>();
+        for (PackTranslationRequest info : infoList) {
+            if (!seenLangCodes.add(info.langCode().toUpperCase())) {
+                throw new CustomException("Duplicate language translation: " + info.langCode(), ErrorCode.VALIDATION_ERROR);
+            }
+        }
     }
 
     private List<PackTranslation> buildPackTranslations(Pack pack, List<PackTranslationRequest> infoList) {
@@ -552,6 +584,7 @@ public class TrainingService {
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
         TrainingPuzzle puzzle = trainingPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
+        checkPackOwned(lockedUser.getId(), puzzle.getPack().getId());
 
         int price = appInfoService.getPrice(HINT);
         lockedUser.purchase(price);
@@ -631,6 +664,12 @@ public class TrainingService {
                 .trainingIndex(puzzle.getTrainingIndex())
                 .isSolved(false)
                 .build();
+    }
+
+    private void checkPackOwned(Long userId, Long packId) {
+        if (!userPackRepository.existsByUserIdAndPackId(userId, packId)) {
+            throw new CustomException(ErrorCode.PACK_NOT_OWNED);
+        }
     }
 
     // Free at sign-up, no charge

@@ -15,7 +15,14 @@ import java.time.Instant;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder(toBuilder = true)
-@Table(name = "latest_rank_puzzle")
+@Table(
+        name = "latest_rank_puzzle",
+        // The ranking rebuild looks up who played within the last 30 days; with user_id in it,
+        // the index alone answers that, so MySQL uses it even when many rows are recent
+        indexes = {
+                @Index(columnList = "assigned_at, user_id")
+        }
+)
 public class LatestRankPuzzle {
 
     @Id

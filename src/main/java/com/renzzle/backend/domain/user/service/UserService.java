@@ -1,10 +1,12 @@
 package com.renzzle.backend.domain.user.service;
 
 import com.renzzle.backend.domain.appinfo.service.AppInfoService;
+import com.renzzle.backend.domain.auth.service.AuthService;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlesResponse;
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
+import com.renzzle.backend.domain.puzzle.rank.service.RankService;
 import com.renzzle.backend.domain.user.api.response.ChangeNicknameResponse;
 import com.renzzle.backend.domain.user.api.response.UserResponse;
 import com.renzzle.backend.domain.user.dao.UserRepository;
@@ -15,6 +17,7 @@ import com.renzzle.backend.global.exception.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +34,8 @@ public class UserService {
     private final CommunityPuzzleRepository communityPuzzleRepository;
     private final UserCommunityPuzzleRepository userCommunityPuzzleRepository;
     private final AppInfoService appInfoService;
+    private final AuthService authService;
+    private final RankService rankService;
 
     public UserResponse getUserResponse(UserEntity user) {
         return UserResponse.builder()
@@ -48,6 +53,8 @@ public class UserService {
         if (updatedRows == 0) {
             throw new CustomException(ErrorCode.CANNOT_FIND_USER);
         }
+        authService.revokeAllSessions(user.getId());
+        rankService.removeFromRankings(user.getId());
         return user.getId();
     }
 
@@ -65,6 +72,12 @@ public class UserService {
 
         int price = appInfoService.getPrice(ItemPrice.CHANGE_NICKNAME);
         persistedUser.get().changeNickname(nickname, price);
+        try {
+            // Flushed here, since a concurrent change to the same name only fails on the unique key
+            userRepository.flush();
+        } catch (DataIntegrityViolationException e) {
+            throw new CustomException(ErrorCode.DUPLICATE_NICKNAME);
+        }
         return ChangeNicknameResponse.builder()
                 .price(price)
                 .build();

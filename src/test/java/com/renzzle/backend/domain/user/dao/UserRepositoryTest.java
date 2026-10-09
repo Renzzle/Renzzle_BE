@@ -100,13 +100,16 @@ class UserRepositoryTest {
     }
 
     @Test
-    void isLastAccessBeforeToday_WhenLastAccessedYesterday_ThenReturnTrue() {
+    void markFirstAccessToday_WhenLastAccessedBeforeToday_ThenMarksOnlyOnce() {
         Instant yesterday = FIXED_INSTANT.minusSeconds(86400);
         var user = TestUserEntityBuilder.builder().withLastAccessedAt(yesterday).save(userRepository);
+        Instant now = Instant.now();
 
-        Boolean result = userRepository.isLastAccessBeforeToday(user.getId());
+        int first = userRepository.markFirstAccessToday(user.getId(), now);
+        int second = userRepository.markFirstAccessToday(user.getId(), now);
 
-        assertThat(result).isTrue();
+        assertThat(first).isEqualTo(1);
+        assertThat(second).isZero();
     }
 
     @Test

@@ -4,6 +4,8 @@ import com.renzzle.backend.domain.appinfo.service.AppInfoService;
 import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
+import com.renzzle.backend.domain.puzzle.community.dao.projection.AuthorStatsProjection;
+import com.renzzle.backend.domain.puzzle.community.dao.projection.SolvedCountProjection;
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.rank.api.request.RankResultRequest;
 import com.renzzle.backend.domain.puzzle.rank.api.response.*;
@@ -15,6 +17,7 @@ import com.renzzle.backend.domain.puzzle.shared.util.ELOUtils;
 import com.renzzle.backend.domain.puzzle.training.dao.TrainingPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.user.dao.UserRepository;
+import com.renzzle.backend.domain.user.dao.projection.UserNicknameProjection;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
@@ -22,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -30,23 +34,30 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiFunction;
-import java.util.function.Predicate;
-import java.util.function.ToDoubleFunction;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.renzzle.backend.domain.puzzle.shared.util.ELOUtils.TARGET_WIN_PROBABILITY;
 import static com.renzzle.backend.domain.puzzle.shared.util.RatingUtil.MAX_RATING;
 import static com.renzzle.backend.domain.puzzle.shared.util.RatingUtil.MIN_RATING;
 import static com.renzzle.backend.global.common.constant.ItemPrice.RANK_REWARD;
+import static com.renzzle.backend.global.common.constant.StringConstant.DELETED_USER;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class RankService {
+
+    // Sorted sets of user ids scored by rating or puzzler score
+    private static final String RATING_RANKING_KEY = "ranking:rating";
+    private static final String PUZZLER_RANKING_KEY = "ranking:puzzler";
+    private static final String RANKING_TEMP_KEY_SUFFIX = ":tmp";
+    private static final int RANKING_SIZE = 100;
 
     private final RedisTemplate<String, RankSessionData> redisTemplate;
     private final TrainingPuzzleRepository trainingPuzzleRepository;
@@ -55,7 +66,7 @@ public class RankService {
     private final LatestRankPuzzleRepository latestRankPuzzleRepository;
     private final UserCommunityPuzzleRepository userCommunityPuzzleRepository;
     private final Clock clock;
-    private final RedisTemplate<String, Object> redisRankingTemplate;
+    private final StringRedisTemplate redisRankingTemplate;
     private final AppInfoService appInfoService;
 
     @Value("${rank.session.ttl}")
@@ -122,6 +133,11 @@ public class RankService {
                 .findTopByUserOrderByIdDesc(user)
                 .orElseThrow(() -> new CustomException(ErrorCode.LATEST_PUZZLE_NOT_FOUND));
 
+        // Another board means the app is resending a result whose response it never got
+        if (request.boardStatus() != null && !request.boardStatus().equals(previousPuzzle.getBoardStatus())) {
+            return replayLostResponse(user, request.boardStatus(), previousPuzzle);
+        }
+
         previousPuzzle.solvedUpdate(request.isSolved());
 
         // Revert from the assignment snapshot, not the Redis session
@@ -168,11 +184,32 @@ public class RankService {
         session.setBoardState(nextPuzzle.boardStatus());
         session.setWinnerColor(nextPuzzle.winColor().getName());
 
-        writeSessionAfterCommit(redisKey, session, currentTTL);
+        replaceSessionAfterCommit(redisKey, session, currentTTL);
+
+        // The server can't check isSolved, so keep a trail for spotting scripted results
+        log.info("Rank result. puzzleType={}, puzzleId={}, solved={}, elapsedMs={}",
+                previousPuzzle.getPuzzleType(), previousPuzzle.getPuzzleId(), request.isSolved(),
+                Duration.between(previousPuzzle.getAssignedAt(), clock.instant()).toMillis());
 
         return RankResultResponse.builder()
                 .boardStatus(nextPuzzle.boardStatus())
                 .winColor(nextPuzzle.winColor().getName())
+                .build();
+    }
+
+    // The answer already counted, so hand back the puzzle the lost response carried instead of applying it again
+    private RankResultResponse replayLostResponse(UserEntity user, String boardStatus, LatestRankPuzzle current) {
+        LatestRankPuzzle answered = latestRankPuzzleRepository
+                .findTopByUserAndIdLessThanOrderByIdDesc(user, current.getId())
+                .filter(puzzle -> boardStatus.equals(puzzle.getBoardStatus()))
+                .orElseThrow(() -> new CustomException(ErrorCode.RANK_PUZZLE_MISMATCH));
+
+        log.info("Rank result resent after a lost response. puzzleType={}, puzzleId={}",
+                answered.getPuzzleType(), answered.getPuzzleId());
+
+        return RankResultResponse.builder()
+                .boardStatus(current.getBoardStatus())
+                .winColor(current.getWinColor().getName())
                 .build();
     }
 
@@ -228,6 +265,11 @@ public class RankService {
         runAfterCommit(() -> redisTemplate.opsForValue().set(redisKey, session, ttlSeconds, TimeUnit.SECONDS));
     }
 
+    // Overwrite only, so an ended session isn't revived
+    private void replaceSessionAfterCommit(String redisKey, RankSessionData session, long ttlSeconds) {
+        runAfterCommit(() -> redisTemplate.opsForValue().setIfPresent(redisKey, session, ttlSeconds, TimeUnit.SECONDS));
+    }
+
     private void runAfterCommit(Runnable action) {
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
             action.run();
@@ -237,6 +279,20 @@ public class RankService {
             @Override
             public void afterCommit() {
                 action.run();
+            }
+        });
+    }
+
+    private void runAfterRollback(Runnable action) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status == STATUS_ROLLED_BACK) {
+                    action.run();
+                }
             }
         });
     }
@@ -259,30 +315,34 @@ public class RankService {
 
     @Transactional
     public RankEndResponse endRankGame(UserEntity userData) {
-        String redisKey = String.valueOf(userData.getId());
-        RankSessionData session = redisTemplate.opsForValue().get(redisKey);
+        // Lock first so a repeated end finds the session already claimed
+        UserEntity user = userRepository.findByIdForUpdate(userData.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
 
-        if (session == null) {
-            throw new CustomException(ErrorCode.EMPTY_SESSION_DATA);
-        }
+        String redisKey = String.valueOf(user.getId());
+        RankSessionData session = getSessionOrThrow(redisKey);
         if (!session.isStarted()) {
             throw new CustomException(ErrorCode.IS_NOT_STARTED);
         }
 
-        UserEntity user = userRepository.findByIdForUpdate(userData.getId())
-                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
+        Long remainingTtl = redisTemplate.getExpire(redisKey, TimeUnit.SECONDS);
+        long restoreTtl = (remainingTtl != null && remainingTtl > 0) ? remainingTtl : sessionTTLSeconds;
+        if (!Boolean.TRUE.equals(redisTemplate.delete(redisKey))) {
+            throw new CustomException(ErrorCode.EMPTY_SESSION_DATA);
+        }
+        // Restore on rollback so the game can still be ended
+        runAfterRollback(() -> redisTemplate.opsForValue().set(redisKey, session, restoreTtl, TimeUnit.SECONDS));
 
-        List<LatestRankPuzzle> solvedPuzzles = latestRankPuzzleRepository.findAllByUser(user).stream()
+        List<LatestRankPuzzle> puzzles = latestRankPuzzleRepository.findAllByUser(user);
+        int solvedCount = (int) puzzles.stream()
                 .filter(LatestRankPuzzle::getIsSolved)
-                .toList();
-
-        int solvedCount = solvedPuzzles.size();
+                .count();
         int reward = solvedCount * appInfoService.getPrice(RANK_REWARD);
 
         user.getReward(reward);
 
-        // After commit, so a rollback can't strand the reward
-        runAfterCommit(() -> redisTemplate.delete(redisKey));
+        log.info("Rank game ended. puzzles={}, solved={}, reward={}, rating={}",
+                puzzles.size(), solvedCount, reward, user.getRating());
 
         return RankEndResponse.builder()
                 .rating(user.getRating())
@@ -365,6 +425,13 @@ public class RankService {
 
         List<LatestRankPuzzle> puzzles = latestRankPuzzleRepository.findAllByUserOrderByAssignedAtAsc(user);
 
+        // Mid-game the newest puzzle is the one on the board, so its answer waits until the game ends
+        RankSessionData session = redisTemplate.opsForValue().get(String.valueOf(user.getId()));
+        if (session != null && session.isStarted()) {
+            long currentPuzzleId = puzzles.stream().mapToLong(LatestRankPuzzle::getId).max().orElse(-1);
+            puzzles = puzzles.stream().filter(puzzle -> puzzle.getId() != currentPuzzleId).toList();
+        }
+
         return puzzles.stream()
                 .map(puzzle -> RankArchive.builder()
                         .boardStatus(puzzle.getBoardStatus())
@@ -377,26 +444,17 @@ public class RankService {
 
     @Transactional(readOnly = true)
     public GetRatingRankingResponse getRatingRanking(UserEntity userData) {
-        String key = "user:ranking";
-
         List<UserRatingRankInfo> top100 = extractTopRankedUsers(
-                key,
-                UserRatingRankInfo::rating,
-                (rank, info) -> UserRatingRankInfo.builder()
+                RATING_RANKING_KEY,
+                (rank, nickname, rating) -> UserRatingRankInfo.builder()
                         .rank(rank)
-                        .nickname(info.nickname())
-                        .rating(info.rating())
+                        .nickname(nickname)
+                        .rating(rating)
                         .build()
         );
 
-        int myRank = findMyRank(
-                key,
-                info -> info.nickname().equals(userData.getNickname()),
-                UserRatingRankInfo::rating
-        );
-
         UserRatingRankInfo myInfo = UserRatingRankInfo.builder()
-                .rank(myRank)
+                .rank(findMyRank(RATING_RANKING_KEY, userData).rank())
                 .nickname(userData.getNickname())
                 .rating(userData.getRating())
                 .build();
@@ -419,35 +477,22 @@ public class RankService {
 
     @Transactional(readOnly = true)
     public GetPuzzlerRankingResponse getPuzzlerRanking(UserEntity user) {
-        String key = "user:puzzler:ranking";
-
         List<UserPuzzlerRankInfo> top100 = extractTopRankedUsers(
-                key,
-                UserPuzzlerRankInfo::score,
-                (rank, info) -> UserPuzzlerRankInfo.builder()
+                PUZZLER_RANKING_KEY,
+                (rank, nickname, score) -> UserPuzzlerRankInfo.builder()
                         .rank(rank)
-                        .nickname(info.nickname())
-                        .score(info.score())
+                        .nickname(nickname)
+                        .score(score)
                         .build()
         );
 
-        int myRank = findMyRank(
-                key,
-                info -> info.nickname().equals(user.getNickname()),
-                UserPuzzlerRankInfo::score
-        );
-
-        // My score may not be retrievable from Redis, so compute it separately or default to 0
-        double myScore = top100.stream()
-                .filter(i -> i.nickname().equals(user.getNickname()))
-                .findFirst()
-                .map(UserPuzzlerRankInfo::score)
-                .orElse(0.0);
+        // Taken from the full ranking, since the user may be outside the top 100
+        MyRank myRank = findMyRank(PUZZLER_RANKING_KEY, user);
 
         UserPuzzlerRankInfo myInfo = UserPuzzlerRankInfo.builder()
-                .rank(myRank)
+                .rank(myRank.rank())
                 .nickname(user.getNickname())
-                .score(myScore)
+                .score(myRank.score())
                 .build();
 
         return GetPuzzlerRankingResponse.builder()
@@ -457,25 +502,34 @@ public class RankService {
     }
 
 
-    @SuppressWarnings("unchecked")
-    private <T, R> List<R> extractTopRankedUsers(
-            String key,
-            ToDoubleFunction<T> scoreExtractor,
-            BiFunction<Integer, T, R> builder
-    ) {
-        Set<ZSetOperations.TypedTuple<Object>> rawSet =
+    @FunctionalInterface
+    private interface RankEntryBuilder<R> {
+        R build(int rank, String nickname, double score);
+    }
+
+    // Nicknames are read now rather than stored in the ranking, so a renamed user shows the new one
+    private <R> List<R> extractTopRankedUsers(String key, RankEntryBuilder<R> builder) {
+        Set<ZSetOperations.TypedTuple<String>> entries =
                 Optional.ofNullable(redisRankingTemplate.opsForZSet()
-                                .reverseRangeWithScores(key, 0, 99))
+                                .reverseRangeWithScores(key, 0, RANKING_SIZE - 1))
                         .orElse(Collections.emptySet());
+        if (entries.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> userIds = entries.stream()
+                .map(entry -> Long.valueOf(entry.getValue()))
+                .toList();
+        Map<String, String> nicknames = userRepository.findNicknamesByIdIn(userIds).stream()
+                .collect(Collectors.toMap(user -> String.valueOf(user.getId()), UserNicknameProjection::getNickname));
 
         List<R> result = new ArrayList<>();
         int currentRank = 1;
         double lastScore = -1;
         int rankCounter = 0;
 
-        for (ZSetOperations.TypedTuple<Object> tuple : rawSet) {
-            T obj = (T) tuple.getValue();
-            double score = scoreExtractor.applyAsDouble(obj);
+        for (ZSetOperations.TypedTuple<String> entry : entries) {
+            double score = entry.getScore();
             rankCounter++;
 
             if (Double.compare(score, lastScore) != 0) {
@@ -483,90 +537,99 @@ public class RankService {
                 lastScore = score;
             }
 
-            result.add(builder.apply(currentRank, obj));
+            // Missing when the user withdrew after the ranking was built
+            String nickname = nicknames.getOrDefault(entry.getValue(), DELETED_USER);
+            result.add(builder.build(currentRank, nickname, score));
         }
 
         return result;
     }
 
-    @SuppressWarnings("unchecked")
-    private <T> int findMyRank(
-            String key,
-            Predicate<T> isMyself,
-            ToDoubleFunction<T> scoreExtractor
-    ) {
-        Set<ZSetOperations.TypedTuple<Object>> fullSet =
-                Optional.ofNullable(redisRankingTemplate.opsForZSet()
-                                .reverseRangeWithScores(key, 0, -1))
-                        .orElse(Collections.emptySet());
+    // Rank -1 and score 0 when the user isn't in the ranking
+    private record MyRank(int rank, double score) {}
 
-        int tieAwareRank = 1;
-        double lastScore = -1;
-        int rankCounter = 0;
-
-        for (ZSetOperations.TypedTuple<Object> tuple : fullSet) {
-            T obj = (T) tuple.getValue();
-            double score = scoreExtractor.applyAsDouble(obj);
-            rankCounter++;
-
-            if (Double.compare(score, lastScore) != 0) {
-                tieAwareRank = rankCounter;
-                lastScore = score;
-            }
-
-            if (isMyself.test(obj)) {
-                return tieAwareRank;
-            }
+    // Tied users share a rank, so it is one more than the number of higher scores
+    private MyRank findMyRank(String key, UserEntity user) {
+        ZSetOperations<String, String> ranking = redisRankingTemplate.opsForZSet();
+        Double score = ranking.score(key, String.valueOf(user.getId()));
+        if (score == null) {
+            return new MyRank(-1, 0.0);
         }
 
-        return -1;
+        // Counting from the next double up leaves out the user's own score
+        Long higher = ranking.count(key, Math.nextUp(score), Double.POSITIVE_INFINITY);
+        return new MyRank(Objects.requireNonNullElse(higher, 0L).intValue() + 1, score);
     }
 
-    @Scheduled(fixedRate = 1000 * 60 * 60) // Runs every 60 minutes
+    // Withdrawn users leave the rankings now rather than at the next rebuild, once the withdrawal commits
+    public void removeFromRankings(Long userId) {
+        String member = String.valueOf(userId);
+        runAfterCommit(() -> {
+            redisRankingTemplate.opsForZSet().remove(RATING_RANKING_KEY, member);
+            redisRankingTemplate.opsForZSet().remove(PUZZLER_RANKING_KEY, member);
+        });
+    }
+
+    @Scheduled(fixedDelay = 1000 * 60 * 5) // Runs at startup, then 5 minutes after each run ends
     public void updateRankingCache() {
-        String rankingKey = "user:ranking";
-        String puzzlerRankingKey = "user:puzzler:ranking";
-
         Instant oneMonthAgo = Instant.now(clock).minus(30, ChronoUnit.DAYS);
-        List<UserEntity> activeRatingUsers = latestRankPuzzleRepository.findActiveUsersWithinPeriod(oneMonthAgo);
 
-        redisRankingTemplate.delete(rankingKey);
-
-        for (UserEntity user : activeRatingUsers) {
-            UserRatingRankInfo info = UserRatingRankInfo.builder()
-                    .rank(0)
-                    .nickname(user.getNickname())
-                    .rating(user.getRating())
-                    .build();
-
-            redisRankingTemplate.opsForZSet().add(rankingKey, info, user.getRating());
+        Map<String, Double> ratings = new HashMap<>();
+        for (UserEntity user : latestRankPuzzleRepository.findActiveUsersWithinPeriod(oneMonthAgo)) {
+            ratings.put(String.valueOf(user.getId()), user.getRating());
         }
+        publishRanking(RATING_RANKING_KEY, ratings);
+
         List<UserEntity> creators = communityPuzzleRepository.findUsersWhoCreatedPuzzlesSince(oneMonthAgo);
         List<UserEntity> solvers = userCommunityPuzzleRepository.findUsersWhoSolvedPuzzlesSince(oneMonthAgo);
 
-        Set<UserEntity> activePuzzlerUsers = new HashSet<>();
-        activePuzzlerUsers.addAll(creators);
-        activePuzzlerUsers.addAll(solvers);
+        Set<Long> activePuzzlerIds = new HashSet<>();
+        creators.forEach(user -> activePuzzlerIds.add(user.getId()));
+        solvers.forEach(user -> activePuzzlerIds.add(user.getId()));
 
-        redisRankingTemplate.delete(puzzlerRankingKey);
+        publishRanking(PUZZLER_RANKING_KEY, puzzlerScores(activePuzzlerIds));
+    }
 
-        for (UserEntity user : activePuzzlerUsers) {
-            long a = userCommunityPuzzleRepository.countSolvedByUser(user.getId());
-            long b = communityPuzzleRepository.countByAuthor(user.getId());
-            int likes = communityPuzzleRepository.sumLikesByUser(user.getId());
-            int dislikes = communityPuzzleRepository.sumDislikesByUser(user.getId());
-            int c = Math.max(0, likes - dislikes);
+    // Two grouped queries cover every user, instead of four queries per user
+    private Map<String, Double> puzzlerScores(Set<Long> userIds) {
+        if (userIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, Long> solvedCounts = userCommunityPuzzleRepository.countSolvedByUserIds(userIds).stream()
+                .collect(Collectors.toMap(SolvedCountProjection::getUserId, SolvedCountProjection::getSolvedCount));
+        Map<Long, AuthorStatsProjection> authorStats = communityPuzzleRepository.sumAuthorStatsByUserIds(userIds).stream()
+                .collect(Collectors.toMap(AuthorStatsProjection::getUserId, Function.identity()));
+
+        Map<String, Double> scores = new HashMap<>();
+        for (Long userId : userIds) {
+            // A user missing from a result has nothing of that kind yet
+            long a = solvedCounts.getOrDefault(userId, 0L);
+            AuthorStatsProjection stats = authorStats.get(userId);
+            long b = stats != null ? stats.getPuzzleCount() : 0;
+            long c = stats != null ? Math.max(0, stats.getLikeSum() - stats.getDislikeSum()) : 0;
 
             double score = Math.log((a + 1.0) * Math.pow(b + 1.0, 2) * Math.pow(c + 1.0, 3) + 1) * 100;
-            score = Math.floor(score);
-
-            UserPuzzlerRankInfo info = UserPuzzlerRankInfo.builder()
-                    .rank(0)
-                    .nickname(user.getNickname())
-                    .score(score)
-                    .build();
-
-            redisRankingTemplate.opsForZSet().add(puzzlerRankingKey, info, score);
+            scores.put(String.valueOf(userId), Math.floor(score));
         }
+        return scores;
+    }
+
+    // Built under a temporary key and renamed over the live one, so readers never see a half-filled ranking
+    private void publishRanking(String key, Map<String, Double> scores) {
+        if (scores.isEmpty()) {
+            // ZADD needs at least one member, so an empty ranking is a deleted key
+            redisRankingTemplate.delete(key);
+            return;
+        }
+
+        Set<ZSetOperations.TypedTuple<String>> entries = scores.entrySet().stream()
+                .map(entry -> ZSetOperations.TypedTuple.of(entry.getKey(), entry.getValue()))
+                .collect(Collectors.toSet());
+
+        String tempKey = key + RANKING_TEMP_KEY_SUFFIX;
+        redisRankingTemplate.delete(tempKey);
+        redisRankingTemplate.opsForZSet().add(tempKey, entries);
+        redisRankingTemplate.rename(tempKey, key);
     }
 }
