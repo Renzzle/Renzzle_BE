@@ -30,6 +30,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -172,6 +173,11 @@ public class RankService {
 
         replaceSessionAfterCommit(redisKey, session, currentTTL);
 
+        // The server can't check isSolved, so keep a trail for spotting scripted results
+        log.info("Rank result. puzzleType={}, puzzleId={}, solved={}, elapsedMs={}",
+                previousPuzzle.getPuzzleType(), previousPuzzle.getPuzzleId(), request.isSolved(),
+                Duration.between(previousPuzzle.getAssignedAt(), clock.instant()).toMillis());
+
         return RankResultResponse.builder()
                 .boardStatus(nextPuzzle.boardStatus())
                 .winColor(nextPuzzle.winColor().getName())
@@ -298,14 +304,16 @@ public class RankService {
         // Restore on rollback so the game can still be ended
         runAfterRollback(() -> redisTemplate.opsForValue().set(redisKey, session, restoreTtl, TimeUnit.SECONDS));
 
-        List<LatestRankPuzzle> solvedPuzzles = latestRankPuzzleRepository.findAllByUser(user).stream()
+        List<LatestRankPuzzle> puzzles = latestRankPuzzleRepository.findAllByUser(user);
+        int solvedCount = (int) puzzles.stream()
                 .filter(LatestRankPuzzle::getIsSolved)
-                .toList();
-
-        int solvedCount = solvedPuzzles.size();
+                .count();
         int reward = solvedCount * appInfoService.getPrice(RANK_REWARD);
 
         user.getReward(reward);
+
+        log.info("Rank game ended. puzzles={}, solved={}, reward={}, rating={}",
+                puzzles.size(), solvedCount, reward, user.getRating());
 
         return RankEndResponse.builder()
                 .rating(user.getRating())
