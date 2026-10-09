@@ -32,10 +32,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -318,6 +320,8 @@ public class TrainingService {
 
     @Transactional
     public Pack createPack(CreateTrainingPackRequest request) {
+        checkNoDuplicateLanguage(request.info());
+
         Pack pack = Pack.builder()
                 .price(request.price())
                 .difficulty(Difficulty.getDifficulty(request.difficulty()))
@@ -335,6 +339,8 @@ public class TrainingService {
 
     @Transactional
     public Pack updatePack(Long packId, UpdateTrainingPackRequest request) {
+        checkNoDuplicateLanguage(request.info());
+
         Pack pack = packRepository.findById(packId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
@@ -479,6 +485,16 @@ public class TrainingService {
             }
         }
         return translations.get(0);
+    }
+
+    // A second row for one language makes the pack list and recommendation lookups fail
+    private void checkNoDuplicateLanguage(List<PackTranslationRequest> infoList) {
+        Set<String> seenLangCodes = new HashSet<>();
+        for (PackTranslationRequest info : infoList) {
+            if (!seenLangCodes.add(info.langCode().toUpperCase())) {
+                throw new CustomException("Duplicate language translation: " + info.langCode(), ErrorCode.VALIDATION_ERROR);
+            }
+        }
     }
 
     private List<PackTranslation> buildPackTranslations(Pack pack, List<PackTranslationRequest> infoList) {

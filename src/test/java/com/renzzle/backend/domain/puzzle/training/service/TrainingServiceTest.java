@@ -904,6 +904,43 @@ public class TrainingServiceTest {
         }
 
         @Test
+        void createPack_WhenSameLanguageTwice_ThenThrowsWithoutSaving() {
+            // given: language codes are matched without case
+            List<PackTranslationRequest> translationRequests = Arrays.asList(
+                    new PackTranslationRequest("KO", "초보용 1", "강상민", "설명"),
+                    new PackTranslationRequest("ko", "초보용 2", "강상민", "설명")
+            );
+            CreateTrainingPackRequest request = new CreateTrainingPackRequest(translationRequests, 1000, "LOW");
+
+            // when
+            CustomException exception = assertThrows(CustomException.class, () -> trainingService.createPack(request));
+
+            // then
+            assertEquals(ErrorCode.VALIDATION_ERROR, exception.getErrorCode());
+            verify(packRepository, never()).save(any(Pack.class));
+            verify(packTranslationRepository, never()).saveAll(anyList());
+        }
+
+        @Test
+        void updatePack_WhenSameLanguageTwice_ThenThrowsWithoutChangingThePack() {
+            // given
+            List<PackTranslationRequest> translationRequests = Arrays.asList(
+                    new PackTranslationRequest("EN", "Beginner 1", "Kang", "Description"),
+                    new PackTranslationRequest("EN", "Beginner 2", "Kang", "Description")
+            );
+            UpdateTrainingPackRequest request = new UpdateTrainingPackRequest(translationRequests, 1200, "HIGH");
+
+            // when
+            CustomException exception = assertThrows(CustomException.class, () -> trainingService.updatePack(1L, request));
+
+            // then
+            assertEquals(ErrorCode.VALIDATION_ERROR, exception.getErrorCode());
+            verify(packRepository, never()).save(any(Pack.class));
+            verify(packTranslationRepository, never()).deleteAll(anyList());
+            verify(packTranslationRepository, never()).saveAll(anyList());
+        }
+
+        @Test
         void updatePack_WhenPackMissing_ThenThrowsNoSuchTrainingPackWithoutSaving() {
             // given
             Long packId = 1L;
