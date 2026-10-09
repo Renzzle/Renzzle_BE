@@ -7,7 +7,6 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -30,9 +29,6 @@ import java.time.Instant;
         name = "cache_puzzle",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_type_puzzle", columnNames = {"puzzle_type", "puzzle_id"})
-        },
-        indexes = {
-                @Index(name = "idx_root_board_state", columnList = "root_board_state")
         }
 )
 public class PuzzleCache {
