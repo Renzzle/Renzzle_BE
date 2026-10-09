@@ -18,9 +18,10 @@ import java.time.Instant;
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {"user_id", "community_id"})
         },
-        // The ranking rebuild looks up who solved within the last 30 days
+        // The ranking rebuild looks up who solved within the last 30 days; with user_id in it,
+        // the index alone answers that, so MySQL uses it even when many rows are recent
         indexes = {
-                @Index(columnList = "solved_at")
+                @Index(columnList = "solved_at, user_id")
         }
 )
 public class UserCommunityPuzzle {
