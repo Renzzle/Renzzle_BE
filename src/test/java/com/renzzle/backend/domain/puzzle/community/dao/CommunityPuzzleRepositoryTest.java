@@ -39,26 +39,59 @@ class CommunityPuzzleRepositoryTest {
     private UserCommunityPuzzleRepository userCommunityPuzzleRepository;
 
     @Test
-    void increaseViews_WhenRankResultChangedTheRowMeanwhile_ThenKeepsTheNewRating() {
-        // Given: the entity is loaded, then a rank result updates the row directly
+    void updateVerification_WhenRankResultAndViewChangedTheRowMeanwhile_ThenKeepsBoth() {
+        // Given: the entity is loaded, then a rank result and a view update the row directly
         UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
-        CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user).withRating(1000.0).save(communityPuzzleRepository);
+        CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user)
+                .withRating(1000.0)
+                .withView(10)
+                .withVerified(false)
+                .save(communityPuzzleRepository);
         entityManager.flush();
         entityManager.clear();
 
         CommunityPuzzle loaded = communityPuzzleRepository.findById(puzzle.getId()).orElseThrow();
         communityPuzzleRepository.applyRankResult(puzzle.getId(), 50.0, 0.0, 5000.0);
+        communityPuzzleRepository.increaseView(puzzle.getId());
 
         // When
-        loaded.increaseViews();
+        loaded.updateVerification(true);
         entityManager.flush();
         entityManager.clear();
 
         // Then
         CommunityPuzzle stored = communityPuzzleRepository.findById(puzzle.getId()).orElseThrow();
+        assertThat(stored.getIsVerified()).isTrue();
         assertThat(stored.getRating()).isEqualTo(1050.0);
         assertThat(stored.getRankAttemptCount()).isEqualTo(1);
-        assertThat(stored.getView()).isEqualTo(loaded.getView());
+        assertThat(stored.getView()).isEqualTo(11);
+    }
+
+    @Test
+    void counterUpdates_WhenApplied_ThenAddToTheStoredValues() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
+        CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user)
+                .withView(10)
+                .withSolvedCount(4)
+                .withLikeCount(2)
+                .withDislikeCount(1)
+                .save(communityPuzzleRepository);
+        entityManager.flush();
+        entityManager.clear();
+
+        // When: a like replacing a dislike, a view and a first solve
+        communityPuzzleRepository.addVoteCounts(puzzle.getId(), 1, -1);
+        communityPuzzleRepository.increaseView(puzzle.getId());
+        communityPuzzleRepository.increaseSolvedCount(puzzle.getId());
+        entityManager.clear();
+
+        // Then
+        CommunityPuzzle stored = communityPuzzleRepository.findById(puzzle.getId()).orElseThrow();
+        assertThat(stored.getLikeCount()).isEqualTo(3);
+        assertThat(stored.getDislikeCount()).isZero();
+        assertThat(stored.getView()).isEqualTo(11);
+        assertThat(stored.getSolvedCount()).isEqualTo(5);
     }
 
     @Test

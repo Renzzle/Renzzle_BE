@@ -82,6 +82,25 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
             "FROM community_puzzle", nativeQuery = true)
     List<CommunityBoardKeyProjection> findAllBoardKeysIncludingDeleted();
 
+    // Counters change in single statements, so concurrent views and votes add up instead of overwriting
+    @Modifying
+    @Transactional
+    @Query("UPDATE CommunityPuzzle cp SET cp.view = cp.view + 1 WHERE cp.id = :puzzleId")
+    void increaseView(@Param("puzzleId") Long puzzleId);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE CommunityPuzzle cp SET cp.solvedCount = cp.solvedCount + 1 WHERE cp.id = :puzzleId")
+    void increaseSolvedCount(@Param("puzzleId") Long puzzleId);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE CommunityPuzzle cp SET cp.likeCount = cp.likeCount + :likeDelta, " +
+            "cp.dislikeCount = cp.dislikeCount + :dislikeDelta WHERE cp.id = :puzzleId")
+    void addVoteCounts(@Param("puzzleId") Long puzzleId,
+                       @Param("likeDelta") int likeDelta,
+                       @Param("dislikeDelta") int dislikeDelta);
+
     // Native, so it reaches soft-deleted puzzles as well
     @Modifying
     @Transactional

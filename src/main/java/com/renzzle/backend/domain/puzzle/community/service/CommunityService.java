@@ -341,6 +341,8 @@ public class CommunityService {
 
     @Transactional
     public GetSingleCommunityPuzzleResponse getCommunityPuzzleById(Long puzzleId, UserEntity user) {
+        // Counted before loading, so the response already includes this view
+        communityPuzzleRepository.increaseView(puzzleId);
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
 
@@ -350,8 +352,6 @@ public class CommunityService {
                 .getMyLikeDislike(user.getId(), puzzleId);
         Boolean myLike = result.map(LikeDislikeProjection::getIsLiked).orElse(false);
         Boolean myDislike = result.map(LikeDislikeProjection::getIsDisliked).orElse(false);
-
-        puzzle.increaseViews();
 
         return GetSingleCommunityPuzzleResponse.builder()
                 .id(puzzle.getId())
@@ -431,7 +431,7 @@ public class CommunityService {
         }
 
         if (firstSolve) {
-            puzzle.increaseSolvedCount();
+            communityPuzzleRepository.increaseSolvedCount(puzzleId);
         }
 
         return firstSolve;
@@ -439,55 +439,63 @@ public class CommunityService {
 
     @Transactional
     public boolean toggleLike(Long puzzleId, UserEntity user) {
+        // Lock first, so rapid taps by one user toggle in turn instead of reading the same state
+        UserEntity lockedUser = userRepository.findByIdForUpdate(user.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
 
-        Optional<UserCommunityPuzzle> ucp = userCommunityPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId);
+        Optional<UserCommunityPuzzle> ucp = userCommunityPuzzleRepository.findByUserIdAndPuzzleId(lockedUser.getId(), puzzleId);
         if (ucp.isPresent()) {
-            if (ucp.get().isLiked()) puzzle.decreaseLikedCount();
-            else {
-                if (ucp.get().isDisliked()) puzzle.decreaseDislikedCount();
-                puzzle.increaseLikedCount();
+            if (ucp.get().isLiked()) {
+                communityPuzzleRepository.addVoteCounts(puzzleId, -1, 0);
+            } else {
+                // A like replaces the user's dislike
+                communityPuzzleRepository.addVoteCounts(puzzleId, 1, ucp.get().isDisliked() ? -1 : 0);
             }
             return ucp.get().toggleLike(clock.instant());
         }
 
         userCommunityPuzzleRepository.save(
                 UserCommunityPuzzle.builder()
-                        .user(user)
+                        .user(lockedUser)
                         .puzzle(puzzle)
                         .isLiked(true)
                         .likedAt(clock.instant())
                         .build()
         );
-        puzzle.increaseLikedCount();
+        communityPuzzleRepository.addVoteCounts(puzzleId, 1, 0);
 
         return true;
     }
 
     @Transactional
     public boolean toggleDislike(Long puzzleId, UserEntity user) {
+        // Lock first, so rapid taps by one user toggle in turn instead of reading the same state
+        UserEntity lockedUser = userRepository.findByIdForUpdate(user.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
 
-        Optional<UserCommunityPuzzle> ucp = userCommunityPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzleId);
+        Optional<UserCommunityPuzzle> ucp = userCommunityPuzzleRepository.findByUserIdAndPuzzleId(lockedUser.getId(), puzzleId);
         if (ucp.isPresent()) {
-            if (ucp.get().isDisliked()) puzzle.decreaseDislikedCount();
-            else {
-                if (ucp.get().isLiked()) puzzle.decreaseLikedCount();
-                puzzle.increaseDislikedCount();
+            if (ucp.get().isDisliked()) {
+                communityPuzzleRepository.addVoteCounts(puzzleId, 0, -1);
+            } else {
+                // A dislike replaces the user's like
+                communityPuzzleRepository.addVoteCounts(puzzleId, ucp.get().isLiked() ? -1 : 0, 1);
             }
             return ucp.get().toggleDislike();
         }
 
         userCommunityPuzzleRepository.save(
                 UserCommunityPuzzle.builder()
-                        .user(user)
+                        .user(lockedUser)
                         .puzzle(puzzle)
                         .isDisliked(true)
                         .build()
         );
-        puzzle.increaseDislikedCount();
+        communityPuzzleRepository.addVoteCounts(puzzleId, 0, 1);
 
         return true;
     }

@@ -345,6 +345,22 @@ class CommunityServiceTest {
     }
 
     @Test
+    void getCommunityPuzzleById_WhenViewed_ThenCountsTheViewBeforeLoading() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
+        CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
+        when(communityPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
+
+        // When
+        communityService.getCommunityPuzzleById(puzzle.getId(), user);
+
+        // Then: the loaded puzzle, and so the response, already includes this view
+        InOrder inOrder = inOrder(communityPuzzleRepository);
+        inOrder.verify(communityPuzzleRepository).increaseView(puzzle.getId());
+        inOrder.verify(communityPuzzleRepository).findById(puzzle.getId());
+    }
+
+    @Test
     void getCommunityPuzzleAnswer_WhenCalled_ThenReturnsAnswerAndCurrency() {
         // Given
         UserEntity user = TestUserEntityBuilder.builder().withCurrency(1000).save(userRepository);
@@ -426,7 +442,6 @@ class CommunityServiceTest {
         when(communityPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
         when(userCommunityPuzzleRepository.checkIsSolvedPuzzle(solver.getId(), puzzle.getId()))
                 .thenReturn(false);
-        int solvedCountBefore = puzzle.getSolvedCount();
 
         // When
         SolveCommunityPuzzleResponse response = communityService.solveCommunityPuzzle(puzzle.getId(), solver);
@@ -434,7 +449,7 @@ class CommunityServiceTest {
         // Then
         assertThat(response.reward()).isEqualTo(COMMUNITY_REWARD.getDefaultPrice());
         assertThat(solver.getCurrency()).isEqualTo(COMMUNITY_REWARD.getDefaultPrice());
-        assertThat(puzzle.getSolvedCount()).isEqualTo(solvedCountBefore + 1);
+        verify(communityPuzzleRepository).increaseSolvedCount(puzzle.getId());
     }
 
     @Test
@@ -465,7 +480,6 @@ class CommunityServiceTest {
         when(communityPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
         when(userCommunityPuzzleRepository.checkIsSolvedPuzzle(solver.getId(), puzzle.getId()))
                 .thenReturn(true);
-        int solvedCountBefore = puzzle.getSolvedCount();
 
         // When
         SolveCommunityPuzzleResponse response = communityService.solveCommunityPuzzle(puzzle.getId(), solver);
@@ -473,7 +487,7 @@ class CommunityServiceTest {
         // Then
         assertThat(response.reward()).isZero();
         assertThat(solver.getCurrency()).isZero();
-        assertThat(puzzle.getSolvedCount()).isEqualTo(solvedCountBefore);
+        verify(communityPuzzleRepository, never()).increaseSolvedCount(anyLong());
     }
 
     @Test
@@ -485,6 +499,7 @@ class CommunityServiceTest {
                 .withDisliked(true)
                 .save(userCommunityPuzzleRepository);
 
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(communityPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
         when(userCommunityPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzle.getId()))
                 .thenReturn(Optional.of(ucp));
@@ -493,11 +508,34 @@ class CommunityServiceTest {
         // When
         boolean result = communityService.toggleLike(puzzle.getId(), user);
 
-        // Then
+        // Then: the like replaces the dislike
         assertThat(result).isTrue();
         assertThat(ucp.isLiked()).isTrue();
         assertThat(ucp.isDisliked()).isFalse();
         assertThat(ucp.getLikedAt()).isEqualTo(Instant.MAX);
+        verify(communityPuzzleRepository).addVoteCounts(puzzle.getId(), 1, -1);
+    }
+
+    @Test
+    void toggleLike_WhenAlreadyLiked_ThenTakesTheLikeBack() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
+        CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
+        UserCommunityPuzzle ucp = TestUserCommunityPuzzleBuilder.builder(user, puzzle)
+                .withLiked(true)
+                .save(userCommunityPuzzleRepository);
+
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
+        when(communityPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
+        when(userCommunityPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzle.getId()))
+                .thenReturn(Optional.of(ucp));
+
+        // When
+        boolean result = communityService.toggleLike(puzzle.getId(), user);
+
+        // Then
+        assertThat(result).isFalse();
+        verify(communityPuzzleRepository).addVoteCounts(puzzle.getId(), -1, 0);
     }
 
     @Test
@@ -506,6 +544,7 @@ class CommunityServiceTest {
         UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
         CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
 
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(communityPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
         when(userCommunityPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzle.getId()))
                 .thenReturn(Optional.empty());
@@ -515,6 +554,27 @@ class CommunityServiceTest {
 
         // Then
         verify(userCommunityPuzzleRepository).save(any(UserCommunityPuzzle.class));
+        verify(communityPuzzleRepository).addVoteCounts(puzzle.getId(), 1, 0);
+    }
+
+    @Test
+    void toggleLike_WhenCalled_ThenLocksTheUserBeforeReadingTheirVote() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
+        CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
+
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
+        when(communityPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
+        when(userCommunityPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzle.getId()))
+                .thenReturn(Optional.empty());
+
+        // When
+        communityService.toggleLike(puzzle.getId(), user);
+
+        // Then: a second tap waits on the lock, so it sees the first tap's vote
+        InOrder inOrder = inOrder(userRepository, userCommunityPuzzleRepository);
+        inOrder.verify(userRepository).findByIdForUpdate(user.getId());
+        inOrder.verify(userCommunityPuzzleRepository).findByUserIdAndPuzzleId(user.getId(), puzzle.getId());
     }
 
     @Test
@@ -526,6 +586,7 @@ class CommunityServiceTest {
                 .withLiked(true)
                 .save(userCommunityPuzzleRepository);
 
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(communityPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
         when(userCommunityPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzle.getId()))
                 .thenReturn(Optional.of(ucp));
@@ -533,10 +594,11 @@ class CommunityServiceTest {
         // When
         boolean result = communityService.toggleDislike(puzzle.getId(), user);
 
-        // Then
+        // Then: the dislike replaces the like
         assertThat(result).isTrue();
         assertThat(ucp.isLiked()).isFalse();
         assertThat(ucp.isDisliked()).isTrue();
+        verify(communityPuzzleRepository).addVoteCounts(puzzle.getId(), -1, 1);
     }
 
     @Test
@@ -545,6 +607,7 @@ class CommunityServiceTest {
         UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
         CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
 
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(communityPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
         when(userCommunityPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzle.getId()))
                 .thenReturn(Optional.empty());
@@ -554,6 +617,27 @@ class CommunityServiceTest {
 
         // Then
         verify(userCommunityPuzzleRepository).save(any(UserCommunityPuzzle.class));
+        verify(communityPuzzleRepository).addVoteCounts(puzzle.getId(), 0, 1);
+    }
+
+    @Test
+    void toggleDislike_WhenCalled_ThenLocksTheUserBeforeReadingTheirVote() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
+        CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
+
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
+        when(communityPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
+        when(userCommunityPuzzleRepository.findByUserIdAndPuzzleId(user.getId(), puzzle.getId()))
+                .thenReturn(Optional.empty());
+
+        // When
+        communityService.toggleDislike(puzzle.getId(), user);
+
+        // Then: a second tap waits on the lock, so it sees the first tap's vote
+        InOrder inOrder = inOrder(userRepository, userCommunityPuzzleRepository);
+        inOrder.verify(userRepository).findByIdForUpdate(user.getId());
+        inOrder.verify(userCommunityPuzzleRepository).findByUserIdAndPuzzleId(user.getId(), puzzle.getId());
     }
 
     @Test
