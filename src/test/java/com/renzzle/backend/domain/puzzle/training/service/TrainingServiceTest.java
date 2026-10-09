@@ -1166,6 +1166,22 @@ public class TrainingServiceTest {
         }
 
         @Test
+        void getTrainingPackListForAdmin_WhenDifficultyOrLangUnknown_ThenThrowsValidationError() {
+            // given
+            UserEntity user = TestUserEntityBuilder.builder().withId(100L).build();
+
+            // when & then
+            CustomException badDifficulty = assertThrows(CustomException.class, () ->
+                    trainingService.getTrainingPackListForAdmin(user, "EXTREME", "EN"));
+            CustomException badLang = assertThrows(CustomException.class, () ->
+                    trainingService.getTrainingPackListForAdmin(user, "LOW", "XX"));
+
+            assertThat(badDifficulty.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_ERROR);
+            assertThat(badLang.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_ERROR);
+            verify(packRepository, never()).findByDifficulty(any(Difficulty.class));
+        }
+
+        @Test
         void purchaseTrainingPack_WhenNotEnoughCurrency_ThenThrowsInsufficientCurrency() {
             // given
             UserEntity user = UserEntity.builder()

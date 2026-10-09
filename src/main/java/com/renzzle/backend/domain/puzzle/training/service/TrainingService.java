@@ -444,14 +444,23 @@ public class TrainingService {
 
     @Transactional(readOnly = true)
     public List<GetPackResponse> getTrainingPackListForAdmin(UserEntity user, String difficulty, String preferredLang) {
-        List<Pack> packs = packRepository.findByDifficulty(Difficulty.getDifficulty(difficulty));
+        // Raw query values, so a bad one is the caller's mistake
+        final Difficulty requestedDifficulty;
+        final LangCode requestedLangCode;
+        try {
+            requestedDifficulty = Difficulty.getDifficulty(difficulty);
+            requestedLangCode = LangCode.getLangCode(preferredLang);
+        } catch (IllegalArgumentException e) {
+            throw new CustomException(e.getMessage(), ErrorCode.VALIDATION_ERROR);
+        }
+
+        List<Pack> packs = packRepository.findByDifficulty(requestedDifficulty);
 
         if (packs.isEmpty()) {
             throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACKS);
         }
 
         List<Long> packIds = packs.stream().map(Pack::getId).toList();
-        LangCode requestedLangCode = LangCode.getLangCode(preferredLang);
         LangCode defaultLangCode = LangCode.getLangCode(LangCode.LangCodeName.EN);
 
         Map<Long, List<PackTranslation>> translationsByPack = packTranslationRepository.findAllByPack_IdIn(packIds).stream()

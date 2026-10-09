@@ -53,11 +53,11 @@ public class GlobalExceptionHandler {
         return handleException(e, ErrorCode.CONSTRAINT_VIOLATION_ERROR, ErrorCode.CONSTRAINT_VIOLATION_ERROR.getMessage());
     }
 
-    // IllegalArgumentException mostly comes from parsing request values
+    // IllegalArgumentException is left to the 500 handler: request values are validated before parsing,
+    // so one that gets here is a server bug
     @ExceptionHandler({
             HttpMessageNotReadableException.class,
-            MissingServletRequestParameterException.class,
-            IllegalArgumentException.class
+            MissingServletRequestParameterException.class
     })
     private ResponseEntity<ApiResponse<Object>> handleBadRequestException(Exception e) {
         return handleException(e, ErrorCode.VALIDATION_ERROR, ErrorCode.VALIDATION_ERROR.getMessage());

@@ -145,6 +145,17 @@ class NoticeServiceTest {
         assertThat(response.get(0).langCode()).isEqualTo("KO");
     }
 
+    @Test
+    void getAnnouncementsForAdmin_WhenLangFilterUnknown_ThenThrowsValidationError() {
+        // When
+        CustomException exception = assertThrows(CustomException.class,
+                () -> noticeService.getAnnouncementsForAdmin("XX"));
+
+        // Then
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_ERROR);
+        verify(announcementRepository, never()).findAllByLangCodeOrderByCreatedAtDescIdDesc(any());
+    }
+
     // ===== announcements: create =====
 
     @Test
