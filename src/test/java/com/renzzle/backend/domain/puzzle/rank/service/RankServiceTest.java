@@ -667,6 +667,46 @@ class RankServiceTest {
         assertThat(archives.get(1).winColor()).isEqualTo("BLACK");
     }
 
+    @Test
+    void getRankArchive_WhenGameInProgress_ThenHidesThePuzzleBeingSolved() {
+        // Given: one puzzle answered, the next one still on the board
+        UserEntity user = TestUserFactory.createTestUser("tester", 1500.0);
+        ReflectionTestUtils.setField(user, "id", 1L);
+
+        LatestRankPuzzle answered = LatestRankPuzzle.builder()
+                .id(10L)
+                .user(user)
+                .boardStatus("a1a2")
+                .answer("a3")
+                .isSolved(true)
+                .winColor(WinColor.getWinColor("WHITE"))
+                .assignedAt(FIXED_INSTANT)
+                .build();
+        LatestRankPuzzle current = LatestRankPuzzle.builder()
+                .id(11L)
+                .user(user)
+                .boardStatus("b1b2")
+                .answer("b3")
+                .isSolved(false)
+                .winColor(WinColor.getWinColor("BLACK"))
+                .assignedAt(FIXED_INSTANT.plusSeconds(10))
+                .build();
+
+        RankSessionData session = new RankSessionData();
+        session.setStarted(true);
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(latestRankPuzzleRepository.findAllByUserOrderByAssignedAtAsc(user))
+                .thenReturn(List.of(answered, current));
+        when(valueOperations.get("1")).thenReturn(session);
+
+        // When
+        List<RankArchive> archives = rankService.getRankArchive(user);
+
+        // Then
+        assertThat(archives).extracting(RankArchive::answer).containsExactly("a3");
+    }
+
     // getRanking test
 
     @Test

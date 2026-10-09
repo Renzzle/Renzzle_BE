@@ -272,6 +272,19 @@ class RankServiceIntegrationTest {
     }
 
     @Test
+    void getRankArchive_WhenGameInProgress_ThenHidesOnlyThePuzzleBeingSolved() {
+        // The puzzle on the board stays out of the archive until the game ends
+        rankService.startRankGame(testUser);
+        assertThat(rankService.getRankArchive(testUser)).isEmpty();
+
+        rankService.resultRankGame(testUser, new RankResultRequest(true));
+        assertThat(rankService.getRankArchive(testUser)).hasSize(1);
+
+        rankService.endRankGame(testUser);
+        assertThat(rankService.getRankArchive(testUser)).hasSize(2);
+    }
+
+    @Test
     void getNextPuzzle_WhenCalled_ThenReturnsNonDuplicateCorrectPuzzle() {
         double targetWinProb = 0.7;
 
