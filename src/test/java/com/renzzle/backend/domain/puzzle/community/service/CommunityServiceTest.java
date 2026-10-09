@@ -32,6 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -86,6 +87,7 @@ class CommunityServiceTest {
     void addCommunityPuzzle_WhenValidInput_ThenSavesAndReturnsPuzzleId() {
         // Given
         UserEntity user = TestUserEntityBuilder.builder().build();
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
 
         AddCommunityPuzzleRequest request = new AddCommunityPuzzleRequest(
                 "f8f9",
@@ -126,6 +128,7 @@ class CommunityServiceTest {
     void addCommunityPuzzle_WhenVerified_ThenSeedsTheSolutionLine() {
         // Given
         UserEntity user = TestUserEntityBuilder.builder().build();
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         AddCommunityPuzzleRequest request =
                 new AddCommunityPuzzleRequest("f8f9", "e5", 7, "description", "BLACK", true);
         when(communityPuzzleRepository.save(any(CommunityPuzzle.class))).thenReturn(TestCommunityPuzzleBuilder
@@ -142,6 +145,7 @@ class CommunityServiceTest {
     void addCommunityPuzzle_WhenUnverified_ThenLeavesTheCacheAlone() {
         // Given: the answer was entered by hand and never checked by the engine
         UserEntity user = TestUserEntityBuilder.builder().build();
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         AddCommunityPuzzleRequest request =
                 new AddCommunityPuzzleRequest("f8f9", "e5", 7, "description", "BLACK", false);
         when(communityPuzzleRepository.save(any(CommunityPuzzle.class))).thenReturn(TestCommunityPuzzleBuilder
@@ -204,6 +208,7 @@ class CommunityServiceTest {
     void addCommunityPuzzle_WhenDailyLimitReached_ThenThrowsAndSavesNothing() {
         // Given
         UserEntity user = TestUserEntityBuilder.builder().withId(1L).build();
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(communityPuzzleRepository.countByAuthorSinceIncludingDeleted(eq(user.getId()), any(Instant.class)))
                 .thenReturn((long) DAILY_UPLOAD_LIMIT);
 
@@ -223,6 +228,7 @@ class CommunityServiceTest {
     void addCommunityPuzzle_WhenCountingUploads_ThenWindowStartsOneDayBack() {
         // Given
         UserEntity user = TestUserEntityBuilder.builder().withId(1L).build();
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         AddCommunityPuzzleRequest request =
                 new AddCommunityPuzzleRequest("f8f9", "e5", 7, "description", "BLACK", true);
         when(communityPuzzleRepository.save(any(CommunityPuzzle.class)))
@@ -237,9 +243,29 @@ class CommunityServiceTest {
     }
 
     @Test
+    void addCommunityPuzzle_WhenCountingUploads_ThenLocksTheUserFirst() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder().withId(1L).build();
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
+        AddCommunityPuzzleRequest request =
+                new AddCommunityPuzzleRequest("f8f9", "e5", 7, "description", "BLACK", true);
+        when(communityPuzzleRepository.save(any(CommunityPuzzle.class)))
+                .thenReturn(CommunityPuzzle.builder().id(1L).build());
+
+        // When
+        communityService.addCommunityPuzzle(request, user);
+
+        // Then: concurrent uploads wait on the lock, so each count includes the others
+        InOrder inOrder = inOrder(userRepository, communityPuzzleRepository);
+        inOrder.verify(userRepository).findByIdForUpdate(user.getId());
+        inOrder.verify(communityPuzzleRepository).countByAuthorSinceIncludingDeleted(eq(user.getId()), any(Instant.class));
+    }
+
+    @Test
     void addCommunityPuzzle_WhenTrainingPuzzleHasSamePosition_ThenThrowsAndSavesNothing() {
         // Given
         UserEntity user = TestUserEntityBuilder.builder().withId(1L).build();
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(trainingPuzzleRepository.findIdByBoardKey(BoardUtils.makeBoardKey("f8f9"))).thenReturn(Optional.of(3L));
 
         AddCommunityPuzzleRequest request =
@@ -258,6 +284,7 @@ class CommunityServiceTest {
     void addCommunityPuzzle_WhenCommunityPuzzleHasSamePosition_ThenThrowsAndSavesNothing() {
         // Given
         UserEntity user = TestUserEntityBuilder.builder().withId(1L).build();
+        when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(communityPuzzleRepository.findIdByBoardKey(BoardUtils.makeBoardKey("f8f9"))).thenReturn(Optional.of(4L));
 
         AddCommunityPuzzleRequest request =

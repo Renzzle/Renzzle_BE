@@ -3,6 +3,7 @@ package com.renzzle.backend.domain.puzzle.community.dao;
 import com.renzzle.backend.support.DataJpaTestWithInitContainers;
 import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
+import com.renzzle.backend.domain.puzzle.community.domain.UserCommunityPuzzle;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.domain.Status;
@@ -240,6 +241,43 @@ class CommunityPuzzleRepositoryTest {
         // Then
         assertThat(result)
                 .hasSize(2)
+                .extracting("id")
+                .containsExactly(puzzle2.getId(), puzzle1.getId());
+    }
+
+    @Test
+    void getUserLikedPuzzles_WhenCursorPuzzleWasUnliked_ThenStillReturnsOlderPuzzles() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
+
+        CommunityPuzzle puzzle1 = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
+        CommunityPuzzle puzzle2 = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
+        CommunityPuzzle puzzle3 = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
+
+        Instant now = FIXED_INSTANT;
+
+        TestUserCommunityPuzzleBuilder.builder(user, puzzle1)
+                .withLiked(true)
+                .withLikedAt(now.minusSeconds(30))
+                .save(userCommunityPuzzleRepository);
+
+        TestUserCommunityPuzzleBuilder.builder(user, puzzle2)
+                .withLiked(true)
+                .withLikedAt(now.minusSeconds(20))
+                .save(userCommunityPuzzleRepository);
+
+        UserCommunityPuzzle cursorLike = TestUserCommunityPuzzleBuilder.builder(user, puzzle3)
+                .withLiked(true)
+                .withLikedAt(now.minusSeconds(10))
+                .save(userCommunityPuzzleRepository);
+
+        // When: the last puzzle of the loaded page is unliked before the next page is requested
+        cursorLike.toggleLike(now);
+        entityManager.flush();
+        List<CommunityPuzzle> result = communityPuzzleRepository.getUserLikedPuzzles(user.getId(), puzzle3.getId(), 10);
+
+        // Then
+        assertThat(result)
                 .extracting("id")
                 .containsExactly(puzzle2.getId(), puzzle1.getId());
     }

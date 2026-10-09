@@ -67,7 +67,10 @@ public class CommunityService {
 
     @Transactional
     public AddCommunityPuzzleResponse addCommunityPuzzle(AddCommunityPuzzleRequest request, UserEntity user) {
-        checkDailyUploadLimit(user);
+        // Lock first, so concurrent uploads by one user each count the others against the limit
+        UserEntity lockedUser = userRepository.findByIdForUpdate(user.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
+        checkDailyUploadLimit(lockedUser);
 
         String boardKey = BoardUtils.makeBoardKey(request.boardStatus());
         String answerKey = BoardUtils.makeAnswerKey(request.boardStatus(), request.answer());
@@ -82,7 +85,7 @@ public class CommunityService {
                 .depth(request.depth())
                 .rating(RatingUtil.puzzleRating(request.depth(), winColor, null))
                 .description(request.description())
-                .user(user)
+                .user(lockedUser)
                 .winColor(winColor)
                 .isVerified(request.isVerified())
                 .build();

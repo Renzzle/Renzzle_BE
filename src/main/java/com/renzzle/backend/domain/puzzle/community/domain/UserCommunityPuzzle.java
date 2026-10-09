@@ -53,13 +53,12 @@ public class UserCommunityPuzzle {
     @Column(name = "liked_at")
     private Instant likedAt;
 
+    // Unliking keeps likedAt, since the liked list may still page from this row as its cursor
     public boolean toggleLike(Instant likedAt) {
         isLiked = !isLiked;
         if (isLiked) {
             isDisliked = false;
             this.likedAt = likedAt;
-        } else {
-            this.likedAt = null;
         }
         return isLiked;
     }

@@ -16,6 +16,7 @@ import com.renzzle.backend.global.exception.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -68,6 +69,12 @@ public class UserService {
 
         int price = appInfoService.getPrice(ItemPrice.CHANGE_NICKNAME);
         persistedUser.get().changeNickname(nickname, price);
+        try {
+            // Flushed here, since a concurrent change to the same name only fails on the unique key
+            userRepository.flush();
+        } catch (DataIntegrityViolationException e) {
+            throw new CustomException(ErrorCode.DUPLICATE_NICKNAME);
+        }
         return ChangeNicknameResponse.builder()
                 .price(price)
                 .build();

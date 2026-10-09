@@ -48,6 +48,8 @@ import static com.renzzle.backend.global.common.constant.ItemPrice.RANK_REWARD;
 @Slf4j
 public class RankService {
 
+    private static final String RANKING_TEMP_KEY_SUFFIX = ":tmp";
+
     private final RedisTemplate<String, RankSessionData> redisTemplate;
     private final TrainingPuzzleRepository trainingPuzzleRepository;
     private final CommunityPuzzleRepository communityPuzzleRepository;
@@ -414,7 +416,7 @@ public class RankService {
                 key,
                 info -> info.nickname().equals(userData.getNickname()),
                 UserRatingRankInfo::rating
-        );
+        ).rank();
 
         UserRatingRankInfo myInfo = UserRatingRankInfo.builder()
                 .rank(myRank)
@@ -452,21 +454,17 @@ public class RankService {
                         .build()
         );
 
-        int myRank = findMyRank(
+        MyRank<UserPuzzlerRankInfo> myRank = findMyRank(
                 key,
                 info -> info.nickname().equals(user.getNickname()),
                 UserPuzzlerRankInfo::score
         );
 
-        // My score may not be retrievable from Redis, so compute it separately or default to 0
-        double myScore = top100.stream()
-                .filter(i -> i.nickname().equals(user.getNickname()))
-                .findFirst()
-                .map(UserPuzzlerRankInfo::score)
-                .orElse(0.0);
+        // Taken from the full ranking, since the user may be outside the top 100
+        double myScore = myRank.info() != null ? myRank.info().score() : 0.0;
 
         UserPuzzlerRankInfo myInfo = UserPuzzlerRankInfo.builder()
-                .rank(myRank)
+                .rank(myRank.rank())
                 .nickname(user.getNickname())
                 .score(myScore)
                 .build();
@@ -510,8 +508,11 @@ public class RankService {
         return result;
     }
 
+    // Rank -1 and no entry when the user isn't in the ranking
+    private record MyRank<T>(int rank, T info) {}
+
     @SuppressWarnings("unchecked")
-    private <T> int findMyRank(
+    private <T> MyRank<T> findMyRank(
             String key,
             Predicate<T> isMyself,
             ToDoubleFunction<T> scoreExtractor
@@ -536,11 +537,11 @@ public class RankService {
             }
 
             if (isMyself.test(obj)) {
-                return tieAwareRank;
+                return new MyRank<>(tieAwareRank, obj);
             }
         }
 
-        return -1;
+        return new MyRank<>(-1, null);
     }
 
     @Scheduled(fixedRate = 1000 * 60 * 60) // Runs every 60 minutes
@@ -551,7 +552,8 @@ public class RankService {
         Instant oneMonthAgo = Instant.now(clock).minus(30, ChronoUnit.DAYS);
         List<UserEntity> activeRatingUsers = latestRankPuzzleRepository.findActiveUsersWithinPeriod(oneMonthAgo);
 
-        redisRankingTemplate.delete(rankingKey);
+        String rankingTempKey = rankingKey + RANKING_TEMP_KEY_SUFFIX;
+        redisRankingTemplate.delete(rankingTempKey);
 
         for (UserEntity user : activeRatingUsers) {
             UserRatingRankInfo info = UserRatingRankInfo.builder()
@@ -560,8 +562,10 @@ public class RankService {
                     .rating(user.getRating())
                     .build();
 
-            redisRankingTemplate.opsForZSet().add(rankingKey, info, user.getRating());
+            redisRankingTemplate.opsForZSet().add(rankingTempKey, info, user.getRating());
         }
+        publishRanking(rankingTempKey, rankingKey, !activeRatingUsers.isEmpty());
+
         List<UserEntity> creators = communityPuzzleRepository.findUsersWhoCreatedPuzzlesSince(oneMonthAgo);
         List<UserEntity> solvers = userCommunityPuzzleRepository.findUsersWhoSolvedPuzzlesSince(oneMonthAgo);
 
@@ -569,7 +573,8 @@ public class RankService {
         activePuzzlerUsers.addAll(creators);
         activePuzzlerUsers.addAll(solvers);
 
-        redisRankingTemplate.delete(puzzlerRankingKey);
+        String puzzlerRankingTempKey = puzzlerRankingKey + RANKING_TEMP_KEY_SUFFIX;
+        redisRankingTemplate.delete(puzzlerRankingTempKey);
 
         for (UserEntity user : activePuzzlerUsers) {
             long a = userCommunityPuzzleRepository.countSolvedByUser(user.getId());
@@ -587,7 +592,18 @@ public class RankService {
                     .score(score)
                     .build();
 
-            redisRankingTemplate.opsForZSet().add(puzzlerRankingKey, info, score);
+            redisRankingTemplate.opsForZSet().add(puzzlerRankingTempKey, info, score);
+        }
+        publishRanking(puzzlerRankingTempKey, puzzlerRankingKey, !activePuzzlerUsers.isEmpty());
+    }
+
+    // Built under a temporary key and renamed over the live one, so readers never see a half-filled ranking
+    private void publishRanking(String tempKey, String key, boolean hasEntries) {
+        if (hasEntries) {
+            redisRankingTemplate.rename(tempKey, key);
+        } else {
+            // Nothing was added, so there is no temporary key to rename
+            redisRankingTemplate.delete(key);
         }
     }
 }

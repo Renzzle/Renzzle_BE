@@ -713,17 +713,51 @@ class RankServiceTest {
         rankService.updateRankingCache();
 
         // Then
-        verify(redisRankingTemplate).delete("user:ranking");
+        verify(redisRankingTemplate).delete("user:ranking:tmp");
         verify(latestRankPuzzleRepository).findActiveUsersWithinPeriod(any());
 
-        verify(zSetOperations, times(2)).add(eq("user:ranking"), any(UserRatingRankInfo.class), anyDouble());
+        verify(zSetOperations, times(2)).add(eq("user:ranking:tmp"), any(UserRatingRankInfo.class), anyDouble());
 
-        verify(zSetOperations).add(eq("user:ranking"),
+        verify(zSetOperations).add(eq("user:ranking:tmp"),
                 argThat(info -> ((UserRatingRankInfo) info).nickname().equals("u1")),
                 eq(1400.0));
-        verify(zSetOperations).add(eq("user:ranking"),
+        verify(zSetOperations).add(eq("user:ranking:tmp"),
                 argThat(info -> ((UserRatingRankInfo) info).nickname().equals("u2")),
                 eq(1600.0));
+    }
+
+    @Test
+    void updateRankingCache_WhenRebuilt_ThenSwapsTheNewRankingInWithoutClearingIt() {
+        // Given
+        when(latestRankPuzzleRepository.findActiveUsersWithinPeriod(any()))
+                .thenReturn(List.of(TestUserFactory.createTestUser("u1", 1400)));
+        when(communityPuzzleRepository.findUsersWhoCreatedPuzzlesSince(any()))
+                .thenReturn(List.of(TestUserEntityBuilder.builder()
+                        .withId(1L)
+                        .withStatus(Status.getDefaultStatus())
+                        .withNickname("user1")
+                        .build()));
+        when(redisRankingTemplate.opsForZSet()).thenReturn(zSetOperations);
+
+        // When
+        rankService.updateRankingCache();
+
+        // Then: readers keep seeing the old ranking until the rename
+        verify(redisRankingTemplate).rename("user:ranking:tmp", "user:ranking");
+        verify(redisRankingTemplate).rename("user:puzzler:ranking:tmp", "user:puzzler:ranking");
+        verify(redisRankingTemplate, never()).delete("user:ranking");
+        verify(redisRankingTemplate, never()).delete("user:puzzler:ranking");
+    }
+
+    @Test
+    void updateRankingCache_WhenNoUserIsActive_ThenClearsTheRanking() {
+        // When
+        rankService.updateRankingCache();
+
+        // Then: nothing was written to the temporary keys, so there is nothing to rename
+        verify(redisRankingTemplate).delete("user:ranking");
+        verify(redisRankingTemplate).delete("user:puzzler:ranking");
+        verify(redisRankingTemplate, never()).rename(anyString(), anyString());
     }
     @Test
     void getPuzzlerRanking_WhenUsersHaveSameScore_ThenAssignsSameRank() {
@@ -753,6 +787,31 @@ class RankServiceTest {
         assertThat(response.top100().get(2).rank()).isEqualTo(3);
         assertThat(response.myPuzzlerRank().rank()).isEqualTo(3);
         assertThat(response.myPuzzlerRank().nickname()).isEqualTo("me");
+    }
+
+    @Test
+    void getPuzzlerRanking_WhenUserIsOutsideTop100_ThenStillReturnsTheirScore() {
+        // Given: the top 100 doesn't reach the user, but the full ranking does
+        UserEntity me = TestUserFactory.createTestUser("me", 0.0);
+
+        UserPuzzlerRankInfo topInfo = UserPuzzlerRankInfo.builder().nickname("top").score(1500).rank(0).build();
+        UserPuzzlerRankInfo myInfo = UserPuzzlerRankInfo.builder().nickname("me").score(700).rank(0).build();
+
+        Set<ZSetOperations.TypedTuple<Object>> top100 = new LinkedHashSet<>();
+        top100.add(new DefaultTypedTuple<>(topInfo, 1500.0));
+        Set<ZSetOperations.TypedTuple<Object>> fullRanking = new LinkedHashSet<>(top100);
+        fullRanking.add(new DefaultTypedTuple<>(myInfo, 700.0));
+
+        when(redisRankingTemplate.opsForZSet()).thenReturn(zSetOperations);
+        when(zSetOperations.reverseRangeWithScores("user:puzzler:ranking", 0, 99)).thenReturn(top100);
+        when(zSetOperations.reverseRangeWithScores("user:puzzler:ranking", 0, -1)).thenReturn(fullRanking);
+
+        // When
+        GetPuzzlerRankingResponse response = rankService.getPuzzlerRanking(me);
+
+        // Then
+        assertThat(response.myPuzzlerRank().rank()).isEqualTo(2);
+        assertThat(response.myPuzzlerRank().score()).isEqualTo(700.0);
     }
 
     @Test
@@ -788,14 +847,14 @@ class RankServiceTest {
         rankService.updateRankingCache();
 
         // Then
-        verify(redisRankingTemplate).delete("user:puzzler:ranking");
+        verify(redisRankingTemplate).delete("user:puzzler:ranking:tmp");
 
-        verify(zSetOperations, times(2)).add(eq("user:puzzler:ranking"), any(UserPuzzlerRankInfo.class), anyDouble());
+        verify(zSetOperations, times(2)).add(eq("user:puzzler:ranking:tmp"), any(UserPuzzlerRankInfo.class), anyDouble());
 
-        verify(zSetOperations).add(eq("user:puzzler:ranking"),
+        verify(zSetOperations).add(eq("user:puzzler:ranking:tmp"),
                 argThat(info -> ((UserPuzzlerRankInfo) info).nickname().equals("user1")), anyDouble());
 
-        verify(zSetOperations).add(eq("user:puzzler:ranking"),
+        verify(zSetOperations).add(eq("user:puzzler:ranking:tmp"),
                 argThat(info -> ((UserPuzzlerRankInfo) info).nickname().equals("user2")), anyDouble());
     }
 
@@ -845,7 +904,7 @@ class RankServiceTest {
         // Then
         ArgumentCaptor<UserPuzzlerRankInfo> captor = ArgumentCaptor.forClass(UserPuzzlerRankInfo.class);
 
-        verify(zSetOperations, times(2)).add(eq("user:puzzler:ranking"), captor.capture(), anyDouble());
+        verify(zSetOperations, times(2)).add(eq("user:puzzler:ranking:tmp"), captor.capture(), anyDouble());
 
         List<UserPuzzlerRankInfo> captured = captor.getAllValues();
 
