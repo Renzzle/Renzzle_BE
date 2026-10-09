@@ -15,6 +15,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import static com.renzzle.backend.global.util.ErrorUtils.getErrorMessages;
 
@@ -70,6 +71,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     private ResponseEntity<ApiResponse<Object>> handleMediaTypeNotSupportedException(HttpMediaTypeNotSupportedException e) {
         return handleException(e, ErrorCode.UNSUPPORTED_MEDIA_TYPE, ErrorCode.UNSUPPORTED_MEDIA_TYPE.getMessage());
+    }
+
+    // Answered here, since a forward to /error loses the login and turns the 404 into a 401
+    @ExceptionHandler(NoResourceFoundException.class)
+    private ResponseEntity<ApiResponse<Object>> handleNoResourceFoundException(NoResourceFoundException e) {
+        return handleException(e, ErrorCode.GLOBAL_NOT_FOUND, ErrorCode.GLOBAL_NOT_FOUND.getMessage());
     }
 
     @ExceptionHandler(CustomException.class)
