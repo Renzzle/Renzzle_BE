@@ -16,6 +16,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.web.client.RestClientException;
 
 import java.util.Optional;
 
@@ -23,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -42,6 +46,9 @@ class PaymentServiceTest {
 
     @Mock
     private AppleTransactionVerifier appleTransactionVerifier;
+
+    @Mock
+    private GooglePlayClient googlePlayClient;
 
     @InjectMocks
     private PaymentService paymentService;
@@ -167,6 +174,7 @@ class PaymentServiceTest {
         assertThat(response.platform()).isEqualTo("IOS");
         assertThat(response.productId()).isEqualTo("piece_5000");
         assertThat(response.grantedCurrency()).isEqualTo(5000);
+        verifyNoInteractions(googlePlayClient);
     }
 
     @Test
@@ -230,5 +238,82 @@ class PaymentServiceTest {
 
         assertThat(response.productId()).isEqualTo("remove_ads");
         assertThat(response.grantedCurrency()).isZero();
+    }
+
+    @Test
+    void verifyInAppPurchase_WhenAndroidPurchaseNotAcknowledged_ThenAcknowledgesIt() {
+        // given
+        UserEntity principalUser = TestUserEntityBuilder.builder().withId(1L).build();
+        stubValidAndroidPurchase(TestUserEntityBuilder.builder().withId(1L).withCurrency(0).build(), true);
+
+        // when
+        paymentService.verifyInAppPurchase(principalUser, androidPurchaseRequest());
+
+        // then
+        verify(googlePlayClient).acknowledgeProductPurchase("piece_1000", "purchase-token");
+    }
+
+    @Test
+    void verifyInAppPurchase_WhenAndroidPurchaseAlreadyAcknowledged_ThenDoesNotAcknowledgeAgain() {
+        // given
+        UserEntity principalUser = TestUserEntityBuilder.builder().withId(1L).build();
+        stubValidAndroidPurchase(TestUserEntityBuilder.builder().withId(1L).withCurrency(0).build(), false);
+
+        // when
+        paymentService.verifyInAppPurchase(principalUser, androidPurchaseRequest());
+
+        // then
+        verifyNoInteractions(googlePlayClient);
+    }
+
+    @Test
+    void verifyInAppPurchase_WhenAcknowledgementFails_ThenStillGrantsReward() {
+        // given
+        UserEntity principalUser = TestUserEntityBuilder.builder().withId(1L).build();
+        UserEntity persistedUser = TestUserEntityBuilder.builder().withId(1L).withCurrency(0).build();
+        stubValidAndroidPurchase(persistedUser, true);
+        doThrow(new RestClientException("Google Play is unavailable"))
+                .when(googlePlayClient).acknowledgeProductPurchase("piece_1000", "purchase-token");
+
+        // when
+        VerifyInAppPurchaseResponse response =
+                paymentService.verifyInAppPurchase(principalUser, androidPurchaseRequest());
+
+        // then
+        assertThat(response.grantedCurrency()).isEqualTo(1000);
+        assertThat(persistedUser.getCurrency()).isEqualTo(1000);
+        verify(inAppPurchaseRepository).save(any(InAppPurchase.class));
+    }
+
+    @Test
+    void verifyInAppPurchase_WhenInsideTransaction_ThenAcknowledgesOnlyAfterCommit() {
+        // given
+        UserEntity principalUser = TestUserEntityBuilder.builder().withId(1L).build();
+        stubValidAndroidPurchase(TestUserEntityBuilder.builder().withId(1L).withCurrency(0).build(), true);
+        TransactionSynchronizationManager.initSynchronization();
+
+        try {
+            // when
+            paymentService.verifyInAppPurchase(principalUser, androidPurchaseRequest());
+
+            // then
+            verifyNoInteractions(googlePlayClient);
+            TransactionSynchronizationManager.getSynchronizations()
+                    .forEach(TransactionSynchronization::afterCommit);
+            verify(googlePlayClient).acknowledgeProductPurchase("piece_1000", "purchase-token");
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+    }
+
+    private VerifyInAppPurchaseRequest androidPurchaseRequest() {
+        return new VerifyInAppPurchaseRequest("android", "piece_1000", null, "purchase-token", null);
+    }
+
+    private void stubValidAndroidPurchase(UserEntity persistedUser, boolean acknowledgementRequired) {
+        when(inAppPurchaseRepository.existsByPurchaseToken("purchase-token")).thenReturn(false);
+        when(googlePlayReceiptVerifier.verify("piece_1000", "purchase-token"))
+                .thenReturn(new StoreVerificationResult("piece_1000", "order-id", acknowledgementRequired));
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(persistedUser));
     }
 }

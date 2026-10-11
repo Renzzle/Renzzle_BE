@@ -12,10 +12,14 @@ import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
@@ -24,6 +28,7 @@ public class PaymentService {
     private final UserRepository userRepository;
     private final GooglePlayReceiptVerifier googlePlayReceiptVerifier;
     private final AppleTransactionVerifier appleTransactionVerifier;
+    private final GooglePlayClient googlePlayClient;
 
     @Transactional
     public VerifyInAppPurchaseResponse verifyInAppPurchase(UserEntity user, VerifyInAppPurchaseRequest request) {
@@ -48,8 +53,37 @@ public class PaymentService {
                 ? verificationResult.transactionId()
                 : request.purchaseToken();
 
-        return grantReward(user, PaymentPlatform.ANDROID, request.productId(), transactionId,
-                request.purchaseToken());
+        VerifyInAppPurchaseResponse response = grantReward(user, PaymentPlatform.ANDROID, request.productId(),
+                transactionId, request.purchaseToken());
+        if (verificationResult.acknowledgementRequired()) {
+            acknowledgeAfterCommit(request.productId(), request.purchaseToken(), transactionId);
+        }
+        return response;
+    }
+
+    // Google refunds a purchase nobody acknowledges within 3 days, so the server does it too in case the app fails.
+    // Only after commit, so a grant that rolled back is left to that refund
+    private void acknowledgeAfterCommit(String productId, String purchaseToken, String transactionId) {
+        Runnable acknowledge = () -> {
+            try {
+                googlePlayClient.acknowledgeProductPurchase(productId, purchaseToken);
+            } catch (Exception e) {
+                // The app's consume or acknowledge still covers it, so the granted purchase stands
+                log.warn("Google Play acknowledgement failed. productId={}, transactionId={}",
+                        productId, transactionId, e);
+            }
+        };
+
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            acknowledge.run();
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                acknowledge.run();
+            }
+        });
     }
 
     private VerifyInAppPurchaseResponse verifyIosPurchase(UserEntity user, VerifyInAppPurchaseRequest request) {
