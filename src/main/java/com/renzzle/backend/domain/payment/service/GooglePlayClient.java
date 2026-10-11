@@ -18,6 +18,9 @@ public class GooglePlayClient {
     private static final String ANDROID_PUBLISHER_SCOPE = "https://www.googleapis.com/auth/androidpublisher";
     private static final String PRODUCT_PURCHASE_PATH =
             "/androidpublisher/v3/applications/{packageName}/purchases/products/{productId}/tokens/{purchaseToken}";
+    private static final String VOIDED_PURCHASES_PATH =
+            "/androidpublisher/v3/applications/{packageName}/purchases/voidedpurchases";
+    private static final int MAX_VOIDED_PURCHASES_PER_PAGE = 1000;
 
     private final RestClient restClient;
     private final String packageName;
@@ -62,6 +65,23 @@ public class GooglePlayClient {
                 .headers(headers -> headers.setBearerAuth(issueAccessToken()))
                 .retrieve()
                 .toBodilessEntity();
+    }
+
+    // One page of in-app purchases voided in the last 30 days, the window Google uses when no start time is given
+    public GoogleVoidedPurchasePage listVoidedPurchases(String pageToken) {
+        return restClient.get()
+                .uri(uriBuilder -> {
+                    uriBuilder.path(VOIDED_PURCHASES_PATH)
+                            .queryParam("maxResults", MAX_VOIDED_PURCHASES_PER_PAGE);
+                    if (pageToken == null) {
+                        return uriBuilder.build(packageName);
+                    }
+                    // As a URI variable so the token is fully encoded
+                    return uriBuilder.queryParam("token", "{token}").build(packageName, pageToken);
+                })
+                .headers(headers -> headers.setBearerAuth(issueAccessToken()))
+                .retrieve()
+                .body(GoogleVoidedPurchasePage.class);
     }
 
     private String issueAccessToken() {

@@ -14,10 +14,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+
 import static com.renzzle.backend.domain.auth.domain.Admin.ADMIN_PREFIX;
 
 @Slf4j
@@ -37,10 +41,31 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        widenInAppPurchaseStatusColumn();
         initializeDefaultValue();
         addAdminAccount();
         initializeSystemInfo();
         initializeItemPrices();
+    }
+
+    // Hibernate created this column as enum('VERIFIED','FAILED'), and ddl-auto update never alters an existing column.
+    // Does nothing once the column is VARCHAR, so it can stay
+    void widenInAppPurchaseStatusColumn() {
+        try {
+            List<String> dataTypes = jdbcTemplate.queryForList(
+                    "SELECT DATA_TYPE FROM information_schema.COLUMNS "
+                            + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'in_app_purchase' AND COLUMN_NAME = 'status'",
+                    String.class);
+            if (dataTypes.isEmpty() || !"enum".equalsIgnoreCase(dataTypes.get(0))) {
+                return;
+            }
+
+            jdbcTemplate.execute("ALTER TABLE in_app_purchase MODIFY status VARCHAR(20) NOT NULL");
+            log.info("Changed in_app_purchase.status from enum to VARCHAR(20)");
+        } catch (DataAccessException e) {
+            // Only refund handling needs the new value, and it retries, so startup carries on
+            log.error("Failed to change in_app_purchase.status to VARCHAR(20)", e);
+        }
     }
 
     // Leaves existing rows alone so prices changed through the admin API survive restarts

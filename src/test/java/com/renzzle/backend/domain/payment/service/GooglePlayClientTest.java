@@ -28,6 +28,8 @@ class GooglePlayClientTest {
 
     private static final String PRODUCT_PURCHASE_URL = "https://androidpublisher.googleapis.com"
             + "/androidpublisher/v3/applications/com.renzzle_fe/purchases/products/piece_1000/tokens/purchase-token";
+    private static final String VOIDED_PURCHASES_URL = "https://androidpublisher.googleapis.com"
+            + "/androidpublisher/v3/applications/com.renzzle_fe/purchases/voidedpurchases";
 
     @Test
     void getProductPurchase_ThenSendsAccessTokenAndReturnsRawBody() {
@@ -81,6 +83,61 @@ class GooglePlayClientTest {
         // when, then
         assertThrows(RestClientResponseException.class,
                 () -> client.acknowledgeProductPurchase("piece_1000", "purchase-token"));
+        server.verify();
+    }
+
+    @Test
+    void listVoidedPurchases_ThenParsesPurchasesAndNextPageToken() {
+        // given
+        RestClient.Builder restClientBuilder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restClientBuilder).build();
+        GooglePlayClient client = createClient(restClientBuilder);
+
+        // Google sends the int64 fields as strings
+        server.expect(requestTo(VOIDED_PURCHASES_URL + "?maxResults=1000"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer test-token"))
+                .andRespond(withSuccess("""
+                        {
+                          "voidedPurchases": [{
+                            "kind": "androidpublisher#voidedPurchase",
+                            "purchaseToken": "purchase-token",
+                            "purchaseTimeMillis": "1760000000000",
+                            "voidedTimeMillis": "1760100000000",
+                            "orderId": "GPA.1234",
+                            "voidedSource": 0,
+                            "voidedReason": 8
+                          }],
+                          "tokenPagination": {"nextPageToken": "next-token"}
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        // when
+        GoogleVoidedPurchasePage page = client.listVoidedPurchases(null);
+
+        // then
+        assertThat(page.voidedPurchasesOrEmpty()).containsExactly(
+                new GoogleVoidedPurchase("purchase-token", "GPA.1234", 1760100000000L, 0, 8));
+        assertThat(page.nextPageToken()).isEqualTo("next-token");
+        server.verify();
+    }
+
+    @Test
+    void listVoidedPurchases_WhenPageTokenGiven_ThenSendsItEncoded() {
+        // given
+        RestClient.Builder restClientBuilder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restClientBuilder).build();
+        GooglePlayClient client = createClient(restClientBuilder);
+
+        server.expect(requestTo(VOIDED_PURCHASES_URL + "?maxResults=1000&token=a%2Bb%2Fc%3D"))
+                .andRespond(withSuccess("{}", MediaType.APPLICATION_JSON));
+
+        // when
+        GoogleVoidedPurchasePage page = client.listVoidedPurchases("a+b/c=");
+
+        // then
+        assertThat(page.voidedPurchasesOrEmpty()).isEmpty();
+        assertThat(page.nextPageToken()).isNull();
         server.verify();
     }
 

@@ -9,6 +9,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -19,6 +20,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 
@@ -31,6 +34,9 @@ import java.time.Instant;
         name = "in_app_purchase",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_transaction_id", columnNames = "transaction_id")
+        },
+        indexes = {
+                @Index(name = "idx_purchase_token", columnList = "purchase_token")
         }
 )
 public class InAppPurchase {
@@ -56,7 +62,9 @@ public class InAppPurchase {
     @Column(name = "purchase_token", length = 512)
     private String purchaseToken;
 
+    // VARCHAR rather than the MySQL enum Hibernate picks by default, so adding a status needs no column change
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "status", nullable = false, length = 20)
     private InAppPurchaseStatus status;
 
@@ -66,4 +74,29 @@ public class InAppPurchase {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
+
+    @Column(name = "refunded_at")
+    private Instant refundedAt;
+
+    // Store and its reason code, e.g. GOOGLE/8 or APPLE/0
+    @Column(name = "refund_reason", length = 30)
+    private String refundReason;
+
+    // Less than grantedCurrency when the user had already spent part of it
+    @Column(name = "reclaimed_currency", nullable = false)
+    private int reclaimedCurrency;
+
+    public void markRefunded(Instant refundedAt, String refundReason, int reclaimedCurrency) {
+        this.status = InAppPurchaseStatus.REFUNDED;
+        this.refundedAt = refundedAt;
+        this.refundReason = refundReason;
+        this.reclaimedCurrency = reclaimedCurrency;
+    }
+
+    public void cancelRefund() {
+        this.status = InAppPurchaseStatus.VERIFIED;
+        this.refundedAt = null;
+        this.refundReason = null;
+        this.reclaimedCurrency = 0;
+    }
 }
