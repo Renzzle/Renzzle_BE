@@ -83,6 +83,7 @@ class AdminTemplateRenderTest {
             "admin/pack-create",
             "admin/pack-detail",
             "admin/pack-list",
+            "admin/payments",
             "admin/puzzle-add",
             "admin/puzzle-cache",
             "admin/puzzle-cache-board",
@@ -129,6 +130,19 @@ class AdminTemplateRenderTest {
         assertThat(navAnchor(render("admin/community-puzzles"), "/admin/community-puzzles")).contains("class=\"active\"");
         for (String template : new String[]{"admin/puzzle-cache", "admin/puzzle-cache-board", "admin/puzzle-cache-training-pack"}) {
             assertThat(navAnchor(render(template), "/admin/puzzle-cache")).as(template).contains("class=\"active\"");
+        }
+    }
+
+    @Test
+    void payments_MarksOnlyPaymentsTabActiveAndEveryNavLinksToIt() {
+        String html = render("admin/payments");
+
+        assertThat(navAnchor(html, "/admin/payments")).contains("class=\"active\"");
+        assertThat(navAnchor(html, "/admin/notices")).doesNotContain("active");
+        assertThat(navAnchor(html, "/admin/pack-list")).doesNotContain("active");
+        assertThat(html).contains("admin@test.com");
+        for (String template : new String[]{"admin/pack-list", "admin/community-puzzles", "admin/puzzle-cache", "admin/notices"}) {
+            assertThat(navAnchor(render(template), "/admin/payments")).as(template).doesNotContain("active");
         }
     }
 

@@ -87,6 +87,16 @@ iap:
     private-key-path: ${APPLE_IAP_PRIVATE_KEY_PATH:}
     production-url: https://api.storekit.itunes.apple.com
     sandbox-url: https://api.storekit-sandbox.itunes.apple.com
+  refund:
+    # Withdrawal period under Korean e-commerce law (청약철회): refundable within this many days if unused
+    withdrawal-days: 7
+    google:
+      # Reads Google Play's voided purchases every hour and takes back what they granted.
+      # Off until the list on the admin page has been reviewed
+      reclaim-enabled: ${IAP_GOOGLE_RECLAIM_ENABLED:false}
+      # ISO-8601 instant such as 2026-10-20T00:00:00Z. Refunds Google made because the purchase was never
+      # acknowledged (reason 8) take the reward back only from this time on; empty means never
+      unacknowledged-reclaim-since: ${IAP_GOOGLE_UNACKNOWLEDGED_RECLAIM_SINCE:}
 
 docs:
   enabled: ${DOCS_ENABLED:true}

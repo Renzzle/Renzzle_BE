@@ -66,7 +66,9 @@ public class SecurityConfig {
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/test-token"),  // only mapped when docs.enabled=true
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/docs"),  // Scalar API reference page
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/v3/api-docs/**"),
-                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/actuator/**")
+                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/actuator/**"),
+                // Called by Apple without a token; the handler trusts nothing in it without asking Apple again
+                AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/webhooks/apple/notifications")
         );
 
         httpSecurity.csrf(AbstractHttpConfigurer::disable)
@@ -88,6 +90,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/admin/puzzle-edit").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.GET, "/admin/community-puzzles").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.GET, "/admin/notices").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.GET, "/admin/payments").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.GET, "/admin/puzzle-cache").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.GET, "/admin/puzzle-cache/training-pack").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.GET, "/admin/puzzle-cache/board").hasAuthority(ADMIN_PREFIX)
@@ -99,6 +102,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/admin/community/puzzle-detail/**").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.GET, "/admin/community/puzzle-manage/**").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.GET, "/admin/notice/**").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.GET, "/admin/payment/**").hasAuthority(ADMIN_PREFIX)
                         // Admin-only create/update/delete APIs
                         .requestMatchers(HttpMethod.POST, "/api/training/puzzle").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.POST, "/api/training/pack").hasAuthority(ADMIN_PREFIX)
@@ -114,6 +118,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/admin/notice/**").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.PATCH, "/admin/notice/**").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.DELETE, "/admin/notice/**").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.POST, "/admin/payment/**").hasAuthority(ADMIN_PREFIX)
                         .requestMatchers(HttpMethod.POST, "/api/app-info").hasAuthority(ADMIN_PREFIX)
                         // All remaining requests require authentication (including regular users)
                         .anyRequest().authenticated()

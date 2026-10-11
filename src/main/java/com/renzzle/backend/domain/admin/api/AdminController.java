@@ -15,6 +15,11 @@ import com.renzzle.backend.domain.notice.api.response.GetAnnouncementForAdminRes
 import com.renzzle.backend.domain.notice.api.response.GetNoticeRecipientResponse;
 import com.renzzle.backend.domain.notice.api.response.GetSystemInfoForAdminResponse;
 import com.renzzle.backend.domain.notice.service.NoticeService;
+import com.renzzle.backend.domain.payment.api.response.AppleTestNotificationResponse;
+import com.renzzle.backend.domain.payment.api.response.GetAppleTestNotificationStatusResponse;
+import com.renzzle.backend.domain.payment.api.response.GetGoogleVoidedPurchaseForAdminResponse;
+import com.renzzle.backend.domain.payment.api.response.GetPurchaseForAdminResponse;
+import com.renzzle.backend.domain.payment.service.PaymentAdminService;
 import com.renzzle.backend.domain.puzzle.community.api.request.UpdateCommunityPuzzleVerificationRequest;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleForAdminResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackDetailForAdminResponse;
@@ -72,6 +77,7 @@ public class AdminController {
     private final TrainingService trainingService;
     private final CommunityService communityService;
     private final NoticeService noticeService;
+    private final PaymentAdminService paymentAdminService;
     private final Clock clock;
 
     @Operation(summary = "Admin login page", description = "Returns admin login page.")
@@ -441,6 +447,64 @@ public class AdminController {
             @Valid @RequestBody SendPersonalNoticeRequest request
     ) {
         return ApiUtils.success(noticeService.sendPersonalNoticeForAdmin(request));
+    }
+
+    // ===== Payments (refund lookups for CS, App Store notification check) =====
+
+    @Operation(summary = "Admin payments page", description = "Look up purchases to judge refund requests")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/payments")
+    public String payments(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @Parameter(hidden = true) Model model
+    ) {
+        model.addAttribute(USER_EMAIL, userDetails.getUser().getEmail());
+        return "admin/payments";
+    }
+
+    @Operation(summary = "Search purchases (Admin only)",
+            description = "By Google order ID, App Store transaction ID, purchase token, or exact user email or nickname. "
+                    + "Each purchase says whether it is refundable under the refund policy")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/payment/purchases")
+    @ResponseBody
+    public ApiResponse<List<GetPurchaseForAdminResponse>> searchPurchasesForAdmin(
+            @RequestParam("keyword") String keyword
+    ) {
+        return ApiUtils.success(paymentAdminService.searchPurchasesForAdmin(keyword));
+    }
+
+    @Operation(summary = "Google Play refunds of the last 30 days (Admin only)",
+            description = "Read live from Google, with the purchase each one matches and what it takes back")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/payment/google-voided")
+    @ResponseBody
+    public ApiResponse<List<GetGoogleVoidedPurchaseForAdminResponse>> getGoogleVoidedPurchasesForAdmin() {
+        return ApiUtils.success(paymentAdminService.getGoogleVoidedPurchasesForAdmin());
+    }
+
+    @Operation(summary = "Request an App Store test notification (Admin only)",
+            description = "Apple sends a TEST notification to the URL registered for the environment (Production or Sandbox)")
+    @SecurityRequirement(name = "Authorization")
+    @PostMapping("/payment/apple/test-notification")
+    @ResponseBody
+    public ApiResponse<AppleTestNotificationResponse> requestAppleTestNotification(
+            @RequestParam(value = "environment", defaultValue = "Production") String environment
+    ) {
+        return ApiUtils.success(paymentAdminService.requestAppleTestNotificationForAdmin(environment));
+    }
+
+    @Operation(summary = "App Store test notification result (Admin only)",
+            description = "Whether Apple could deliver the test notification, and why not")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/payment/apple/test-notification/{testNotificationToken}")
+    @ResponseBody
+    public ApiResponse<GetAppleTestNotificationStatusResponse> getAppleTestNotificationStatus(
+            @PathVariable String testNotificationToken,
+            @RequestParam(value = "environment", defaultValue = "Production") String environment
+    ) {
+        return ApiUtils.success(
+                paymentAdminService.getAppleTestNotificationStatusForAdmin(environment, testNotificationToken));
     }
 
     public record AdminLoginResponse(

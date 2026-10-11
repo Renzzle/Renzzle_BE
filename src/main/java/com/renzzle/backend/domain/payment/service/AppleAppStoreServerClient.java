@@ -8,6 +8,7 @@ import io.jsonwebtoken.Jwts;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
@@ -32,6 +33,7 @@ public class AppleAppStoreServerClient {
 
     private static final String APP_STORE_CONNECT_AUDIENCE = "appstoreconnect-v1";
     private static final long TOKEN_VALIDITY_MINUTES = 5;
+    private static final String SANDBOX_ENVIRONMENT = "Sandbox";
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
@@ -83,11 +85,50 @@ public class AppleAppStoreServerClient {
         } catch (RestClientResponseException e) {
             log.warn("App Store Server API request failed. status={}, body={}",
                     e.getStatusCode().value(), e.getResponseBodyAsString());
-            throw new CustomException(ErrorCode.STORE_VERIFICATION_FAILED);
+            // 400 means Apple rejected the transaction ID itself. Anything else (401 for our key, 429, 5xx)
+            // may work later, so the app keeps the purchase and sends it again
+            throw new CustomException(e.getStatusCode().value() == HttpStatus.BAD_REQUEST.value()
+                    ? ErrorCode.STORE_VERIFICATION_FAILED
+                    : ErrorCode.STORE_API_FAILED);
         } catch (RuntimeException e) {
             log.warn("App Store Server API request failed.", e);
-            throw new CustomException(ErrorCode.STORE_VERIFICATION_FAILED);
+            throw new CustomException(ErrorCode.STORE_API_FAILED);
         }
+    }
+
+    // Apple sends a TEST notification to the URL registered for that environment and returns a token to check it with
+    public String requestTestNotification(String environment) {
+        TestNotificationResponse response = restClient.post()
+                .uri(baseUrl(environment) + "/inApps/v1/notifications/test")
+                .headers(headers -> headers.setBearerAuth(generateToken()))
+                .retrieve()
+                .body(TestNotificationResponse.class);
+        return response == null ? null : response.testNotificationToken();
+    }
+
+    public AppleTestNotificationStatus getTestNotificationStatus(String environment, String testNotificationToken) {
+        return restClient.get()
+                .uri(baseUrl(environment) + "/inApps/v1/notifications/test/{testNotificationToken}",
+                        testNotificationToken)
+                .headers(headers -> headers.setBearerAuth(generateToken()))
+                .retrieve()
+                .body(AppleTestNotificationStatus.class);
+    }
+
+    // Answers a CONSUMPTION_REQUEST notification, which Apple accepts with 202
+    public void sendConsumptionInformation(String environment, String transactionId, AppleConsumptionRequest request) {
+        restClient.put()
+                .uri(baseUrl(environment) + "/inApps/v2/transactions/consumption/{transactionId}", transactionId)
+                .headers(headers -> headers.setBearerAuth(generateToken()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(request)
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    // Environment as Apple names it in transactions and notifications: Production or Sandbox
+    private String baseUrl(String environment) {
+        return SANDBOX_ENVIRONMENT.equalsIgnoreCase(environment) ? sandboxUrl : productionUrl;
     }
 
     private String requestFromProductionOrNull(String transactionId, String token) {
@@ -147,7 +188,8 @@ public class AppleAppStoreServerClient {
             } catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException
                      | IllegalArgumentException e) {
                 log.warn("Failed to load the Apple IAP private key. path={}", privateKeyPath, e);
-                throw new CustomException(ErrorCode.STORE_VERIFICATION_FAILED);
+                // Our configuration, not the purchase, so the app retries once it is fixed
+                throw new CustomException(ErrorCode.STORE_API_FAILED);
             }
         }
         return privateKey;
@@ -155,23 +197,18 @@ public class AppleAppStoreServerClient {
 
     // The JWS payload is trusted as-is because it is fetched from Apple directly over TLS
     private AppleTransactionInfo decodeTransactionInfo(String signedTransactionInfo) {
-        try {
-            String[] parts = signedTransactionInfo.split("\\.");
-            if (parts.length != 3) {
-                throw new IllegalArgumentException("Invalid JWS format");
-            }
-            byte[] payload = Base64.getUrlDecoder().decode(parts[1]);
-            return objectMapper.readValue(payload, AppleTransactionInfo.class);
-        } catch (IllegalArgumentException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Failed to decode JWS payload", e);
-        }
+        return AppleJws.decodePayload(signedTransactionInfo, objectMapper, AppleTransactionInfo.class);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record TransactionInfoResponse(
             String signedTransactionInfo
+    ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record TestNotificationResponse(
+            String testNotificationToken
     ) {
     }
 }

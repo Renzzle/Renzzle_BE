@@ -49,13 +49,16 @@ public enum ErrorCode {
     INSUFFICIENT_CURRENCY(HttpStatus.BAD_REQUEST, "U4002", "Not enough currency"),
     UNAUTHORIZED_ACTION(HttpStatus.UNAUTHORIZED, "U401", "Unauthorized user"),
 
-    // Payment
+    // Payment. The app finishes a purchase on I4002 (the store says it is not valid) but keeps it for a retry
+    // on I4091 and I5020 (the store could not be asked)
     INVALID_PAYMENT_REQUEST(HttpStatus.BAD_REQUEST, "I4000", "Invalid payment request"),
     UNSUPPORTED_PAYMENT_PLATFORM(HttpStatus.BAD_REQUEST, "I4001", "Unsupported payment platform"),
     STORE_VERIFICATION_FAILED(HttpStatus.BAD_REQUEST, "I4002", "Store payment verification failed"),
     RECEIPT_TRANSACTION_MISMATCH(HttpStatus.BAD_REQUEST, "I4003", "Receipt transaction does not match the request"),
     UNKNOWN_IAP_PRODUCT(HttpStatus.NOT_FOUND, "I4040", "Unregistered in-app purchase product"),
     ALREADY_PROCESSED_RECEIPT(HttpStatus.CONFLICT, "I4090", "Receipt already processed"),
+    PURCHASE_PENDING(HttpStatus.CONFLICT, "I4091", "Purchase is still pending"),
+    STORE_API_FAILED(HttpStatus.BAD_GATEWAY, "I5020", "Store API request failed"),
 
     // Puzzle
     ALREADY_SOLVED_PUZZLE(HttpStatus.BAD_REQUEST, "P4000", "Puzzle already solved"),

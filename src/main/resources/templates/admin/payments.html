@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="title.payments">Renzzle Admin - Payments</title>
+  <link rel="stylesheet" href="/assets/admin/payments.css">
+  <link rel="stylesheet" href="/assets/admin/common.css">
+  <script src="/assets/admin/i18n.js"></script>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>Renzzle Admin</h1>
+      <span class="user-info" th:if="${userEmail}" th:text="${userEmail}"></span>
+    </div>
+    <div class="header-actions">
+      <th:block th:replace="~{admin/fragments :: languageSelect}"></th:block>
+      <a href="/admin/logout" class="btn" data-i18n="common.logout">Log out</a>
+    </div>
+  </div>
+
+  <th:block th:replace="~{admin/fragments :: siteNav('payments')}"></th:block>
+  <th:block th:replace="~{admin/fragments :: uiKit}"></th:block>
+
+  <main class="admin-shell">
+    <div class="admin-page-heading">
+      <div>
+        <h2 data-i18n="payments.heading">Payments</h2>
+        <p data-i18n="payments.description">Look up purchases to judge refund requests. Google refunds are made in Play Console; Apple decides iOS refunds itself.</p>
+      </div>
+    </div>
+
+    <!-- ===== Purchase lookup ===== -->
+    <section class="section">
+      <div class="section-title-row payment-title-row">
+        <div>
+          <h2 data-i18n="payments.searchHeading">Purchase Lookup</h2>
+          <p data-i18n="payments.searchDescription">Refundable within the withdrawal period while the balance still covers the currency the purchase granted.</p>
+        </div>
+        <form class="payment-search" id="purchaseSearchForm">
+          <label for="purchaseKeyword">
+            <span class="admin-visually-hidden" data-i18n="payments.searchLabel">Search keyword</span>
+            <input type="text" id="purchaseKeyword" autocomplete="off" data-i18n-placeholder="payments.searchPlaceholder" placeholder="Order ID, transaction ID, email or nickname">
+          </label>
+          <button type="submit" class="btn btn-primary payment-search-btn" id="purchaseSearchBtn" data-i18n="common.search">Search</button>
+        </form>
+      </div>
+
+      <div id="purchaseStatus" class="payment-status" aria-live="polite" hidden></div>
+
+      <div id="purchaseTableWrap" class="admin-table-wrap" hidden>
+        <table class="admin-table payment-table">
+          <thead>
+          <tr>
+            <th data-i18n="payments.purchasedAt">Purchased</th>
+            <th data-i18n="payments.user">User</th>
+            <th data-i18n="payments.product">Product</th>
+            <th data-i18n="payments.grantedBalance">Granted / Balance</th>
+            <th data-i18n="payments.withdrawal">Within Period</th>
+            <th data-i18n="payments.unused">Unused</th>
+            <th data-i18n="payments.result">Refund</th>
+          </tr>
+          </thead>
+          <tbody id="purchaseTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== Google Play refunds ===== -->
+    <section class="section">
+      <div class="section-title-row">
+        <div>
+          <h2 data-i18n="payments.googleHeading">Google Play Refunds (Last 30 Days)</h2>
+          <p data-i18n="payments.googleDescription">Read live from Google. Shows the purchase each refund matches and how much currency it takes back.</p>
+        </div>
+        <div class="section-controls">
+          <button type="button" class="btn btn-secondary" id="loadVoidedBtn" data-i18n="payments.load">Load</button>
+        </div>
+      </div>
+
+      <div id="voidedStatus" class="payment-status" aria-live="polite" hidden></div>
+
+      <div id="voidedTableWrap" class="admin-table-wrap" hidden>
+        <table class="admin-table payment-table">
+          <thead>
+          <tr>
+            <th data-i18n="payments.refundedAt">Refunded</th>
+            <th data-i18n="payments.orderId">Order ID</th>
+            <th data-i18n="payments.reason">Reason</th>
+            <th data-i18n="payments.requestedBy">Requested By</th>
+            <th data-i18n="payments.purchase">Purchase</th>
+            <th data-i18n="payments.status">Status</th>
+            <th data-i18n="payments.takesBack">Takes Back</th>
+          </tr>
+          </thead>
+          <tbody id="voidedTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===== App Store notification check ===== -->
+    <section class="section">
+      <div class="section-title-row payment-title-row">
+        <div>
+          <h2 data-i18n="payments.appleHeading">App Store Notifications</h2>
+          <p data-i18n="payments.appleDescription">Asks Apple to send a test notification to the URL registered in App Store Connect and shows whether it arrived.</p>
+        </div>
+        <div class="section-controls payment-test-controls">
+          <label class="payment-environment" for="appleEnvironment">
+            <span class="admin-visually-hidden" data-i18n="payments.environment">Environment</span>
+            <select id="appleEnvironment">
+              <option value="Production">Production</option>
+              <option value="Sandbox">Sandbox</option>
+            </select>
+          </label>
+          <button type="button" class="btn btn-primary" id="sendTestBtn" data-i18n="payments.sendTest">Send Test Notification</button>
+        </div>
+      </div>
+
+      <div id="appleTestResult" class="payment-test-result" aria-live="polite" hidden>
+        <div class="payment-test-meta">
+          <span class="admin-pill primary" id="appleTestEnvironment"></span>
+          <span class="payment-sub" id="appleTestToken"></span>
+        </div>
+        <ul class="payment-attempts" id="appleTestAttempts"></ul>
+        <div class="payment-test-footer">
+          <span class="muted-status" id="appleTestMsg"></span>
+          <button type="button" class="btn btn-secondary" id="checkTestBtn" data-i18n="payments.checkAgain">Check Again</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    const API_BASE = '';
+    const UNACKNOWLEDGED_REASON = 8;
+
+    async function fetchWithAuth(url, options = {}) {
+      const res = await fetch(url, { ...options, credentials: 'same-origin' });
+      if (res.status === 401 || res.status === 403) {
+        alert(adminT('msg.sessionExpired'));
+        globalThis.location.href = '/admin/logout';
+        return null;
+      }
+      return res;
+    }
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    // e.g. 2026.10.11 14:05 in the browser's time zone, the same in every UI language
+    function formatDateTime(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return iso;
+      return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function formatNumber(value) {
+      return Number(value || 0).toLocaleString();
+    }
+
+    function pill(text, variant) {
+      const el = document.createElement('span');
+      el.className = 'admin-pill' + (variant ? ' ' + variant : '');
+      el.textContent = text;
+      return el;
+    }
+
+    function sub(text) {
+      const el = document.createElement('span');
+      el.className = 'payment-sub';
+      el.textContent = text;
+      return el;
+    }
+
+    function cell(...children) {
+      const td = document.createElement('td');
+      children.filter(Boolean).forEach((child) => {
+        td.appendChild(typeof child === 'string' ? document.createTextNode(child) : child);
+      });
+      return td;
+    }
+
+    function strong(text) {
+      const el = document.createElement('strong');
+      el.textContent = text;
+      return el;
+    }
+
+    function setStatus(id, message) {
+      const el = document.getElementById(id);
+      el.textContent = message || '';
+      el.hidden = !message;
+    }
+
+    function reasonLabel(code) {
+      if (code === null || code === undefined) return '';
+      const key = 'payments.voidedReason.' + code;
+      const label = adminT(key);
+      return label === key ? String(code) : label;
+    }
+
+    function sourceLabel(code) {
+      if (code === null || code === undefined) return '';
+      const key = 'payments.voidedSource.' + code;
+      const label = adminT(key);
+      return label === key ? String(code) : label;
+    }
+
+    // =====================================================================
+    // Purchase lookup
+    // =====================================================================
+    let purchases = null;
+
+    function refundCell(p) {
+      if (p.status === 'REFUNDED') {
+        return cell(
+          pill(adminT('payments.refunded'), 'payment-no'),
+          sub(adminT('payments.refundedDetail', {
+            amount: formatNumber(p.reclaimedCurrency),
+            date: formatDateTime(p.refundedAt),
+            reason: p.refundReason || ''
+          }))
+        );
+      }
+      if (p.status !== 'VERIFIED') {
+        return cell(pill(adminT('payments.failed')));
+      }
+      if (!p.refundable) {
+        return cell(pill(adminT('payments.notRefundable'), 'payment-no'));
+      }
+      return cell(
+        pill(adminT('payments.refundable'), 'payment-yes'),
+        p.platform === 'IOS' ? sub(adminT('payments.appleDecides')) : null
+      );
+    }
+
+    function renderPurchases() {
+      const tableWrap = document.getElementById('purchaseTableWrap');
+      const tableBody = document.getElementById('purchaseTableBody');
+      tableBody.innerHTML = '';
+      if (purchases === null) return;
+      if (purchases.length === 0) {
+        tableWrap.hidden = true;
+        setStatus('purchaseStatus', adminT('payments.noPurchases'));
+        return;
+      }
+
+      setStatus('purchaseStatus', adminT('payments.purchaseCount', { count: purchases.length }));
+      tableWrap.hidden = false;
+      purchases.forEach((p) => {
+        const tr = document.createElement('tr');
+        tr.appendChild(cell(
+          formatDateTime(p.purchasedAt),
+          sub(p.platform)
+        ));
+        tr.appendChild(cell(strong(p.nickname || ''), sub(p.email || '')));
+        tr.appendChild(cell(strong(p.productId), sub(p.transactionId || '')));
+        tr.appendChild(cell(
+          formatNumber(p.grantedCurrency) + ' / ' + formatNumber(p.currentCurrency)
+        ));
+        tr.appendChild(cell(
+          pill(adminT(p.withinWithdrawalPeriod ? 'payments.within' : 'payments.expired'),
+            p.withinWithdrawalPeriod ? 'payment-yes' : 'payment-no'),
+          sub(adminT('payments.until', { date: formatDateTime(p.withdrawalDeadline) }))
+        ));
+        // Nothing to use up when the purchase grants no currency (remove_ads)
+        tr.appendChild(p.grantedCurrency === 0
+          ? cell(adminT('payments.notApplicable'))
+          : cell(pill(adminT(p.unused ? 'payments.yes' : 'payments.no'), p.unused ? 'payment-yes' : 'payment-no')));
+        tr.appendChild(refundCell(p));
+        tableBody.appendChild(tr);
+      });
+    }
+
+    async function searchPurchases(event) {
+      event.preventDefault();
+      const keyword = document.getElementById('purchaseKeyword').value.trim();
+      purchases = null;
+      renderPurchases();
+      document.getElementById('purchaseTableWrap').hidden = true;
+      if (!keyword) {
+        setStatus('purchaseStatus', adminT('payments.needKeyword'));
+        return;
+      }
+
+      const button = document.getElementById('purchaseSearchBtn');
+      button.disabled = true;
+      setStatus('purchaseStatus', adminT('payments.searching'));
+      try {
+        const res = await fetchWithAuth(API_BASE + '/admin/payment/purchases?keyword=' + encodeURIComponent(keyword));
+        if (!res) return;
+        const data = await res.json();
+        if (!res.ok || !data.isSuccess) {
+          setStatus('purchaseStatus', adminT('payments.searchFailed'));
+          return;
+        }
+        purchases = data.response || [];
+        renderPurchases();
+      } catch (err) {
+        setStatus('purchaseStatus', adminT('common.errorPrefix', { message: err.message || '' }));
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    // =====================================================================
+    // Google Play refunds
+    // =====================================================================
+    let voidedPurchases = null;
+
+    function voidedStatusCell(v) {
+      if (!v.matched) return cell(pill(adminT('payments.notMatched')));
+      if (v.status === 'REFUNDED') return cell(pill(adminT('payments.refunded'), 'payment-no'));
+      if (v.status === 'VERIFIED') {
+        return cell(pill(adminT(v.reclaimRewards ? 'payments.pending' : 'payments.recordOnly'),
+          v.reclaimRewards ? 'payment-warn' : null));
+      }
+      return cell(pill(v.status || ''));
+    }
+
+    function renderVoidedPurchases() {
+      const tableWrap = document.getElementById('voidedTableWrap');
+      const tableBody = document.getElementById('voidedTableBody');
+      tableBody.innerHTML = '';
+      if (voidedPurchases === null) return;
+      if (voidedPurchases.length === 0) {
+        tableWrap.hidden = true;
+        setStatus('voidedStatus', adminT('payments.noVoided'));
+        return;
+      }
+
+      const matched = voidedPurchases.filter((v) => v.matched).length;
+      const unacknowledged = voidedPurchases.filter((v) => v.voidedReason === UNACKNOWLEDGED_REASON).length;
+      setStatus('voidedStatus', adminT('payments.voidedSummary', {
+        count: voidedPurchases.length, matched, unacknowledged
+      }));
+      tableWrap.hidden = false;
+      voidedPurchases.forEach((v) => {
+        const tr = document.createElement('tr');
+        tr.appendChild(cell(formatDateTime(v.voidedAt)));
+        tr.appendChild(cell(v.orderId || ''));
+        tr.appendChild(cell(
+          v.voidedReason === UNACKNOWLEDGED_REASON
+            ? pill(reasonLabel(v.voidedReason), 'payment-warn')
+            : reasonLabel(v.voidedReason)
+        ));
+        tr.appendChild(cell(sourceLabel(v.voidedSource)));
+        tr.appendChild(v.matched
+          ? cell(strong(v.productId || ''), sub(v.nickname || ''))
+          : cell('-'));
+        tr.appendChild(voidedStatusCell(v));
+        tr.appendChild(cell(v.matched
+          ? formatNumber(v.reclaimCurrency) + ' / ' + formatNumber(v.grantedCurrency)
+          : '-'));
+        tableBody.appendChild(tr);
+      });
+    }
+
+    async function loadVoidedPurchases() {
+      const button = document.getElementById('loadVoidedBtn');
+      button.disabled = true;
+      voidedPurchases = null;
+      renderVoidedPurchases();
+      document.getElementById('voidedTableWrap').hidden = true;
+      setStatus('voidedStatus', adminT('payments.loading'));
+      try {
+        const res = await fetchWithAuth(API_BASE + '/admin/payment/google-voided');
+        if (!res) return;
+        const data = await res.json();
+        if (!res.ok || !data.isSuccess) {
+          setStatus('voidedStatus', adminT('payments.googleLoadFailed'));
+          return;
+        }
+        voidedPurchases = data.response || [];
+        renderVoidedPurchases();
+      } catch (err) {
+        setStatus('voidedStatus', adminT('common.errorPrefix', { message: err.message || '' }));
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    // =====================================================================
+    // App Store test notification
+    // =====================================================================
+    let appleTest = null;
+    let appleAttempts = null;
+    let appleCheckTimer = null;
+
+    function setAppleMessage(message) {
+      document.getElementById('appleTestMsg').textContent = message || '';
+    }
+
+    function renderAppleTest() {
+      const result = document.getElementById('appleTestResult');
+      if (!appleTest) {
+        result.hidden = true;
+        return;
+      }
+      result.hidden = false;
+      document.getElementById('appleTestEnvironment').textContent = appleTest.environment;
+      document.getElementById('appleTestToken').textContent =
+        adminT('payments.token', { token: appleTest.testNotificationToken || '' });
+
+      const list = document.getElementById('appleTestAttempts');
+      list.innerHTML = '';
+      if (appleAttempts === null) return;
+      if (appleAttempts.length === 0) {
+        setAppleMessage(adminT('payments.noAttempts'));
+        return;
+      }
+      setAppleMessage('');
+      appleAttempts.forEach((attempt) => {
+        const li = document.createElement('li');
+        li.appendChild(pill(attempt.result || '', attempt.result === 'SUCCESS' ? 'payment-yes' : 'payment-no'));
+        li.appendChild(sub(formatDateTime(attempt.attemptedAt)));
+        list.appendChild(li);
+      });
+    }
+
+    async function checkAppleTest() {
+      if (!appleTest) return;
+      const button = document.getElementById('checkTestBtn');
+      button.disabled = true;
+      try {
+        const url = API_BASE + '/admin/payment/apple/test-notification/'
+          + encodeURIComponent(appleTest.testNotificationToken)
+          + '?environment=' + encodeURIComponent(appleTest.environment);
+        const res = await fetchWithAuth(url);
+        if (!res) return;
+        const data = await res.json();
+        if (!res.ok || !data.isSuccess || !data.response) {
+          setAppleMessage(adminT('payments.testCheckFailed'));
+          return;
+        }
+        appleAttempts = data.response.sendAttempts || [];
+        renderAppleTest();
+      } catch (err) {
+        setAppleMessage(adminT('common.errorPrefix', { message: err.message || '' }));
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    async function sendAppleTest() {
+      const environment = document.getElementById('appleEnvironment').value;
+      const button = document.getElementById('sendTestBtn');
+      button.disabled = true;
+      clearTimeout(appleCheckTimer);
+      try {
+        const res = await fetchWithAuth(
+          API_BASE + '/admin/payment/apple/test-notification?environment=' + encodeURIComponent(environment),
+          { method: 'POST' });
+        if (!res) return;
+        const data = await res.json();
+        if (!res.ok || !data.isSuccess || !data.response) {
+          adminToast(adminT('payments.testRequestFailed'), 'error');
+          return;
+        }
+        appleTest = data.response;
+        appleAttempts = null;
+        renderAppleTest();
+        setAppleMessage(adminT('payments.testRequested'));
+        // Apple sends it within seconds; checking at once would usually find no attempt yet
+        appleCheckTimer = setTimeout(checkAppleTest, 5000);
+      } catch (err) {
+        adminToast(adminT('common.errorPrefix', { message: err.message || '' }), 'error');
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    // =====================================================================
+    // Wiring
+    // =====================================================================
+    document.getElementById('purchaseSearchForm').addEventListener('submit', searchPurchases);
+    document.getElementById('loadVoidedBtn').addEventListener('click', loadVoidedPurchases);
+    document.getElementById('sendTestBtn').addEventListener('click', sendAppleTest);
+    document.getElementById('checkTestBtn').addEventListener('click', checkAppleTest);
+
+    document.addEventListener('admin:language-change', () => {
+      renderPurchases();
+      renderVoidedPurchases();
+      renderAppleTest();
+    });
+  </script>
+</body>
+</html>

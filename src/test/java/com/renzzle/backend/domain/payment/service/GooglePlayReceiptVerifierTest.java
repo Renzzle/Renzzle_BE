@@ -6,10 +6,15 @@ import com.renzzle.backend.global.exception.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -58,30 +63,76 @@ class GooglePlayReceiptVerifierTest {
     }
 
     @Test
-    void verify_WhenPurchaseIsPending_ThenThrowsCustomException() {
+    void verify_WhenPurchaseIsPending_ThenThrowsPurchasePending() {
         // given
         when(googlePlayClient.getProductPurchase("piece_1000", "purchase-token"))
                 .thenReturn("{\"purchaseState\":2,\"acknowledgementState\":0,\"orderId\":\"GPA.1234\"}");
 
-        // when
-        CustomException exception = assertThrows(CustomException.class,
-                () -> verifier.verify("piece_1000", "purchase-token"));
-
-        // then
-        assertEquals(ErrorCode.STORE_VERIFICATION_FAILED, exception.getErrorCode());
+        // when, then
+        assertErrorCode(ErrorCode.PURCHASE_PENDING);
     }
 
     @Test
-    void verify_WhenGoogleRejectsRequest_ThenThrowsCustomException() {
+    void verify_WhenPurchaseIsCanceled_ThenThrowsStoreVerificationFailed() {
         // given
         when(googlePlayClient.getProductPurchase("piece_1000", "purchase-token"))
-                .thenThrow(HttpClientErrorException.create(HttpStatus.NOT_FOUND, "Not Found", null, null, null));
+                .thenReturn("{\"purchaseState\":1,\"acknowledgementState\":0,\"orderId\":\"GPA.1234\"}");
 
-        // when
+        // when, then
+        assertErrorCode(ErrorCode.STORE_VERIFICATION_FAILED);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {400, 410})
+    void verify_WhenGoogleRejectsTheToken_ThenThrowsStoreVerificationFailed(int status) {
+        // given
+        when(googlePlayClient.getProductPurchase("piece_1000", "purchase-token"))
+                .thenThrow(statusError(status));
+
+        // when, then
+        assertErrorCode(ErrorCode.STORE_VERIFICATION_FAILED);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {401, 403, 404, 429, 500, 503})
+    void verify_WhenTheCallFails_ThenThrowsStoreApiFailedSoTheAppRetries(int status) {
+        // given
+        when(googlePlayClient.getProductPurchase("piece_1000", "purchase-token"))
+                .thenThrow(statusError(status));
+
+        // when, then
+        assertErrorCode(ErrorCode.STORE_API_FAILED);
+    }
+
+    @Test
+    void verify_WhenGoogleIsUnreachable_ThenThrowsStoreApiFailed() {
+        // given
+        when(googlePlayClient.getProductPurchase("piece_1000", "purchase-token"))
+                .thenThrow(new ResourceAccessException("Read timed out"));
+
+        // when, then
+        assertErrorCode(ErrorCode.STORE_API_FAILED);
+    }
+
+    @Test
+    void verify_WhenResponseCannotBeRead_ThenThrowsStoreApiFailed() {
+        // given
+        when(googlePlayClient.getProductPurchase("piece_1000", "purchase-token")).thenReturn("<html>");
+
+        // when, then
+        assertErrorCode(ErrorCode.STORE_API_FAILED);
+    }
+
+    private void assertErrorCode(ErrorCode expected) {
         CustomException exception = assertThrows(CustomException.class,
                 () -> verifier.verify("piece_1000", "purchase-token"));
+        assertEquals(expected, exception.getErrorCode());
+    }
 
-        // then
-        assertEquals(ErrorCode.STORE_VERIFICATION_FAILED, exception.getErrorCode());
+    private HttpStatusCodeException statusError(int status) {
+        HttpStatus httpStatus = HttpStatus.valueOf(status);
+        return httpStatus.is4xxClientError()
+                ? HttpClientErrorException.create(httpStatus, httpStatus.getReasonPhrase(), null, null, null)
+                : HttpServerErrorException.create(httpStatus, httpStatus.getReasonPhrase(), null, null, null);
     }
 }

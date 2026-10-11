@@ -5,7 +5,7 @@
   <title>Renzzle Admin Fragments</title>
 </head>
 <body>
-<!-- Main navigation. `active` names the highlighted tab: 'packs' | 'communityPuzzles' | 'notices' | 'puzzleCache' -->
+<!-- Main navigation. `active` names the highlighted tab: 'packs' | 'communityPuzzles' | 'notices' | 'puzzleCache' | 'payments' -->
 <th:block th:fragment="siteNav(active)">
   <nav class="site-nav-wrap" aria-label="Main menu">
     <div class="site-nav">
@@ -13,6 +13,7 @@
       <a th:classappend="${active == 'communityPuzzles'} ? 'active'" th:href="@{/admin/community-puzzles}" data-i18n="nav.communityPuzzles">Community Puzzles</a>
       <a th:classappend="${active == 'notices'} ? 'active'" th:href="@{/admin/notices}" data-i18n="nav.notices">Notices</a>
       <a th:classappend="${active == 'puzzleCache'} ? 'active'" th:href="@{/admin/puzzle-cache}" data-i18n="nav.responseMoves">AI Responses</a>
+      <a th:classappend="${active == 'payments'} ? 'active'" th:href="@{/admin/payments}" data-i18n="nav.payments">Payments</a>
     </div>
   </nav>
 </th:block>
