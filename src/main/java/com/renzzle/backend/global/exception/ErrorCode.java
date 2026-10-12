@@ -54,6 +54,7 @@ public enum ErrorCode {
     INVALID_PAYMENT_REQUEST(HttpStatus.BAD_REQUEST, "I4000", "Invalid payment request"),
     UNSUPPORTED_PAYMENT_PLATFORM(HttpStatus.BAD_REQUEST, "I4001", "Unsupported payment platform"),
     STORE_VERIFICATION_FAILED(HttpStatus.BAD_REQUEST, "I4002", "Store payment verification failed"),
+    INVALID_STORE_NOTIFICATION(HttpStatus.UNAUTHORIZED, "I4010", "Store notification signature is not valid"),
     RECEIPT_TRANSACTION_MISMATCH(HttpStatus.BAD_REQUEST, "I4003", "Receipt transaction does not match the request"),
     UNKNOWN_IAP_PRODUCT(HttpStatus.NOT_FOUND, "I4040", "Unregistered in-app purchase product"),
     ALREADY_PROCESSED_RECEIPT(HttpStatus.CONFLICT, "I4090", "Receipt already processed"),

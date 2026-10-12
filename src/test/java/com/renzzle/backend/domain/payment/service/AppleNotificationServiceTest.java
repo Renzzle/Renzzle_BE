@@ -31,6 +31,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -44,6 +45,9 @@ class AppleNotificationServiceTest {
     private static final Instant NOW = Instant.parse("2026-10-11T00:00:00Z");
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Mock
+    private AppleNotificationVerifier notificationVerifier;
 
     @Mock
     private AppleAppStoreServerClient appStoreServerClient;
@@ -62,8 +66,46 @@ class AppleNotificationServiceTest {
     @BeforeEach
     void setUp() {
         RefundPolicy refundPolicy = new RefundPolicy(Clock.fixed(NOW, ZoneOffset.UTC), 7);
-        appleNotificationService = new AppleNotificationService(appStoreServerClient, inAppPurchaseRepository,
-                userRepository, refundService, refundPolicy, objectMapper, BUNDLE_ID);
+        appleNotificationService = new AppleNotificationService(notificationVerifier, appStoreServerClient,
+                inAppPurchaseRepository, userRepository, refundService, refundPolicy, objectMapper, BUNDLE_ID);
+    }
+
+    @Test
+    void handle_WhenSignatureIsNotApples_ThenRejectsBeforeTouchingAnything() throws Exception {
+        // given
+        String signedPayload = notification("REFUND", BUNDLE_ID);
+        doThrow(new CustomException(ErrorCode.INVALID_STORE_NOTIFICATION))
+                .when(notificationVerifier).verify(signedPayload, "Production");
+
+        // when
+        CustomException exception = assertThrows(CustomException.class,
+                () -> appleNotificationService.handle(signedPayload));
+
+        // then
+        assertEquals(ErrorCode.INVALID_STORE_NOTIFICATION, exception.getErrorCode());
+        verifyNoInteractions(inAppPurchaseRepository, appStoreServerClient, refundService, userRepository);
+    }
+
+    @Test
+    void handle_WhenRefund_ThenChecksTheSignatureForItsEnvironment() throws Exception {
+        // given
+        String signedPayload = notification("REFUND", BUNDLE_ID);
+        when(inAppPurchaseRepository.findByTransactionId(TRANSACTION_ID)).thenReturn(Optional.empty());
+
+        // when
+        appleNotificationService.handle(signedPayload);
+
+        // then
+        verify(notificationVerifier).verify(signedPayload, "Production");
+    }
+
+    @Test
+    void handle_WhenTypeIsIgnored_ThenSkipsTheSignatureCheck() throws Exception {
+        // when
+        appleNotificationService.handle(notification("DID_CHANGE_RENEWAL_STATUS", BUNDLE_ID));
+
+        // then
+        verifyNoInteractions(notificationVerifier, inAppPurchaseRepository, appStoreServerClient, refundService);
     }
 
     @Test
@@ -129,11 +171,15 @@ class AppleNotificationServiceTest {
     }
 
     @Test
-    void handle_WhenTest_ThenChangesNothing() throws Exception {
+    void handle_WhenTest_ThenChecksTheSignatureAndChangesNothing() throws Exception {
+        // given
+        String signedPayload = notification("TEST", BUNDLE_ID);
+
         // when
-        appleNotificationService.handle(notification("TEST", BUNDLE_ID));
+        appleNotificationService.handle(signedPayload);
 
         // then
+        verify(notificationVerifier).verify(signedPayload, "Production");
         verifyNoInteractions(inAppPurchaseRepository, appStoreServerClient, refundService);
     }
 

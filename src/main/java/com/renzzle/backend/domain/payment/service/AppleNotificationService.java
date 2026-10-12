@@ -16,8 +16,8 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.Optional;
 
-// Handles App Store Server Notifications V2. Anyone can call the endpoint, so a notification is never trusted:
-// it only names the transaction, which is fetched again from Apple before anything changes
+// Handles App Store Server Notifications V2. Anyone can call the endpoint, so a notification must carry Apple's
+// signature, and even then it only names the transaction, which is fetched again from Apple before anything changes
 @Slf4j
 @Service
 public class AppleNotificationService {
@@ -27,6 +27,7 @@ public class AppleNotificationService {
     static final String REFUND_REVERSED = "REFUND_REVERSED";
     static final String CONSUMPTION_REQUEST = "CONSUMPTION_REQUEST";
 
+    private final AppleNotificationVerifier notificationVerifier;
     private final AppleAppStoreServerClient appStoreServerClient;
     private final InAppPurchaseRepository inAppPurchaseRepository;
     private final UserRepository userRepository;
@@ -36,6 +37,7 @@ public class AppleNotificationService {
     private final String bundleId;
 
     public AppleNotificationService(
+            AppleNotificationVerifier notificationVerifier,
             AppleAppStoreServerClient appStoreServerClient,
             InAppPurchaseRepository inAppPurchaseRepository,
             UserRepository userRepository,
@@ -44,6 +46,7 @@ public class AppleNotificationService {
             ObjectMapper objectMapper,
             @Value("${iap.apple.bundle-id}") String bundleId
     ) {
+        this.notificationVerifier = notificationVerifier;
         this.appStoreServerClient = appStoreServerClient;
         this.inAppPurchaseRepository = inAppPurchaseRepository;
         this.userRepository = userRepository;
@@ -57,15 +60,19 @@ public class AppleNotificationService {
     public void handle(String signedPayload) {
         AppleNotificationPayload notification = decode(signedPayload, AppleNotificationPayload.class);
         String type = notification.notificationType();
-        if (TEST.equals(type)) {
-            log.info("Apple TEST notification received. notificationUUID={}", notification.notificationUUID());
-            return;
-        }
-        if (!REFUND.equals(type) && !REFUND_REVERSED.equals(type) && !CONSUMPTION_REQUEST.equals(type)) {
+        // Other types are answered without a signature check, since nothing is done with them
+        if (!TEST.equals(type) && !REFUND.equals(type) && !REFUND_REVERSED.equals(type)
+                && !CONSUMPTION_REQUEST.equals(type)) {
             return;
         }
 
         AppleNotificationPayload.Data data = notification.data();
+        // Before any database or Apple call, so a forged request costs nothing
+        notificationVerifier.verify(signedPayload, data == null ? null : data.environment());
+        if (TEST.equals(type)) {
+            log.info("Apple TEST notification received. notificationUUID={}", notification.notificationUUID());
+            return;
+        }
         if (data == null || !bundleId.equals(data.bundleId())) {
             log.warn("Apple notification for another app ignored. type={}, notificationUUID={}",
                     type, notification.notificationUUID());

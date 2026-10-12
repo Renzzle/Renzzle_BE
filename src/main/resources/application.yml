@@ -84,6 +84,9 @@ iap:
     issuer-id: ${APPLE_IAP_ISSUER_ID:}
     key-id: ${APPLE_IAP_KEY_ID:}
     bundle-id: ${APPLE_IAP_BUNDLE_ID:com.renzzle}
+    # Numeric Apple ID of the app (App Store Connect > App Information). Production notification signatures are
+    # checked against it; without it production notifications are refused and Apple retries them
+    app-apple-id: ${APPLE_IAP_APP_APPLE_ID:}
     private-key-path: ${APPLE_IAP_PRIVATE_KEY_PATH:}
     production-url: https://api.storekit.itunes.apple.com
     sandbox-url: https://api.storekit-sandbox.itunes.apple.com
