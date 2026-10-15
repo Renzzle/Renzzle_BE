@@ -80,6 +80,20 @@ class AdminPermissionAccessTest {
     }
 
     @Test
+    void aiResponseDelete_WhenCallerLacksAiResponsePermission_ThenDenied() throws Exception {
+        String path = "/api/puzzle/cache/ai-response?puzzleType=TRAINING&puzzleId=999999&currentBoardState=h8h9i8";
+
+        mockMvc.perform(withToken(delete(path), createUser()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.errorResponse.code").value("A403"));
+        mockMvc.perform(withToken(delete(path), createAdmin(PACK_MANAGE)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.errorResponse.code").value("A4031"));
+        mockMvc.perform(withToken(delete(path), createAdmin(AI_RESPONSE_MANAGE)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void dashboard_WhenAdminOpensIt_ThenGoesToTheirFirstPermittedTab() throws Exception {
         mockMvc.perform(withToken(get("/admin/dashboard"), createAdmin(PACK_MANAGE, OPERATION_MANAGE)))
                 .andExpect(redirectedUrl("/admin/pack-list"));
