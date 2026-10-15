@@ -19,5 +19,7 @@ public record CreateTrainingPackRequest(
 
         @NotBlank(message = "Difficulty is required")
         @ValidEnum(enumClass = Difficulty.DifficultyName.class, message = "Invalid difficulty format")
-        String difficulty
+        String difficulty,
+
+        Boolean isPublic
 ) { }

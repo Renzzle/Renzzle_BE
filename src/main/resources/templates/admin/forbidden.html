@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="title.forbidden">Renzzle Admin - No Permission</title>
+  <link rel="stylesheet" href="/assets/admin/common.css">
+  <script src="/assets/admin/i18n.js"></script>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>Renzzle Admin</h1>
+      <span class="user-info" th:if="${userEmail}" th:text="${userEmail}"></span>
+    </div>
+    <div class="header-actions">
+      <th:block th:replace="~{admin/fragments :: languageSelect}"></th:block>
+      <a href="/admin/logout" class="btn" data-i18n="common.logout">Log out</a>
+    </div>
+  </div>
+
+  <th:block th:replace="~{admin/fragments :: siteNav('')}"></th:block>
+
+  <main class="admin-shell">
+    <section class="section">
+      <div class="admin-empty forbidden-message">
+        <strong data-i18n="forbidden.heading">No permission for this menu</strong>
+        <span th:if="${adminPermissions == null or adminPermissions.isEmpty()}" data-i18n="forbidden.noPermissions">This account has no permissions yet.</span>
+        <span data-i18n="forbidden.body">Ask an admin with the operations permission to grant access.</span>
+      </div>
+      <div class="admin-actions forbidden-actions" th:unless="${adminPermissions == null or adminPermissions.isEmpty()}">
+        <a href="/admin/dashboard" class="btn btn-primary" data-i18n="forbidden.home">Go to an available menu</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

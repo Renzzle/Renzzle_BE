@@ -1,5 +1,6 @@
 package com.renzzle.backend.global.security;
 
+import com.renzzle.backend.domain.auth.domain.AdminPermission;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import lombok.Getter;
 
@@ -9,7 +10,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 public class UserDetailsImpl implements UserDetails {
 
@@ -43,6 +46,19 @@ public class UserDetailsImpl implements UserDetails {
         return this.authorities.stream()
                 .map(SimpleGrantedAuthority::new)
                 .toList();
+    }
+
+    public Set<AdminPermission> getAdminPermissions() {
+        Set<AdminPermission> permissions = EnumSet.noneOf(AdminPermission.class);
+        if (this.authorities == null) {
+            return permissions;
+        }
+        for (AdminPermission permission : AdminPermission.values()) {
+            if (this.authorities.contains(permission.getAuthority())) {
+                permissions.add(permission);
+            }
+        }
+        return permissions;
     }
 
     @Override

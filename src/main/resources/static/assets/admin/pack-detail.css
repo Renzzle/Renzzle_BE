@@ -1,10 +1,10 @@
     * { box-sizing: border-box; }
     body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-family: var(--admin-font);
       margin: 0;
       min-height: 100vh;
-      background: #f5f7fa;
-      color: #17202a;
+      background: #f7f7f8;
+      color: #18181b;
       padding: 1rem;
     }
     .header {
@@ -13,22 +13,22 @@
       align-items: center;
       margin-bottom: 1.5rem;
       padding-bottom: 1rem;
-      border-bottom: 1px solid #d9e0e8;
+      border-bottom: 1px solid #e4e4e7;
     }
     .header h1 { margin: 0; font-size: 1.35rem; }
-    .header .user-info { font-size: 0.9rem; color: #526579; }
+    .header .user-info { font-size: 0.9rem; color: #71717a; }
     .btn {
       padding: 0.5rem 1rem;
       border: none;
       border-radius: 8px;
       background: #fff;
-      color: #17202a;
+      color: #18181b;
       cursor: pointer;
       font-size: 0.9rem;
       text-decoration: none;
       display: inline-block;
     }
-    .btn:hover { background: #f0f3f7; }
+    .btn:hover { background: #f4f4f5; }
     .btn-primary { background: #4340DB; color: #fff; }
     .btn-primary:hover { opacity: 0.95; }
     .section {
@@ -37,22 +37,22 @@
       padding: 1.5rem;
       background: #fff;
       border-radius: 8px;
-      border: 1px solid #d9e0e8;
+      border: 1px solid #e4e4e7;
     }
     .section h2 { margin: 0; font-size: 1.15rem; }
     .section-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; gap: 1rem; }
-    label { display: block; margin-bottom: 0.35rem; font-size: 0.9rem; color: #526579; }
+    label { display: block; margin-bottom: 0.35rem; font-size: 0.9rem; color: #71717a; }
     input, select {
       width: 100%;
       padding: 0.6rem 0.8rem;
       margin-bottom: 0.9rem;
-      border: 1px solid #d9e0e8;
+      border: 1px solid #e4e4e7;
       border-radius: 8px;
       background: #fff;
-      color: #17202a;
+      color: #18181b;
       font-size: 0.95rem;
     }
-    input:read-only { background: #f0f3f7; cursor: not-allowed; }
+    input:read-only { background: #f4f4f5; cursor: not-allowed; }
     ul.puzzle-list { list-style: none; padding: 0; margin: 0.5rem 0; }
     ul.puzzle-list li {
       display: flex;
@@ -61,17 +61,17 @@
       gap: 0.5rem;
       padding: 0.4rem 0.6rem;
       margin-bottom: 0.3rem;
-      background: #fbfcfe;
+      background: #fafafa;
       border-radius: 6px;
       font-size: 0.85rem;
     }
     ul.puzzle-list li.puzzle-row-clickable { cursor: pointer; }
-    ul.puzzle-list li.puzzle-row-clickable:hover { background: #f0f3f7; }
+    ul.puzzle-list li.puzzle-row-clickable:hover { background: #f4f4f5; }
     ul.puzzle-list li .puzzle-text { flex: 1; }
     ul.puzzle-list li .btn-edit { padding: 0.3rem 0.6rem; font-size: 0.8rem; flex-shrink: 0; }
-    .btn-edit { background: #f0f3f7; color: #17202a; }
-    .btn-edit:hover { background: #e7edf5; }
-    small { color: #526579; font-size: 0.85rem; }
+    .btn-edit { background: #f4f4f5; color: #18181b; }
+    .btn-edit:hover { background: #e4e4e7; }
+    small { color: #71717a; font-size: 0.85rem; }
     /* Simple pack info display */
     .pack-info-simple {
       margin-top: 0.8rem;
@@ -88,23 +88,23 @@
     }
     .pack-info-row .item .label {
       font-size: 0.9rem;
-      color: #526579;
+      color: #71717a;
     }
     .pack-info-row .item .value {
       font-size: 0.95rem;
-      color: #17202a;
+      color: #18181b;
     }
     .pack-info-block {
       margin-bottom: 0.5rem;
     }
     .pack-info-block .label {
       font-size: 0.9rem;
-      color: #526579;
+      color: #71717a;
       margin-bottom: 0.2rem;
     }
     .pack-info-block .value {
       font-size: 0.95rem;
-      color: #17202a;
+      color: #18181b;
       line-height: 1.4;
     }
-    .pack-info-block .value.empty { color: #526579; font-style: italic; }
+    .pack-info-block .value.empty { color: #71717a; font-style: italic; }

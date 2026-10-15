@@ -44,6 +44,7 @@
         </div>
         <h2 class="pack-context-title" id="packTitle">-</h2>
         <div class="pack-context-meta" aria-label="Pack metadata">
+          <span class="pack-context-meta-item"><span data-i18n="common.visibility">Visibility</span><span class="admin-pill" id="packVisibility">-</span></span>
           <span class="pack-context-meta-item"><span data-i18n="common.author">Author</span><strong id="packAuthor">-</strong></span>
           <span class="pack-context-meta-item"><span data-i18n="common.difficulty">Difficulty</span><strong id="packDifficulty">-</strong></span>
           <span class="pack-context-meta-item"><span data-i18n="common.price">Price</span><strong id="packPrice">-</strong></span>
@@ -87,6 +88,11 @@
       }
       const res = await fetch(url, { ...options, headers, credentials: 'same-origin' });
       if (res.status === 401 || res.status === 403) {
+        const error = await res.clone().json().catch(() => null);
+        if (error?.errorResponse?.code === 'A4031') {
+          alert(adminT('msg.permissionDenied'));
+          return null;
+        }
         alert(adminT('msg.sessionExpired'));
         globalThis.location.href = '/admin/logout';
         return null;
@@ -104,6 +110,9 @@
         return;
       }
       box.hidden = false;
+      const visibilityEl = document.getElementById('packVisibility');
+      adminSetText(visibilityEl, detail['isPublic'] ? 'common.public' : 'common.private');
+      visibilityEl.classList.toggle('warn', !detail['isPublic']);
       document.getElementById('packDifficulty').textContent = detail['difficulty'] || '-';
       const price = detail['price'];
       const numericPrice = Number(price);

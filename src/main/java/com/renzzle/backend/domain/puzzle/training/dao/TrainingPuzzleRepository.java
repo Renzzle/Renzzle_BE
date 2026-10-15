@@ -53,7 +53,8 @@ public interface TrainingPuzzleRepository extends JpaRepository<TrainingPuzzle, 
     void deleteAllByPack_Id(Long packId);
 
     @Query("SELECT p FROM TrainingPuzzle p " +
-            "WHERE p.boardStatus NOT IN (" +
+            "WHERE p.pack.isPublic = true " +
+            "AND p.boardStatus NOT IN (" +
             "    SELECT l.boardStatus FROM LatestRankPuzzle l WHERE l.user = :user" +
             ") " +
             "ORDER BY p.rating ASC")

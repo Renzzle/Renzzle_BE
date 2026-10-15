@@ -7,7 +7,8 @@ public record GetPackDetailForAdminResponse(
         List<TranslationInfo> info,
         Integer price,
         String difficulty,
-        int totalPuzzleCount
+        int totalPuzzleCount,
+        boolean isPublic
 ) {
     public record TranslationInfo(
             String langCode,

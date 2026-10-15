@@ -31,9 +31,9 @@ public interface SolvedTrainingPuzzleRepository extends JpaRepository<SolvedTrai
     @Query("SELECT s FROM SolvedTrainingPuzzle s " +
             "JOIN FETCH s.puzzle p " +
             "JOIN FETCH p.pack pack " +
-            "WHERE s.user.id = :userId " +
+            "WHERE s.user.id = :userId AND pack.isPublic = true " +
             "ORDER BY s.solvedAt DESC LIMIT 1")
-    Optional<SolvedTrainingPuzzle> findTopByUserOrderBySolvedAtDesc(@Param("userId") Long userId);
+    Optional<SolvedTrainingPuzzle> findLatestInPublicPackByUserId(@Param("userId") Long userId);
 
     List<SolvedTrainingPuzzle> findAllByPuzzleId(Long puzzleId);
 

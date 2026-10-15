@@ -5,6 +5,7 @@ import com.renzzle.backend.domain.appinfo.dao.AppInfoRepository;
 import com.renzzle.backend.domain.appinfo.domain.AppInfo;
 import com.renzzle.backend.domain.auth.dao.AdminRepository;
 import com.renzzle.backend.domain.auth.domain.Admin;
+import com.renzzle.backend.domain.auth.domain.AdminPermission;
 import com.renzzle.backend.domain.auth.service.JwtProvider;
 import com.renzzle.backend.domain.puzzle.rank.support.TestUserFactory;
 import com.renzzle.backend.domain.user.dao.UserRepository;
@@ -24,6 +25,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -122,7 +124,7 @@ class AppInfoControllerTest {
 
     private UserEntity createAdmin() {
         UserEntity user = createUser();
-        adminRepository.save(Admin.builder().user(user).build());
+        adminRepository.save(Admin.builder().user(user).permissions(EnumSet.of(AdminPermission.OPERATION_MANAGE)).build());
         return user;
     }
 
