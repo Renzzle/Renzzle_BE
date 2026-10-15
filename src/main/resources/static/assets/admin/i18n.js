@@ -342,7 +342,11 @@
         setCurrentBoardFirst: 'Set currentBoard first',
         responseTurnOnly: 'Set the current board after the user move. AI response can only be entered on the opponent turn.',
         lookupFailed: 'Failed to lookup',
-        noResponse: 'No AI response'
+        noResponse: 'No AI response',
+        deleteResponse: 'Delete AI Response',
+        deleteConfirm: 'Delete the AI response ({position}) for this board?',
+        deleteFailed: 'Delete failed',
+        deleted: 'Deleted.'
       },
       notices: {
         heading: 'Notices',
@@ -795,7 +799,11 @@
         setCurrentBoardFirst: 'currentBoard를 먼저 설정하세요.',
         responseTurnOnly: '사용자 수를 둔 뒤의 보드만 설정할 수 있습니다. AI 대응은 상대 차례에서만 입력합니다.',
         lookupFailed: '조회에 실패했습니다.',
-        noResponse: 'AI 대응이 없습니다.'
+        noResponse: 'AI 대응이 없습니다.',
+        deleteResponse: 'AI 대응 삭제',
+        deleteConfirm: '이 보드의 AI 대응({position})을 삭제할까요?',
+        deleteFailed: '삭제에 실패했습니다.',
+        deleted: '삭제했습니다.'
       },
       notices: {
         heading: '공지',

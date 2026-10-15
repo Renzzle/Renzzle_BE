@@ -102,6 +102,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/training/pack/**", "/api/training/puzzle/**").hasAuthority(PACK_MANAGE.getAuthority())
                         .requestMatchers(HttpMethod.DELETE, "/api/training/pack/**", "/api/training/puzzle/**").hasAuthority(PACK_MANAGE.getAuthority())
                         .requestMatchers("/admin/community/puzzle-manage/**").hasAuthority(COMMUNITY_MANAGE.getAuthority())
+                        // The app saves AI responses itself, but only admins may delete them
+                        .requestMatchers(HttpMethod.DELETE, "/api/puzzle/cache/**").hasAuthority(AI_RESPONSE_MANAGE.getAuthority())
                         // Operation: notices, admin accounts, and settings that have no page
                         .requestMatchers("/admin/notice/**", "/admin/admin-account/**").hasAuthority(OPERATION_MANAGE.getAuthority())
                         .requestMatchers(HttpMethod.POST, "/admin/puzzle/rating/recalculate", "/admin/puzzle/board-key/recalculate",

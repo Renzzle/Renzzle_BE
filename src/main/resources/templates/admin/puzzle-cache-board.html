@@ -57,6 +57,7 @@
       <div class="cache-actions">
         <button type="button" class="btn btn-primary btn-block" id="toggleResponseInputBtn" data-i18n="cacheBoard.startResponseInput">Input AI Response</button>
         <button type="button" class="btn btn-primary btn-block" id="saveCacheBtn" data-i18n="cacheBoard.answerSave" hidden disabled>Save</button>
+        <button type="button" class="btn btn-danger btn-block" id="deleteCacheBtn" data-i18n="cacheBoard.deleteResponse" hidden>Delete AI Response</button>
       </div>
     </div>
   </section>
@@ -95,6 +96,8 @@
     let autoLookupTimer = null;
     let autoLookupSequence = 0;
     let lastAutoLookupBoardState = '';
+    // Reply the last lookup found, kept with its board so delete targets that exact position
+    let cachedResponse = null;
 
     function toCanvasX(col) { return MARGIN + col * CELL_SIZE; }
     function toCanvasY(row) { return MARGIN + (14 - row) * CELL_SIZE; }
@@ -268,6 +271,7 @@
       syncCacheToolbar();
       syncResponseInputWorkflow();
       syncSaveButton();
+      syncDeleteButton();
     }
 
     function cloneMove(move) {
@@ -375,6 +379,12 @@
       saveBtn.disabled = !canSaveAiResponse();
     }
 
+    function syncDeleteButton() {
+      const deleteBtn = document.getElementById('deleteCacheBtn');
+      if (!deleteBtn) return;
+      deleteBtn.hidden = cacheLocked || cachedResponse?.boardState !== getCurrentBoardSnapshot();
+    }
+
     function getCurrentBoardSnapshot() {
       return fullBoardStatusForSnapshot();
     }
@@ -404,6 +414,8 @@
           return;
         }
         const pos = (data.response && data.response.position != null) ? String(data.response.position) : '';
+        cachedResponse = pos ? { boardState: currentBoardState, position: pos } : null;
+        syncDeleteButton();
         if (!pos) {
           showVerifyResult(adminT('cacheBoard.noResponse'), 'empty');
           redrawBoard();
@@ -778,7 +790,38 @@
           showCacheMsg(adminT('cacheBoard.saveFailed'), false);
           return;
         }
+        // The saved reply replaces the one found earlier, so wait for the next lookup
+        cachedResponse = null;
         showCacheMsg(adminT('cacheBoard.saved'), true);
+      } catch (err) {
+        showCacheMsg(adminT('common.errorPrefix', { message: err.message || '' }), false);
+      }
+    });
+
+    document.getElementById('deleteCacheBtn').addEventListener('click', async () => {
+      if (!cachedResponse) return;
+      const { boardState, position } = cachedResponse;
+      const ok = await adminConfirm(adminT('cacheBoard.deleteConfirm', { position: position.toUpperCase() }), {
+        confirmText: adminT('common.delete'),
+        danger: true
+      });
+      if (!ok) return;
+      try {
+        const q = 'puzzleType=' + encodeURIComponent(selectedPuzzleType)
+          + '&puzzleId=' + encodeURIComponent(selectedPuzzleId)
+          + '&currentBoardState=' + encodeURIComponent(boardState);
+        const res = await fetchWithAuth(API_BASE + '/api/puzzle/cache/ai-response?' + q, { method: 'DELETE' });
+        if (!res) return;
+        const data = await res.json();
+        if (!data.isSuccess) {
+          showCacheMsg(adminT('cacheBoard.deleteFailed'), false);
+          return;
+        }
+        if (cachedResponse?.boardState === boardState) cachedResponse = null;
+        // Clears the preview stone, unless the board has moved on meanwhile
+        if (getCurrentBoardSnapshot() === boardState) redrawBoard();
+        syncDeleteButton();
+        showCacheMsg(adminT('cacheBoard.deleted'), true);
       } catch (err) {
         showCacheMsg(adminT('common.errorPrefix', { message: err.message || '' }), false);
       }

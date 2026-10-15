@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -61,6 +62,16 @@ public class PuzzleCacheController {
         Integer move = puzzleCacheService.getAiResponse(puzzleType, puzzleId, currentBoardState);
         String position = (move != null) ? moveIndexToPosition(move) : null;
         return ApiUtils.success(new GetAiResponseResponse(position));
+    }
+
+    @Operation(summary = "Delete AI response", description = "Removes the AI's cached move for the current board state (admin only)")
+    @DeleteMapping("/ai-response")
+    public ApiResponse<Void> deleteAiResponse(
+            @RequestParam PuzzleType puzzleType,
+            @RequestParam Long puzzleId,
+            @RequestParam String currentBoardState) {
+        puzzleCacheService.deleteAiResponse(puzzleType, puzzleId, currentBoardState);
+        return ApiUtils.success(null);
     }
 
     @Operation(
