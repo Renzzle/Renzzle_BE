@@ -3,6 +3,7 @@ package com.renzzle.backend.domain.admin.api;
 import com.renzzle.backend.config.TestContainersConfig;
 import com.renzzle.backend.domain.auth.dao.AdminRepository;
 import com.renzzle.backend.domain.auth.domain.Admin;
+import com.renzzle.backend.domain.auth.domain.AdminPermission;
 import com.renzzle.backend.domain.auth.service.JwtProvider;
 import com.renzzle.backend.domain.puzzle.community.service.CommunityService;
 import com.renzzle.backend.domain.puzzle.rank.support.TestUserFactory;
@@ -25,6 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -78,7 +80,7 @@ class AdminPuzzleRecalculationTest {
     @Test
     void recalculatePuzzleRatings_WhenAdmin_ThenReturnsHowManyPuzzlesWereRerated() throws Exception {
         UserEntity user = createUser();
-        adminRepository.save(Admin.builder().user(user).build());
+        adminRepository.save(Admin.builder().user(user).permissions(EnumSet.of(AdminPermission.OPERATION_MANAGE)).build());
         when(trainingService.recalculateUnrankedPuzzleRatings()).thenReturn(3);
         when(communityService.recalculateUnrankedPuzzleRatings()).thenReturn(5);
 
@@ -102,7 +104,7 @@ class AdminPuzzleRecalculationTest {
     @Test
     void recalculateBoardKeys_WhenAdmin_ThenReturnsUpdatesAndDuplicates() throws Exception {
         UserEntity user = createUser();
-        adminRepository.save(Admin.builder().user(user).build());
+        adminRepository.save(Admin.builder().user(user).permissions(EnumSet.of(AdminPermission.OPERATION_MANAGE)).build());
         when(trainingService.recalculateBoardKeys()).thenReturn(new BoardKeyRecalculationResult(3, List.of()));
         when(communityService.recalculateBoardKeys())
                 .thenReturn(new BoardKeyRecalculationResult(5, List.of(List.of(7L, 9L))));
@@ -130,7 +132,7 @@ class AdminPuzzleRecalculationTest {
     @Test
     void recalculateAnswerKeys_WhenAdmin_ThenReturnsUpdatesAndInvalidPuzzles() throws Exception {
         UserEntity user = createUser();
-        adminRepository.save(Admin.builder().user(user).build());
+        adminRepository.save(Admin.builder().user(user).permissions(EnumSet.of(AdminPermission.OPERATION_MANAGE)).build());
         when(trainingService.recalculateAnswerKeys()).thenReturn(new AnswerKeyRecalculationResult(3, List.of()));
         when(communityService.recalculateAnswerKeys()).thenReturn(new AnswerKeyRecalculationResult(5, List.of(7L)));
 

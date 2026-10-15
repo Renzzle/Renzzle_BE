@@ -79,14 +79,17 @@
         responseMoves: 'Renzzle - AI Response Entry',
         responseBoard: 'Renzzle - AI Response Board',
         communityPuzzles: 'Renzzle Admin - Community Puzzles',
-        notices: 'Renzzle Admin - Notices'
+        notices: 'Renzzle Admin - Notices',
+        adminAccounts: 'Renzzle Admin - Admins',
+        forbidden: 'Renzzle Admin - No Permission'
       },
       nav: {
         packs: 'Training Puzzles',
         newPack: 'New Pack',
         responseMoves: 'AI Responses',
         communityPuzzles: 'Community Puzzles',
-        notices: 'Notices'
+        notices: 'Notices',
+        adminAccounts: 'Admins'
       },
       login: {
         heading: 'Renzzle Admin',
@@ -98,7 +101,8 @@
         loggingIn: 'Logging in...',
         required: 'Enter both email and password.',
         failed: 'Login failed',
-        error: 'An error occurred during login.'
+        error: 'An error occurred during login.',
+        noPermission: 'This admin account has no permissions yet. Ask an admin with the operations permission.'
       },
       errorPage: {
         heading: 'Access Error',
@@ -404,8 +408,52 @@
         sent: 'Notice sent to {nickname}.',
         sendFailed: 'Failed to send notice.'
       },
+      permission: {
+        PACK_MANAGE: 'Training Puzzles',
+        COMMUNITY_MANAGE: 'Community Puzzles',
+        AI_RESPONSE_MANAGE: 'AI Responses',
+        OPERATION_MANAGE: 'Operations'
+      },
+      adminAccounts: {
+        heading: 'Admins',
+        description: 'Make app users admins and choose which menus each admin can use.',
+        addHeading: 'Add Admin',
+        addDescription: 'Enter the email of an account that already signed up in the app.',
+        email: 'Email',
+        emailPlaceholder: 'Account email',
+        permissions: 'Permissions',
+        add: 'Add',
+        adding: 'Adding admin...',
+        added: 'Admin added.',
+        needEmail: 'Enter an email.',
+        needPermission: 'Choose at least one permission.',
+        listHeading: 'Admin List',
+        count: '{count} admins',
+        account: 'Account',
+        actions: 'Actions',
+        me: 'Me',
+        save: 'Save',
+        saved: 'Permissions saved.',
+        remove: 'Remove',
+        removeConfirm: 'Remove admin access for {email}? The app account stays.',
+        removed: 'Admin removed.',
+        ownOperationHint: 'You cannot remove your own operations permission.',
+        userNotFound: 'No app account uses this email.',
+        alreadyAdmin: 'This account is already an admin.',
+        cannotRevokeOwn: 'You cannot remove your own operations permission or admin access.',
+        adminNotFound: 'This admin no longer exists. Refresh the list.',
+        failed: 'Request failed.',
+        loadFailed: 'Failed to load admins.'
+      },
+      forbidden: {
+        heading: 'No permission for this menu',
+        body: 'Ask an admin with the operations permission to grant access.',
+        noPermissions: 'This account has no permissions yet.',
+        home: 'Go to an available menu'
+      },
       msg: {
-        sessionExpired: 'Your session has expired or you do not have permission. Please log in again.'
+        sessionExpired: 'Your session has expired or you do not have permission. Please log in again.',
+        permissionDenied: 'You do not have permission for this menu. Ask an admin with the operations permission.'
       }
     },
     ko: {
@@ -484,14 +532,17 @@
         responseMoves: 'Renzzle - AI 대응 입력',
         responseBoard: 'Renzzle - AI 대응 보드',
         communityPuzzles: 'Renzzle 관리자 - 커뮤니티 문제',
-        notices: 'Renzzle 관리자 - 공지'
+        notices: 'Renzzle 관리자 - 공지',
+        adminAccounts: 'Renzzle 관리자 - 어드민 관리',
+        forbidden: 'Renzzle 관리자 - 권한 없음'
       },
       nav: {
         packs: '트레이닝 문제',
         newPack: '새 문제집',
         responseMoves: 'AI 대응',
         communityPuzzles: '커뮤니티 문제',
-        notices: '공지'
+        notices: '공지',
+        adminAccounts: '어드민 관리'
       },
       login: {
         heading: 'Renzzle Admin',
@@ -503,7 +554,8 @@
         loggingIn: '로그인 중...',
         required: '이메일과 비밀번호를 모두 입력하세요.',
         failed: '로그인에 실패했습니다.',
-        error: '로그인 중 오류가 발생했습니다.'
+        error: '로그인 중 오류가 발생했습니다.',
+        noPermission: '아직 권한이 없는 어드민 계정입니다. 운영 관리 권한이 있는 어드민에게 요청하세요.'
       },
       errorPage: {
         heading: '접근 오류',
@@ -809,8 +861,52 @@
         sent: '{nickname}님에게 알림을 보냈습니다.',
         sendFailed: '알림 전송에 실패했습니다.'
       },
+      permission: {
+        PACK_MANAGE: '트레이닝 문제',
+        COMMUNITY_MANAGE: '커뮤니티 문제',
+        AI_RESPONSE_MANAGE: 'AI 대응',
+        OPERATION_MANAGE: '운영 관리'
+      },
+      adminAccounts: {
+        heading: '어드민 관리',
+        description: '앱에 가입된 계정을 어드민으로 지정하고, 어드민마다 사용할 수 있는 메뉴를 정합니다.',
+        addHeading: '어드민 추가',
+        addDescription: '앱에 가입된 계정의 이메일을 입력하세요.',
+        email: '이메일',
+        emailPlaceholder: '가입한 계정 이메일',
+        permissions: '권한',
+        add: '추가',
+        adding: '어드민을 추가하는 중...',
+        added: '어드민을 추가했습니다.',
+        needEmail: '이메일을 입력하세요.',
+        needPermission: '권한을 하나 이상 선택하세요.',
+        listHeading: '어드민 목록',
+        count: '어드민 {count}명',
+        account: '계정',
+        actions: '작업',
+        me: '나',
+        save: '저장',
+        saved: '권한을 저장했습니다.',
+        remove: '해제',
+        removeConfirm: '{email} 계정의 어드민 권한을 해제할까요? 앱 계정은 그대로 남습니다.',
+        removed: '어드민을 해제했습니다.',
+        ownOperationHint: '내 운영 관리 권한은 해제할 수 없습니다.',
+        userNotFound: '이 이메일로 가입한 계정이 없습니다.',
+        alreadyAdmin: '이미 어드민인 계정입니다.',
+        cannotRevokeOwn: '내 운영 관리 권한이나 어드민 자격은 해제할 수 없습니다.',
+        adminNotFound: '이미 없는 어드민입니다. 목록을 새로고침하세요.',
+        failed: '요청에 실패했습니다.',
+        loadFailed: '어드민 목록을 불러오지 못했습니다.'
+      },
+      forbidden: {
+        heading: '권한이 없는 메뉴입니다',
+        body: '운영 관리 권한이 있는 어드민에게 권한을 요청하세요.',
+        noPermissions: '이 계정에는 아직 권한이 없습니다.',
+        home: '사용 가능한 메뉴로 이동'
+      },
       msg: {
-        sessionExpired: '세션이 만료되었거나 권한이 없습니다. 다시 로그인하세요.'
+        sessionExpired: '세션이 만료되었거나 권한이 없습니다. 다시 로그인하세요.',
+        permissionDenied: '이 메뉴를 사용할 권한이 없습니다. 운영 관리 권한이 있는 어드민에게 요청하세요.'
       }
     }
   };

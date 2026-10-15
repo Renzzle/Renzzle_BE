@@ -20,12 +20,16 @@ public final class SecurityErrorResponder {
 
     // Browser requests are redirected to login; API requests get a JSON error
     public static void respond(HttpServletRequest request, HttpServletResponse response, ErrorCode errorCode) throws IOException {
-        String acceptHeader = request.getHeader("Accept");
-        if (acceptHeader != null && acceptHeader.contains("text/html")) {
+        if (isBrowserRequest(request)) {
             response.sendRedirect(LOGIN_PAGE);
             return;
         }
         writeJsonError(response, errorCode);
+    }
+
+    public static boolean isBrowserRequest(HttpServletRequest request) {
+        String acceptHeader = request.getHeader("Accept");
+        return acceptHeader != null && acceptHeader.contains("text/html");
     }
 
     public static void writeJsonError(HttpServletResponse response, ErrorCode errorCode) {

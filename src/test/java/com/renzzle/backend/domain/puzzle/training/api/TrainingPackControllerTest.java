@@ -4,6 +4,7 @@ import com.jayway.jsonpath.JsonPath;
 import com.renzzle.backend.config.TestContainersConfig;
 import com.renzzle.backend.domain.auth.dao.AdminRepository;
 import com.renzzle.backend.domain.auth.domain.Admin;
+import com.renzzle.backend.domain.auth.domain.AdminPermission;
 import com.renzzle.backend.domain.auth.service.JwtProvider;
 import com.renzzle.backend.domain.puzzle.rank.support.TestUserFactory;
 import com.renzzle.backend.domain.puzzle.training.dao.PackRepository;
@@ -25,6 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
+import java.util.EnumSet;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,7 +59,7 @@ class TrainingPackControllerTest {
     void setUp() {
         user = userRepository.save(
                 TestUserFactory.createTestUser("pack-" + UUID.randomUUID().toString().substring(0, 8), 1000));
-        admin = adminRepository.save(Admin.builder().user(user).build());
+        admin = adminRepository.save(Admin.builder().user(user).permissions(EnumSet.of(AdminPermission.PACK_MANAGE)).build());
     }
 
     @AfterEach

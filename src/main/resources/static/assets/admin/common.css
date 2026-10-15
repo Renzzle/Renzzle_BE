@@ -1098,6 +1098,15 @@ ul.puzzle-list li .btn-edit,
   font-size: 1rem;
 }
 
+.forbidden-message span {
+  display: block;
+}
+
+.forbidden-actions {
+  justify-content: center;
+  margin-top: var(--admin-space-4);
+}
+
 .puzzle-preview-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="title.adminAccounts">Renzzle Admin - Admins</title>
+  <link rel="stylesheet" href="/assets/admin/admin-accounts.css">
+  <link rel="stylesheet" href="/assets/admin/common.css">
+  <script src="/assets/admin/i18n.js"></script>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>Renzzle Admin</h1>
+      <span class="user-info" th:if="${userEmail}" th:text="${userEmail}"></span>
+    </div>
+    <div class="header-actions">
+      <th:block th:replace="~{admin/fragments :: languageSelect}"></th:block>
+      <a href="/admin/logout" class="btn" data-i18n="common.logout">Log out</a>
+    </div>
+  </div>
+
+  <th:block th:replace="~{admin/fragments :: siteNav('adminAccounts')}"></th:block>
+  <th:block th:replace="~{admin/fragments :: uiKit}"></th:block>
+
+  <main class="admin-shell">
+    <div class="admin-page-heading">
+      <div>
+        <h2 data-i18n="adminAccounts.heading">Admins</h2>
+        <p data-i18n="adminAccounts.description">Make app users admins and choose which menus each admin can use.</p>
+      </div>
+    </div>
+
+    <section class="section">
+      <div class="section-title-row">
+        <div>
+          <h2 data-i18n="adminAccounts.addHeading">Add Admin</h2>
+          <p data-i18n="adminAccounts.addDescription">Enter the email of an account that already signed up in the app.</p>
+        </div>
+      </div>
+
+      <form id="addAdminForm" class="admin-add-form" novalidate>
+        <label class="inline-field-label" for="addAdminEmail">
+          <span data-i18n="adminAccounts.email">Email</span>
+          <input type="email" id="addAdminEmail" autocomplete="off" data-i18n-placeholder="adminAccounts.emailPlaceholder" placeholder="Account email">
+        </label>
+        <fieldset class="admin-permission-options">
+          <legend data-i18n="adminAccounts.permissions">Permissions</legend>
+          <label class="admin-permission-option" th:each="permission : ${permissionNames}">
+            <input type="checkbox" name="addPermission" th:value="${permission}" value="PACK_MANAGE">
+            <span th:data-i18n="${'permission.' + permission}" th:text="${permission}">PACK_MANAGE</span>
+          </label>
+        </fieldset>
+        <div class="inline-create-footer">
+          <div id="addAdminMsg" class="inline-form-status muted-status" aria-live="polite"></div>
+          <button type="submit" class="btn btn-primary" id="addAdminBtn" data-i18n="adminAccounts.add">Add</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="section">
+      <div class="section-title-row">
+        <div>
+          <h2 data-i18n="adminAccounts.listHeading">Admin List</h2>
+          <div id="adminListMsg" class="pack-list-count muted-status"></div>
+        </div>
+      </div>
+
+      <div class="admin-table-wrap">
+        <table class="admin-table admin-account-table">
+          <thead>
+          <tr>
+            <th data-i18n="adminAccounts.account">Account</th>
+            <th class="admin-permission-col" th:each="permission : ${permissionNames}"
+                th:data-i18n="${'permission.' + permission}" th:text="${permission}">PACK_MANAGE</th>
+            <th class="actions-col" data-i18n="adminAccounts.actions">Actions</th>
+          </tr>
+          </thead>
+          <tbody id="adminTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" th:inline="javascript">
+    const API_BASE = '';
+    const PERMISSIONS = /*[[${permissionNames}]]*/ ['PACK_MANAGE', 'COMMUNITY_MANAGE', 'AI_RESPONSE_MANAGE', 'OPERATION_MANAGE'];
+    const OPERATION_PERMISSION = 'OPERATION_MANAGE';
+    const ERROR_MESSAGES = {
+      U4000: 'adminAccounts.userNotFound',
+      A4093: 'adminAccounts.alreadyAdmin',
+      A4000: 'adminAccounts.cannotRevokeOwn',
+      A4040: 'adminAccounts.adminNotFound'
+    };
+
+    async function fetchWithAuth(url, options = {}) {
+      const headers = { 'Content-Type': 'application/json', ...options.headers };
+      if (options.body === undefined || options.body === null) {
+        delete headers['Content-Type'];
+      }
+      const res = await fetch(url, { ...options, headers, credentials: 'same-origin' });
+      if (res.status === 401 || res.status === 403) {
+        const error = await res.clone().json().catch(() => null);
+        if (error?.errorResponse?.code === 'A4031') {
+          alert(adminT('msg.permissionDenied'));
+          return null;
+        }
+        alert(adminT('msg.sessionExpired'));
+        globalThis.location.href = '/admin/logout';
+        return null;
+      }
+      return res;
+    }
+
+    function errorText(data, fallbackKey) {
+      return adminT(ERROR_MESSAGES[data?.errorResponse?.code] || fallbackKey);
+    }
+
+    function setAddMessage(message, state) {
+      const msgEl = document.getElementById('addAdminMsg');
+      msgEl.textContent = message || '';
+      msgEl.classList.toggle('error', state === 'error');
+      msgEl.classList.toggle('success', state === 'success');
+    }
+
+    function sameSet(a, b) {
+      return a.length === b.length && a.every(item => b.includes(item));
+    }
+
+    function createAdminRow(admin) {
+      const tr = document.createElement('tr');
+      const saved = [...admin.permissions];
+
+      const accountTd = document.createElement('td');
+      const nameRow = document.createElement('div');
+      nameRow.className = 'admin-account-name';
+      const nickname = document.createElement('strong');
+      nickname.textContent = admin.nickname || '-';
+      nameRow.appendChild(nickname);
+      if (admin.isMe) {
+        const mePill = document.createElement('span');
+        mePill.className = 'admin-pill primary';
+        adminSetText(mePill, 'adminAccounts.me');
+        nameRow.appendChild(mePill);
+      }
+      const email = document.createElement('div');
+      email.className = 'pack-row-meta';
+      email.textContent = admin.email;
+      accountTd.appendChild(nameRow);
+      accountTd.appendChild(email);
+      tr.appendChild(accountTd);
+
+      const checkboxes = PERMISSIONS.map(permission => {
+        const td = document.createElement('td');
+        td.className = 'admin-permission-col';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'admin-permission-check';
+        checkbox.value = permission;
+        checkbox.checked = saved.includes(permission);
+        checkbox.setAttribute('aria-label', adminT('permission.' + permission));
+        if (admin.isMe && permission === OPERATION_PERMISSION) {
+          checkbox.disabled = true;
+          checkbox.title = adminT('adminAccounts.ownOperationHint');
+        }
+        td.appendChild(checkbox);
+        tr.appendChild(td);
+        return checkbox;
+      });
+
+      const actionsTd = document.createElement('td');
+      actionsTd.className = 'actions-col';
+      const actions = document.createElement('div');
+      actions.className = 'admin-actions';
+      const saveBtn = document.createElement('button');
+      saveBtn.type = 'button';
+      saveBtn.className = 'btn btn-primary btn-sm';
+      saveBtn.disabled = true;
+      adminSetText(saveBtn, 'adminAccounts.save');
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'btn btn-danger btn-sm';
+      removeBtn.disabled = admin.isMe;
+      adminSetText(removeBtn, 'adminAccounts.remove');
+      actions.appendChild(saveBtn);
+      actions.appendChild(removeBtn);
+      actionsTd.appendChild(actions);
+      tr.appendChild(actionsTd);
+
+      const checkedPermissions = () => checkboxes.filter(box => box.checked).map(box => box.value);
+      checkboxes.forEach(box => box.addEventListener('change', () => {
+        const current = checkedPermissions();
+        saveBtn.disabled = current.length === 0 || sameSet(current, saved);
+      }));
+
+      saveBtn.addEventListener('click', async () => {
+        saveBtn.disabled = true;
+        try {
+          const res = await fetchWithAuth(API_BASE + '/admin/admin-account/' + admin.adminId, {
+            method: 'PATCH',
+            body: JSON.stringify({ permissions: checkedPermissions() })
+          });
+          if (!res) return;
+          const data = await res.json();
+          if (!data.isSuccess) {
+            adminToast(errorText(data, 'adminAccounts.failed'), 'error');
+            saveBtn.disabled = false;
+            return;
+          }
+          saved.splice(0, saved.length, ...data.response.permissions);
+          adminToast(adminT('adminAccounts.saved'), 'success');
+        } catch (err) {
+          adminToast(adminT('common.errorPrefix', { message: err.message || '' }), 'error');
+          saveBtn.disabled = false;
+        }
+      });
+
+      removeBtn.addEventListener('click', async () => {
+        const ok = await adminConfirm(adminT('adminAccounts.removeConfirm', { email: admin.email }), {
+          confirmText: adminT('adminAccounts.remove'),
+          danger: true
+        });
+        if (!ok) return;
+        try {
+          const res = await fetchWithAuth(API_BASE + '/admin/admin-account/' + admin.adminId, { method: 'DELETE' });
+          if (!res) return;
+          const data = await res.json();
+          if (!data.isSuccess) {
+            adminToast(errorText(data, 'adminAccounts.failed'), 'error');
+            return;
+          }
+          adminToast(adminT('adminAccounts.removed'), 'success');
+          await loadAdmins();
+        } catch (err) {
+          adminToast(adminT('common.errorPrefix', { message: err.message || '' }), 'error');
+        }
+      });
+
+      return tr;
+    }
+
+    async function loadAdmins() {
+      const tableBody = document.getElementById('adminTableBody');
+      const msgEl = document.getElementById('adminListMsg');
+      try {
+        const res = await fetchWithAuth(API_BASE + '/admin/admin-account');
+        if (!res) return;
+        const data = await res.json();
+        if (!data.isSuccess) {
+          adminSetText(msgEl, 'adminAccounts.loadFailed');
+          return;
+        }
+        const admins = data.response || [];
+        tableBody.innerHTML = '';
+        admins.forEach(admin => tableBody.appendChild(createAdminRow(admin)));
+        adminSetText(msgEl, 'adminAccounts.count', { count: admins.length });
+      } catch (err) {
+        msgEl.textContent = adminT('common.errorPrefix', { message: err.message || '' });
+      }
+    }
+
+    document.getElementById('addAdminForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const email = document.getElementById('addAdminEmail').value.trim();
+      const permissions = Array.from(document.querySelectorAll('input[name="addPermission"]:checked')).map(box => box.value);
+      if (!email) {
+        setAddMessage(adminT('adminAccounts.needEmail'), 'error');
+        return;
+      }
+      if (permissions.length === 0) {
+        setAddMessage(adminT('adminAccounts.needPermission'), 'error');
+        return;
+      }
+
+      const addBtn = document.getElementById('addAdminBtn');
+      addBtn.disabled = true;
+      setAddMessage(adminT('adminAccounts.adding'), null);
+      try {
+        const res = await fetchWithAuth(API_BASE + '/admin/admin-account', {
+          method: 'POST',
+          body: JSON.stringify({ email, permissions })
+        });
+        if (!res) return;
+        const data = await res.json();
+        if (!data.isSuccess) {
+          setAddMessage(errorText(data, 'adminAccounts.failed'), 'error');
+          return;
+        }
+        document.getElementById('addAdminForm').reset();
+        setAddMessage(adminT('adminAccounts.added'), 'success');
+        await loadAdmins();
+      } catch (err) {
+        setAddMessage(adminT('common.errorPrefix', { message: err.message || '' }), 'error');
+      } finally {
+        addBtn.disabled = false;
+      }
+    });
+
+    document.addEventListener('admin:language-change', loadAdmins);
+
+    await loadAdmins();
+  </script>
+</body>
+</html>

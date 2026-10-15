@@ -1,10 +1,16 @@
 package com.renzzle.backend.domain.admin.api;
 
+import com.renzzle.backend.domain.admin.api.request.AddAdminAccountRequest;
+import com.renzzle.backend.domain.admin.api.request.UpdateAdminPermissionRequest;
+import com.renzzle.backend.domain.admin.api.response.GetAdminAccountResponse;
 import com.renzzle.backend.domain.admin.api.response.RecalculateAnswerKeyResponse;
 import com.renzzle.backend.domain.admin.api.response.RecalculateBoardKeyResponse;
 import com.renzzle.backend.domain.admin.api.response.RecalculatePuzzleRatingResponse;
 import com.renzzle.backend.domain.auth.api.request.LoginRequest;
+import com.renzzle.backend.domain.admin.service.AdminAccountService;
 import com.renzzle.backend.domain.auth.dao.AdminRepository;
+import com.renzzle.backend.domain.auth.domain.Admin;
+import com.renzzle.backend.domain.auth.domain.AdminPermission;
 import com.renzzle.backend.domain.auth.service.AccountService;
 import com.renzzle.backend.domain.auth.service.JwtProvider;
 import com.renzzle.backend.domain.notice.api.request.CreateAnnouncementRequest;
@@ -23,7 +29,6 @@ import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzle
 import com.renzzle.backend.domain.puzzle.community.service.CommunityService;
 import com.renzzle.backend.domain.puzzle.training.service.TrainingService;
 import com.renzzle.backend.domain.user.dao.UserRepository;
-import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.domain.LangCode;
 import com.renzzle.backend.global.common.response.ApiResponse;
 import com.renzzle.backend.global.exception.CustomException;
@@ -52,8 +57,11 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+import java.util.Set;
 
 @Controller
 @RequestMapping("/admin")
@@ -64,8 +72,16 @@ public class AdminController {
     private static final String USER_EMAIL = "userEmail";
     private static final String LANG_CODE_NAMES = "langCodeNames";
     private static final String PACK_ID = "packId";
+    // Iterates in permission order, so the first permitted tab is the landing page
+    private static final Map<AdminPermission, String> HOME_PAGES = new EnumMap<>(Map.of(
+            AdminPermission.PACK_MANAGE, "/admin/pack-list",
+            AdminPermission.COMMUNITY_MANAGE, "/admin/community-puzzles",
+            AdminPermission.AI_RESPONSE_MANAGE, "/admin/puzzle-cache",
+            AdminPermission.OPERATION_MANAGE, "/admin/notices"
+    ));
 
     private final AccountService accountService;
+    private final AdminAccountService adminAccountService;
     private final JwtProvider jwtProvider;
     private final UserRepository userRepository;
     private final AdminRepository adminRepository;
@@ -96,9 +112,11 @@ public class AdminController {
         var loginResponse = accountService.login(request);
 
         long userId = jwtProvider.parseAccessToken(loginResponse.accessToken()).userId();
-        Optional<UserEntity> user = userRepository.findById(userId);
-        if (user.isEmpty() || !adminRepository.existsByUser(user.get())) {
-            throw new CustomException(ErrorCode.ADMIN_ACCESS_DENIED);
+        Admin admin = userRepository.findById(userId)
+                .flatMap(adminRepository::findByUser)
+                .orElseThrow(() -> new CustomException(ErrorCode.ADMIN_ACCESS_DENIED));
+        if (admin.getPermissions().isEmpty()) {
+            throw new CustomException(ErrorCode.ADMIN_PERMISSION_DENIED);
         }
 
         String adminAccessToken = jwtProvider.createAdminAccessToken(userId);
@@ -127,8 +145,25 @@ public class AdminController {
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/dashboard")
     public String dashboard(
-            ) {
-        return "redirect:/admin/pack-list";
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        Set<AdminPermission> permissions = userDetails.getAdminPermissions();
+        return HOME_PAGES.entrySet().stream()
+                .filter(page -> permissions.contains(page.getKey()))
+                .map(page -> "redirect:" + page.getValue())
+                .findFirst()
+                .orElse("redirect:/admin/forbidden");
+    }
+
+    @Operation(summary = "Admin forbidden page", description = "Shown when an admin opens a menu without its permission")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/forbidden")
+    public String forbidden(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @Parameter(hidden = true) Model model
+    ) {
+        model.addAttribute(USER_EMAIL, userDetails.getUser().getEmail());
+        return "admin/forbidden";
     }
 
     @Operation(summary = "Admin pack list page", description = "Pack list view - first screen after login")
@@ -440,6 +475,65 @@ public class AdminController {
             @Valid @RequestBody SendPersonalNoticeRequest request
     ) {
         return ApiUtils.success(noticeService.sendPersonalNoticeForAdmin(request));
+    }
+
+    // ===== Admin accounts =====
+
+    @Operation(summary = "Admin account management page", description = "Grant admin access to app users and set their permissions")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/admin-accounts")
+    public String adminAccounts(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @Parameter(hidden = true) Model model
+    ) {
+        model.addAttribute(USER_EMAIL, userDetails.getUser().getEmail());
+        model.addAttribute("permissionNames", Arrays.stream(AdminPermission.values()).map(Enum::name).toList());
+        return "admin/admin-accounts";
+    }
+
+    @Operation(summary = "Get admin accounts (Admin only)", description = "Every admin with their permissions")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/admin-account")
+    @ResponseBody
+    public ApiResponse<List<GetAdminAccountResponse>> getAdminAccounts(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        return ApiUtils.success(adminAccountService.getAdminAccounts(userDetails.getUser()));
+    }
+
+    @Operation(summary = "Add admin account (Admin only)", description = "Makes an existing app user an admin with the given permissions")
+    @SecurityRequirement(name = "Authorization")
+    @PostMapping("/admin-account")
+    @ResponseBody
+    public ApiResponse<GetAdminAccountResponse> addAdminAccount(
+            @Valid @RequestBody AddAdminAccountRequest request,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        return ApiUtils.success(adminAccountService.addAdminAccount(request, userDetails.getUser()));
+    }
+
+    @Operation(summary = "Update admin permissions (Admin only)", description = "Replaces the admin's permissions; your own operation permission cannot be removed")
+    @SecurityRequirement(name = "Authorization")
+    @PatchMapping("/admin-account/{adminId}")
+    @ResponseBody
+    public ApiResponse<GetAdminAccountResponse> updateAdminPermissions(
+            @PathVariable Long adminId,
+            @Valid @RequestBody UpdateAdminPermissionRequest request,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        return ApiUtils.success(adminAccountService.updatePermissions(adminId, request.permissions(), userDetails.getUser()));
+    }
+
+    @Operation(summary = "Remove admin account (Admin only)", description = "Revokes admin access; the app account itself stays")
+    @SecurityRequirement(name = "Authorization")
+    @DeleteMapping("/admin-account/{adminId}")
+    @ResponseBody
+    public ApiResponse<Object> removeAdminAccount(
+            @PathVariable Long adminId,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        adminAccountService.removeAdminAccount(adminId, userDetails.getUser());
+        return ApiUtils.success(null);
     }
 
     public record AdminLoginResponse(
