@@ -105,7 +105,7 @@
   padding: var(--admin-space-4);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius);
-  background: #fbfcfe;
+  background: #fafafa;
 }
 
 .community-verification-label {
@@ -139,7 +139,7 @@
   height: 100%;
   border: 1px solid var(--admin-border);
   border-radius: 999px;
-  background: #dfe5ed;
+  background: #e4e4e7;
   transition: background-color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
@@ -152,7 +152,7 @@
   height: 1.38rem;
   border-radius: 999px;
   background: #fff;
-  box-shadow: 0 2px 7px rgba(15, 23, 42, 0.24);
+  box-shadow: 0 2px 7px rgba(24, 24, 27, 0.24);
   transition: transform 0.16s ease;
 }
 

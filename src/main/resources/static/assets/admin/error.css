@@ -1,18 +1,20 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+
     :root {
-      --admin-bg: #f5f7fa;
+      --admin-bg: #f7f7f8;
       --admin-surface: #ffffff;
-      --admin-text: #17202a;
-      --admin-muted: #526579;
-      --admin-border: #d9e0e8;
+      --admin-text: #18181b;
+      --admin-muted: #71717a;
+      --admin-border: #e4e4e7;
       --admin-primary: #4340DB;
       --admin-primary-hover: #3431B8;
-      --admin-danger: #b42318;
+      --admin-danger: #dc2626;
       --admin-radius: 8px;
-      --admin-shadow-raised: 0 14px 34px rgba(20, 30, 45, 0.1);
+      --admin-shadow-raised: 0 14px 34px rgba(24, 24, 27, 0.1);
     }
     * { box-sizing: border-box; }
     body {
-      font-family: Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
       margin: 0;
       min-height: 100vh;
       display: flex;
@@ -29,7 +31,7 @@
       padding: 2rem;
       background: var(--admin-surface);
       border-radius: var(--admin-radius);
-      border: 1px solid #f3b8b1;
+      border: 1px solid #fecaca;
       box-shadow: var(--admin-shadow-raised);
       text-align: center;
     }

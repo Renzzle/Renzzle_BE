@@ -16,6 +16,8 @@
       <a th:if="${adminPermissions?.contains('OPERATION_MANAGE')}" th:classappend="${active == 'adminAccounts'} ? 'active'" th:href="@{/admin/admin-accounts}" data-i18n="nav.adminAccounts">Admins</a>
     </div>
   </nav>
+  <!-- On narrow screens the tabs scroll sideways, so bring the current one into view -->
+  <script>document.querySelector('.site-nav a.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });</script>
 </th:block>
 
 <th:block th:fragment="languageSelect">
