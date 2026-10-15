@@ -787,7 +787,7 @@ class RankServiceTest {
         List<RankArchive> archives = rankService.getRankArchive(user);
 
         // Then
-        assertThat(archives).extracting(RankArchive::answer).containsExactly("a3");
+        assertThat(archives).extracting(RankArchive::boardStatus).containsExactly("a1a2");
     }
 
     // getRanking test

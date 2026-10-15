@@ -425,7 +425,7 @@ public class RankService {
 
         List<LatestRankPuzzle> puzzles = latestRankPuzzleRepository.findAllByUserOrderByAssignedAtAsc(user);
 
-        // Mid-game the newest puzzle is the one on the board, so its answer waits until the game ends
+        // Mid-game the newest puzzle is the one on the board, so it stays out of the archive until the game ends
         RankSessionData session = redisTemplate.opsForValue().get(String.valueOf(user.getId()));
         if (session != null && session.isStarted()) {
             long currentPuzzleId = puzzles.stream().mapToLong(LatestRankPuzzle::getId).max().orElse(-1);
@@ -435,7 +435,6 @@ public class RankService {
         return puzzles.stream()
                 .map(puzzle -> RankArchive.builder()
                         .boardStatus(puzzle.getBoardStatus())
-                        .answer(puzzle.getAnswer())
                         .isSolved(puzzle.getIsSolved())
                         .winColor(puzzle.getWinColor().getName())
                         .build())
