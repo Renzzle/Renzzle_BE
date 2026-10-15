@@ -30,6 +30,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.renzzle.backend.domain.auth.domain.Admin.ADMIN_PREFIX;
+import static com.renzzle.backend.domain.auth.domain.AdminPermission.AI_RESPONSE_MANAGE;
+import static com.renzzle.backend.domain.auth.domain.AdminPermission.COMMUNITY_MANAGE;
+import static com.renzzle.backend.domain.auth.domain.AdminPermission.OPERATION_MANAGE;
+import static com.renzzle.backend.domain.auth.domain.AdminPermission.PACK_MANAGE;
 
 @Slf4j
 @Configuration
@@ -79,42 +83,32 @@ public class SecurityConfig {
                         // The container forwards failed requests to /error without their login, so keep their status
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(permitAllRequestMatchers.toArray(new RequestMatcher[0])).permitAll()
-                        // Admin pages
-                        .requestMatchers(HttpMethod.GET, "/admin/dashboard").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.GET, "/admin/pack-list").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.GET, "/admin/pack-create").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.GET, "/admin/pack-detail").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.GET, "/admin/puzzle-add").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.GET, "/admin/puzzle-edit").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.GET, "/admin/community-puzzles").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.GET, "/admin/notices").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.GET, "/admin/puzzle-cache").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.GET, "/admin/puzzle-cache/training-pack").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.GET, "/admin/puzzle-cache/board").hasAuthority(ADMIN_PREFIX)
-                        // Admin-only query APIs (for the dashboard)
-                        .requestMatchers(HttpMethod.GET, "/admin/training/pack").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.GET, "/admin/training/pack/**").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.GET, "/admin/training/puzzle/**").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.GET, "/admin/training/puzzle-detail/**").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.GET, "/admin/community/puzzle-detail/**").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.GET, "/admin/community/puzzle-manage/**").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.GET, "/admin/notice/**").hasAuthority(ADMIN_PREFIX)
-                        // Admin-only create/update/delete APIs
-                        .requestMatchers(HttpMethod.POST, "/api/training/puzzle").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.POST, "/api/training/pack").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.PATCH, "/api/training/pack/**").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.DELETE, "/api/training/pack/**").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.POST, "/api/training/pack/translation").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.PATCH, "/api/training/puzzle/**").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.PATCH, "/admin/community/puzzle-manage/**").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.POST, "/admin/puzzle/rating/recalculate").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.POST, "/admin/puzzle/board-key/recalculate").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.POST, "/admin/puzzle/answer-key/recalculate").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.DELETE, "/api/training/puzzle/**").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.POST, "/admin/notice/**").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.PATCH, "/admin/notice/**").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.DELETE, "/admin/notice/**").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.POST, "/api/app-info").hasAuthority(ADMIN_PREFIX)
+                        // Admin pages, one permission per top tab
+                        .requestMatchers(HttpMethod.GET, "/admin/dashboard", "/admin/forbidden").hasAuthority(ADMIN_PREFIX)
+                        .requestMatchers(HttpMethod.GET, "/admin/pack-list", "/admin/pack-create", "/admin/pack-detail",
+                                "/admin/puzzle-add", "/admin/puzzle-edit").hasAuthority(PACK_MANAGE.getAuthority())
+                        .requestMatchers(HttpMethod.GET, "/admin/community-puzzles").hasAuthority(COMMUNITY_MANAGE.getAuthority())
+                        .requestMatchers(HttpMethod.GET, "/admin/puzzle-cache", "/admin/puzzle-cache/training-pack",
+                                "/admin/puzzle-cache/board").hasAuthority(AI_RESPONSE_MANAGE.getAuthority())
+                        .requestMatchers(HttpMethod.GET, "/admin/notices", "/admin/admin-accounts").hasAuthority(OPERATION_MANAGE.getAuthority())
+                        // Read APIs the AI response pages share with the pack and community tabs
+                        .requestMatchers(HttpMethod.GET, "/admin/training/**")
+                                .hasAnyAuthority(PACK_MANAGE.getAuthority(), AI_RESPONSE_MANAGE.getAuthority())
+                        .requestMatchers(HttpMethod.GET, "/admin/community/puzzle-detail/**")
+                                .hasAnyAuthority(COMMUNITY_MANAGE.getAuthority(), AI_RESPONSE_MANAGE.getAuthority())
+                        // Training pack and puzzle changes
+                        .requestMatchers(HttpMethod.POST, "/api/training/pack", "/api/training/pack/translation",
+                                "/api/training/puzzle").hasAuthority(PACK_MANAGE.getAuthority())
+                        .requestMatchers(HttpMethod.PATCH, "/api/training/pack/**", "/api/training/puzzle/**").hasAuthority(PACK_MANAGE.getAuthority())
+                        .requestMatchers(HttpMethod.DELETE, "/api/training/pack/**", "/api/training/puzzle/**").hasAuthority(PACK_MANAGE.getAuthority())
+                        .requestMatchers("/admin/community/puzzle-manage/**").hasAuthority(COMMUNITY_MANAGE.getAuthority())
+                        // Operation: notices, admin accounts, and settings that have no page
+                        .requestMatchers("/admin/notice/**", "/admin/admin-account/**").hasAuthority(OPERATION_MANAGE.getAuthority())
+                        .requestMatchers(HttpMethod.POST, "/admin/puzzle/rating/recalculate", "/admin/puzzle/board-key/recalculate",
+                                "/admin/puzzle/answer-key/recalculate").hasAuthority(OPERATION_MANAGE.getAuthority())
+                        .requestMatchers(HttpMethod.POST, "/api/app-info").hasAuthority(OPERATION_MANAGE.getAuthority())
+                        // Any other admin path still needs an admin
+                        .requestMatchers("/admin/**").hasAuthority(ADMIN_PREFIX)
                         // All remaining requests require authentication (including regular users)
                         .anyRequest().authenticated()
                 )

@@ -77,7 +77,18 @@
             <button type="button" class="difficulty-option" data-create-difficulty="MIDDLE" aria-pressed="false">MIDDLE</button>
             <button type="button" class="difficulty-option" data-create-difficulty="HIGH" aria-pressed="false">HIGH</button>
           </fieldset>
+          <div>
+            <label for="inlinePackPublic" data-i18n="common.visibility">Visibility</label>
+            <div class="pack-visibility-field">
+              <label class="admin-switch" for="inlinePackPublic">
+                <input type="checkbox" id="inlinePackPublic" aria-describedby="inlinePackPublicHelp">
+                <span class="admin-switch-track" aria-hidden="true"></span>
+              </label>
+              <span class="pack-visibility-state" id="inlinePackPublicState" data-i18n="common.private">Private</span>
+            </div>
+          </div>
         </div>
+        <p class="pack-visibility-help" id="inlinePackPublicHelp" data-i18n="packCreate.visibilityHelp">Private packs are hidden in the app. Make the pack public once its puzzles are ready.</p>
 
         <div class="inline-translation-grid" id="inlineTranslationGrid">
           <section class="inline-translation-card" data-lang-code="EN" th:data-lang-code="${langCode}" th:each="langCode : ${langCodeNames}">
@@ -117,10 +128,12 @@
             <col class="pack-list-col-meta">
             <col class="pack-list-col-meta">
             <col class="pack-list-col-meta">
+            <col class="pack-list-col-meta">
           </colgroup>
           <thead>
           <tr>
             <th class="pack-list-main-col" data-i18n="common.pack">Pack</th>
+            <th class="pack-list-center-col" data-i18n="common.visibility">Visibility</th>
             <th class="pack-list-center-col" data-i18n="common.difficulty">Difficulty</th>
             <th class="pack-list-center-col" data-i18n="common.price">Price</th>
             <th class="pack-list-center-col" data-i18n="common.puzzles">Puzzles</th>
@@ -142,6 +155,11 @@
       }
       const res = await fetch(url, { ...options, headers, credentials: 'same-origin' });
       if (res.status === 401 || res.status === 403) {
+        const error = await res.clone().json().catch(() => null);
+        if (error?.errorResponse?.code === 'A4031') {
+          alert(adminT('msg.permissionDenied'));
+          return null;
+        }
         alert(adminT('msg.sessionExpired'));
         globalThis.location.href = '/admin/logout';
         return null;
@@ -202,6 +220,11 @@
       });
     }
 
+    function syncInlinePublicState() {
+      const isPublic = document.getElementById('inlinePackPublic').checked;
+      adminSetText(document.getElementById('inlinePackPublicState'), isPublic ? 'common.public' : 'common.private');
+    }
+
     function setInlineCreateMessage(message, state) {
       const msgEl = document.getElementById('inlineCreatePackMsg');
       msgEl.textContent = message || '';
@@ -240,6 +263,8 @@
       });
       createDifficulty = 'LOW';
       syncCreateDifficultyButtons();
+      document.getElementById('inlinePackPublic').checked = false;
+      syncInlinePublicState();
       setInlineCreateMessage('', null);
     }
 
@@ -292,13 +317,14 @@
         price = 0;
       }
       const submittedDifficulty = createDifficulty;
+      const isPublic = document.getElementById('inlinePackPublic').checked;
 
       submitBtn.disabled = true;
       setInlineCreateMessage(adminT('packList.creating'), null);
       try {
         const res = await fetchWithAuth(API_BASE + '/api/training/pack', {
           method: 'POST',
-          body: JSON.stringify({ info, price, difficulty: submittedDifficulty })
+          body: JSON.stringify({ info, price, difficulty: submittedDifficulty, isPublic })
         });
         if (!res) return;
         const data = await res.json();
@@ -374,6 +400,13 @@
             meta.textContent = packAuthor ? adminT('packList.metaAuthor', { author: packAuthor }) : adminT('common.noAuthor');
             titleTd.appendChild(meta);
 
+            const visibilityTd = document.createElement('td');
+            visibilityTd.className = 'pack-list-center-col';
+            const visibilityPill = document.createElement('span');
+            visibilityPill.className = p['isPublic'] ? 'admin-pill' : 'admin-pill warn';
+            visibilityPill.textContent = adminT(p['isPublic'] ? 'common.public' : 'common.private');
+            visibilityTd.appendChild(visibilityPill);
+
             const diffTd = document.createElement('td');
             diffTd.className = 'pack-list-center-col';
             const diffPill = document.createElement('span');
@@ -390,6 +423,7 @@
             countTd.textContent = String(p['totalPuzzleCount'] ?? 0);
 
             tr.appendChild(titleTd);
+            tr.appendChild(visibilityTd);
             tr.appendChild(diffTd);
             tr.appendChild(priceTd);
             tr.appendChild(countTd);
@@ -426,6 +460,7 @@
         syncCreateDifficultyButtons();
       });
     });
+    document.getElementById('inlinePackPublic').addEventListener('change', syncInlinePublicState);
     document.getElementById('toggleInlineCreateBtn').addEventListener('click', () => {
       const dialog = document.getElementById('inlinePackCreateDialog');
       setInlineCreateOpen(!dialog.open);

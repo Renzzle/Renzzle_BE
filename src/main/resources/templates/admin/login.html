@@ -56,7 +56,9 @@
           let errorMessage = adminT('login.failed');
           try {
             const errorData = await loginRes.json();
-            errorMessage = errorData?.errorResponse?.message || errorData?.message || errorMessage;
+            errorMessage = errorData?.errorResponse?.code === 'A4031'
+              ? adminT('login.noPermission')
+              : errorData?.errorResponse?.message || errorData?.message || errorMessage;
           } catch {
             // Keep the default message when the error response is not JSON.
           }
@@ -67,7 +69,7 @@
         }
 
         await loginRes.json();
-        globalThis.location.href = '/admin/pack-list';
+        globalThis.location.href = '/admin/dashboard';
 
       } catch (err) {
         showMessage(err.message || adminT('login.error'), true);

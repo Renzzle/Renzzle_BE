@@ -1,13 +1,13 @@
     * { box-sizing: border-box; }
     body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-family: var(--admin-font);
       margin: 0;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #f5f7fa;
-      color: #17202a;
+      background: #f7f7f8;
+      color: #18181b;
     }
     .login-card {
       width: 100%;
@@ -15,8 +15,8 @@
       padding: 2rem;
       background: #fff;
       border-radius: 8px;
-      border: 1px solid #d9e0e8;
-      box-shadow: 0 8px 32px rgba(20,30,45,0.12);
+      border: 1px solid #e4e4e7;
+      box-shadow: 0 8px 32px rgba(24, 24, 27,0.12);
     }
     h1 {
       margin: 0 0 1.5rem;
@@ -28,19 +28,19 @@
       display: block;
       margin-bottom: 0.35rem;
       font-size: 0.9rem;
-      color: #526579;
+      color: #71717a;
     }
     input {
       width: 100%;
       padding: 0.75rem 1rem;
       margin-bottom: 1rem;
-      border: 1px solid #d9e0e8;
+      border: 1px solid #e4e4e7;
       border-radius: 8px;
       background: #fff;
-      color: #17202a;
+      color: #18181b;
       font-size: 1rem;
     }
-    input::placeholder { color: #526579; }
+    input::placeholder { color: #71717a; }
     input:focus {
       outline: none;
       border-color: #4340DB;
@@ -59,7 +59,7 @@
     }
     button:hover { background: #3431B8; }
     button:disabled {
-      background: #526579;
+      background: #71717a;
       cursor: not-allowed;
       opacity: 0.6;
     }
@@ -75,12 +75,12 @@
       display: block;
     }
     .msg.error {
-      background: #fff0ee;
-      border: 1px solid rgba(220, 53, 69, 0.4);
-      color: #b42318;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
     }
     .msg.success {
-      background: #effaf4;
-      border: 1px solid rgba(40, 167, 69, 0.4);
-      color: #13633d;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #15803d;
     }

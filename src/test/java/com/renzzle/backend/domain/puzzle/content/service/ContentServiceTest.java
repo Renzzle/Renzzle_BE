@@ -120,7 +120,7 @@ class ContentServiceTest {
                 .solvedCount(5)
                 .build();
 
-        when(solvedTrainingPuzzleRepository.findTopByUserOrderBySolvedAtDesc(user.getId()))
+        when(solvedTrainingPuzzleRepository.findLatestInPublicPackByUserId(user.getId()))
                 .thenReturn(Optional.of(solvedTrainingPuzzle));
         when(packTranslationRepository.findByPackAndLangCode(eq(pack), any()))
                 .thenReturn(Optional.of(translation));
@@ -152,7 +152,7 @@ class ContentServiceTest {
                 .description("Default Description")
                 .build();
 
-        when(solvedTrainingPuzzleRepository.findTopByUserOrderBySolvedAtDesc(user.getId()))
+        when(solvedTrainingPuzzleRepository.findLatestInPublicPackByUserId(user.getId()))
                 .thenReturn(Optional.empty());
 
         when(packRepository.findFirstByOrderByIdAsc())
@@ -173,7 +173,7 @@ class ContentServiceTest {
     @Test
     void getRecommendedPack_WhenNoPackExists_ThenThrowsNoSuchTrainingPackException() {
         // Given
-        when(solvedTrainingPuzzleRepository.findTopByUserOrderBySolvedAtDesc(user.getId()))
+        when(solvedTrainingPuzzleRepository.findLatestInPublicPackByUserId(user.getId()))
                 .thenReturn(Optional.empty());
 
         when(packRepository.findFirstByOrderByIdAsc())
@@ -192,7 +192,7 @@ class ContentServiceTest {
                 .withId(1L)
                 .build();
 
-        when(solvedTrainingPuzzleRepository.findTopByUserOrderBySolvedAtDesc(user.getId()))
+        when(solvedTrainingPuzzleRepository.findLatestInPublicPackByUserId(user.getId()))
                 .thenReturn(Optional.empty());
 
         when(packRepository.findFirstByOrderByIdAsc())
@@ -238,7 +238,7 @@ class ContentServiceTest {
                 .description("Default Description")
                 .build();
 
-        when(solvedTrainingPuzzleRepository.findTopByUserOrderBySolvedAtDesc(user.getId()))
+        when(solvedTrainingPuzzleRepository.findLatestInPublicPackByUserId(user.getId()))
                 .thenReturn(Optional.of(solvedTrainingPuzzle));
         when(packTranslationRepository.findByPackAndLangCode(eq(pack), any()))
                 .thenReturn(Optional.of(translation));

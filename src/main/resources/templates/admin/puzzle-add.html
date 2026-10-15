@@ -486,6 +486,11 @@
       }
       const res = await fetch(url, { ...options, headers, credentials: 'same-origin' });
       if (res.status === 401 || res.status === 403) {
+        const error = await res.clone().json().catch(() => null);
+        if (error?.errorResponse?.code === 'A4031') {
+          alert(adminT('msg.permissionDenied'));
+          return null;
+        }
         alert(adminT('msg.sessionExpired'));
         globalThis.location.href = '/admin/logout';
         return null;

@@ -73,7 +73,7 @@ public class TrainingController {
         return ApiUtils.success(trainingService.getTrainingPuzzleList(user.getUser(), pack));
     }
 
-    @Operation(summary = "Create Pack", description = "Create pack & Only admins are available")
+    @Operation(summary = "Create Pack", description = "Create pack (private unless isPublic is true) & Only admins are available")
     @PostMapping("/pack")
     public ApiResponse<Long> addTrainingPack(
             @Valid @RequestBody CreateTrainingPackRequest request
@@ -94,7 +94,7 @@ public class TrainingController {
         return ApiUtils.success(null);
     }
 
-    @Operation(summary = "Update Pack", description = "Update pack translations, price, difficulty & Only admins are available")
+    @Operation(summary = "Update Pack", description = "Update pack translations, price, difficulty, visibility & Only admins are available")
     @PatchMapping("/pack/{packId}")
     public ApiResponse<Long> updateTrainingPack(
             @PathVariable("packId") Long packId,
