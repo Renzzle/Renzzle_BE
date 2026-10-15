@@ -28,7 +28,10 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -79,6 +82,24 @@ class TrainingPackControllerTest {
     }
 
     @Test
+    void createPack_WhenVisibilityOmitted_ThenStaysPrivateUntilPublished() throws Exception {
+        String translation = translation("EN", "Draft", "Kang");
+        MvcResult result = mockMvc.perform(asAdmin(post(ENDPOINT)).content(body(translation)))
+                .andExpect(status().isOk())
+                .andReturn();
+        createdPackId = JsonPath.<Number>read(result.getResponse().getContentAsString(), "$.response").longValue();
+
+        mockMvc.perform(asAdmin(get("/admin/training/pack/" + createdPackId)))
+                .andExpect(jsonPath("$.response.isPublic").value(false));
+
+        mockMvc.perform(asAdmin(patch(ENDPOINT + "/" + createdPackId)).content(publicBody(translation)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(asAdmin(get("/admin/training/pack/" + createdPackId)))
+                .andExpect(jsonPath("$.response.isPublic").value(true));
+    }
+
+    @Test
     void createPack_WhenSameLanguageTwice_ThenRejectsAndSavesNothing() throws Exception {
         // A second row for one language breaks the pack list for everyone reading in that language
         assertRejectedWithoutSaving(body(translation("KO", "Beginner", "Kang"), translation("ko", "Beginner 2", "Kang")));
@@ -110,6 +131,11 @@ class TrainingPackControllerTest {
 
     private static String body(String... translations) {
         return "{\"info\":[" + String.join(",", translations) + "],\"price\":0,\"difficulty\":\"LOW\"}";
+    }
+
+    private static String publicBody(String... translations) {
+        String body = body(translations);
+        return body.substring(0, body.length() - 1) + ",\"isPublic\":true}";
     }
 
     private MockHttpServletRequestBuilder asAdmin(MockHttpServletRequestBuilder request) {

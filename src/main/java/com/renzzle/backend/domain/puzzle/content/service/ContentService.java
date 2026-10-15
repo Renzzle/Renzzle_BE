@@ -49,7 +49,7 @@ public class ContentService {
         Long userId = user.getId();
 
         Optional<SolvedTrainingPuzzle> recentSolvedOpt = solvedTrainingPuzzleRepository
-                .findTopByUserOrderBySolvedAtDesc(userId);
+                .findLatestInPublicPackByUserId(userId);
 
         if (recentSolvedOpt.isEmpty()) {
             return createDefaultRecommendedPack(request);

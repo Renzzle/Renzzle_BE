@@ -42,7 +42,7 @@ class TrainingPackRatingIntegrationTest {
 
         // when
         trainingService.updatePack(puzzle.getPack().getId(),
-                new UpdateTrainingPackRequest(Collections.emptyList(), 0, "HIGH"));
+                new UpdateTrainingPackRequest(Collections.emptyList(), 0, "HIGH", null));
         em.flush();
         em.clear();
 

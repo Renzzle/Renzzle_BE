@@ -18,7 +18,7 @@ import com.renzzle.backend.domain.notice.service.NoticeService;
 import com.renzzle.backend.domain.puzzle.community.api.request.UpdateCommunityPuzzleVerificationRequest;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleForAdminResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackDetailForAdminResponse;
-import com.renzzle.backend.domain.puzzle.training.api.response.GetPackResponse;
+import com.renzzle.backend.domain.puzzle.training.api.response.GetPackForAdminResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleForAdminResponse;
 import com.renzzle.backend.domain.puzzle.community.service.CommunityService;
 import com.renzzle.backend.domain.puzzle.training.service.TrainingService;
@@ -181,12 +181,11 @@ public class AdminController {
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/training/pack")
     @ResponseBody
-    public ApiResponse<List<GetPackResponse>> getTrainingPackForAdmin(
+    public ApiResponse<List<GetPackForAdminResponse>> getTrainingPackForAdmin(
             @RequestParam(defaultValue = "LOW") String difficulty,
-            @RequestParam(defaultValue = "EN") String lang,
-            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
+            @RequestParam(defaultValue = "EN") String lang
     ) {
-        List<GetPackResponse> packs = trainingService.getTrainingPackListForAdmin(userDetails.getUser(), difficulty, lang);
+        List<GetPackForAdminResponse> packs = trainingService.getTrainingPackListForAdmin(difficulty, lang);
         return ApiUtils.success(packs);
     }
 

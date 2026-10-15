@@ -65,6 +65,7 @@ public enum ErrorCode {
     NO_BOARD_STATUS(HttpStatus.BAD_REQUEST, "P4005", "Missing puzzle ID or board status"),
     INVALID_ANSWER_POSITION(HttpStatus.BAD_REQUEST, "P4006", "Answer coordinate out of range (a-o, 1-15)"),
     CANNOT_DELETE_STARTER_PACK(HttpStatus.BAD_REQUEST, "P4007", "Starter pack cannot be deleted"),
+    CANNOT_HIDE_STARTER_PACK(HttpStatus.BAD_REQUEST, "P4008", "Starter pack cannot be made private"),
     INVALID_RANK_PUZZLE_TYPE(HttpStatus.BAD_REQUEST, "R4004", "Invalid ranked puzzle type"),
     COMMUNITY_PUZZLE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "P4030", "No permission for this community puzzle"),
     PACK_NOT_OWNED(HttpStatus.FORBIDDEN, "P4031", "Training pack not owned"),

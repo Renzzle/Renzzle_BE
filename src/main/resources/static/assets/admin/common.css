@@ -824,7 +824,7 @@ ul.puzzle-list li .btn-edit,
 
 .inline-pack-basics {
   display: grid;
-  grid-template-columns: minmax(160px, 220px) auto;
+  grid-template-columns: minmax(160px, 220px) auto 1fr;
   gap: var(--admin-space-4);
   align-items: end;
   margin-bottom: var(--admin-space-4);
@@ -927,11 +927,11 @@ ul.puzzle-list li .btn-edit,
 }
 
 .pack-list-table .pack-list-col-main {
-  width: 52%;
+  width: 44%;
 }
 
 .pack-list-table .pack-list-col-meta {
-  width: 16%;
+  width: 14%;
 }
 
 .pack-list-table .pack-list-main-col {
@@ -990,6 +990,96 @@ ul.puzzle-list li .btn-edit,
 .admin-pill.primary {
   background: #ecebff;
   color: var(--admin-primary);
+}
+
+.admin-pill.warn {
+  background: #fff4d6;
+  color: var(--admin-warn);
+}
+
+.admin-switch {
+  position: relative;
+  display: inline-flex !important;
+  align-items: center;
+  flex: 0 0 auto;
+  width: 3.25rem;
+  height: 1.85rem;
+  margin: 0 !important;
+  cursor: pointer;
+}
+
+.admin-switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+}
+
+.admin-switch-track {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--admin-border);
+  border-radius: 999px;
+  background: #dfe5ed;
+  transition: background-color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.admin-switch-track::after {
+  content: "";
+  position: absolute;
+  top: 0.18rem;
+  left: 0.18rem;
+  width: 1.38rem;
+  height: 1.38rem;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 2px 7px rgba(15, 23, 42, 0.24);
+  transition: transform 0.16s ease;
+}
+
+.admin-switch input:checked ~ .admin-switch-track {
+  border-color: var(--admin-primary);
+  background: var(--admin-primary);
+}
+
+.admin-switch input:checked ~ .admin-switch-track::after {
+  transform: translateX(1.38rem);
+}
+
+.admin-switch input:focus-visible ~ .admin-switch-track {
+  box-shadow: 0 0 0 3px rgba(67, 64, 219, 0.18);
+}
+
+.admin-switch input:disabled ~ .admin-switch-track {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pack-visibility-field {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-3);
+  height: var(--admin-control-height);
+  margin-bottom: var(--admin-space-4);
+}
+
+.pack-visibility-state {
+  color: var(--admin-text);
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.pack-visibility-help {
+  margin: 0 0 var(--admin-space-4);
+  color: var(--admin-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.inline-pack-basics + .pack-visibility-help {
+  margin-top: calc(-1 * var(--admin-space-4));
 }
 
 .admin-empty {

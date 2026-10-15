@@ -2,6 +2,7 @@ package com.renzzle.backend.domain.puzzle.training.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 
 @Entity
 @Getter
@@ -28,4 +29,10 @@ public class Pack {
     @ManyToOne
     @JoinColumn(name = "difficulty", nullable = false)
     private Difficulty difficulty;
+
+    // Default true so packs that existed before the column stay public when ddl-auto adds it
+    @Builder.Default
+    @ColumnDefault("true")
+    @Column(name = "is_public", nullable = false)
+    private boolean isPublic = true;
 }
