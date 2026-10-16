@@ -172,6 +172,10 @@
   width: 100%;
 }
 
+.community-copy-btn {
+  margin-left: var(--admin-space-2);
+}
+
 .community-answer-step {
   display: inline-flex;
   align-items: center;
@@ -205,6 +209,32 @@
   color: var(--admin-text);
   font-size: 0.875rem;
   font-weight: 500;
+}
+
+.community-answer-edit {
+  display: grid;
+  gap: var(--admin-space-2);
+  padding: 0 var(--admin-space-4);
+}
+
+.community-answer-edit label,
+#communityAnswerInput {
+  margin: 0 !important;
+}
+
+#communityAnswerInput[aria-invalid="true"] {
+  border-color: var(--admin-danger) !important;
+}
+
+.community-answer-hint {
+  margin: 0;
+  color: var(--admin-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.community-answer-hint.is-error {
+  color: var(--admin-danger);
 }
 
 .community-meta {

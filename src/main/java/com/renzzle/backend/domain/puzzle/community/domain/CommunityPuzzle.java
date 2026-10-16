@@ -123,4 +123,13 @@ public class CommunityPuzzle {
         this.isVerified = isVerified;
     }
 
+    // A new answer makes it a new puzzle for ranking, as a training puzzle edit does
+    public void correctAnswer(String answer, String answerKey, int depth, double rating) {
+        this.answer = answer;
+        this.answerKey = answerKey;
+        this.depth = depth;
+        this.rating = rating;
+        this.rankAttemptCount = 0;
+    }
+
 }

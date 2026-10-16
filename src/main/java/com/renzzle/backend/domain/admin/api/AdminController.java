@@ -381,7 +381,8 @@ public class AdminController {
     ) {
         GetCommunityPuzzleForAdminResponse puzzle = communityService.updateCommunityPuzzleVerificationForAdmin(
                 puzzleId,
-                request.isVerified()
+                request.isVerified(),
+                request.answer()
         );
         return ApiUtils.success(puzzle);
     }

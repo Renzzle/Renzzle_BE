@@ -293,20 +293,46 @@ public class CommunityService {
     }
 
     @Transactional
-    public GetCommunityPuzzleForAdminResponse updateCommunityPuzzleVerificationForAdmin(Long puzzleId, Boolean isVerified) {
+    public GetCommunityPuzzleForAdminResponse updateCommunityPuzzleVerificationForAdmin(
+            Long puzzleId, Boolean isVerified, String answer) {
         if (isVerified == null) {
             throw new CustomException("Verification flag is required", ErrorCode.VALIDATION_ERROR);
+        }
+        // Only verifying takes a new answer, so the cached solution line always comes from a verified one
+        if (answer != null && !isVerified) {
+            throw new CustomException("An answer can only be corrected while verifying", ErrorCode.VALIDATION_ERROR);
         }
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
         boolean wasVerified = Boolean.TRUE.equals(puzzle.getIsVerified());
+        boolean answerChanged = answer != null && !answer.equals(puzzle.getAnswer());
+        if (answerChanged) {
+            correctAnswer(puzzle, answer);
+        }
         puzzle.updateVerification(isVerified);
 
-        if (!wasVerified && isVerified) {
+        // Replies keyed to the old answer's positions would be wrong, so a new answer reseeds instead of merging
+        if (answerChanged) {
+            puzzleCacheService.seedSolutionPath(
+                    PuzzleType.COMMUNITY, puzzle.getId(), puzzle.getBoardStatus(), puzzle.getAnswer());
+        } else if (!wasVerified && isVerified) {
             puzzleCacheService.mergeSolutionPath(
                     PuzzleType.COMMUNITY, puzzle.getId(), puzzle.getBoardStatus(), puzzle.getAnswer());
         }
         return toAdminCommunityPuzzleResponse(puzzle);
+    }
+
+    // Depth counts every answer move, as the admin puzzle editors do
+    private void correctAnswer(CommunityPuzzle puzzle, String answer) {
+        if (answer.isBlank() || !BoardUtils.validBoardString(answer)) {
+            throw new CustomException("Invalid board string format", ErrorCode.VALIDATION_ERROR);
+        }
+        if (!BoardUtils.answerFitsBoard(puzzle.getBoardStatus(), answer)) {
+            throw new CustomException("Answer moves must land on empty points", ErrorCode.VALIDATION_ERROR);
+        }
+        int depth = BoardUtils.countMoves(answer);
+        puzzle.correctAnswer(answer, BoardUtils.makeAnswerKey(puzzle.getBoardStatus(), answer), depth,
+                RatingUtil.puzzleRating(depth, puzzle.getWinColor(), null));
     }
 
     private GetCommunityPuzzleForAdminResponse toAdminCommunityPuzzleResponse(CommunityPuzzle puzzle) {

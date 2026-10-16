@@ -6,6 +6,8 @@ import com.renzzle.backend.domain.auth.dao.AdminRepository;
 import com.renzzle.backend.domain.auth.domain.Admin;
 import com.renzzle.backend.domain.auth.domain.AdminPermission;
 import com.renzzle.backend.domain.auth.service.JwtProvider;
+import com.renzzle.backend.domain.puzzle.cache.dao.PuzzleCacheRepository;
+import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.rank.support.TestUserFactory;
@@ -20,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
@@ -32,6 +35,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -48,6 +52,7 @@ class AdminCommunityPuzzleListTest {
     @Autowired private UserRepository userRepository;
     @Autowired private AdminRepository adminRepository;
     @Autowired private CommunityPuzzleRepository communityPuzzleRepository;
+    @Autowired private PuzzleCacheRepository puzzleCacheRepository;
 
     private final List<UserEntity> createdUsers = new ArrayList<>();
     private final List<Long> unverifiedIds = new ArrayList<>();
@@ -68,6 +73,9 @@ class AdminCommunityPuzzleListTest {
 
     @AfterEach
     void tearDown() {
+        // Verifying seeds the solution line, which outlives the puzzle rows
+        unverifiedIds.forEach(id -> puzzleCacheRepository.findByPuzzleTypeAndPuzzleId(PuzzleType.COMMUNITY, id)
+                .ifPresent(puzzleCacheRepository::delete));
         communityPuzzleRepository.deleteAllById(unverifiedIds);
         communityPuzzleRepository.deleteAllById(verifiedIds);
         userRepository.deleteAll(createdUsers);
@@ -129,6 +137,35 @@ class AdminCommunityPuzzleListTest {
                 .andExpect(status().isBadRequest());
         mockMvc.perform(withToken(get(ENDPOINT).param("size", "51"), communityAdmin))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void verify_WhenCorrectedAnswerSent_ThenSavesItWithTheVerification() throws Exception {
+        Long puzzleId = unverifiedIds.get(0);
+
+        mockMvc.perform(withToken(patch(ENDPOINT + "/" + puzzleId + "/verification"), communityAdmin)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"isVerified\":true,\"answer\":\"g7i9\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.response.isVerified").value(true))
+                .andExpect(jsonPath("$.response.answer").value("g7i9"))
+                .andExpect(jsonPath("$.response.depth").value(2));
+
+        assertThat(communityPuzzleRepository.findById(puzzleId).orElseThrow().getAnswer()).isEqualTo("g7i9");
+    }
+
+    @Test
+    void verify_WhenCorrectedAnswerLandsOnAStone_ThenRejectsAndKeepsThePuzzleUnverified() throws Exception {
+        Long puzzleId = unverifiedIds.get(0);
+
+        mockMvc.perform(withToken(patch(ENDPOINT + "/" + puzzleId + "/verification"), communityAdmin)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"isVerified\":true,\"answer\":\"h8i9\"}"))
+                .andExpect(status().isBadRequest());
+
+        CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId).orElseThrow();
+        assertThat(puzzle.getAnswer()).isEqualTo("i9");
+        assertThat(puzzle.getIsVerified()).isFalse();
     }
 
     private Long savePuzzle(UserEntity author, boolean verified) {
