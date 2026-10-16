@@ -3,12 +3,14 @@ package com.renzzle.backend.domain.puzzle.community.service;
 import com.renzzle.backend.domain.appinfo.service.AppInfoService;
 import com.renzzle.backend.domain.puzzle.community.api.request.AddCommunityPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzleRequest;
+import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzlesForAdminRequest;
 import com.renzzle.backend.domain.puzzle.community.api.response.AddCommunityPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.cache.api.request.GetCommunityPuzzlesForCacheRequest;
 import com.renzzle.backend.domain.puzzle.cache.api.response.CommunityPuzzleCachePickerResponse;
 import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
 import com.renzzle.backend.domain.puzzle.cache.service.PuzzleCacheService;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleForAdminResponse;
+import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlePageForAdminResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleAnswerResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlesResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetSingleCommunityPuzzleResponse;
@@ -33,6 +35,10 @@ import com.renzzle.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,6 +59,8 @@ import static com.renzzle.backend.global.common.constant.ItemPrice.HINT;
 @Service
 @RequiredArgsConstructor
 public class CommunityService {
+
+    private static final int ADMIN_PAGE_SIZE = 10;
 
     private final Clock clock;
     private final CommunityPuzzleRepository communityPuzzleRepository;
@@ -264,6 +272,24 @@ public class CommunityService {
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
         return toAdminCommunityPuzzleResponse(puzzle);
+    }
+
+    // Newest first; a null verified lists every puzzle
+    @Transactional(readOnly = true)
+    public GetCommunityPuzzlePageForAdminResponse getCommunityPuzzlesForAdmin(GetCommunityPuzzlesForAdminRequest request) {
+        Pageable pageable = PageRequest.of(
+                request.page() != null ? request.page() : 0,
+                request.size() != null ? request.size() : ADMIN_PAGE_SIZE,
+                Sort.by(Sort.Direction.DESC, "id"));
+        Page<CommunityPuzzle> page = request.verified() == null
+                ? communityPuzzleRepository.findAllBy(pageable)
+                : communityPuzzleRepository.findAllByIsVerified(request.verified(), pageable);
+        return new GetCommunityPuzzlePageForAdminResponse(
+                page.map(this::toAdminCommunityPuzzleResponse).getContent(),
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages());
     }
 
     @Transactional

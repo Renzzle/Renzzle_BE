@@ -8,6 +8,8 @@ import com.renzzle.backend.domain.puzzle.rank.support.TestUserFactory;
 import com.renzzle.backend.domain.puzzle.rank.util.CommunityPuzzleSeeder;
 import com.renzzle.backend.domain.puzzle.rank.util.PackSeeder;
 import com.renzzle.backend.domain.puzzle.rank.util.TrainingPuzzleSeeder;
+import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
+import com.renzzle.backend.domain.puzzle.shared.dto.RankPuzzleCandidate;
 import com.renzzle.backend.domain.puzzle.training.dao.TrainingPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.user.dao.UserRepository;
@@ -17,6 +19,7 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Limit;
 
 import java.util.List;
 import java.util.Optional;
@@ -162,6 +165,77 @@ class RankRepositoryTest {
 
         // Then
         assertThat(communityPuzzleRepository.findRankAttemptCountById(id)).isEmpty();
+    }
+
+    // Ratings far from every other test's puzzles, so only the ones seeded here are within reach
+    @Test
+    void findRankCandidates_WhenTargetGiven_ThenReturnsTheNearestOnEachSideInOrder() {
+        UserEntity user = userRepository.save(TestUserFactory.createTestUser("nearest", 1500));
+        trainingPuzzleSeeder.seedPuzzle(1, "a1a2", "a3", 3, 9010, "BLACK");
+        trainingPuzzleSeeder.seedPuzzle(1, "b1b2", "b3", 3, 9030, "BLACK");
+        trainingPuzzleSeeder.seedPuzzle(1, "c1c2", "c3", 3, 9000, "WHITE");
+        trainingPuzzleSeeder.seedPuzzle(1, "d1d2", "d3", 3, 8990, "BLACK");
+        trainingPuzzleSeeder.seedPuzzle(1, "e1e2", "e3", 3, 8950, "BLACK");
+
+        List<RankPuzzleCandidate> from = trainingPuzzleRepository.findRankCandidatesFrom(user, 9000, Limit.of(2));
+        List<RankPuzzleCandidate> below = trainingPuzzleRepository.findRankCandidatesBelow(user, 9000, Limit.of(2));
+
+        assertThat(from).extracting(RankPuzzleCandidate::boardStatus).containsExactly("c1c2", "a1a2");
+        assertThat(from.get(0).winColor()).isEqualTo("WHITE");
+        assertThat(below).extracting(RankPuzzleCandidate::boardStatus).containsExactly("d1d2", "e1e2");
+    }
+
+    @Test
+    void findRankCandidates_WhenNearlyEveryPuzzleWasHandedOut_ThenStillReachesTheFarOneLeft() {
+        UserEntity user = userRepository.save(TestUserFactory.createTestUser("nearly-done", 1500));
+        trainingPuzzleSeeder.seedPuzzle(1, "a1a2", "a3", 3, 9000, "BLACK");
+        trainingPuzzleSeeder.seedPuzzle(1, "b1b2", "b3", 3, 9010, "BLACK");
+        trainingPuzzleSeeder.seedPuzzle(1, "c1c2", "c3", 3, 8600, "BLACK");
+        handOut(user, "a1a2");
+        handOut(user, "b1b2");
+
+        assertThat(trainingPuzzleRepository.findRankCandidatesFrom(user, 9000, Limit.of(5))).isEmpty();
+        assertThat(trainingPuzzleRepository.findRankCandidatesBelow(user, 9000, Limit.of(1)))
+                .extracting(RankPuzzleCandidate::boardStatus)
+                .containsExactly("c1c2");
+    }
+
+    @Test
+    void findRankCandidates_WhenCommunityPuzzleUnverified_ThenLeavesItOut() {
+        UserEntity author = userRepository.save(TestUserFactory.createTestUser("verified-only", 1500));
+        communityPuzzleSeeder.seedPuzzle("a1a2", "a3", 3, 9000, "BLACK", author);
+        communityPuzzleSeeder.seedPuzzle("b1b2", "b3", 3, 9001, "WHITE", author);
+        communityPuzzleRepository.findById(communityPuzzleId("b1b2")).orElseThrow().updateVerification(false);
+        em.flush();
+
+        assertThat(communityPuzzleRepository.findRankCandidatesFrom(author, 9000, Limit.of(5)))
+                .extracting(RankPuzzleCandidate::boardStatus)
+                .containsExactly("a1a2");
+        assertThat(communityPuzzleRepository.findAllRankCandidates())
+                .extracting(RankPuzzleCandidate::boardStatus)
+                .contains("a1a2")
+                .doesNotContain("b1b2");
+    }
+
+    @Test
+    void findBoardStatusesByUser_WhenPuzzlesHandedOut_ThenListsThemInHandOutOrder() {
+        UserEntity user = userRepository.save(TestUserFactory.createTestUser("hand-out-order", 1500));
+        handOut(user, "b1b2");
+        handOut(user, "a1a2");
+        handOut(user, "b1b2");
+
+        assertThat(latestRankPuzzleRepository.findBoardStatusesByUser(user)).containsExactly("b1b2", "a1a2", "b1b2");
+    }
+
+    private void handOut(UserEntity user, String boardStatus) {
+        latestRankPuzzleRepository.save(LatestRankPuzzle.builder()
+                .user(user)
+                .boardStatus(boardStatus)
+                .answer("x")
+                .winColor(WinColor.getWinColor("BLACK"))
+                .assignedAt(FIXED_INSTANT)
+                .isSolved(false)
+                .build());
     }
 
     private Long trainingPuzzleId(String boardStatus) {

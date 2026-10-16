@@ -11,8 +11,10 @@ import com.renzzle.backend.domain.puzzle.rank.api.response.*;
 import com.renzzle.backend.domain.puzzle.rank.dao.LatestRankPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.rank.domain.LatestRankPuzzle;
 import com.renzzle.backend.domain.puzzle.rank.domain.RankSessionData;
+import com.renzzle.backend.domain.puzzle.rank.service.dto.NextPuzzleResult;
 import com.renzzle.backend.domain.puzzle.rank.support.TestUserFactory;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
+import com.renzzle.backend.domain.puzzle.shared.dto.RankPuzzleCandidate;
 import com.renzzle.backend.domain.puzzle.shared.util.ELOUtils;
 import com.renzzle.backend.domain.puzzle.shared.util.RatingUtil;
 import com.renzzle.backend.domain.puzzle.training.dao.TrainingPuzzleRepository;
@@ -128,10 +130,7 @@ class RankServiceTest {
         when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(latestRankPuzzleRepository.findAllByUser(user)).thenReturn(Collections.emptyList());
 
-        when(trainingPuzzleRepository.findAvailableTrainingPuzzlesSortedByRating(user))
-                .thenReturn(List.of(puzzle));
-        when(communityPuzzleRepository.findAvailableCommunityPuzzlesSortedByRating(user))
-                .thenReturn(Collections.emptyList());
+        givenRankCandidates(user, List.of(candidateOf(puzzle)), List.of());
 
         when(redisSessionTemplate.opsForValue()).thenReturn(valueOperations);
         when(clock.instant()).thenReturn(Instant.parse("2025-01-01T00:00:00Z"));
@@ -167,10 +166,7 @@ class RankServiceTest {
 
         when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(latestRankPuzzleRepository.findAllByUser(user)).thenReturn(Collections.emptyList());
-        when(trainingPuzzleRepository.findAvailableTrainingPuzzlesSortedByRating(user))
-                .thenReturn(List.of(puzzle));
-        when(communityPuzzleRepository.findAvailableCommunityPuzzlesSortedByRating(user))
-                .thenReturn(Collections.emptyList());
+        givenRankCandidates(user, List.of(candidateOf(puzzle)), List.of());
         when(redisSessionTemplate.opsForValue()).thenReturn(valueOperations);
         when(clock.instant()).thenReturn(Instant.parse("2025-01-01T00:00:00Z"));
 
@@ -300,8 +296,7 @@ class RankServiceTest {
         when(valueOperations.get("1")).thenReturn(session);
         when(redisSessionTemplate.getExpire("1", TimeUnit.SECONDS)).thenReturn(120L);
         when(latestRankPuzzleRepository.findTopByUserOrderByIdDesc(user)).thenReturn(Optional.of(previous));
-        when(trainingPuzzleRepository.findAvailableTrainingPuzzlesSortedByRating(user)).thenReturn(List.of(candidatePuzzle));
-        when(communityPuzzleRepository.findAvailableCommunityPuzzlesSortedByRating(user)).thenReturn(Collections.emptyList());
+        givenRankCandidates(user, List.of(candidateOf(candidatePuzzle)), List.of());
         when(clock.instant()).thenReturn(Instant.parse("2025-01-01T00:00:00Z"));
 
         RankResultRequest request = new RankResultRequest(true, null);
@@ -349,8 +344,7 @@ class RankServiceTest {
         when(valueOperations.get("1")).thenReturn(session);
         when(redisSessionTemplate.getExpire("1", TimeUnit.SECONDS)).thenReturn(120L);
         when(latestRankPuzzleRepository.findTopByUserOrderByIdDesc(user)).thenReturn(Optional.of(previous));
-        when(trainingPuzzleRepository.findAvailableTrainingPuzzlesSortedByRating(user)).thenReturn(List.of(candidatePuzzle));
-        when(communityPuzzleRepository.findAvailableCommunityPuzzlesSortedByRating(user)).thenReturn(Collections.emptyList());
+        givenRankCandidates(user, List.of(candidateOf(candidatePuzzle)), List.of());
 
         // When
         rankService.resultRankGame(user, new RankResultRequest(true, null));
@@ -379,8 +373,7 @@ class RankServiceTest {
 
         when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
         when(latestRankPuzzleRepository.findAllByUser(user)).thenReturn(Collections.emptyList());
-        when(trainingPuzzleRepository.findAvailableTrainingPuzzlesSortedByRating(user)).thenReturn(List.of(puzzle));
-        when(communityPuzzleRepository.findAvailableCommunityPuzzlesSortedByRating(user)).thenReturn(Collections.emptyList());
+        givenRankCandidates(user, List.of(candidateOf(puzzle)), List.of());
 
         // When
         rankService.startRankGame(user);
@@ -571,8 +564,7 @@ class RankServiceTest {
         when(valueOperations.get("1")).thenReturn(session);
         when(redisSessionTemplate.getExpire("1", TimeUnit.SECONDS)).thenReturn(120L);
         when(latestRankPuzzleRepository.findTopByUserOrderByIdDesc(user)).thenReturn(Optional.of(answered));
-        when(trainingPuzzleRepository.findAvailableTrainingPuzzlesSortedByRating(user)).thenReturn(List.of(nextCandidate));
-        when(communityPuzzleRepository.findAvailableCommunityPuzzlesSortedByRating(user)).thenReturn(Collections.emptyList());
+        givenRankCandidates(user, List.of(candidateOf(nextCandidate)), List.of());
         return user;
     }
 
@@ -1124,5 +1116,74 @@ class RankServiceTest {
 
         // Then
         assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.CANNOT_FIND_USER);
+    }
+
+    @Test
+    void getNextPuzzle_WhenEveryPuzzleWasHandedOut_ThenPicksTheOneHandedOutFewestAcrossBothSources() {
+        UserEntity user = TestUserFactory.createTestUser("u1", 1500);
+        givenRankCandidates(user, List.of(), List.of());
+        when(latestRankPuzzleRepository.findBoardStatusesByUser(user)).thenReturn(List.of("a1a2", "b1b2", "a1a2"));
+        when(trainingPuzzleRepository.findAllRankCandidates())
+                .thenReturn(List.of(new RankPuzzleCandidate(1L, "a1a2", "a3", "BLACK", 1500.0)));
+        when(communityPuzzleRepository.findAllRankCandidates())
+                .thenReturn(List.of(new RankPuzzleCandidate(2L, "b1b2", "b3", "WHITE", 1500.0)));
+
+        NextPuzzleResult next = rankService.getNextPuzzle(1500, 0.7, user);
+
+        assertThat(next.puzzleType()).isEqualTo(PuzzleType.COMMUNITY);
+        assertThat(next.boardStatus()).isEqualTo("b1b2");
+    }
+
+    @Test
+    void getNextPuzzle_WhenTheOnlyPuzzleWasJustAnswered_ThenHandsItOutAgain() {
+        UserEntity user = TestUserFactory.createTestUser("u1", 1500);
+        givenRankCandidates(user, List.of(), List.of());
+        when(latestRankPuzzleRepository.findBoardStatusesByUser(user)).thenReturn(List.of("a1a2"));
+        when(trainingPuzzleRepository.findAllRankCandidates())
+                .thenReturn(List.of(new RankPuzzleCandidate(1L, "a1a2", "a3", "BLACK", 1500.0)));
+        when(communityPuzzleRepository.findAllRankCandidates()).thenReturn(List.of());
+
+        NextPuzzleResult next = rankService.getNextPuzzle(1500, 0.7, user);
+
+        assertThat(next.boardStatus()).isEqualTo("a1a2");
+    }
+
+    @Test
+    void getNextPuzzle_WhenCandidatesSitOnBothSidesOfTheTarget_ThenKeepsTheClosestFive() {
+        UserEntity user = TestUserFactory.createTestUser("u1", 1500);
+        double target = ELOUtils.getProblemRatingForTargetWinProbability(1500, 0.7);
+        List<RankPuzzleCandidate> above = List.of(
+                new RankPuzzleCandidate(1L, "u1", "x", "BLACK", target + 1),
+                new RankPuzzleCandidate(2L, "u2", "x", "BLACK", target + 2),
+                new RankPuzzleCandidate(3L, "u3", "x", "BLACK", target + 300));
+        List<RankPuzzleCandidate> below = List.of(
+                new RankPuzzleCandidate(4L, "d1", "x", "BLACK", target - 1),
+                new RankPuzzleCandidate(5L, "d2", "x", "BLACK", target - 3),
+                new RankPuzzleCandidate(6L, "d3", "x", "BLACK", target - 400));
+        when(trainingPuzzleRepository.findRankCandidatesFrom(eq(user), anyDouble(), any())).thenReturn(above);
+        when(trainingPuzzleRepository.findRankCandidatesBelow(eq(user), anyDouble(), any())).thenReturn(below);
+        when(communityPuzzleRepository.findRankCandidatesFrom(eq(user), anyDouble(), any())).thenReturn(List.of());
+        when(communityPuzzleRepository.findRankCandidatesBelow(eq(user), anyDouble(), any())).thenReturn(List.of());
+
+        Set<String> picked = new HashSet<>();
+        for (int i = 0; i < 200; i++) {
+            picked.add(rankService.getNextPuzzle(1500, 0.7, user).boardStatus());
+        }
+
+        // The farthest of the six is never in the window, whichever side it is on
+        assertThat(picked).containsExactlyInAnyOrder("u1", "u2", "d1", "d2", "u3");
+    }
+
+    // Both sources' nearest-candidate queries; the below side stays empty
+    private void givenRankCandidates(UserEntity user, List<RankPuzzleCandidate> trainings, List<RankPuzzleCandidate> communities) {
+        when(trainingPuzzleRepository.findRankCandidatesFrom(eq(user), anyDouble(), any())).thenReturn(trainings);
+        when(trainingPuzzleRepository.findRankCandidatesBelow(eq(user), anyDouble(), any())).thenReturn(List.of());
+        when(communityPuzzleRepository.findRankCandidatesFrom(eq(user), anyDouble(), any())).thenReturn(communities);
+        when(communityPuzzleRepository.findRankCandidatesBelow(eq(user), anyDouble(), any())).thenReturn(List.of());
+    }
+
+    private static RankPuzzleCandidate candidateOf(TrainingPuzzle puzzle) {
+        return new RankPuzzleCandidate(puzzle.getId(), puzzle.getBoardStatus(), puzzle.getAnswer(),
+                puzzle.getWinColor().getName(), puzzle.getRating());
     }
 }

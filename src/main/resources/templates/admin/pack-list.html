@@ -4,11 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n="title.packList">Renzzle Admin - Packs</title>
+  <link rel="preload" href="/assets/fonts/pretendard-1.3.9/PretendardVariable.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/assets/admin/pack-list.css">
   <link rel="stylesheet" href="/assets/admin/common.css">
   <script src="/assets/admin/i18n.js"></script>
 </head>
-<body>
+<!--/*@thymesVar id="adminPermissions" type="java.util.Set<java.lang.String>"*/-->
+<body th:data-show-creator="${adminPermissions?.contains('OPERATION_MANAGE')}">
   <div class="header">
     <div>
       <h1>Renzzle Admin</h1>
@@ -78,9 +80,10 @@
             <button type="button" class="difficulty-option" data-create-difficulty="HIGH" aria-pressed="false">HIGH</button>
           </fieldset>
           <div>
-            <label for="inlinePackPublic" data-i18n="common.visibility">Visibility</label>
+            <span class="field-label" data-i18n="common.visibility">Visibility</span>
             <div class="pack-visibility-field">
               <label class="admin-switch" for="inlinePackPublic">
+                <span class="admin-visually-hidden" data-i18n="common.visibility">Visibility</span>
                 <input type="checkbox" id="inlinePackPublic" aria-describedby="inlinePackPublicHelp">
                 <span class="admin-switch-track" aria-hidden="true"></span>
               </label>
@@ -145,8 +148,10 @@
     </section>
   </main>
 
-  <script type="module" th:inline="javascript">
+  <script type="module">
     const API_BASE = '';
+    // Only operators see every admin's packs, so only they need to know who made each one
+    const SHOW_CREATOR = document.body.dataset.showCreator === 'true';
 
     async function fetchWithAuth(url, options = {}) {
       const headers = { 'Content-Type': 'application/json', ...options.headers };
@@ -359,7 +364,7 @@
       msgEl.textContent = adminT('packList.unknownCount');
 
       try {
-        const res = await fetchWithAuth(API_BASE + '/admin/training/pack?difficulty=' + encodeURIComponent(difficulty) + '&lang=' + encodeURIComponent(lang));
+        const res = await fetchWithAuth(API_BASE + '/admin/training/pack?difficulty=' + encodeURIComponent(difficulty) + '&lang=' + encodeURIComponent(lang) + '&manageable=true');
         if (!res) return;
         const data = await res.json();
         if (!data.isSuccess) {
@@ -398,12 +403,15 @@
             const meta = document.createElement('div');
             meta.className = 'pack-row-meta';
             meta.textContent = packAuthor ? adminT('packList.metaAuthor', { author: packAuthor }) : adminT('common.noAuthor');
+            if (SHOW_CREATOR && p['creatorEmail']) {
+              meta.textContent += ' · ' + adminT('packList.metaCreator', { email: p['creatorEmail'] });
+            }
             titleTd.appendChild(meta);
 
             const visibilityTd = document.createElement('td');
             visibilityTd.className = 'pack-list-center-col';
             const visibilityPill = document.createElement('span');
-            visibilityPill.className = p['isPublic'] ? 'admin-pill' : 'admin-pill warn';
+            visibilityPill.className = 'admin-pill status' + (p['isPublic'] ? '' : ' off');
             visibilityPill.textContent = adminT(p['isPublic'] ? 'common.public' : 'common.private');
             visibilityTd.appendChild(visibilityPill);
 

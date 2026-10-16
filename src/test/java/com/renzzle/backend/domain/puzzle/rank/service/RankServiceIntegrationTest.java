@@ -34,7 +34,11 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Clock;
+import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static com.renzzle.backend.global.common.constant.ItemPrice.RANK_REWARD;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -323,5 +327,52 @@ class RankServiceIntegrationTest {
         NextPuzzleResult secondResult = rankService.getNextPuzzle(testUser.getMmr(), targetWinProb - 0.05, testUser);
 
         assertNotEquals(firstResult.boardStatus(), secondResult.boardStatus(), "the same puzzle must not be served twice");
+    }
+
+    // The test session lives 10 seconds and each result carries over only whole seconds, so a long game tops it up
+    private void keepSessionAlive() {
+        redisTemplate.expire(redisKey, 10, TimeUnit.SECONDS);
+    }
+
+    @Test
+    void resultRankGame_WhenEveryPuzzleWasHandedOut_ThenGoesRoundAgainAndKeepsTheLastAnswer() {
+        int poolSize = 6;
+        rankService.startRankGame(testUser);
+        for (int i = 1; i < poolSize; i++) {
+            keepSessionAlive();
+            rankService.resultRankGame(testUser, new RankResultRequest(false, null));
+        }
+        List<String> firstRound = latestRankPuzzleRepository.findBoardStatusesByUser(testUser);
+        assertThat(firstRound).hasSize(poolSize).doesNotHaveDuplicates();
+
+        keepSessionAlive();
+        RankResultResponse repeat = rankService.resultRankGame(testUser, new RankResultRequest(true, null));
+
+        assertThat(firstRound).contains(repeat.boardStatus());
+        assertThat(repeat.boardStatus()).isNotEqualTo(firstRound.get(poolSize - 1));
+        // The answer that emptied the pool still counts
+        List<LatestRankPuzzle> assignments = latestRankPuzzleRepository.findAllByUser(testUser).stream()
+                .sorted(Comparator.comparing(LatestRankPuzzle::getId))
+                .toList();
+        assertThat(assignments.get(poolSize - 1).getIsSolved()).isTrue();
+    }
+
+    @Test
+    void resultRankGame_WhenGoingRoundAgain_ThenEveryPuzzleRepeatsBeforeAnyRepeatsTwice() {
+        int poolSize = 6;
+        rankService.startRankGame(testUser);
+        for (int i = 1; i < poolSize * 2; i++) {
+            keepSessionAlive();
+            rankService.resultRankGame(testUser, new RankResultRequest(false, null));
+        }
+
+        List<String> handedOut = latestRankPuzzleRepository.findBoardStatusesByUser(testUser);
+        assertThat(handedOut).hasSize(poolSize * 2);
+        assertThat(handedOut.stream().collect(Collectors.groupingBy(board -> board, Collectors.counting())).values())
+                .hasSize(poolSize)
+                .containsOnly(2L);
+        for (int i = 1; i < handedOut.size(); i++) {
+            assertThat(handedOut.get(i)).isNotEqualTo(handedOut.get(i - 1));
+        }
     }
 }

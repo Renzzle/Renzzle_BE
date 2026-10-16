@@ -322,7 +322,7 @@ public class TrainingService {
 
 
     @Transactional
-    public Pack createPack(CreateTrainingPackRequest request) {
+    public Pack createPack(CreateTrainingPackRequest request, Long creatorId) {
         checkNoDuplicateLanguage(request.info());
 
         Pack pack = Pack.builder()
@@ -330,6 +330,7 @@ public class TrainingService {
                 .difficulty(Difficulty.getDifficulty(request.difficulty()))
                 .puzzleCount(0)
                 .isPublic(Boolean.TRUE.equals(request.isPublic()))
+                .createdBy(creatorId)
                 .build();
 
         Pack savedPack = packRepository.save(pack);
@@ -451,8 +452,9 @@ public class TrainingService {
                 pack -> requestedMap.getOrDefault(pack.getId(), defaultMap.get(pack.getId())));
     }
 
+    // A null creatorId lists every pack of the difficulty
     @Transactional(readOnly = true)
-    public List<GetPackForAdminResponse> getTrainingPackListForAdmin(String difficulty, String preferredLang) {
+    public List<GetPackForAdminResponse> getTrainingPackListForAdmin(String difficulty, String preferredLang, Long creatorId) {
         // Raw query values, so a bad one is the caller's mistake
         final Difficulty requestedDifficulty;
         final LangCode requestedLangCode;
@@ -463,7 +465,9 @@ public class TrainingService {
             throw new CustomException(e.getMessage(), ErrorCode.VALIDATION_ERROR);
         }
 
-        List<Pack> packs = packRepository.findByDifficulty(requestedDifficulty);
+        List<Pack> packs = creatorId == null
+                ? packRepository.findByDifficulty(requestedDifficulty)
+                : packRepository.findByDifficultyAndCreatedBy(requestedDifficulty, creatorId);
 
         if (packs.isEmpty()) {
             throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACKS);
@@ -474,6 +478,9 @@ public class TrainingService {
 
         Map<Long, List<PackTranslation>> translationsByPack = packTranslationRepository.findAllByPack_IdIn(packIds).stream()
                 .collect(Collectors.groupingBy(t -> t.getPack().getId()));
+        List<Long> creatorIds = packs.stream().map(Pack::getCreatedBy).filter(Objects::nonNull).distinct().toList();
+        Map<Long, String> creatorEmails = userRepository.findAllById(creatorIds).stream()
+                .collect(Collectors.toMap(UserEntity::getId, UserEntity::getEmail));
 
         return packs.stream()
                 .map(pack -> {
@@ -486,7 +493,8 @@ public class TrainingService {
                             translation != null ? translation.getDescription() : null,
                             pack.getPrice(),
                             pack.getPuzzleCount(),
-                            pack.isPublic()
+                            pack.isPublic(),
+                            creatorEmails.get(pack.getCreatedBy())
                     );
                 })
                 .toList();

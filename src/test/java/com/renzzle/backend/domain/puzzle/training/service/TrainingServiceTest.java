@@ -46,6 +46,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class TrainingServiceTest {
 
+    private static final Long ADMIN_USER_ID = 7L;
+
     @Mock
     private PackRepository packRepository;
 
@@ -118,12 +120,12 @@ public class TrainingServiceTest {
             when(packTranslationRepository.saveAll(anyList())).thenReturn(expectedTranslations);
 
             // when
-            Pack result = trainingService.createPack(request);
+            Pack result = trainingService.createPack(request, ADMIN_USER_ID);
 
             // then
             assertNotNull(result);
             assertEquals(savedPack.getId(), result.getId());
-            verify(packRepository, times(1)).save(any(Pack.class));
+            verify(packRepository, times(1)).save(argThat(pack -> ADMIN_USER_ID.equals(pack.getCreatedBy())));
             verify(packTranslationRepository, times(1)).saveAll(anyList());
         }
 
@@ -489,7 +491,7 @@ public class TrainingServiceTest {
             when(packRepository.save(any(Pack.class))).thenAnswer(inv -> inv.getArgument(0));
 
             // when
-            Pack created = trainingService.createPack(request);
+            Pack created = trainingService.createPack(request, ADMIN_USER_ID);
 
             // then
             assertThat(created.isPublic()).isFalse();
@@ -503,7 +505,7 @@ public class TrainingServiceTest {
             when(packRepository.save(any(Pack.class))).thenAnswer(inv -> inv.getArgument(0));
 
             // when
-            Pack created = trainingService.createPack(request);
+            Pack created = trainingService.createPack(request, ADMIN_USER_ID);
 
             // then
             assertThat(created.isPublic()).isTrue();
@@ -550,13 +552,32 @@ public class TrainingServiceTest {
                     .build()));
 
             // when
-            List<GetPackForAdminResponse> responses = trainingService.getTrainingPackListForAdmin("LOW", "EN");
+            List<GetPackForAdminResponse> responses = trainingService.getTrainingPackListForAdmin("LOW", "EN", null);
 
             // then
             assertThat(responses).singleElement().satisfies(response -> {
                 assertThat(response.title()).isEqualTo("Draft");
                 assertThat(response.isPublic()).isFalse();
             });
+        }
+
+        @Test
+        void getTrainingPackListForAdmin_WhenCreatorGiven_ThenListsOnlyTheirPacksWithTheirEmail() {
+            // given
+            Pack own = pack(4L, "LOW").toBuilder().createdBy(ADMIN_USER_ID).build();
+            when(packRepository.findByDifficultyAndCreatedBy(any(Difficulty.class), eq(ADMIN_USER_ID))).thenReturn(List.of(own));
+            when(userRepository.findAllById(List.of(ADMIN_USER_ID))).thenReturn(List.of(
+                    TestUserEntityBuilder.builder().withId(ADMIN_USER_ID).withEmail("maker@renzzle.com").build()));
+
+            // when
+            List<GetPackForAdminResponse> responses = trainingService.getTrainingPackListForAdmin("LOW", "EN", ADMIN_USER_ID);
+
+            // then
+            assertThat(responses).singleElement().satisfies(response -> {
+                assertThat(response.id()).isEqualTo(4L);
+                assertThat(response.creatorEmail()).isEqualTo("maker@renzzle.com");
+            });
+            verify(packRepository, never()).findByDifficulty(any(Difficulty.class));
         }
 
         @Test
@@ -992,7 +1013,7 @@ public class TrainingServiceTest {
             CreateTrainingPackRequest request = new CreateTrainingPackRequest(translationRequests, 1000, "LOW", null);
 
             // when
-            CustomException exception = assertThrows(CustomException.class, () -> trainingService.createPack(request));
+            CustomException exception = assertThrows(CustomException.class, () -> trainingService.createPack(request, ADMIN_USER_ID));
 
             // then
             assertEquals(ErrorCode.VALIDATION_ERROR, exception.getErrorCode());
@@ -1334,9 +1355,9 @@ public class TrainingServiceTest {
         void getTrainingPackListForAdmin_WhenDifficultyOrLangUnknown_ThenThrowsValidationError() {
             // when & then
             CustomException badDifficulty = assertThrows(CustomException.class, () ->
-                    trainingService.getTrainingPackListForAdmin("EXTREME", "EN"));
+                    trainingService.getTrainingPackListForAdmin("EXTREME", "EN", null));
             CustomException badLang = assertThrows(CustomException.class, () ->
-                    trainingService.getTrainingPackListForAdmin("LOW", "XX"));
+                    trainingService.getTrainingPackListForAdmin("LOW", "XX", null));
 
             assertThat(badDifficulty.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_ERROR);
             assertThat(badLang.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_ERROR);

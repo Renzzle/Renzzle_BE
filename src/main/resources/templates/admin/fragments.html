@@ -5,14 +5,15 @@
   <title>Renzzle Admin Fragments</title>
 </head>
 <body>
-<!-- Main navigation. `active` names the highlighted tab: 'packs' | 'communityPuzzles' | 'notices' | 'puzzleCache' | 'adminAccounts' -->
+<!-- Main navigation. `active` names the highlighted tab: 'packs' | 'communityPuzzles' | 'puzzleCache' | 'notices' | 'adminAccounts' -->
 <th:block th:fragment="siteNav(active)">
+  <!--/*@thymesVar id="adminPermissions" type="java.util.Set<java.lang.String>"*/-->
   <nav class="site-nav-wrap" aria-label="Main menu">
     <div class="site-nav">
       <a th:if="${adminPermissions?.contains('PACK_MANAGE')}" th:classappend="${active == 'packs'} ? 'active'" th:href="@{/admin/pack-list}" data-i18n="nav.packs">Pack</a>
       <a th:if="${adminPermissions?.contains('COMMUNITY_MANAGE')}" th:classappend="${active == 'communityPuzzles'} ? 'active'" th:href="@{/admin/community-puzzles}" data-i18n="nav.communityPuzzles">Community Puzzles</a>
-      <a th:if="${adminPermissions?.contains('OPERATION_MANAGE')}" th:classappend="${active == 'notices'} ? 'active'" th:href="@{/admin/notices}" data-i18n="nav.notices">Notices</a>
       <a th:if="${adminPermissions?.contains('AI_RESPONSE_MANAGE')}" th:classappend="${active == 'puzzleCache'} ? 'active'" th:href="@{/admin/puzzle-cache}" data-i18n="nav.responseMoves">AI Responses</a>
+      <a th:if="${adminPermissions?.contains('OPERATION_MANAGE')}" th:classappend="${active == 'notices'} ? 'active'" th:href="@{/admin/notices}" data-i18n="nav.notices">Notices</a>
       <a th:if="${adminPermissions?.contains('OPERATION_MANAGE')}" th:classappend="${active == 'adminAccounts'} ? 'active'" th:href="@{/admin/admin-accounts}" data-i18n="nav.adminAccounts">Admins</a>
     </div>
   </nav>
@@ -22,7 +23,8 @@
 
 <th:block th:fragment="languageSelect">
   <div class="admin-language-control">
-    <label for="adminLanguageSelect" class="admin-language-icon" aria-label="Language selector">
+    <label for="adminLanguageSelect" class="admin-language-icon">
+      <span class="admin-visually-hidden" data-i18n="common.language">Language</span>
       <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         <circle cx="12" cy="12" r="10"></circle>
         <path d="M2 12h20"></path>
@@ -39,7 +41,7 @@
 
 <!-- Shared UI kit: toast and confirm modal (globalThis.adminToast / globalThis.adminConfirm) -->
 <div th:fragment="uiKit" class="admin-ui-kit">
-  <div id="adminToastWrap"></div>
+  <div id="adminToastWrap" popover="manual"></div>
   <dialog id="adminModalDialog" class="admin-modal" aria-labelledby="adminModalMsg">
     <div class="modal-msg" id="adminModalMsg"></div>
     <div class="modal-actions">
@@ -52,6 +54,11 @@
       globalThis.adminToast = function (message, type) {
         let wrap = document.getElementById('adminToastWrap');
         if (!wrap) { alert(message); return; }
+        // A modal dialog sits in the top layer, so the toast re-enters it to stay above the most recent one
+        if (typeof wrap.showPopover === 'function') {
+          if (wrap.matches(':popover-open')) wrap.hidePopover();
+          wrap.showPopover();
+        }
         let el = document.createElement('div');
         el.className = 'admin-toast' + (type ? ' ' + type : '');
         el.textContent = message;
@@ -59,7 +66,12 @@
         requestAnimationFrame(function () { el.classList.add('show'); });
         setTimeout(function () {
           el.classList.remove('show');
-          setTimeout(function () { el.remove(); }, 250);
+          setTimeout(function () {
+            el.remove();
+            if (!wrap.children.length && typeof wrap.hidePopover === 'function' && wrap.matches(':popover-open')) {
+              wrap.hidePopover();
+            }
+          }, 250);
         }, 3000);
       };
       globalThis.adminConfirm = function (message, opts) {

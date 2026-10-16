@@ -1,12 +1,12 @@
     * { box-sizing: border-box; }
     body {
-      font-family: var(--admin-font);
+        font-family: var(--admin-font), sans-serif;
       margin: 0;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #f7f7f8;
+      background: #fafafa;
       color: #18181b;
     }
     .login-card {
@@ -14,9 +14,8 @@
       max-width: 380px;
       padding: 2rem;
       background: #fff;
-      border-radius: 8px;
-      border: 1px solid #e4e4e7;
-      box-shadow: 0 8px 32px rgba(24, 24, 27,0.12);
+      border-radius: var(--admin-radius);
+      border: 1px solid #ececef;
     }
     h1 {
       margin: 0 0 1.5rem;
@@ -35,29 +34,28 @@
       padding: 0.75rem 1rem;
       margin-bottom: 1rem;
       border: 1px solid #e4e4e7;
-      border-radius: 8px;
+      border-radius: var(--admin-radius);
       background: #fff;
       color: #18181b;
       font-size: 1rem;
     }
-    input::placeholder { color: #71717a; }
+    input::placeholder { color: #a1a1aa; }
     input:focus {
       outline: none;
-      border-color: #4340DB;
-      box-shadow: 0 0 0 2px rgba(67, 64, 219, 0.18);
+      border-color: #a1a1aa;
     }
     button {
       width: 100%;
       padding: 0.85rem;
       margin-top: 0.5rem;
       border: none;
-      border-radius: 8px;
-      background: #4340DB; color: #fff;
+      border-radius: var(--admin-radius);
+      background: #4340db; color: #fff;
       font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
     }
-    button:hover { background: #3431B8; }
+    button:hover { background: #3532b8; }
     button:disabled {
       background: #71717a;
       cursor: not-allowed;
@@ -66,7 +64,7 @@
     .msg {
       padding: 0.75rem;
       margin-top: 1rem;
-      border-radius: 8px;
+      border-radius: var(--admin-radius);
       font-size: 0.9rem;
       text-align: center;
       display: none;
@@ -75,12 +73,12 @@
       display: block;
     }
     .msg.error {
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      color: #b91c1c;
+      background: #fafafa;
+      border: 1px solid #ececef;
+      color: #a63a32;
     }
     .msg.success {
-      background: #f0fdf4;
-      border: 1px solid #bbf7d0;
+      background: #fafafa;
+      border: 1px solid #ececef;
       color: #15803d;
     }

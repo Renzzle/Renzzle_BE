@@ -4,11 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n="title.puzzleAdd">Renzzle Admin - Add Puzzle</title>
+  <link rel="preload" href="/assets/fonts/pretendard-1.3.9/PretendardVariable.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/assets/admin/puzzle-add.css">
   <link rel="stylesheet" href="/assets/admin/common.css">
   <script src="/assets/admin/i18n.js"></script>
+  <script src="/assets/admin/board.js"></script>
 </head>
-<body>
+<body th:data-pack-id="${packId}">
   <div class="header">
     <div>
       <h1>Renzzle Admin</h1>
@@ -82,9 +84,9 @@
     <div id="createPuzzleMsg" class="msg"></div>
   </section>
 
-  <script type="module" th:inline="javascript">
+  <script type="module">
     const API_BASE = '';
-    const packId = /*[[${packId}]]*/ 0;
+    const packId = Number(document.body.dataset.packId);
     let currentPackDetail = null;
 
     // ===== Board variables and functions =====
@@ -95,13 +97,8 @@
     const MARGIN = 30;  // Same margin on every side for labels
     const CANVAS_LOGICAL_SIZE = 480;
 
-    // DPR scaling for crisp grid lines on high-density displays
-    (function setupCanvasScale() {
-      const dpr = globalThis.devicePixelRatio || 1;
-      canvas.width = CANVAS_LOGICAL_SIZE * dpr;
-      canvas.height = CANVAS_LOGICAL_SIZE * dpr;
-      ctx.scale(dpr, dpr);
-    })();
+    const STONE_RADIUS = CELL_SIZE * adminBoard.STONE_RATIO;
+    adminBoard.watch(canvas, CANVAS_LOGICAL_SIZE, () => redrawBoard());
     const moves = [];      // Initial board moves
     const answerMoves = []; // Answer moves
     const redoMoves = [];
@@ -114,80 +111,18 @@
     function toCanvasY(row) { return MARGIN + (14 - row) * CELL_SIZE; }
 
     function drawBoard() {
-      ctx.fillStyle = '#F1DCA7';
-      ctx.fillRect(0, 0, CANVAS_LOGICAL_SIZE, CANVAS_LOGICAL_SIZE);
-      ctx.strokeStyle = '#6F5432';
-      ctx.lineWidth = 1;
-
-      for (let i = 0; i < BOARD_SIZE; i++) {
-        const pos = MARGIN + i * CELL_SIZE;
-        ctx.beginPath();
-        ctx.moveTo(pos, MARGIN);
-        ctx.lineTo(pos, MARGIN + (BOARD_SIZE - 1) * CELL_SIZE);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(MARGIN, pos);
-        ctx.lineTo(MARGIN + (BOARD_SIZE - 1) * CELL_SIZE, pos);
-        ctx.stroke();
-      }
-
-      // Star points in logical row/col coordinates
-      const starPoints = [
-        [3, 3], [3, 11], [7, 7], [11, 3], [11, 11]
-      ];
-      starPoints.forEach(([row, col]) => {
-        const x = toCanvasX(col);
-        const y = toCanvasY(row);
-        ctx.fillStyle = '#5E472A';
-        ctx.beginPath();
-        ctx.arc(x, y, 3, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      // Bottom margin: A to O labels
-      ctx.fillStyle = '#5E472A';
-      ctx.font = '14px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      for (let c = 0; c < BOARD_SIZE; c++) {
-        const x = toCanvasX(c);
-        const y = CANVAS_LOGICAL_SIZE - MARGIN / 2;
-        ctx.fillText(String.fromCodePoint(65 + c), x, y);
-      }
-
-      // Left margin: 1 to 15 from bottom to top
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      for (let r = 0; r < BOARD_SIZE; r++) {
-        const y = toCanvasY(r);
-        const x = MARGIN / 2;
-        ctx.fillText(String(r + 1), x, y);
-      }
+      adminBoard.paintBoard(ctx, { size: CANVAS_LOGICAL_SIZE, origin: MARGIN, cell: CELL_SIZE, labels: true });
     }
 
     function drawStone(row, col, player, moveNumber) {
-      const x = toCanvasX(col);
-      const y = toCanvasY(row);
-
-      ctx.fillStyle = player === 'black' ? '#000' : '#fff';
-      ctx.beginPath();
-      ctx.arc(x, y, CELL_SIZE / 2 - 2, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = player === 'black' ? '#333' : '#999';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-
-      if (moveNumber) {
-        ctx.fillStyle = player === 'black' ? '#fff' : '#000';
-        ctx.font = 'bold 12px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(moveNumber, x, y);
-      }
+      adminBoard.paintStone(ctx, toCanvasX(col), toCanvasY(row), STONE_RADIUS, player, moveNumber);
     }
 
     function redrawBoard() {
       drawBoard();
+      // Five-in-a-row band goes under the visible stones
+      const line = adminBoard.findFiveLine([...moves, ...answerMoves]);
+      if (line) highlightWinLine(line);
       // Initial puzzle stones: no numbers
       moves.forEach((m) => drawStone(m.row, m.col, m.player, null));
       // Answer stones: show sequence numbers
@@ -195,49 +130,14 @@
         const m = answerMoves[i];
         drawStone(m.row, m.col, m.player, i + 1);
       }
-      // Highlight five-in-a-row using visible stones
-      const visible = [...moves, ...answerMoves];
-      const line = findWinLine(visible);
-      if (line) highlightWinLine(line);
-    }
-
-    // Find a same-color line of five or more in four directions
-    function findWinLine(stones) {
-      const occ = new Map();
-      stones.forEach(m => occ.set(m.row + ',' + m.col, m.player));
-      // Split this so Thymeleaf inline JavaScript does not treat double brackets as expressions
-      const dirs = [
-        [0, 1], [1, 0], [1, 1], [1, -1]
-      ];
-      for (const m of stones) {
-        for (const [dr, dc] of dirs) {
-          const line = [{ row: m.row, col: m.col }];
-          let r = m.row + dr, c = m.col + dc;
-          while (occ.get(r + ',' + c) === m.player) { line.push({ row: r, col: c }); r += dr; c += dc; }
-          r = m.row - dr; c = m.col - dc;
-          while (occ.get(r + ',' + c) === m.player) { line.unshift({ row: r, col: c }); r -= dr; c -= dc; }
-          if (line.length >= 5) return line;
-        }
-      }
-      return null;
     }
 
     function highlightWinLine(line) {
       const first = line[0], last = line[line.length - 1];
-      ctx.strokeStyle = 'rgba(255,77,77,0.9)';
-      ctx.lineWidth = 4;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(toCanvasX(first.col), toCanvasY(first.row));
-      ctx.lineTo(toCanvasX(last.col), toCanvasY(last.row));
-      ctx.stroke();
-      ctx.lineWidth = 2.5;
-      line.forEach(p => {
-        ctx.beginPath();
-        ctx.arc(toCanvasX(p.col), toCanvasY(p.row), CELL_SIZE / 2 - 1, 0, Math.PI * 2);
-        ctx.stroke();
-      });
-      ctx.lineCap = 'butt';
+      adminBoard.paintLineBand(ctx,
+        { x: toCanvasX(first.col), y: toCanvasY(first.row) },
+        { x: toCanvasX(last.col), y: toCanvasY(last.row) },
+        STONE_RADIUS);
     }
 
     function boardStatusToMoves(boardStatus) {

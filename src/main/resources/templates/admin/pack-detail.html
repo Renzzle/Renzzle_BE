@@ -4,11 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n="title.packWorkspace">Renzzle Admin - Pack Workspace</title>
+  <link rel="preload" href="/assets/fonts/pretendard-1.3.9/PretendardVariable.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/assets/admin/pack-detail.css">
   <link rel="stylesheet" href="/assets/admin/common.css">
   <script src="/assets/admin/i18n.js"></script>
+  <script src="/assets/admin/board.js"></script>
 </head>
-<body>
+<body th:data-pack-id="${packId}">
   <div class="header">
     <div>
       <h1>Renzzle Admin</h1>
@@ -44,7 +46,7 @@
         </div>
         <h2 class="pack-context-title" id="packTitle">-</h2>
         <div class="pack-context-meta" aria-label="Pack metadata">
-          <span class="pack-context-meta-item"><span data-i18n="common.visibility">Visibility</span><span class="admin-pill" id="packVisibility">-</span></span>
+          <span class="pack-context-meta-item"><span data-i18n="common.visibility">Visibility</span><span class="admin-pill status" id="packVisibility">-</span></span>
           <span class="pack-context-meta-item"><span data-i18n="common.author">Author</span><strong id="packAuthor">-</strong></span>
           <span class="pack-context-meta-item"><span data-i18n="common.difficulty">Difficulty</span><strong id="packDifficulty">-</strong></span>
           <span class="pack-context-meta-item"><span data-i18n="common.price">Price</span><strong id="packPrice">-</strong></span>
@@ -76,9 +78,9 @@
     </section>
   </main>
 
-  <script type="module" th:inline="javascript">
+  <script type="module">
     const API_BASE = '';
-    const packId = /*[[${packId}]]*/ 0;
+    const packId = Number(document.body.dataset.packId);
     let packDetail = null;
 
     async function fetchWithAuth(url, options = {}) {
@@ -112,7 +114,7 @@
       box.hidden = false;
       const visibilityEl = document.getElementById('packVisibility');
       adminSetText(visibilityEl, detail['isPublic'] ? 'common.public' : 'common.private');
-      visibilityEl.classList.toggle('warn', !detail['isPublic']);
+      visibilityEl.classList.toggle('off', !detail['isPublic']);
       document.getElementById('packDifficulty').textContent = detail['difficulty'] || '-';
       const price = detail['price'];
       const numericPrice = Number(price);
@@ -133,75 +135,6 @@
       const descEl = document.getElementById('packDescription');
       descEl.textContent = info['description'] || adminT('common.noDescription');
       descEl.classList.toggle('empty', !info['description']);
-    }
-
-    function boardStatusToMoves(boardStatus) {
-      const result = [];
-      if (!boardStatus || boardStatus === '-') return result;
-      const regex = /([a-oA-O])(\d{1,2})/g;
-      let match;
-      let turnBlack = true;
-      while ((match = regex.exec(boardStatus)) !== null) {
-        const col = match[1].toLowerCase().codePointAt(0) - 'a'.codePointAt(0);
-        const row = Number.parseInt(match[2], 10) - 1;
-        if (row >= 0 && row < 15 && col >= 0 && col < 15) {
-          result.push({ row, col, player: turnBlack ? 'black' : 'white' });
-          turnBlack = !turnBlack;
-        }
-      }
-      return result;
-    }
-
-    function drawPuzzlePreview(canvas, boardStatus) {
-      const logicalSize = 180;
-      const dpr = globalThis.devicePixelRatio || 1;
-      canvas.width = logicalSize * dpr;
-      canvas.height = logicalSize * dpr;
-      const ctx = canvas.getContext('2d');
-      ctx.scale(dpr, dpr);
-      ctx.fillStyle = '#F1DCA7';
-      ctx.fillRect(0, 0, logicalSize, logicalSize);
-
-      const padding = 14;
-      const cell = (logicalSize - padding * 2) / 14;
-      const toX = (col) => padding + col * cell;
-      const toY = (row) => padding + (14 - row) * cell;
-
-      ctx.strokeStyle = '#6F5432';
-      ctx.lineWidth = 0.8;
-      for (let i = 0; i < 15; i++) {
-        const pos = padding + i * cell;
-        ctx.beginPath();
-        ctx.moveTo(pos, padding);
-        ctx.lineTo(pos, logicalSize - padding);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(padding, pos);
-        ctx.lineTo(logicalSize - padding, pos);
-        ctx.stroke();
-      }
-
-      const starPoints = [
-        [3, 3], [3, 11], [7, 7], [11, 3], [11, 11]
-      ];
-      starPoints.forEach(([row, col]) => {
-        ctx.fillStyle = '#5E472A';
-        ctx.beginPath();
-        ctx.arc(toX(col), toY(row), 1.7, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      boardStatusToMoves(boardStatus).forEach((move) => {
-        const x = toX(move.col);
-        const y = toY(move.row);
-        ctx.fillStyle = move.player === 'black' ? '#111827' : '#ffffff';
-        ctx.beginPath();
-        ctx.arc(x, y, cell * 0.38, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = move.player === 'black' ? '#111827' : '#9ca3af';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      });
     }
 
     function createPuzzleCard(pz, idx) {
@@ -234,18 +167,21 @@
       let colorClassName = 'puzzle-preview-color';
       if (normalizedColor === 'black') {
         colorClassName += ' is-black';
+        adminSetText(color, 'common.black');
       } else if (normalizedColor === 'white') {
         colorClassName += ' is-white';
+        adminSetText(color, 'common.white');
+      } else {
+        color.textContent = winColor;
       }
       color.className = colorClassName;
-      color.textContent = winColor;
       header.appendChild(number);
       header.appendChild(color);
 
       const canvas = document.createElement('canvas');
       canvas.className = 'puzzle-preview-board';
       canvas.setAttribute('aria-hidden', 'true');
-      drawPuzzlePreview(canvas, boardStatus);
+      adminBoard.drawPreview(canvas, adminBoard.parseMoves(boardStatus));
 
       card.appendChild(header);
       card.appendChild(canvas);

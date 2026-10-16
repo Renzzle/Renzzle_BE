@@ -2,6 +2,7 @@ package com.renzzle.backend.domain.puzzle.training.service;
 
 import com.renzzle.backend.domain.puzzle.training.domain.Difficulty;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
+import com.renzzle.backend.domain.puzzle.shared.dto.RankPuzzleCandidate;
 import com.renzzle.backend.domain.puzzle.training.api.request.CreateTrainingPackRequest;
 import com.renzzle.backend.domain.puzzle.training.api.request.PackTranslationRequest;
 import com.renzzle.backend.domain.puzzle.training.dao.*;
@@ -16,6 +17,7 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Limit;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
@@ -523,7 +525,7 @@ class TrainingServiceRepositoryTest {
 
     @Test
     @Transactional
-    void findAvailableTrainingPuzzlesSortedByRating_WhenPackPrivate_ThenLeavesItsPuzzlesOut() {
+    void findRankCandidates_WhenPackPrivate_ThenLeavesItsPuzzlesOut() {
         // Given
         UserEntity user = persistTestUser();
         TrainingPuzzle publicPuzzle = trainingPuzzleRepository.save(
@@ -532,10 +534,14 @@ class TrainingServiceRepositoryTest {
                 visibilityPuzzle(packRepository.save(visibilityPack(false)), "private"));
 
         // When
-        List<TrainingPuzzle> candidates = trainingPuzzleRepository.findAvailableTrainingPuzzlesSortedByRating(user);
+        List<RankPuzzleCandidate> nearest = trainingPuzzleRepository.findRankCandidatesFrom(user, 0, Limit.unlimited());
+        List<RankPuzzleCandidate> all = trainingPuzzleRepository.findAllRankCandidates();
 
         // Then
-        assertThat(candidates).extracting(TrainingPuzzle::getId)
+        assertThat(nearest).extracting(RankPuzzleCandidate::id)
+                .contains(publicPuzzle.getId())
+                .doesNotContain(privatePuzzle.getId());
+        assertThat(all).extracting(RankPuzzleCandidate::id)
                 .contains(publicPuzzle.getId())
                 .doesNotContain(privatePuzzle.getId());
     }

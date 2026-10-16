@@ -179,6 +179,20 @@ class AdminTemplateRenderTest {
         assertThat(render("admin/forbidden", Set.of())).doesNotContain("href=\"/admin/dashboard\"").contains("forbidden.noPermissions");
     }
 
+    // Scripts read these instead of inlined expressions, which need th:inline to be replaced
+    @Test
+    void pageScripts_GetServerValuesFromBodyDataAttributes() {
+        String langCodes = String.join(",", Arrays.stream(LangCode.LangCodeName.values()).map(Enum::name).toList());
+
+        assertThat(render("admin/pack-detail")).contains("<body data-pack-id=\"1\">");
+        assertThat(render("admin/puzzle-add")).contains("<body data-pack-id=\"1\">");
+        assertThat(render("admin/puzzle-cache-training-pack")).contains("<body data-pack-id=\"1\">");
+        assertThat(render("admin/puzzle-edit")).contains("<body data-pack-id=\"1\" data-puzzle-id=\"2\">");
+        assertThat(render("admin/puzzle-cache-board")).contains("<body data-puzzle-type=\"TRAINING\" data-puzzle-id=\"2\">");
+        assertThat(render("admin/pack-create")).contains("<body data-lang-codes=\"" + langCodes + "\">");
+        assertThat(render("admin/admin-accounts")).contains("<body data-permissions=\"" + String.join(",", ALL_PERMISSIONS) + "\">");
+    }
+
     @Test
     void notices_RendersOneCreateCardAndOneFilterOptionPerLanguage() {
         String html = render("admin/notices");

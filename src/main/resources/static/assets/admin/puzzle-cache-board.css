@@ -1,6 +1,6 @@
     * { box-sizing: border-box; }
     body {
-      font-family: var(--admin-font);
+        font-family: var(--admin-font), sans-serif;
       margin: 0;
       min-height: 100vh;
       background: #f7f7f8;
@@ -20,7 +20,7 @@
     .btn {
       padding: 0.5rem 1rem;
       border: none;
-      border-radius: 8px;
+      border-radius: var(--admin-radius);
       background: #fff;
       color: #18181b;
       cursor: pointer;
@@ -29,14 +29,14 @@
       display: inline-block;
     }
     .btn:hover { background: #f4f4f5; }
-    .btn-primary { background: #4340DB; color: #fff; }
+    .btn-primary { background: var(--admin-primary); color: #fff; }
     .btn-primary:hover { opacity: 0.95; }
     .section {
       max-width: 1100px;
       margin-bottom: 2rem;
       padding: 1.5rem;
       background: #fff;
-      border-radius: 8px;
+      border-radius: var(--admin-radius);
       border: 1px solid #e4e4e7;
     }
     .section h2 { margin: 0; font-size: 1.15rem; }
@@ -46,16 +46,16 @@
       padding: 0.6rem 0.8rem;
       margin-bottom: 0.9rem;
       border: 1px solid #e4e4e7;
-      border-radius: 8px;
+      border-radius: var(--admin-radius);
       background: #fff;
       color: #18181b;
       font-size: 0.95rem;
     }
     textarea { min-height: 72px; resize: vertical; margin-bottom: 0.75rem; }
-    .msg { margin-top: 0.5rem; padding: 0.5rem; border-radius: 8px; font-size: 0.9rem; display: none; }
+    .msg { margin-top: 0.5rem; padding: 0.5rem; border-radius: var(--admin-radius); font-size: 0.9rem; display: none; }
     .msg.show { display: block; }
     .msg.success { background: #f0fdf4; color: #15803d; }
-    .msg.error { background: #fef2f2; color: #b91c1c; }
+    .msg.error { background: var(--admin-surface-soft); color: var(--admin-danger); }
     .hint { color: #71717a; font-size: 0.8rem; margin-top: -0.5rem; margin-bottom: 0.5rem; }
     .board-cache-row {
       display: flex;
