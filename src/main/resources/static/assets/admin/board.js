@@ -210,7 +210,6 @@
     COLORS,
     STONE_RATIO,
     parseMoves,
-    fitCanvas,
     watch,
     paintBoard,
     paintStone,

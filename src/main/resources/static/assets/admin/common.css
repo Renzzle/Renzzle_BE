@@ -63,6 +63,23 @@ html {
   scrollbar-gutter: stable;
 }
 
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.18s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
 body {
   min-height: 100vh;
   margin: 0 !important;
@@ -101,6 +118,9 @@ b {
   background: var(--admin-surface) !important;
   border-bottom: 0 !important;
   color: var(--admin-text) !important;
+  view-transition-name: admin-header;
+  position: relative;
+  z-index: 2;
 }
 
 .header > div:first-child {
@@ -295,6 +315,7 @@ body > .site-nav-wrap {
   padding: 0 max(var(--admin-page-pad), calc((100% - var(--admin-page-max)) / 2 + var(--admin-page-pad))) !important;
   background: var(--admin-surface) !important;
   border-bottom: 1px solid var(--admin-border-soft) !important;
+  view-transition-name: admin-nav;
 }
 
 .site-nav {
@@ -586,8 +607,8 @@ select.admin-native-select {
   flex: 0 0 auto;
   width: 0.4rem;
   height: 0.4rem;
-  border-right: 1.5px solid var(--admin-placeholder);
-  border-bottom: 1.5px solid var(--admin-placeholder);
+  border-right: 1px solid var(--admin-placeholder);
+  border-bottom: 1px solid var(--admin-placeholder);
   transform: translateY(-0.1rem) rotate(45deg);
 }
 
@@ -1949,6 +1970,7 @@ ul.puzzle-list li .puzzle-text {
 
   .header .user-info {
     margin-top: 0.125rem;
+    margin-right: 0;
   }
 
   .header h1,
@@ -1962,26 +1984,19 @@ ul.puzzle-list li .puzzle-text {
     font-size: 1rem !important;
   }
 
-  .header .user-info {
-    margin-right: 0;
-  }
-
   .site-nav-wrap {
     padding: 0 var(--admin-page-pad) !important;
   }
 
   .site-nav {
+    gap: 0 !important;
+    margin: 0 -0.5rem !important;
     overflow-x: auto;
     scrollbar-width: none;
   }
 
   .site-nav::-webkit-scrollbar {
     display: none;
-  }
-
-  .site-nav {
-    gap: 0 !important;
-    margin: 0 -0.5rem !important;
   }
 
   .site-nav a {
