@@ -1175,29 +1175,33 @@ ul.puzzle-list li .btn-edit,
 .puzzle-preview-color {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-width: 4.2rem;
-  min-height: 1.65rem;
-  padding: 0.15rem 0.55rem;
+  gap: 0.4rem;
+  min-height: 1.6rem;
+  padding: 0.15rem 0.6rem 0.15rem 0.45rem;
   border: 1px solid var(--admin-border);
   border-radius: 999px;
-  background: var(--admin-surface-muted);
-  color: var(--admin-muted);
-  font-size: 0.72rem;
-  font-weight: 850;
+  background: #fff;
+  color: #3f3f46;
+  font-size: 0.76rem;
+  font-weight: 650;
   line-height: 1;
 }
 
-.puzzle-preview-color.is-black {
-  border-color: #18181b;
-  background: #18181b;
-  color: #fff;
+.puzzle-preview-color.is-black::before,
+.puzzle-preview-color.is-white::before {
+  content: "";
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
 }
 
-.puzzle-preview-color.is-white {
-  border-color: #d4d4d8;
+.puzzle-preview-color.is-black::before {
+  background: #18181b;
+}
+
+.puzzle-preview-color.is-white::before {
   background: #fff;
-  color: #18181b;
+  box-shadow: inset 0 0 0 1px rgba(24, 24, 27, 0.45);
 }
 
 .puzzle-preview-board {
@@ -1205,9 +1209,9 @@ ul.puzzle-list li .btn-edit,
   width: 100%;
   height: auto;
   aspect-ratio: 1 / 1;
-  border: 1px solid #B58A50;
-  border-radius: var(--admin-radius);
-  background: #F1DCA7;
+  border-radius: 6px;
+  background: #eed8a8;
+  box-shadow: 0 0 0 1px rgba(102, 72, 38, 0.16), 0 1px 3px rgba(24, 24, 27, 0.08);
 }
 
 .msg {
@@ -1452,14 +1456,13 @@ ul.puzzle-list li .puzzle-text {
   height: auto !important;
   aspect-ratio: 1 / 1 !important;
   max-width: 480px !important;
-  border: 1px solid #B58A50 !important;
-  border-radius: var(--admin-radius);
-  box-shadow: var(--admin-shadow);
+  border: 0 !important;
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px rgba(102, 72, 38, 0.16), var(--admin-shadow);
 }
 
 .gomoku-board {
-  background: #F1DCA7;
-  border: 2px solid #6F5432;
+  background: #eed8a8;
   cursor: default;
 }
 
@@ -1468,7 +1471,7 @@ ul.puzzle-list li .puzzle-text {
 }
 
 .gomoku-board.cache-locked {
-  border-color: #4340DB !important;
+  box-shadow: 0 0 0 2px var(--admin-primary), var(--admin-shadow) !important;
 }
 
 .board-toolbar {

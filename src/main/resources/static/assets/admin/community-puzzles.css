@@ -64,10 +64,9 @@
   max-width: 25rem;
   height: auto;
   aspect-ratio: 1 / 1;
-  border: 1px solid #B58A50;
-  border-radius: var(--admin-radius);
-  background: #F1DCA7;
-  box-shadow: var(--admin-shadow);
+  border-radius: 10px;
+  background: #eed8a8;
+  box-shadow: 0 0 0 1px rgba(102, 72, 38, 0.16), var(--admin-shadow);
 }
 
 .community-answer-toolbar {
