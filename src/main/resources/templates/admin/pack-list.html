@@ -410,7 +410,7 @@
             const visibilityTd = document.createElement('td');
             visibilityTd.className = 'pack-list-center-col';
             const visibilityPill = document.createElement('span');
-            visibilityPill.className = p['isPublic'] ? 'admin-pill' : 'admin-pill warn';
+            visibilityPill.className = 'admin-pill status' + (p['isPublic'] ? '' : ' off');
             visibilityPill.textContent = adminT(p['isPublic'] ? 'common.public' : 'common.private');
             visibilityTd.appendChild(visibilityPill);
 

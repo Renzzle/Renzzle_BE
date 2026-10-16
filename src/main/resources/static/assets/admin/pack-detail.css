@@ -20,7 +20,7 @@
     .btn {
       padding: 0.5rem 1rem;
       border: none;
-      border-radius: 8px;
+      border-radius: var(--admin-radius);
       background: #fff;
       color: #18181b;
       cursor: pointer;
@@ -29,14 +29,14 @@
       display: inline-block;
     }
     .btn:hover { background: #f4f4f5; }
-    .btn-primary { background: #4340DB; color: #fff; }
+    .btn-primary { background: var(--admin-primary); color: #fff; }
     .btn-primary:hover { opacity: 0.95; }
     .section {
       max-width: 720px;
       margin-bottom: 2rem;
       padding: 1.5rem;
       background: #fff;
-      border-radius: 8px;
+      border-radius: var(--admin-radius);
       border: 1px solid #e4e4e7;
     }
     .section h2 { margin: 0; font-size: 1.15rem; }
@@ -47,7 +47,7 @@
       padding: 0.6rem 0.8rem;
       margin-bottom: 0.9rem;
       border: 1px solid #e4e4e7;
-      border-radius: 8px;
+      border-radius: var(--admin-radius);
       background: #fff;
       color: #18181b;
       font-size: 0.95rem;
@@ -62,7 +62,7 @@
       padding: 0.4rem 0.6rem;
       margin-bottom: 0.3rem;
       background: #fafafa;
-      border-radius: 6px;
+      border-radius: var(--admin-radius);
       font-size: 0.85rem;
     }
     ul.puzzle-list li.puzzle-row-clickable { cursor: pointer; }

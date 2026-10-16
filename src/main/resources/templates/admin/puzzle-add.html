@@ -119,6 +119,9 @@
 
     function redrawBoard() {
       drawBoard();
+      // Five-in-a-row band goes under the visible stones
+      const line = adminBoard.findFiveLine([...moves, ...answerMoves]);
+      if (line) highlightWinLine(line);
       // Initial puzzle stones: no numbers
       moves.forEach((m) => drawStone(m.row, m.col, m.player, null));
       // Answer stones: show sequence numbers
@@ -126,44 +129,14 @@
         const m = answerMoves[i];
         drawStone(m.row, m.col, m.player, i + 1);
       }
-      // Highlight five-in-a-row using visible stones
-      const visible = [...moves, ...answerMoves];
-      const line = findWinLine(visible);
-      if (line) highlightWinLine(line);
-    }
-
-    // Find a same-color line of five or more in four directions
-    function findWinLine(stones) {
-      const occ = new Map();
-      stones.forEach(m => occ.set(m.row + ',' + m.col, m.player));
-      // Split this so Thymeleaf inline JavaScript does not treat double brackets as expressions
-      const dirs = [
-        [0, 1], [1, 0], [1, 1], [1, -1]
-      ];
-      for (const m of stones) {
-        for (const [dr, dc] of dirs) {
-          const line = [{ row: m.row, col: m.col }];
-          let r = m.row + dr, c = m.col + dc;
-          while (occ.get(r + ',' + c) === m.player) { line.push({ row: r, col: c }); r += dr; c += dc; }
-          r = m.row - dr; c = m.col - dc;
-          while (occ.get(r + ',' + c) === m.player) { line.unshift({ row: r, col: c }); r -= dr; c -= dc; }
-          if (line.length >= 5) return line;
-        }
-      }
-      return null;
     }
 
     function highlightWinLine(line) {
       const first = line[0], last = line[line.length - 1];
-      ctx.strokeStyle = 'rgba(239, 68, 68, 0.85)';
-      ctx.lineWidth = 3;
-      ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(toCanvasX(first.col), toCanvasY(first.row));
-      ctx.lineTo(toCanvasX(last.col), toCanvasY(last.row));
-      ctx.stroke();
-      ctx.lineCap = 'butt';
-      line.forEach(p => adminBoard.paintRing(ctx, toCanvasX(p.col), toCanvasY(p.row), STONE_RADIUS, '#ef4444'));
+      adminBoard.paintLineBand(ctx,
+        { x: toCanvasX(first.col), y: toCanvasY(first.row) },
+        { x: toCanvasX(last.col), y: toCanvasY(last.row) },
+        STONE_RADIUS);
     }
 
     function boardStatusToMoves(boardStatus) {

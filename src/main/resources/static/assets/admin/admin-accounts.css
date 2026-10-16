@@ -21,9 +21,9 @@
   width: 100%;
   margin-bottom: var(--admin-space-2);
   padding: 0;
-  color: #52525b;
-  font-size: 0.82rem;
-  font-weight: 650;
+  color: var(--admin-text-soft);
+  font-size: 0.8125rem;
+  font-weight: 500;
 }
 
 .admin-permission-option {
@@ -37,14 +37,15 @@
   border-radius: var(--admin-radius);
   background: #fff;
   color: var(--admin-text) !important;
-  font-size: 0.88rem !important;
+  font-size: 0.875rem !important;
   cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .admin-permission-option:has(input:checked) {
   border-color: var(--admin-primary);
-  background: #ecebff;
-  color: var(--admin-primary) !important;
+  background: #fff;
+  color: var(--admin-text) !important;
 }
 
 .admin-permission-option input,

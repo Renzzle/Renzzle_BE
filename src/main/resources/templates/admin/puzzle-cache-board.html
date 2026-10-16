@@ -122,7 +122,7 @@
 
     // Highlight the single response move being entered, distinct from answer sequence numbers
     function markResponseMove(m) {
-      adminBoard.paintRing(ctx, toCanvasX(m.col), toCanvasY(m.row), STONE_RADIUS, '#ef4444');
+      adminBoard.paintRing(ctx, toCanvasX(m.col), toCanvasY(m.row), STONE_RADIUS, adminBoard.COLORS.mark);
     }
 
     // Show currentBoard lock state with the canvas border.
@@ -141,7 +141,7 @@
       ctx.globalAlpha = 0.45;
       adminBoard.paintStone(ctx, x, y, STONE_RADIUS, m.player, null);
       ctx.restore();
-      adminBoard.paintRing(ctx, x, y, STONE_RADIUS, '#22c55e');
+      adminBoard.paintRing(ctx, x, y, STONE_RADIUS, adminBoard.COLORS.preview);
     }
 
     function drawVerifyPreview(positionStr, currentBoardState) {

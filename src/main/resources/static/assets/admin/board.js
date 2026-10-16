@@ -12,7 +12,10 @@
     label: 'rgba(88, 62, 32, 0.72)',
     black: '#18181b',
     white: '#ffffff',
-    whiteEdge: 'rgba(24, 24, 27, 0.45)'
+    whiteEdge: 'rgba(24, 24, 27, 0.45)',
+    mark: '#a63a32',
+    band: 'rgba(166, 58, 50, 0.22)',
+    preview: '#16a34a'
   };
   // Previews have no coordinate labels, so the margin only needs to fit edge stones
   const PREVIEW_SIZE = 240;
@@ -154,6 +157,36 @@
     ctx.stroke();
   }
 
+  // stones: [{ row, col, player }]; returns the first same-color run of five or more, ends in order
+  function findFiveLine(stones) {
+    const occupied = new Map();
+    stones.forEach(stone => occupied.set(stone.row + ',' + stone.col, stone.player));
+    const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
+    for (const stone of stones) {
+      for (const [dr, dc] of directions) {
+        const line = [{ row: stone.row, col: stone.col }];
+        let r = stone.row + dr, c = stone.col + dc;
+        while (occupied.get(r + ',' + c) === stone.player) { line.push({ row: r, col: c }); r += dr; c += dc; }
+        r = stone.row - dr; c = stone.col - dc;
+        while (occupied.get(r + ',' + c) === stone.player) { line.unshift({ row: r, col: c }); r -= dr; c -= dc; }
+        if (line.length >= 5) return line;
+      }
+    }
+    return null;
+  }
+
+  // Painted before the stones, so the band groups them without covering their numbers
+  function paintLineBand(ctx, from, to, r) {
+    const angle = Math.atan2(to.y - from.y, to.x - from.x);
+    const halfWidth = r * 1.3;
+    ctx.fillStyle = COLORS.band;
+    ctx.beginPath();
+    ctx.arc(to.x, to.y, halfWidth, angle - Math.PI / 2, angle + Math.PI / 2);
+    ctx.arc(from.x, from.y, halfWidth, angle + Math.PI / 2, angle + Math.PI * 1.5);
+    ctx.closePath();
+    ctx.fill();
+  }
+
   // stones: [{ row, col, player: 'black' | 'white', number? }]
   function drawPreview(canvas, stones) {
     const render = () => {
@@ -182,6 +215,8 @@
     paintBoard,
     paintStone,
     paintRing,
+    findFiveLine,
+    paintLineBand,
     drawPreview
   };
 })();

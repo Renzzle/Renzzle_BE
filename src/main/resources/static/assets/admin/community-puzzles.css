@@ -62,7 +62,7 @@
   min-width: 0;
   overflow: hidden;
   color: var(--admin-text);
-  font-weight: 600;
+  font-weight: 500;
   text-overflow: ellipsis;
 }
 
@@ -88,8 +88,8 @@
   width: min(980px, calc(100vw - 2rem));
   max-height: calc(100vh - 2rem);
   padding: 0;
-  border: 1px solid var(--admin-border);
-  border-radius: 12px;
+  border: 1px solid var(--admin-border-soft);
+  border-radius: var(--admin-radius-lg);
   background: #fff;
   color: var(--admin-text);
   box-shadow: var(--admin-shadow-raised);
@@ -97,7 +97,7 @@
 }
 
 .community-detail-dialog::backdrop {
-  background: rgba(24, 24, 27, 0.45);
+  background: rgba(24, 24, 27, 0.4);
 }
 
 .community-detail-header,
@@ -113,7 +113,7 @@
   position: sticky;
   top: 0;
   z-index: 1;
-  border-bottom: 1px solid var(--admin-border);
+  border-bottom: 1px solid var(--admin-border-soft);
   background: #fff;
 }
 
@@ -121,8 +121,8 @@
   position: sticky;
   bottom: 0;
   z-index: 1;
-  border-top: 1px solid var(--admin-border);
-  background: #fafafa;
+  border-top: 1px solid var(--admin-border-soft);
+  background: #fff;
 }
 
 .community-detail-title {
@@ -133,8 +133,9 @@
 
 .community-detail-title h3 {
   margin: 0;
-  font-size: 1.15rem;
-  font-weight: 700;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 .community-detail-body {
@@ -158,9 +159,9 @@
   max-width: 32rem;
   height: auto;
   aspect-ratio: 1 / 1;
-  border-radius: 10px;
+  border-radius: var(--admin-radius);
   background: #eed8a8;
-  box-shadow: 0 0 0 1px rgba(102, 72, 38, 0.16), var(--admin-shadow);
+  box-shadow: 0 0 0 1px rgba(102, 72, 38, 0.12);
 }
 
 .community-answer-toolbar {
@@ -178,8 +179,8 @@
   min-width: 4.5rem;
   height: var(--admin-control-height);
   color: var(--admin-muted);
-  font-size: 0.86rem;
-  font-weight: 700;
+  font-size: 0.8125rem;
+  font-weight: 500;
 }
 
 .community-puzzle-controls {
@@ -193,17 +194,17 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--admin-space-4);
-  min-height: 3.75rem;
-  padding: var(--admin-space-4);
-  border: 1px solid var(--admin-border);
+  min-height: 3.5rem;
+  padding: var(--admin-space-3) var(--admin-space-4);
+  border: 0;
   border-radius: var(--admin-radius);
-  background: #fafafa;
+  background: var(--admin-surface-soft);
 }
 
 .community-verification-label {
   color: var(--admin-text);
-  font-size: 0.9rem;
-  font-weight: 700;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .community-meta {
@@ -211,9 +212,8 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--admin-space-4);
   margin: 0;
-  padding: var(--admin-space-4);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius);
+  padding: var(--admin-space-2) var(--admin-space-4);
+  border: 0;
 }
 
 .community-meta div {
@@ -223,15 +223,15 @@
 .community-meta dt {
   margin: 0 0 0.25rem;
   color: var(--admin-muted);
-  font-size: 0.78rem;
-  font-weight: 650;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 .community-meta dd {
   margin: 0;
   color: var(--admin-text);
-  font-size: 0.92rem;
-  font-weight: 600;
+  font-size: 0.875rem;
+  font-weight: 500;
   overflow-wrap: anywhere;
 }
 
@@ -245,8 +245,8 @@
   display: inline-flex !important;
   align-items: center;
   flex: 0 0 auto;
-  width: 3.25rem;
-  height: 1.85rem;
+  width: 2.75rem;
+  height: 1.5rem;
   margin: 0 !important;
   cursor: pointer;
 }
@@ -263,36 +263,35 @@
   position: relative;
   width: 100%;
   height: 100%;
-  border: 1px solid var(--admin-border);
+  border: 0;
   border-radius: 999px;
-  background: #e4e4e7;
-  transition: background-color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+  background: var(--admin-border);
+  transition: background-color 0.16s ease, box-shadow 0.16s ease;
 }
 
 .community-switch-track::after {
   content: "";
   position: absolute;
-  top: 0.18rem;
-  left: 0.18rem;
-  width: 1.38rem;
-  height: 1.38rem;
+  top: 0.125rem;
+  left: 0.125rem;
+  width: 1.25rem;
+  height: 1.25rem;
   border-radius: 999px;
   background: #fff;
-  box-shadow: 0 2px 7px rgba(24, 24, 27, 0.24);
+  box-shadow: 0 1px 2px rgba(24, 24, 27, 0.2);
   transition: transform 0.16s ease;
 }
 
 .community-switch input:checked ~ .community-switch-track {
-  border-color: var(--admin-primary);
   background: var(--admin-primary);
 }
 
 .community-switch input:checked ~ .community-switch-track::after {
-  transform: translateX(1.38rem);
+  transform: translateX(1.25rem);
 }
 
 .community-switch input:focus-visible ~ .community-switch-track {
-  box-shadow: 0 0 0 3px rgba(67, 64, 219, 0.18);
+  box-shadow: 0 0 0 3px var(--admin-ring);
 }
 
 .community-switch input:disabled ~ .community-switch-track {

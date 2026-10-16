@@ -7,16 +7,15 @@
 }
 
     :root {
-      --admin-bg: #f7f7f8;
+      --admin-bg: #fafafa;
       --admin-surface: #ffffff;
       --admin-text: #18181b;
       --admin-muted: #71717a;
       --admin-border: #e4e4e7;
-      --admin-primary: #4340DB;
-      --admin-primary-hover: #3431B8;
-      --admin-danger: #dc2626;
-      --admin-radius: 8px;
-      --admin-shadow-raised: 0 14px 34px rgba(24, 24, 27, 0.1);
+      --admin-primary: #4340db;
+      --admin-primary-hover: #3532b8;
+      --admin-danger: #a63a32;
+      --admin-radius: 6px;
     }
     * { box-sizing: border-box; }
     body {
@@ -37,15 +36,15 @@
       padding: 2rem;
       background: var(--admin-surface);
       border-radius: var(--admin-radius);
-      border: 1px solid #fecaca;
-      box-shadow: var(--admin-shadow-raised);
+      border: 1px solid #ececef;
       text-align: center;
     }
     h1 {
       margin: 0 0 1rem;
-      font-size: 1.5rem;
-      font-weight: 750;
-      color: var(--admin-danger);
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--admin-text);
     }
     p {
       margin: 0 0 1.5rem;
@@ -57,14 +56,14 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 2.5rem;
-      padding: 0.55rem 1rem;
+      min-height: 2.25rem;
+      padding: 0.45rem 0.875rem;
       border: 1px solid var(--admin-primary);
-      border-radius: var(--admin-radius);
+      border-radius: 4px;
       background: var(--admin-primary);
       color: #fff;
-      font-size: 0.9rem;
-      font-weight: 650;
+      font-size: 0.875rem;
+      font-weight: 500;
       line-height: 1.2;
       cursor: pointer;
       text-decoration: none;

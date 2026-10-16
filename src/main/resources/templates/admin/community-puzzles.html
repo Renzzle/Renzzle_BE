@@ -66,7 +66,7 @@
     <div class="community-detail-header">
       <div class="community-detail-title">
         <h3 id="communityDetailTitle">#</h3>
-        <span id="communityDetailStatus" class="admin-pill"></span>
+        <span id="communityDetailStatus" class="admin-pill status"></span>
       </div>
       <button type="button" class="btn btn-sm" id="communityDetailClose" data-i18n="communityPuzzles.close">Close</button>
     </div>
@@ -170,7 +170,7 @@
     }
 
     function setStatusPill(pill, puzzle) {
-      pill.className = puzzle.isVerified ? 'admin-pill primary' : 'admin-pill warn';
+      pill.className = 'admin-pill status' + (puzzle.isVerified ? '' : ' off');
       adminSetText(pill, puzzle.isVerified ? 'communityPuzzles.verified' : 'communityPuzzles.unverified');
     }
 

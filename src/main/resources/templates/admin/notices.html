@@ -428,7 +428,7 @@
 
         const statusTd = document.createElement('td');
         const statusPill = document.createElement('span');
-        statusPill.className = 'admin-pill' + (a.isActive ? ' primary' : '');
+        statusPill.className = 'admin-pill status' + (a.isActive ? '' : ' off');
         statusPill.textContent = adminT(a.isActive ? 'notices.active' : 'notices.expired');
         statusTd.appendChild(statusPill);
 
