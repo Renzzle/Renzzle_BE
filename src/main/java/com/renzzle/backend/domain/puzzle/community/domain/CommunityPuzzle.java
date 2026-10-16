@@ -29,7 +29,8 @@ import static com.renzzle.backend.global.common.domain.Status.STATUS_IS_NOT_DELE
         indexes = {
                 @Index(columnList = "created_at"),
                 @Index(columnList = "like_count"),
-                @Index(columnList = "answer_key")
+                @Index(columnList = "answer_key"),
+                @Index(columnList = "isVerified, rating")
         }
 )
 @SQLRestriction(value = STATUS_IS_NOT_DELETED)

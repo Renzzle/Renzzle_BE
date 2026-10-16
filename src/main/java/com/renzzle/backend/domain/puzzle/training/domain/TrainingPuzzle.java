@@ -20,7 +20,8 @@ import java.time.Instant;
                 @UniqueConstraint(columnNames = {"pack_id", "training_index"})
         },
         indexes = {
-                @Index(columnList = "answer_key")
+                @Index(columnList = "answer_key"),
+                @Index(columnList = "rating")
         }
 )
 public class TrainingPuzzle {
