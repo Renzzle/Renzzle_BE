@@ -35,4 +35,8 @@ public class Pack {
     @ColumnDefault("true")
     @Column(name = "is_public", nullable = false)
     private boolean isPublic = true;
+
+    // User id of the admin who created the pack; null for packs from before the column, which only operators manage
+    @Column(name = "created_by")
+    private Long createdBy;
 }

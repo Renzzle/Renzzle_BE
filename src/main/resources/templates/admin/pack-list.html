@@ -8,7 +8,8 @@
   <link rel="stylesheet" href="/assets/admin/common.css">
   <script src="/assets/admin/i18n.js"></script>
 </head>
-<body>
+<!--/*@thymesVar id="adminPermissions" type="java.util.Set<java.lang.String>"*/-->
+<body th:data-show-creator="${adminPermissions?.contains('OPERATION_MANAGE')}">
   <div class="header">
     <div>
       <h1>Renzzle Admin</h1>
@@ -148,6 +149,8 @@
 
   <script type="module">
     const API_BASE = '';
+    // Only operators see every admin's packs, so only they need to know who made each one
+    const SHOW_CREATOR = document.body.dataset.showCreator === 'true';
 
     async function fetchWithAuth(url, options = {}) {
       const headers = { 'Content-Type': 'application/json', ...options.headers };
@@ -360,7 +363,7 @@
       msgEl.textContent = adminT('packList.unknownCount');
 
       try {
-        const res = await fetchWithAuth(API_BASE + '/admin/training/pack?difficulty=' + encodeURIComponent(difficulty) + '&lang=' + encodeURIComponent(lang));
+        const res = await fetchWithAuth(API_BASE + '/admin/training/pack?difficulty=' + encodeURIComponent(difficulty) + '&lang=' + encodeURIComponent(lang) + '&manageable=true');
         if (!res) return;
         const data = await res.json();
         if (!data.isSuccess) {
@@ -399,6 +402,9 @@
             const meta = document.createElement('div');
             meta.className = 'pack-row-meta';
             meta.textContent = packAuthor ? adminT('packList.metaAuthor', { author: packAuthor }) : adminT('common.noAuthor');
+            if (SHOW_CREATOR && p['creatorEmail']) {
+              meta.textContent += ' · ' + adminT('packList.metaCreator', { email: p['creatorEmail'] });
+            }
             titleTd.appendChild(meta);
 
             const visibilityTd = document.createElement('td');

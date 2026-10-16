@@ -4,6 +4,7 @@ import com.renzzle.backend.domain.puzzle.training.api.response.*;
 import com.renzzle.backend.domain.puzzle.training.domain.Pack;
 import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.puzzle.training.api.request.*;
+import com.renzzle.backend.domain.puzzle.training.service.PackAccessGuard;
 import com.renzzle.backend.domain.puzzle.training.service.TrainingService;
 import com.renzzle.backend.global.common.response.ApiResponse;
 import com.renzzle.backend.global.security.UserDetailsImpl;
@@ -24,12 +25,15 @@ import java.util.List;
 public class TrainingController {
 
     private final TrainingService trainingService;
+    private final PackAccessGuard packAccessGuard;
 
     @Operation(summary = "Add training puzzle", description = "Add training puzzle & Only admins are available")
     @PostMapping("/puzzle")
     public ApiResponse<Long> addTrainingPuzzle(
-            @Valid @RequestBody AddTrainingPuzzleRequest request
+            @Valid @RequestBody AddTrainingPuzzleRequest request,
+            @AuthenticationPrincipal UserDetailsImpl admin
     ) {
+        packAccessGuard.checkManagePack(admin, request.packId());
         TrainingPuzzle puzzle = trainingService.createTrainingPuzzle(request);
 
         return ApiUtils.success(puzzle.getId());
@@ -39,8 +43,12 @@ public class TrainingController {
     @PatchMapping("/puzzle/{puzzleId}")
     public ApiResponse<Long> modifyTrainingPuzzle(
             @PathVariable("puzzleId") Long puzzleId,
-            @Valid @RequestBody ModifyTrainingPuzzleRequest request
+            @Valid @RequestBody ModifyTrainingPuzzleRequest request,
+            @AuthenticationPrincipal UserDetailsImpl admin
     ) {
+        // A packId moves the puzzle, so the destination pack has to be the admin's too
+        packAccessGuard.checkManagePuzzle(admin, puzzleId);
+        packAccessGuard.checkManagePack(admin, request.packId());
         TrainingPuzzle puzzle = trainingService.modifyTrainingPuzzle(puzzleId, request);
 
         return ApiUtils.success(puzzle.getId());
@@ -48,7 +56,11 @@ public class TrainingController {
 
     @Operation(summary = "Delete training puzzle", description = "Delete training puzzle & Only admins are available")
     @DeleteMapping("puzzle/{puzzleId}")
-    public ApiResponse<Object> deleteTrainingPuzzle(@PathVariable("puzzleId") Long puzzleId) {
+    public ApiResponse<Object> deleteTrainingPuzzle(
+            @PathVariable("puzzleId") Long puzzleId,
+            @AuthenticationPrincipal UserDetailsImpl admin
+    ) {
+        packAccessGuard.checkManagePuzzle(admin, puzzleId);
         trainingService.deleteTrainingPuzzle(puzzleId);
         return ApiUtils.success(null);
     }
@@ -76,10 +88,11 @@ public class TrainingController {
     @Operation(summary = "Create Pack", description = "Create pack (private unless isPublic is true) & Only admins are available")
     @PostMapping("/pack")
     public ApiResponse<Long> addTrainingPack(
-            @Valid @RequestBody CreateTrainingPackRequest request
+            @Valid @RequestBody CreateTrainingPackRequest request,
+            @AuthenticationPrincipal UserDetailsImpl admin
     ) {
 
-        Pack pack = trainingService.createPack(request);
+        Pack pack = trainingService.createPack(request, admin.getUser().getId());
 
         return ApiUtils.success(pack.getId());
     }
@@ -87,8 +100,10 @@ public class TrainingController {
     @Operation(summary = "Add Translation", description = "Add Translation & Only admins are available")
     @PostMapping("/pack/translation")
     public ApiResponse<Long> addTranslation(
-            @Valid @RequestBody TranslationRequest request
+            @Valid @RequestBody TranslationRequest request,
+            @AuthenticationPrincipal UserDetailsImpl admin
     ) {
+        packAccessGuard.checkManagePack(admin, request.packId());
         trainingService.addTranslation(request);
 
         return ApiUtils.success(null);
@@ -98,15 +113,21 @@ public class TrainingController {
     @PatchMapping("/pack/{packId}")
     public ApiResponse<Long> updateTrainingPack(
             @PathVariable("packId") Long packId,
-            @Valid @RequestBody UpdateTrainingPackRequest request
+            @Valid @RequestBody UpdateTrainingPackRequest request,
+            @AuthenticationPrincipal UserDetailsImpl admin
     ) {
+        packAccessGuard.checkManagePack(admin, packId);
         Pack pack = trainingService.updatePack(packId, request);
         return ApiUtils.success(pack.getId());
     }
 
     @Operation(summary = "Delete Pack", description = "Delete pack and its training puzzles & Only admins are available")
     @DeleteMapping("/pack/{packId}")
-    public ApiResponse<Object> deleteTrainingPack(@PathVariable("packId") Long packId) {
+    public ApiResponse<Object> deleteTrainingPack(
+            @PathVariable("packId") Long packId,
+            @AuthenticationPrincipal UserDetailsImpl admin
+    ) {
+        packAccessGuard.checkManagePack(admin, packId);
         trainingService.deletePack(packId);
         return ApiUtils.success(null);
     }
