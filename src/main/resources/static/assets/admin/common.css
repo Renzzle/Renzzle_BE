@@ -1642,13 +1642,18 @@ ul.puzzle-list li .puzzle-text {
 
 #adminToastWrap {
   position: fixed;
-  top: var(--admin-space-4) !important;
-  right: var(--admin-space-4) !important;
+  inset: var(--admin-space-4) var(--admin-space-4) auto auto !important;
   z-index: 9999;
   display: flex;
   flex-direction: column;
   gap: var(--admin-space-2);
   max-width: 360px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  overflow: visible;
 }
 
 .admin-toast {
@@ -1691,6 +1696,19 @@ ul.puzzle-list li .puzzle-text {
 
 .admin-toast.warn::before {
   background: #f59e0b;
+}
+
+@media (max-width: 820px) {
+  #adminToastWrap {
+    inset: var(--admin-space-3) var(--admin-space-3) auto var(--admin-space-3) !important;
+    width: fit-content;
+    max-width: none;
+    margin-inline: auto;
+  }
+
+  .admin-toast {
+    transform: translateY(-8px);
+  }
 }
 
 #adminModalDialog::backdrop {

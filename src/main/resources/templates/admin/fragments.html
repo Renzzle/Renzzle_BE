@@ -41,7 +41,7 @@
 
 <!-- Shared UI kit: toast and confirm modal (globalThis.adminToast / globalThis.adminConfirm) -->
 <div th:fragment="uiKit" class="admin-ui-kit">
-  <div id="adminToastWrap"></div>
+  <div id="adminToastWrap" popover="manual"></div>
   <dialog id="adminModalDialog" class="admin-modal" aria-labelledby="adminModalMsg">
     <div class="modal-msg" id="adminModalMsg"></div>
     <div class="modal-actions">
@@ -54,6 +54,11 @@
       globalThis.adminToast = function (message, type) {
         let wrap = document.getElementById('adminToastWrap');
         if (!wrap) { alert(message); return; }
+        // A modal dialog sits in the top layer, so the toast re-enters it to stay above the most recent one
+        if (typeof wrap.showPopover === 'function') {
+          if (wrap.matches(':popover-open')) wrap.hidePopover();
+          wrap.showPopover();
+        }
         let el = document.createElement('div');
         el.className = 'admin-toast' + (type ? ' ' + type : '');
         el.textContent = message;
@@ -61,7 +66,12 @@
         requestAnimationFrame(function () { el.classList.add('show'); });
         setTimeout(function () {
           el.classList.remove('show');
-          setTimeout(function () { el.remove(); }, 250);
+          setTimeout(function () {
+            el.remove();
+            if (!wrap.children.length && typeof wrap.hidePopover === 'function' && wrap.matches(':popover-open')) {
+              wrap.hidePopover();
+            }
+          }, 250);
         }, 3000);
       };
       globalThis.adminConfirm = function (message, opts) {

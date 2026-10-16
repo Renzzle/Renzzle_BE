@@ -6,6 +6,9 @@ import com.renzzle.backend.domain.puzzle.community.dao.query.CommunityPuzzleQuer
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.shared.dao.projection.AnswerKeyProjection;
 import com.renzzle.backend.domain.user.domain.UserEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -18,6 +21,12 @@ import java.util.List;
 import java.util.Optional;
 
 public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle, Long>, CommunityPuzzleQueryRepository {
+
+    @EntityGraph(attributePaths = {"user", "winColor"})
+    Page<CommunityPuzzle> findAllByIsVerified(Boolean isVerified, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"user", "winColor"})
+    Page<CommunityPuzzle> findAllBy(Pageable pageable);
 
     @Query(value = "SELECT cp.* FROM community_puzzle cp " +
             "JOIN user_community_puzzle ucp ON ucp.community_id = cp.id " +

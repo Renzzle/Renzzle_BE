@@ -21,8 +21,10 @@ import com.renzzle.backend.domain.notice.api.response.GetAnnouncementForAdminRes
 import com.renzzle.backend.domain.notice.api.response.GetNoticeRecipientResponse;
 import com.renzzle.backend.domain.notice.api.response.GetSystemInfoForAdminResponse;
 import com.renzzle.backend.domain.notice.service.NoticeService;
+import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzlesForAdminRequest;
 import com.renzzle.backend.domain.puzzle.community.api.request.UpdateCommunityPuzzleVerificationRequest;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleForAdminResponse;
+import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlePageForAdminResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackDetailForAdminResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackForAdminResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleForAdminResponse;
@@ -43,6 +45,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
@@ -319,6 +322,17 @@ public class AdminController {
     ) {
         GetTrainingPuzzleForAdminResponse puzzle = communityService.getCommunityPuzzleForAdminDetail(puzzleId);
         return ApiUtils.success(puzzle);
+    }
+
+    @Operation(summary = "Get community puzzles for admin review",
+            description = "Admin-only, newest first; verified=false lists puzzles waiting for review and no verified lists them all")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/community/puzzle-manage")
+    @ResponseBody
+    public ApiResponse<GetCommunityPuzzlePageForAdminResponse> getCommunityPuzzlesForAdmin(
+            @Valid @ParameterObject @ModelAttribute GetCommunityPuzzlesForAdminRequest request
+    ) {
+        return ApiUtils.success(communityService.getCommunityPuzzlesForAdmin(request));
     }
 
     @Operation(summary = "Get community puzzle for admin management", description = "Admin-only lookup without increasing views")
