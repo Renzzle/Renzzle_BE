@@ -43,6 +43,11 @@
     return moves;
   }
 
+  // Back to the "h8i9" form parseMoves reads
+  function formatMoves(moves) {
+    return moves.map(move => String.fromCharCode(97 + move.col) + (move.row + 1)).join('');
+  }
+
   // Backing store follows the displayed size, so drawing keeps logical units but stays sharp
   function fitCanvas(canvas, logicalSize) {
     const dpr = globalThis.devicePixelRatio || 1;
@@ -210,6 +215,7 @@
     COLORS,
     STONE_RATIO,
     parseMoves,
+    formatMoves,
     watch,
     paintBoard,
     paintStone,

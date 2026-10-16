@@ -79,6 +79,7 @@
           <button type="button" class="btn board-icon-btn" id="communityAnswerPrevBtn" title="Previous answer move" aria-label="Previous answer move" data-i18n-title="communityPuzzles.previousAnswerMove" data-i18n-aria-label="communityPuzzles.previousAnswerMove">◀</button>
           <span id="communityAnswerStep" class="community-answer-step">0 / 0</span>
           <button type="button" class="btn board-icon-btn" id="communityAnswerNextBtn" title="Next answer move" aria-label="Next answer move" data-i18n-title="communityPuzzles.nextAnswerMove" data-i18n-aria-label="communityPuzzles.nextAnswerMove">▶</button>
+          <button type="button" class="btn community-copy-btn" id="communityCopySequenceBtn" data-i18n="communityPuzzles.copySequence">Copy moves</button>
         </div>
       </div>
 
@@ -90,6 +91,11 @@
             <input type="checkbox" id="communityIsVerified">
             <span class="community-switch-track" aria-hidden="true"></span>
           </label>
+        </div>
+        <div class="community-answer-edit">
+          <label for="communityAnswerInput" data-i18n="communityPuzzles.answerLabel">Answer</label>
+          <input type="text" id="communityAnswerInput" autocomplete="off" spellcheck="false" aria-describedby="communityAnswerHint">
+          <p class="community-answer-hint" id="communityAnswerHint"></p>
         </div>
         <dl class="community-meta">
           <div><dt data-i18n="common.author">Author</dt><dd id="communityMetaAuthor">-</dd></div>
@@ -299,22 +305,67 @@
     // ===== Detail dialog =====
 
     let currentIndex = -1;
+    // The answer field's text; the board, the step count and the copy follow it before it is saved
+    let answerDraft = '';
 
-    function getAnswerMoves(puzzle) {
-      if (!puzzle) return [];
-      const baseMoveCount = adminBoard.parseMoves(puzzle.boardStatus || '').length;
-      return adminBoard.parseMoves(puzzle.answer || '', baseMoveCount);
+    function getAnswerMoves() {
+      if (!currentPuzzle) return [];
+      const baseMoveCount = adminBoard.parseMoves(currentPuzzle.boardStatus || '').length;
+      return adminBoard.parseMoves(answerDraft, baseMoveCount);
+    }
+
+    // Moves like h8i9, each on a point the board and the earlier answer moves leave empty
+    function isAnswerDraftValid() {
+      if (!/^([a-o](1[0-5]|[1-9]))+$/.test(answerDraft)) return false;
+      const taken = new Set(adminBoard.parseMoves(currentPuzzle.boardStatus).map(move => move.row + ',' + move.col));
+      return getAnswerMoves().every(move => {
+        const point = move.row + ',' + move.col;
+        if (taken.has(point)) return false;
+        taken.add(point);
+        return true;
+      });
+    }
+
+    // A verified puzzle keeps its answer, so it is changed by verifying again
+    function renderAnswerField(resetValue) {
+      const input = document.getElementById('communityAnswerInput');
+      const hint = document.getElementById('communityAnswerHint');
+      const locked = Boolean(currentPuzzle.isVerified);
+      const invalid = !locked && !isAnswerDraftValid();
+      if (resetValue) input.value = answerDraft;
+      input.disabled = locked;
+      input.setAttribute('aria-invalid', String(invalid));
+      hint.classList.toggle('is-error', invalid);
+      let hintKey = 'communityPuzzles.answerHint';
+      if (locked) {
+        hintKey = 'communityPuzzles.answerLockedHint';
+      } else if (invalid) {
+        hintKey = 'communityPuzzles.answerInvalid';
+      }
+      adminSetText(hint, hintKey);
     }
 
     function drawCommunityBoard() {
       const baseMoves = adminBoard.parseMoves(currentPuzzle?.boardStatus);
-      const answerStones = getAnswerMoves(currentPuzzle).slice(0, currentAnswerStep)
+      const answerStones = getAnswerMoves().slice(0, currentAnswerStep)
         .map((move, index) => ({ ...move, number: index + 1 }));
       adminBoard.drawPreview(document.getElementById('communityBoardCanvas'), baseMoves.concat(answerStones));
     }
 
+    // The stones on the board as one move string, answer moves included up to the current step
+    async function copySequence() {
+      const baseMoves = adminBoard.parseMoves(currentPuzzle?.boardStatus);
+      const sequence = adminBoard.formatMoves(baseMoves.concat(getAnswerMoves().slice(0, currentAnswerStep)));
+      try {
+        await navigator.clipboard.writeText(sequence);
+        adminToast(adminT('communityPuzzles.sequenceCopied'), 'success');
+      } catch {
+        adminToast(adminT('communityPuzzles.sequenceCopyFailed'), 'error');
+      }
+    }
+
     function updateAnswerNavigation() {
-      const total = getAnswerMoves(currentPuzzle).length;
+      const total = getAnswerMoves().length;
       currentAnswerStep = Math.max(0, Math.min(currentAnswerStep, total));
       document.getElementById('communityAnswerStep').textContent = adminT('communityPuzzles.answerProgress', {
         current: currentAnswerStep,
@@ -327,7 +378,10 @@
 
     function renderDetail(options = {}) {
       const puzzle = currentPuzzle;
-      currentAnswerStep = options.keepAnswerStep ? currentAnswerStep : getAnswerMoves(puzzle).length;
+      if (!options.keepAnswerStep) {
+        answerDraft = puzzle.answer || '';
+      }
+      currentAnswerStep = options.keepAnswerStep ? currentAnswerStep : getAnswerMoves().length;
       document.getElementById('communityDetailTitle').textContent = '#' + puzzle.id;
       setStatusPill(document.getElementById('communityDetailStatus'), puzzle);
       document.getElementById('communityIsVerified').checked = Boolean(puzzle.isVerified);
@@ -354,6 +408,7 @@
       document.getElementById('communityPrevPuzzle').disabled = !inList || (currentIndex === 0 && listPage === 0);
       document.getElementById('communityNextPuzzle').disabled = !inList
         || (currentIndex === listPuzzles.length - 1 && listPage >= listTotalPages - 1);
+      renderAnswerField(true);
       updateAnswerNavigation();
     }
 
@@ -409,12 +464,19 @@
       const verificationInput = document.getElementById('communityIsVerified');
       const previousValue = Boolean(currentPuzzle.isVerified);
       const nextValue = verificationInput.checked;
+      const answerEdited = nextValue && answerDraft !== (currentPuzzle.answer || '');
+      if (answerEdited && !isAnswerDraftValid()) {
+        verificationInput.checked = previousValue;
+        adminToast(adminT('communityPuzzles.answerInvalid'), 'error');
+        return;
+      }
       verificationInput.disabled = true;
       try {
         const res = await fetchWithAuth(API_BASE + '/admin/community/puzzle-manage/' + encodeURIComponent(currentPuzzle.id) + '/verification', {
           method: 'PATCH',
           body: JSON.stringify({
-            isVerified: nextValue
+            isVerified: nextValue,
+            answer: answerEdited ? answerDraft : undefined
           })
         });
         if (!res) return;
@@ -425,12 +487,14 @@
           return;
         }
         currentPuzzle = data.response;
+        answerDraft = currentPuzzle.answer || '';
         renderDetail({ keepAnswerStep: true });
         // The card keeps its place with the new status until the list reloads
         listPuzzles = listPuzzles.map(puzzle => puzzle.id === data.response.id ? data.response : puzzle);
         renderList();
-        adminToast(adminT(currentPuzzle.isVerified ? 'communityPuzzles.markedVerified' : 'communityPuzzles.markedUnverified',
-          { id: currentPuzzle.id }), 'success');
+        let savedKey = currentPuzzle.isVerified ? 'communityPuzzles.markedVerified' : 'communityPuzzles.markedUnverified';
+        if (answerEdited) savedKey = 'communityPuzzles.markedVerifiedWithAnswer';
+        adminToast(adminT(savedKey, { id: currentPuzzle.id }), 'success');
       } catch (err) {
         verificationInput.checked = previousValue;
         adminToast(adminT('common.errorPrefix', { message: err.message || '' }), 'error');
@@ -462,6 +526,13 @@
     });
     document.getElementById('communityAnswerNextBtn').addEventListener('click', () => {
       currentAnswerStep += 1;
+      updateAnswerNavigation();
+    });
+    document.getElementById('communityCopySequenceBtn').addEventListener('click', copySequence);
+    document.getElementById('communityAnswerInput').addEventListener('input', (event) => {
+      answerDraft = event.target.value.replace(/\s+/g, '').toLowerCase();
+      currentAnswerStep = getAnswerMoves().length;
+      renderAnswerField(false);
       updateAnswerNavigation();
     });
     document.addEventListener('admin:language-change', () => {

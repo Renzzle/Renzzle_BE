@@ -235,6 +235,21 @@ public class BoardUtils {
         }
     }
 
+    public static int countMoves(String moves) {
+        return parseCells(moves).size();
+    }
+
+    // Every answer move lands on an empty point, and no point is played twice
+    public static boolean answerFitsBoard(String boardStatus, String answer) {
+        Set<Cell> occupied = new HashSet<>(parseCells(boardStatus));
+        for (Cell cell : parseCells(answer)) {
+            if (!occupied.add(cell)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public static boolean validBoardString(String str) {
         int i = 0;
         while(i < str.length()) {

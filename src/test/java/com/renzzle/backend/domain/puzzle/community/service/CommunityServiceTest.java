@@ -164,7 +164,7 @@ class CommunityServiceTest {
         CommunityPuzzle puzzle = verificationTarget(false);
 
         // When
-        communityService.updateCommunityPuzzleVerificationForAdmin(1L, true);
+        communityService.updateCommunityPuzzleVerificationForAdmin(1L, true, null);
 
         // Then
         verify(puzzleCacheService).mergeSolutionPath(PuzzleType.COMMUNITY, 1L, puzzle.getBoardStatus(), puzzle.getAnswer());
@@ -176,7 +176,7 @@ class CommunityServiceTest {
         verificationTarget(true);
 
         // When
-        communityService.updateCommunityPuzzleVerificationForAdmin(1L, false);
+        communityService.updateCommunityPuzzleVerificationForAdmin(1L, false, null);
 
         // Then
         verifyNoInteractions(puzzleCacheService);
@@ -188,9 +188,68 @@ class CommunityServiceTest {
         verificationTarget(true);
 
         // When
-        communityService.updateCommunityPuzzleVerificationForAdmin(1L, true);
+        communityService.updateCommunityPuzzleVerificationForAdmin(1L, true, null);
 
         // Then
+        verifyNoInteractions(puzzleCacheService);
+    }
+
+    @Test
+    void updateCommunityPuzzleVerificationForAdmin_WhenVerifiedWithACorrectedAnswer_ThenStoresItAndReseedsTheSolution() {
+        // Given
+        CommunityPuzzle puzzle = verificationTarget(false);
+
+        // When
+        communityService.updateCommunityPuzzleVerificationForAdmin(1L, true, "e5e6");
+
+        // Then: the answer's key, depth and starting rating follow it, as for a new puzzle
+        assertThat(puzzle.getAnswer()).isEqualTo("e5e6");
+        assertThat(puzzle.getAnswerKey()).isEqualTo(BoardUtils.makeAnswerKey("f8f9", "e5e6"));
+        assertThat(puzzle.getDepth()).isEqualTo(2);
+        assertThat(puzzle.getRating()).isEqualTo(RatingUtil.puzzleRating(2, puzzle.getWinColor(), null));
+        assertThat(puzzle.getRankAttemptCount()).isZero();
+        assertThat(puzzle.getIsVerified()).isTrue();
+        verify(puzzleCacheService).seedSolutionPath(PuzzleType.COMMUNITY, 1L, "f8f9", "e5e6");
+        verify(puzzleCacheService, never()).mergeSolutionPath(any(), any(), any(), any());
+    }
+
+    @Test
+    void updateCommunityPuzzleVerificationForAdmin_WhenTheSameAnswerIsSent_ThenVerifiesAsBefore() {
+        // Given
+        CommunityPuzzle puzzle = verificationTarget(false);
+
+        // When
+        communityService.updateCommunityPuzzleVerificationForAdmin(1L, true, "e5");
+
+        // Then
+        verify(puzzleCacheService).mergeSolutionPath(PuzzleType.COMMUNITY, 1L, puzzle.getBoardStatus(), "e5");
+        verify(puzzleCacheService, never()).seedSolutionPath(any(), any(), any(), any());
+    }
+
+    @Test
+    void updateCommunityPuzzleVerificationForAdmin_WhenAnswerSentWhileUnverifying_ThenRejectsIt() {
+        CustomException exception = assertThrows(CustomException.class,
+                () -> communityService.updateCommunityPuzzleVerificationForAdmin(1L, false, "e5e6"));
+
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_ERROR);
+        verifyNoInteractions(communityPuzzleRepository, puzzleCacheService);
+    }
+
+    @Test
+    void updateCommunityPuzzleVerificationForAdmin_WhenCorrectedAnswerIsUnplayable_ThenRejectsAndKeepsThePuzzle() {
+        // Given
+        CommunityPuzzle puzzle = verificationTarget(false);
+
+        // When: one lands on a stone of the board, one repeats a point, one is not a move at all
+        for (String answer : new String[] {"f8e5", "e5e5", "z9", " "}) {
+            CustomException exception = assertThrows(CustomException.class,
+                    () -> communityService.updateCommunityPuzzleVerificationForAdmin(1L, true, answer));
+            assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_ERROR);
+        }
+
+        // Then
+        assertThat(puzzle.getAnswer()).isEqualTo("e5");
+        assertThat(puzzle.getIsVerified()).isFalse();
         verifyNoInteractions(puzzleCacheService);
     }
 
