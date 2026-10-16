@@ -104,7 +104,7 @@
     </section>
   </main>
 
-  <script type="module" th:inline="javascript">
+  <script type="module">
     const API_BASE = '';
     let selectedCacheMode = 'TRAINING';
     let selectedCacheDifficulty = 'LOW';
@@ -326,8 +326,7 @@
           return;
         }
         const puzzle = data.response;
-        const href = '/admin/puzzle-cache/board?puzzleType=COMMUNITY&puzzleId=' + encodeURIComponent(puzzle['id'] ?? puzzleIdValue);
-        globalThis.location.href = href;
+        globalThis.location.href = '/admin/puzzle-cache/board?puzzleType=COMMUNITY&puzzleId=' + encodeURIComponent(puzzle['id'] ?? puzzleIdValue);
       } catch (err) {
         showCommError(adminT('common.errorPrefix', { message: err.message || '' }));
       } finally {

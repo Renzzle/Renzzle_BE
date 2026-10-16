@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/assets/admin/common.css">
   <script src="/assets/admin/i18n.js"></script>
 </head>
-<body>
+<body th:data-permissions="${#strings.listJoin(permissionNames, ',')}">
   <div class="header">
     <div>
       <h1>Renzzle Admin</h1>
@@ -82,9 +82,9 @@
     </section>
   </main>
 
-  <script type="module" th:inline="javascript">
+  <script type="module">
     const API_BASE = '';
-    const PERMISSIONS = /*[[${permissionNames}]]*/ ['PACK_MANAGE', 'COMMUNITY_MANAGE', 'AI_RESPONSE_MANAGE', 'OPERATION_MANAGE'];
+    const PERMISSIONS = document.body.dataset.permissions.split(',');
     const OPERATION_PERMISSION = 'OPERATION_MANAGE';
     const ERROR_MESSAGES = {
       U4000: 'adminAccounts.userNotFound',

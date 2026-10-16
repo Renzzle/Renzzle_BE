@@ -55,7 +55,7 @@ body {
   padding: 0 !important;
   background: var(--admin-bg) !important;
   color: var(--admin-text) !important;
-  font-family: var(--admin-font) !important;
+  font-family: var(--admin-font), sans-serif !important;
   letter-spacing: -0.01em;
   -webkit-font-smoothing: antialiased;
 }

@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/assets/admin/common.css">
   <script src="/assets/admin/i18n.js"></script>
 </head>
-<body>
+<body th:data-lang-codes="${#strings.arrayJoin(langCodeNames, ',')}">
   <div class="header">
     <div>
       <h1 id="pageTitle">Renzzle Admin</h1>
@@ -67,9 +67,10 @@
         </select>
       </div>
       <div>
-        <label for="packPublic" data-i18n="common.visibility">Visibility</label>
+        <span class="field-label" data-i18n="common.visibility">Visibility</span>
         <div class="pack-visibility-field">
           <label class="admin-switch" for="packPublic">
+            <span class="admin-visually-hidden" data-i18n="common.visibility">Visibility</span>
             <input type="checkbox" id="packPublic" aria-describedby="packPublicHelp">
             <span class="admin-switch-track" aria-hidden="true"></span>
           </label>
@@ -83,9 +84,9 @@
   </section>
   </main>
 
-  <script type="module" th:inline="javascript">
+  <script type="module">
     const API_BASE = '';
-    const LANG_CODE_NAMES = /*[[${langCodeNames}]]*/ ['EN', 'KO'];
+    const LANG_CODE_NAMES = document.body.dataset.langCodes.split(',');
 
     let langBlockCount = 0;
 

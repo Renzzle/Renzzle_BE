@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/assets/admin/common.css">
   <script src="/assets/admin/i18n.js"></script>
 </head>
-<body>
+<body th:data-pack-id="${packId}">
   <div class="header">
     <div>
       <h1>Renzzle Admin</h1>
@@ -82,9 +82,9 @@
     <div id="createPuzzleMsg" class="msg"></div>
   </section>
 
-  <script type="module" th:inline="javascript">
+  <script type="module">
     const API_BASE = '';
-    const packId = /*[[${packId}]]*/ 0;
+    const packId = Number(document.body.dataset.packId);
     let currentPackDetail = null;
 
     // ===== Board variables and functions =====

@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/assets/admin/common.css">
   <script src="/assets/admin/i18n.js"></script>
 </head>
-<body>
+<body th:data-puzzle-type="${puzzleType}" th:data-puzzle-id="${puzzleId}">
   <div class="header">
     <div>
       <h1>Renzzle Admin</h1>
@@ -63,10 +63,10 @@
   </section>
   </main>
 
-  <script type="module" th:inline="javascript">
+  <script type="module">
     const API_BASE = '';
-    const puzzleType = /*[[${puzzleType}]]*/ 'TRAINING';
-    const puzzleId = /*[[${puzzleId}]]*/ 0;
+    const puzzleType = document.body.dataset.puzzleType;
+    const puzzleId = Number(document.body.dataset.puzzleId);
     const selectedPuzzleType = puzzleType;
     const selectedPuzzleId = puzzleId;
 

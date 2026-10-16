@@ -78,9 +78,10 @@
             <button type="button" class="difficulty-option" data-create-difficulty="HIGH" aria-pressed="false">HIGH</button>
           </fieldset>
           <div>
-            <label for="inlinePackPublic" data-i18n="common.visibility">Visibility</label>
+            <span class="field-label" data-i18n="common.visibility">Visibility</span>
             <div class="pack-visibility-field">
               <label class="admin-switch" for="inlinePackPublic">
+                <span class="admin-visually-hidden" data-i18n="common.visibility">Visibility</span>
                 <input type="checkbox" id="inlinePackPublic" aria-describedby="inlinePackPublicHelp">
                 <span class="admin-switch-track" aria-hidden="true"></span>
               </label>
@@ -145,7 +146,7 @@
     </section>
   </main>
 
-  <script type="module" th:inline="javascript">
+  <script type="module">
     const API_BASE = '';
 
     async function fetchWithAuth(url, options = {}) {
