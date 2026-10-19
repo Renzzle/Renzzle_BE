@@ -126,6 +126,11 @@
     margin-bottom: var(--admin-space-4);
   }
 
+  /* Same bottom margin as the field beside it, so the switch sits on the field's line */
+  .notice-expiry-row .notice-toggle-row {
+    margin-bottom: var(--admin-space-4);
+  }
+
   .notice-expiry-row .inline-field-label,
   .notice-edit-form .inline-field-label {
     margin-bottom: 0;
