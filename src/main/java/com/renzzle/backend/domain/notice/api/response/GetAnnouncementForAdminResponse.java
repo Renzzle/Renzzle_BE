@@ -10,5 +10,6 @@ public record GetAnnouncementForAdminResponse(
         String context,
         String createdAt,
         String expiredAt,
-        boolean isActive
+        boolean isActive,
+        boolean isPinned
 ) { }

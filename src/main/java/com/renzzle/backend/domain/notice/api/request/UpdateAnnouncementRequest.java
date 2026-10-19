@@ -16,5 +16,8 @@ public record UpdateAnnouncementRequest(
         String context,
 
         @NotNull(message = "Expiration time is required")
-        Instant expiredAt
+        Instant expiredAt,
+
+        @NotNull(message = "Pin flag is required")
+        Boolean isPinned
 ) { }

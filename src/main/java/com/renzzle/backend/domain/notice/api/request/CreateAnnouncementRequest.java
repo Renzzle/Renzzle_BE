@@ -11,6 +11,9 @@ public record CreateAnnouncementRequest(
         @NotNull(message = "Expiration time is required")
         Instant expiredAt,
 
+        @NotNull(message = "Pin flag is required")
+        Boolean isPinned,
+
         @NotEmpty(message = "At least one language content is required")
         @Valid
         List<AnnouncementContentRequest> contents

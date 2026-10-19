@@ -6,11 +6,13 @@ import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 import static com.renzzle.backend.global.common.constant.StringConstant.DELETED_USER;
 import static com.renzzle.backend.global.common.constant.TimeConstant.CONST_FUTURE_INSTANT;
@@ -61,6 +63,14 @@ public class UserEntity {
     @Builder.Default
     @Column(name = "ads_removed", nullable = false)
     private boolean adsRemoved = false;
+
+    @Builder.Default
+    @ColumnDefault("0")
+    @Column(name = "rank_reward_today", nullable = false)
+    private int rankRewardToday = 0;
+
+    @Column(name = "rank_reward_date")
+    private LocalDate rankRewardDate;
 
     @Column(name = "device_id", nullable = false, length = 1024)
     private String deviceId;
@@ -117,6 +127,15 @@ public class UserEntity {
 
     public void getReward(int reward){
         this.currency += reward;
+    }
+
+    public int grantRankReward(int reward, int dailyLimit, LocalDate today) {
+        int earnedToday = today.equals(rankRewardDate) ? rankRewardToday : 0;
+        int granted = Math.max(0, Math.min(reward, dailyLimit - earnedToday));
+        this.rankRewardDate = today;
+        this.rankRewardToday = earnedToday + granted;
+        this.currency += granted;
+        return granted;
     }
 
     public void removeAds() {

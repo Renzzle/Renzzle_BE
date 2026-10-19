@@ -449,7 +449,7 @@ public class AdminController {
         return ApiUtils.success(noticeService.getAnnouncementsForAdmin(lang));
     }
 
-    @Operation(summary = "Create announcements (Admin only)", description = "Creates one announcement per language content with a shared expiration time")
+    @Operation(summary = "Create announcements (Admin only)", description = "Creates one announcement per language content with a shared expiration time and pin flag")
     @SecurityRequirement(name = "Authorization")
     @PostMapping("/notice/announcement")
     @ResponseBody
@@ -459,7 +459,7 @@ public class AdminController {
         return ApiUtils.success(noticeService.createAnnouncementsForAdmin(request));
     }
 
-    @Operation(summary = "Update announcement (Admin only)", description = "Update title, context, and expiration time of a single announcement")
+    @Operation(summary = "Update announcement (Admin only)", description = "Update title, context, expiration time, and pin flag of a single announcement")
     @SecurityRequirement(name = "Authorization")
     @PatchMapping("/notice/announcement/{announcementId}")
     @ResponseBody

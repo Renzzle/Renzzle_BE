@@ -10,6 +10,7 @@ public enum ItemPrice {
     HINT("hint_price", 200),
     ATTENDANCE_REWARD("attendance_reward", 200),
     RANK_REWARD("rank_reward", 10),
+    RANK_DAILY_REWARD_LIMIT("rank_daily_reward_limit", 1000),
     TRAINING_REWARD("training_reward", 10),
     COMMUNITY_REWARD("community_reward", 10);
 

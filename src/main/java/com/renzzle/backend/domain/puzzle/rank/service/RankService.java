@@ -37,6 +37,8 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -48,6 +50,7 @@ import java.util.stream.Stream;
 import static com.renzzle.backend.domain.puzzle.shared.util.ELOUtils.TARGET_WIN_PROBABILITY;
 import static com.renzzle.backend.domain.puzzle.shared.util.RatingUtil.MAX_RATING;
 import static com.renzzle.backend.domain.puzzle.shared.util.RatingUtil.MIN_RATING;
+import static com.renzzle.backend.global.common.constant.ItemPrice.RANK_DAILY_REWARD_LIMIT;
 import static com.renzzle.backend.global.common.constant.ItemPrice.RANK_REWARD;
 import static com.renzzle.backend.global.common.constant.StringConstant.DELETED_USER;
 
@@ -341,12 +344,13 @@ public class RankService {
         int solvedCount = (int) puzzles.stream()
                 .filter(LatestRankPuzzle::getIsSolved)
                 .count();
-        int reward = solvedCount * appInfoService.getPrice(RANK_REWARD);
+        int earned = solvedCount * appInfoService.getPrice(RANK_REWARD);
+        // The daily limit resets at midnight UTC
+        LocalDate today = LocalDate.ofInstant(clock.instant(), ZoneOffset.UTC);
+        int reward = user.grantRankReward(earned, appInfoService.getPrice(RANK_DAILY_REWARD_LIMIT), today);
 
-        user.getReward(reward);
-
-        log.info("Rank game ended. puzzles={}, solved={}, reward={}, rating={}",
-                puzzles.size(), solvedCount, reward, user.getRating());
+        log.info("Rank game ended. puzzles={}, solved={}, earned={}, reward={}, rewardToday={}, rating={}",
+                puzzles.size(), solvedCount, earned, reward, user.getRankRewardToday(), user.getRating());
 
         return RankEndResponse.builder()
                 .rating(user.getRating())

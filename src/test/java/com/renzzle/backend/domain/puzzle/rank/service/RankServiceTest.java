@@ -42,6 +42,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -629,6 +630,88 @@ class RankServiceTest {
         assertThat(response.rating()).isEqualTo(1600);
         assertThat(response.reward()).isEqualTo(2 * RANK_REWARD.getDefaultPrice());
         verify(redisSessionTemplate).delete("3");
+    }
+
+    @Test
+    void endRankGame_WhenRewardWouldPassDailyLimit_ThenGrantsOnlyUpToTheLimit() {
+        // Given: 990 of the 1000 limit is already earned today
+        UserEntity user = endableGame(10L, 990, LocalDate.of(2025, 1, 1), 2);
+
+        // When
+        RankEndResponse response = rankService.endRankGame(user);
+
+        // Then
+        assertThat(response.reward()).isEqualTo(10);
+        assertThat(user.getCurrency()).isEqualTo(1010);
+        assertThat(user.getRankRewardToday()).isEqualTo(1000);
+    }
+
+    @Test
+    void endRankGame_WhenDailyLimitAlreadyReached_ThenGrantsNothing() {
+        // Given: the last second of the same UTC day
+        when(clock.instant()).thenReturn(Instant.parse("2025-01-01T23:59:59Z"));
+        UserEntity user = endableGame(11L, 1000, LocalDate.of(2025, 1, 1), 5);
+
+        // When
+        RankEndResponse response = rankService.endRankGame(user);
+
+        // Then
+        assertThat(response.reward()).isZero();
+        assertThat(user.getCurrency()).isEqualTo(1000);
+        assertThat(user.getRankRewardToday()).isEqualTo(1000);
+    }
+
+    @Test
+    void endRankGame_WhenNewUtcDayStarts_ThenLimitStartsOver() {
+        // Given: yesterday's limit was used up
+        when(clock.instant()).thenReturn(Instant.parse("2025-01-02T00:00:00Z"));
+        UserEntity user = endableGame(12L, 1000, LocalDate.of(2025, 1, 1), 3);
+
+        // When
+        RankEndResponse response = rankService.endRankGame(user);
+
+        // Then
+        assertThat(response.reward()).isEqualTo(3 * RANK_REWARD.getDefaultPrice());
+        assertThat(user.getRankRewardToday()).isEqualTo(30);
+        assertThat(user.getRankRewardDate()).isEqualTo(LocalDate.of(2025, 1, 2));
+    }
+
+    @Test
+    void endRankGame_WhenLimitLoweredBelowTodaysEarnings_ThenGrantsNothing() {
+        // Given: the limit was cut to 500 after 800 was already earned today
+        when(appInfoService.getPrice(ItemPrice.RANK_DAILY_REWARD_LIMIT)).thenReturn(500);
+        UserEntity user = endableGame(13L, 800, LocalDate.of(2025, 1, 1), 2);
+
+        // When
+        RankEndResponse response = rankService.endRankGame(user);
+
+        // Then
+        assertThat(response.reward()).isZero();
+        assertThat(user.getCurrency()).isEqualTo(1000);
+        assertThat(user.getRankRewardToday()).isEqualTo(800);
+    }
+
+    private UserEntity endableGame(long id, int earnedToday, LocalDate rewardDate, int solvedCount) {
+        UserEntity user = TestUserFactory.createTestUser("user" + id, 1600).toBuilder()
+                .rankRewardToday(earnedToday)
+                .rankRewardDate(rewardDate)
+                .build();
+        ReflectionTestUtils.setField(user, "id", id);
+        String redisKey = String.valueOf(id);
+
+        RankSessionData session = new RankSessionData();
+        session.setStarted(true);
+
+        when(valueOperations.get(redisKey)).thenReturn(session);
+        when(redisSessionTemplate.getExpire(redisKey, TimeUnit.SECONDS)).thenReturn(60L);
+        when(redisSessionTemplate.delete(redisKey)).thenReturn(true);
+        when(userRepository.findByIdForUpdate(id)).thenReturn(Optional.of(user));
+        List<LatestRankPuzzle> puzzles = new ArrayList<>();
+        for (int i = 0; i < solvedCount; i++) {
+            puzzles.add(LatestRankPuzzle.builder().isSolved(true).build());
+        }
+        when(latestRankPuzzleRepository.findAllByUser(user)).thenReturn(puzzles);
+        return user;
     }
 
     @Test

@@ -1,88 +1,85 @@
-.admin-add-form {
-  display: grid;
-  gap: var(--admin-space-3);
-}
+@layer page {
+  .admin-add-form {
+    display: grid;
+    gap: var(--admin-space-3);
+  }
 
-.admin-add-form .inline-field-label {
-  max-width: 420px;
-  margin-bottom: 0 !important;
-}
+  .admin-add-form .inline-field-label {
+    max-width: 420px;
+    margin-bottom: 0;
+  }
 
-.admin-permission-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--admin-space-2) var(--admin-space-4);
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
+  .admin-permission-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--admin-space-2) var(--admin-space-4);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
 
-.admin-permission-options legend {
-  width: 100%;
-  margin-bottom: var(--admin-space-2);
-  padding: 0;
-  color: var(--admin-text-soft);
-  font-size: 0.8125rem;
-  font-weight: 500;
-}
+  .admin-permission-options legend {
+    width: 100%;
+    margin-bottom: var(--admin-space-2);
+    padding: 0;
+    color: var(--admin-text-soft);
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
 
-.admin-permission-option {
-  display: inline-flex !important;
-  align-items: center;
-  gap: var(--admin-space-2);
-  min-height: var(--admin-control-height);
-  margin: 0 !important;
-  padding: 0 var(--admin-space-3);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius);
-  background: #fff;
-  color: var(--admin-text) !important;
-  font-size: 0.875rem !important;
-  cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
-}
+  .admin-permission-option {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--admin-space-2);
+    min-height: var(--admin-control-height);
+    margin: 0;
+    padding: 0 var(--admin-space-3);
+    border: 1px solid var(--admin-border);
+    border-radius: var(--admin-radius);
+    background: #fff;
+    color: var(--admin-text);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+  }
 
-.admin-permission-option:has(input:checked) {
-  border-color: var(--admin-primary);
-  background: #fff;
-  color: var(--admin-text) !important;
-}
+  .admin-permission-option:has(input:checked) {
+    border-color: var(--admin-primary);
+    background: #fff;
+    color: var(--admin-text);
+  }
 
-.admin-permission-option input,
-.admin-permission-check {
-  width: 1.05rem;
-  height: 1.05rem;
-  margin: 0;
-  accent-color: var(--admin-primary);
-  cursor: pointer;
-}
+  .admin-permission-option input,
+  .admin-permission-check {
+    width: 1.05rem;
+    height: 1.05rem;
+    margin: 0;
+    cursor: pointer;
+  }
 
-.admin-permission-check:disabled {
-  cursor: not-allowed;
-}
+  .admin-permission-check:disabled {
+    cursor: not-allowed;
+  }
 
-.admin-account-table {
-  min-width: 760px;
-}
+  .admin-account-table .admin-permission-col {
+    width: 15%;
+    text-align: center;
+    white-space: nowrap;
+  }
 
-.admin-account-table .admin-permission-col {
-  width: 15%;
-  text-align: center;
-  white-space: nowrap;
-}
+  .admin-account-table th.actions-col,
+  .admin-account-table td.actions-col {
+    width: 150px;
+    text-align: center;
+  }
 
-.admin-table.admin-account-table th.actions-col,
-.admin-table.admin-account-table td.actions-col {
-  width: 150px;
-  text-align: center;
-}
+  .admin-account-table .admin-actions {
+    justify-content: center;
+  }
 
-.admin-account-table .admin-actions {
-  justify-content: center;
-}
-
-.admin-account-name {
-  display: flex;
-  align-items: center;
-  gap: var(--admin-space-2);
+  .admin-account-name {
+    display: flex;
+    align-items: center;
+    gap: var(--admin-space-2);
+  }
 }
