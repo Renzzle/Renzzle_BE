@@ -114,6 +114,9 @@ class RankServiceIntegrationTest {
 
         assertThat(startResponse.boardStatus()).isNotBlank();
         assertThat(startResponse.winColor()).isNotBlank();
+        LatestRankPuzzle assignedAtStart = latestRankPuzzleRepository.findTopByUserOrderByIdDesc(testUser).orElseThrow();
+        assertThat(startResponse.puzzleType()).isEqualTo(assignedAtStart.getPuzzleType());
+        assertThat(startResponse.puzzleId()).isEqualTo(assignedAtStart.getPuzzleId());
 
         // resultRankGame
         RankResultRequest resultRequest = new RankResultRequest(true, null);
@@ -121,6 +124,9 @@ class RankServiceIntegrationTest {
 
         assertThat(resultResponse.boardStatus()).isNotBlank();
         assertThat(resultResponse.winColor()).isNotBlank();
+        LatestRankPuzzle assignedAfterResult = latestRankPuzzleRepository.findTopByUserOrderByIdDesc(testUser).orElseThrow();
+        assertThat(resultResponse.puzzleType()).isEqualTo(assignedAfterResult.getPuzzleType());
+        assertThat(resultResponse.puzzleId()).isEqualTo(assignedAfterResult.getPuzzleId());
 
         // Check session state
         RankSessionData session = redisTemplate.opsForValue().get(redisKey);
@@ -287,6 +293,8 @@ class RankServiceIntegrationTest {
 
         // Then: it gets the puzzle it missed, and nothing else moves
         assertThat(replayed.boardStatus()).isEqualTo(next.boardStatus());
+        assertThat(replayed.puzzleType()).isEqualTo(next.puzzleType());
+        assertThat(replayed.puzzleId()).isEqualTo(next.puzzleId());
         assertThat(userRepository.findById(testUser.getId()).orElseThrow().getRating()).isEqualTo(ratingAfterAnswer);
         assertThat(latestRankPuzzleRepository.findAllByUser(testUser)).hasSize(2);
     }
