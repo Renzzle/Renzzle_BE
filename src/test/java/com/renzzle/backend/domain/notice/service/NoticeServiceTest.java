@@ -4,12 +4,14 @@ import com.renzzle.backend.domain.appinfo.service.AppInfoService;
 import com.renzzle.backend.domain.notice.api.request.AnnouncementContentRequest;
 import com.renzzle.backend.domain.notice.api.request.CreateAnnouncementRequest;
 import com.renzzle.backend.domain.notice.api.request.GetPersonalNoticeRequest;
+import com.renzzle.backend.domain.notice.api.request.GetPublicNoticeRequest;
 import com.renzzle.backend.domain.notice.api.request.SendPersonalNoticeRequest;
 import com.renzzle.backend.domain.notice.api.request.UpdateAnnouncementRequest;
 import com.renzzle.backend.domain.notice.api.request.UpdateSystemInfoRequest;
 import com.renzzle.backend.domain.notice.api.response.GetAnnouncementForAdminResponse;
 import com.renzzle.backend.domain.notice.api.response.GetNoticeRecipientResponse;
 import com.renzzle.backend.domain.notice.api.response.GetPersonalNoticeResponse;
+import com.renzzle.backend.domain.notice.api.response.GetPublicNoticeResponse;
 import com.renzzle.backend.domain.notice.api.response.GetSystemInfoForAdminResponse;
 import com.renzzle.backend.domain.notice.api.response.NoticeContext;
 import com.renzzle.backend.domain.notice.dao.AnnouncementRepository;
@@ -102,6 +104,53 @@ class NoticeServiceTest {
                 .build();
     }
 
+    private static Announcement announcement(Long id, Instant createdAt, boolean isPinned) {
+        return announcement(id, "EN", FIXED_INSTANT.plus(1, ChronoUnit.DAYS)).toBuilder()
+                .createdAt(createdAt)
+                .isPinned(isPinned)
+                .build();
+    }
+
+    // ===== announcements: public =====
+
+    @Test
+    void getPublicNotice_WhenPinnedAndRegularMixed_ThenPinnedOldestFirstAndRegularNewestFirst() {
+        // Given
+        Announcement pinnedOld = announcement(1L, FIXED_INSTANT.minus(5, ChronoUnit.DAYS), true);
+        Announcement regularOld = announcement(2L, FIXED_INSTANT.minus(4, ChronoUnit.DAYS), false);
+        Announcement pinnedNew = announcement(3L, FIXED_INSTANT.minus(3, ChronoUnit.DAYS), true);
+        Announcement regularNew = announcement(4L, FIXED_INSTANT.minus(2, ChronoUnit.DAYS), false);
+        when(announcementRepository.findAllByLangCodeAndExpiredAtAfter(any(), any()))
+                .thenReturn(List.of(regularOld, pinnedNew, regularNew, pinnedOld));
+
+        // When
+        List<GetPublicNoticeResponse> response = noticeService.getPublicNotice(new GetPublicNoticeRequest("EN"));
+
+        // Then
+        assertThat(response).extracting(GetPublicNoticeResponse::title)
+                .containsExactly("Title 1", "Title 3", "Title 4", "Title 2");
+        assertThat(response).extracting(GetPublicNoticeResponse::isPinned)
+                .containsExactly(true, true, false, false);
+    }
+
+    @Test
+    void getPublicNotice_WhenCreatedAtTies_ThenIdBreaksTieInEachGroupsDirection() {
+        // Given
+        Instant sameTime = FIXED_INSTANT.minus(1, ChronoUnit.DAYS);
+        when(announcementRepository.findAllByLangCodeAndExpiredAtAfter(any(), any())).thenReturn(List.of(
+                announcement(1L, sameTime, false),
+                announcement(2L, sameTime, false),
+                announcement(3L, sameTime, true),
+                announcement(4L, sameTime, true)));
+
+        // When
+        List<GetPublicNoticeResponse> response = noticeService.getPublicNotice(new GetPublicNoticeRequest("EN"));
+
+        // Then
+        assertThat(response).extracting(GetPublicNoticeResponse::title)
+                .containsExactly("Title 3", "Title 4", "Title 2", "Title 1");
+    }
+
     // ===== announcements: list =====
 
     @Test
@@ -162,7 +211,7 @@ class NoticeServiceTest {
     void createAnnouncementsForAdmin_WhenTwoLanguages_ThenSavesOneRowPerLanguage() {
         // Given
         Instant expiredAt = FIXED_INSTANT.plus(7, ChronoUnit.DAYS);
-        CreateAnnouncementRequest request = new CreateAnnouncementRequest(expiredAt, List.of(
+        CreateAnnouncementRequest request = new CreateAnnouncementRequest(expiredAt, true, List.of(
                 new AnnouncementContentRequest("EN", "  Maintenance  ", "  Servers go down at 3am.  "),
                 new AnnouncementContentRequest("KO", "점검 안내", "새벽 3시에 점검합니다.")
         ));
@@ -183,16 +232,18 @@ class NoticeServiceTest {
         assertThat(saved.get(0).getTitle()).isEqualTo("Maintenance");
         assertThat(saved.get(0).getContext()).isEqualTo("Servers go down at 3am.");
         assertThat(saved).allSatisfy(a -> assertThat(a.getExpiredAt()).isEqualTo(expiredAt));
+        assertThat(saved).allSatisfy(a -> assertThat(a.isPinned()).isTrue());
 
         assertThat(response).hasSize(2);
         assertThat(response).extracting(GetAnnouncementForAdminResponse::id).containsExactly(10L, 11L);
         assertThat(response).allSatisfy(r -> assertThat(r.isActive()).isTrue());
+        assertThat(response).allSatisfy(r -> assertThat(r.isPinned()).isTrue());
     }
 
     @Test
     void createAnnouncementsForAdmin_WhenDuplicateLanguage_ThenThrowsValidationError() {
         // Given
-        CreateAnnouncementRequest request = new CreateAnnouncementRequest(FIXED_INSTANT.plus(1, ChronoUnit.DAYS), List.of(
+        CreateAnnouncementRequest request = new CreateAnnouncementRequest(FIXED_INSTANT.plus(1, ChronoUnit.DAYS), false, List.of(
                 new AnnouncementContentRequest("EN", "A", "a"),
                 new AnnouncementContentRequest("en", "B", "b")
         ));
@@ -214,7 +265,7 @@ class NoticeServiceTest {
         Announcement existing = announcement(5L, "EN", FIXED_INSTANT.plus(1, ChronoUnit.DAYS));
         when(announcementRepository.findById(5L)).thenReturn(Optional.of(existing));
         Instant pastExpiry = FIXED_INSTANT.minus(1, ChronoUnit.MINUTES);
-        UpdateAnnouncementRequest request = new UpdateAnnouncementRequest(" New title ", " New body ", pastExpiry);
+        UpdateAnnouncementRequest request = new UpdateAnnouncementRequest(" New title ", " New body ", pastExpiry, true);
 
         // When
         GetAnnouncementForAdminResponse response = noticeService.updateAnnouncementForAdmin(5L, request);
@@ -223,16 +274,18 @@ class NoticeServiceTest {
         assertThat(existing.getTitle()).isEqualTo("New title");
         assertThat(existing.getContext()).isEqualTo("New body");
         assertThat(existing.getExpiredAt()).isEqualTo(pastExpiry);
+        assertThat(existing.isPinned()).isTrue();
         assertThat(response.id()).isEqualTo(5L);
         assertThat(response.title()).isEqualTo("New title");
         assertThat(response.isActive()).isFalse();
+        assertThat(response.isPinned()).isTrue();
     }
 
     @Test
     void updateAnnouncementForAdmin_WhenNotFound_ThenThrows() {
         // Given
         when(announcementRepository.findById(99L)).thenReturn(Optional.empty());
-        UpdateAnnouncementRequest request = new UpdateAnnouncementRequest("t", "c", FIXED_INSTANT);
+        UpdateAnnouncementRequest request = new UpdateAnnouncementRequest("t", "c", FIXED_INSTANT, false);
 
         // When
         CustomException exception = assertThrows(CustomException.class,

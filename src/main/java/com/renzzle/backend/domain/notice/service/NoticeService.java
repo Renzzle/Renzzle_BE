@@ -37,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -44,6 +45,9 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class NoticeService {
+
+    private static final Comparator<Announcement> CREATION_ORDER =
+            Comparator.comparing(Announcement::getCreatedAt).thenComparing(Announcement::getId);
 
     private final Clock clock;
     private final NoticeRepository noticeRepository;
@@ -103,7 +107,10 @@ public class NoticeService {
 
     @Transactional(readOnly = true)
     public List<GetPublicNoticeResponse> getPublicNotice(GetPublicNoticeRequest request) {
-        List<Announcement> activeAnnouncements = announcementRepository.findAllByLangCodeAndExpiredAtAfter(LangCode.getLangCode(request.langCode()), clock.instant());
+        List<Announcement> activeAnnouncements = announcementRepository.findAllByLangCodeAndExpiredAtAfter(LangCode.getLangCode(request.langCode()), clock.instant())
+                .stream()
+                .sorted(NoticeService::comparePublicOrder)
+                .toList();
 
         ArrayList<GetPublicNoticeResponse> response = new ArrayList<>();
         for (Announcement announcement : activeAnnouncements) {
@@ -112,6 +119,7 @@ public class NoticeService {
                     .context(announcement.getContext())
                     .createdAt(announcement.getCreatedAt().toString())
                     .expiredAt(announcement.getExpiredAt().toString())
+                    .isPinned(announcement.isPinned())
                     .build()
             );
         }
@@ -135,7 +143,7 @@ public class NoticeService {
         return response;
     }
 
-    // One row per language, sharing an expiry so translations retire together
+    // One row per language, sharing expiry and pin so translations show and retire together
     @Transactional
     public List<GetAnnouncementForAdminResponse> createAnnouncementsForAdmin(CreateAnnouncementRequest request) {
         Set<String> seenLangCodes = new HashSet<>();
@@ -153,6 +161,7 @@ public class NoticeService {
                     .title(content.title().trim())
                     .context(content.context().trim())
                     .expiredAt(request.expiredAt())
+                    .isPinned(request.isPinned())
                     .build());
             response.add(toAdminAnnouncementResponse(announcement, now));
         }
@@ -163,7 +172,7 @@ public class NoticeService {
     public GetAnnouncementForAdminResponse updateAnnouncementForAdmin(Long announcementId, UpdateAnnouncementRequest request) {
         Announcement announcement = announcementRepository.findById(announcementId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_ANNOUNCEMENT));
-        announcement.update(request.title().trim(), request.context().trim(), request.expiredAt());
+        announcement.update(request.title().trim(), request.context().trim(), request.expiredAt(), request.isPinned());
         return toAdminAnnouncementResponse(announcement, clock.instant());
     }
 
@@ -216,6 +225,15 @@ public class NoticeService {
 
     // ===== helpers =====
 
+    // Pinned first with the oldest on top, then the rest with the newest on top
+    private static int comparePublicOrder(Announcement a, Announcement b) {
+        if (a.isPinned() != b.isPinned()) {
+            return a.isPinned() ? -1 : 1;
+        }
+        int byCreation = CREATION_ORDER.compare(a, b);
+        return a.isPinned() ? byCreation : -byCreation;
+    }
+
     // A raw query value, so an unknown code is the caller's mistake
     private LangCode parseLangFilter(String langCode) {
         try {
@@ -241,6 +259,7 @@ public class NoticeService {
                 .createdAt(createdAt == null ? null : createdAt.toString())
                 .expiredAt(expiredAt == null ? null : expiredAt.toString())
                 .isActive(expiredAt != null && expiredAt.isAfter(now))
+                .isPinned(announcement.isPinned())
                 .build();
     }
 
