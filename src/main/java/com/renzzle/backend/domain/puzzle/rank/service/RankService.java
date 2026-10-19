@@ -118,6 +118,8 @@ public class RankService {
         return RankStartResponse.builder()
                 .boardStatus(nextPuzzle.boardStatus())
                 .winColor(nextPuzzle.winColor().getName())
+                .puzzleType(nextPuzzle.puzzleType())
+                .puzzleId(nextPuzzle.puzzleId())
                 .build();
     }
 
@@ -201,6 +203,8 @@ public class RankService {
         return RankResultResponse.builder()
                 .boardStatus(nextPuzzle.boardStatus())
                 .winColor(nextPuzzle.winColor().getName())
+                .puzzleType(nextPuzzle.puzzleType())
+                .puzzleId(nextPuzzle.puzzleId())
                 .build();
     }
 
@@ -217,6 +221,8 @@ public class RankService {
         return RankResultResponse.builder()
                 .boardStatus(current.getBoardStatus())
                 .winColor(current.getWinColor().getName())
+                .puzzleType(current.getPuzzleType())
+                .puzzleId(current.getPuzzleId())
                 .build();
     }
 
