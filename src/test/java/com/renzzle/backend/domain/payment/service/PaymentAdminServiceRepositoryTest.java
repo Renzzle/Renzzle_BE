@@ -53,7 +53,7 @@ class PaymentAdminServiceRepositoryTest {
                 new RefundPolicy(Clock.systemUTC(), 7), googleVoidedPurchaseService,
                 mock(AppleAppStoreServerClient.class));
 
-        user = TestUserEntityBuilder.builder().save(userRepository);
+        user = TestUserEntityBuilder.builder().withCurrency(1000).save(userRepository);
         inAppPurchaseRepository.save(InAppPurchase.builder()
                 .user(user)
                 .platform(PaymentPlatform.ANDROID)
@@ -81,7 +81,7 @@ class PaymentAdminServiceRepositoryTest {
     }
 
     @Test
-    void getGoogleVoidedPurchasesForAdmin_WhenBuyerWithdrew_ThenStillListsTheRefund() {
+    void getGoogleVoidedPurchasesForAdmin_WhenBuyerWithdrew_ThenListsTheRefundWithNothingToTakeBack() {
         // given
         when(googlePlayClient.listVoidedPurchases(null)).thenReturn(new GoogleVoidedPurchasePage(
                 List.of(new GoogleVoidedPurchase("token-withdrawn", ORDER_ID, Instant.now().toEpochMilli(), 0, 1)),
@@ -95,5 +95,6 @@ class PaymentAdminServiceRepositoryTest {
         assertThat(result.get(0).matched()).isTrue();
         assertThat(result.get(0).userId()).isEqualTo(user.getId());
         assertThat(result.get(0).nickname()).isEqualTo(DELETED_USER);
+        assertThat(result.get(0).reclaimCurrency()).isZero();
     }
 }

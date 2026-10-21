@@ -174,7 +174,8 @@ public class PaymentAdminService {
         if (purchase.getStatus() == InAppPurchaseStatus.REFUNDED) {
             return purchase.getReclaimedCurrency();
         }
-        if (purchase.getStatus() != InAppPurchaseStatus.VERIFIED || !reclaimRewards
+        // RefundService only records a withdrawn user's refund, so nothing is taken back
+        if (purchase.getStatus() != InAppPurchaseStatus.VERIFIED || !reclaimRewards || user.isDeleted()
                 || !IapProduct.fromProductId(purchase.getProductId()).grantsCurrency()) {
             return 0;
         }

@@ -119,8 +119,11 @@ public class UserEntity {
     }
 
     public String getNickname() {
-        return status.equals(Status.getStatus(Status.StatusName.DELETED))
-                ? DELETED_USER : nickname;
+        return isDeleted() ? DELETED_USER : nickname;
+    }
+
+    public boolean isDeleted() {
+        return status.equals(Status.getStatus(Status.StatusName.DELETED));
     }
 
     public void purchase(int price){
