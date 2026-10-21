@@ -7,5 +7,6 @@ public record UserResponse(
         String email,
         String nickname,
         int currency,
-        boolean adsRemoved
+        boolean adsRemoved,
+        boolean refundDataConsent
 ) { }

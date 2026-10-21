@@ -3,7 +3,9 @@ package com.renzzle.backend.domain.user.api;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlesResponse;
 import com.renzzle.backend.domain.user.api.request.ChangeNicknameRequest;
 import com.renzzle.backend.domain.user.api.request.GetUserPuzzleRequest;
+import com.renzzle.backend.domain.user.api.request.UpdateRefundDataConsentRequest;
 import com.renzzle.backend.domain.user.api.response.ChangeNicknameResponse;
+import com.renzzle.backend.domain.user.api.response.RefundDataConsentResponse;
 import com.renzzle.backend.domain.user.api.response.UserResponse;
 import com.renzzle.backend.domain.user.service.UserService;
 import com.renzzle.backend.global.common.response.ApiResponse;
@@ -46,6 +48,16 @@ public class UserController {
     public ApiResponse<ChangeNicknameResponse> changeNickname(@AuthenticationPrincipal UserDetailsImpl userDetails,
                                                               @Valid @RequestBody ChangeNicknameRequest request) {
         return ApiUtils.success(userService.changeNickname(userDetails.getUser(), request.nickname()));
+    }
+
+    @Operation(summary = "Update refund data consent",
+            description = "Whether Apple may receive this user's consumption data when they ask it for a refund. "
+                    + "Opt-in, and can be withdrawn at any time")
+    @PatchMapping("/refund-data-consent")
+    public ApiResponse<RefundDataConsentResponse> updateRefundDataConsent(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @Valid @RequestBody UpdateRefundDataConsentRequest request) {
+        return ApiUtils.success(userService.updateRefundDataConsent(userDetails.getUser(), request.consented()));
     }
 
     @Operation(summary = "Retrieve user like list", description = "Retrieve user like list")

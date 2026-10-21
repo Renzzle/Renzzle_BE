@@ -5,7 +5,7 @@
   <title>Renzzle Admin Fragments</title>
 </head>
 <body>
-<!-- Main navigation. `active` names the highlighted tab: 'packs' | 'communityPuzzles' | 'puzzleCache' | 'notices' | 'adminAccounts' -->
+<!-- Main navigation. `active` names the highlighted tab: 'packs' | 'communityPuzzles' | 'puzzleCache' | 'notices' | 'payments' | 'adminAccounts' -->
 <th:block th:fragment="siteNav(active)">
   <!--/*@thymesVar id="adminPermissions" type="java.util.Set<java.lang.String>"*/-->
   <nav class="site-nav-wrap" aria-label="Main menu">
@@ -14,6 +14,7 @@
       <a th:if="${adminPermissions?.contains('COMMUNITY_MANAGE')}" th:classappend="${active == 'communityPuzzles'} ? 'active'" th:href="@{/admin/community-puzzles}" data-i18n="nav.communityPuzzles">Community Puzzles</a>
       <a th:if="${adminPermissions?.contains('AI_RESPONSE_MANAGE')}" th:classappend="${active == 'puzzleCache'} ? 'active'" th:href="@{/admin/puzzle-cache}" data-i18n="nav.responseMoves">AI Responses</a>
       <a th:if="${adminPermissions?.contains('OPERATION_MANAGE')}" th:classappend="${active == 'notices'} ? 'active'" th:href="@{/admin/notices}" data-i18n="nav.notices">Notices</a>
+      <a th:if="${adminPermissions?.contains('OPERATION_MANAGE')}" th:classappend="${active == 'payments'} ? 'active'" th:href="@{/admin/payments}" data-i18n="nav.payments">Payments</a>
       <a th:if="${adminPermissions?.contains('OPERATION_MANAGE')}" th:classappend="${active == 'adminAccounts'} ? 'active'" th:href="@{/admin/admin-accounts}" data-i18n="nav.adminAccounts">Admins</a>
     </div>
   </nav>

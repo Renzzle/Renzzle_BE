@@ -8,6 +8,7 @@ import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleReposi
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.rank.service.RankService;
 import com.renzzle.backend.domain.user.api.response.ChangeNicknameResponse;
+import com.renzzle.backend.domain.user.api.response.RefundDataConsentResponse;
 import com.renzzle.backend.domain.user.api.response.UserResponse;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
@@ -44,7 +45,17 @@ public class UserService {
                 .nickname(user.getNickname())
                 .currency(user.getCurrency())
                 .adsRemoved(user.isAdsRemoved())
+                .refundDataConsent(user.isRefundDataConsent())
                 .build();
+    }
+
+    // Whether Apple may receive this user's consumption data when they ask it for a refund
+    @Transactional
+    public RefundDataConsentResponse updateRefundDataConsent(UserEntity user, boolean consented) {
+        UserEntity persistedUser = userRepository.findById(user.getId())
+                .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
+        persistedUser.updateRefundDataConsent(consented);
+        return new RefundDataConsentResponse(consented);
     }
 
     @Transactional

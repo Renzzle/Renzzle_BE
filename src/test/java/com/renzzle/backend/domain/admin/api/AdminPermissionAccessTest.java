@@ -64,6 +64,9 @@ class AdminPermissionAccessTest {
         mockMvc.perform(withToken(get("/admin/notices"), user).accept(MediaType.TEXT_HTML))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/admin/forbidden"));
+        mockMvc.perform(withToken(get("/admin/payment/purchases").param("keyword", "anything"), user))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.errorResponse.code").value("A4031"));
         mockMvc.perform(withToken(get("/admin/pack-list"), user).accept(MediaType.TEXT_HTML))
                 .andExpect(status().isOk());
     }

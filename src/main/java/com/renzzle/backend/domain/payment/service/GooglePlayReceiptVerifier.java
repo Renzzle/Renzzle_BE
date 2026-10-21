@@ -3,108 +3,82 @@ package com.renzzle.backend.domain.payment.service;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.auth.oauth2.GoogleCredentials;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.List;
-
+// STORE_VERIFICATION_FAILED only when Google says the purchase is not valid. A call that failed is STORE_API_FAILED
+// and a pending payment PURCHASE_PENDING, so the app keeps those purchases and sends them again later
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class GooglePlayReceiptVerifier {
 
-    private static final String ANDROID_PUBLISHER_SCOPE = "https://www.googleapis.com/auth/androidpublisher";
+    private static final int PURCHASED = 0;
+    private static final int PENDING = 2;
 
-    private final RestClient restClient;
+    private final GooglePlayClient googlePlayClient;
     private final ObjectMapper objectMapper;
-    private final String packageName;
-    private final String credentialsPath;
-    private GoogleCredentials credentials;
-
-    public GooglePlayReceiptVerifier(
-            RestClient.Builder restClientBuilder,
-            ObjectMapper objectMapper,
-            @Value("${iap.google.package-name}") String packageName,
-            @Value("${iap.google.credentials-path}") String credentialsPath
-    ) {
-        this.restClient = restClientBuilder
-                .baseUrl("https://androidpublisher.googleapis.com")
-                .build();
-        this.objectMapper = objectMapper;
-        this.packageName = packageName;
-        this.credentialsPath = credentialsPath;
-    }
 
     public StoreVerificationResult verify(String productId, String purchaseToken) {
+        String rawResponse = requestPurchase(productId, purchaseToken);
+        GoogleProductPurchaseResponse response = parseResponse(rawResponse);
+        if (response.purchaseState() != null && response.purchaseState() == PENDING) {
+            throw new CustomException(ErrorCode.PURCHASE_PENDING);
+        }
+        if (response.purchaseState() == null || response.purchaseState() != PURCHASED) {
+            log.warn("Google Play verification failed. rawResponse={}", rawResponse);
+            throw new CustomException(ErrorCode.STORE_VERIFICATION_FAILED);
+        }
+
+        boolean acknowledgementRequired = response.acknowledgementState() != null
+                && response.acknowledgementState() == 0;
+        return new StoreVerificationResult(productId, response.orderId(), acknowledgementRequired);
+    }
+
+    private String requestPurchase(String productId, String purchaseToken) {
         try {
-            String accessToken = issueAccessToken();
-            ResponseEntity<String> responseEntity = restClient.get()
-                    .uri(
-                            "/androidpublisher/v3/applications/{packageName}/purchases/products/{productId}/tokens/{purchaseToken}",
-                            packageName,
-                            productId,
-                            purchaseToken
-                    )
-                    .headers(headers -> headers.setBearerAuth(accessToken))
-                    .retrieve()
-                    .toEntity(String.class);
-
-            String rawResponse = responseEntity.getBody();
-            GoogleProductPurchaseResponse response = parseResponse(rawResponse);
-            if (response == null || response.purchaseState() == null || response.purchaseState() != 0) {
-                log.warn("Google Play verification failed. rawResponse={}", rawResponse);
-                throw new CustomException(ErrorCode.STORE_VERIFICATION_FAILED);
-            }
-
-            return new StoreVerificationResult(productId, response.orderId());
-        } catch (CustomException e) {
-            throw e;
+            return googlePlayClient.getProductPurchase(productId, purchaseToken);
         } catch (RestClientResponseException e) {
             log.warn("Google Play verification failed. status={}, rawResponse={}",
                     e.getStatusCode().value(), e.getResponseBodyAsString());
-            throw new CustomException(ErrorCode.STORE_VERIFICATION_FAILED);
-        } catch (Exception e) {
-            log.warn("Google Play verification failed.", e);
-            throw new CustomException(ErrorCode.STORE_VERIFICATION_FAILED);
+            throw new CustomException(isRejectedPurchase(e.getStatusCode().value())
+                    ? ErrorCode.STORE_VERIFICATION_FAILED
+                    : ErrorCode.STORE_API_FAILED);
+        } catch (RuntimeException e) {
+            log.warn("Google Play verification request failed.", e);
+            throw new CustomException(ErrorCode.STORE_API_FAILED);
         }
+    }
+
+    // 400 (token not valid for the product) and 410 (token no longer valid) are answers about the purchase.
+    // 404 stays a call failure because a wrong package name also gives it, and Google refunds an unfinished
+    // purchase after 3 days anyway
+    private boolean isRejectedPurchase(int status) {
+        return status == 400 || status == 410;
     }
 
     private GoogleProductPurchaseResponse parseResponse(String rawResponse) {
         try {
-            return objectMapper.readValue(rawResponse, GoogleProductPurchaseResponse.class);
-        } catch (JsonProcessingException e) {
-            log.warn("Google Play verification response parse failed. rawResponse={}", rawResponse);
-            throw new CustomException(ErrorCode.STORE_VERIFICATION_FAILED);
-        }
-    }
-
-    private String issueAccessToken() throws IOException {
-        GoogleCredentials loadedCredentials = getCredentials();
-        loadedCredentials.refreshIfExpired();
-        return loadedCredentials.getAccessToken().getTokenValue();
-    }
-
-    private synchronized GoogleCredentials getCredentials() throws IOException {
-        if (credentials == null) {
-            try (FileInputStream credentialsStream = new FileInputStream(credentialsPath)) {
-                credentials = GoogleCredentials.fromStream(credentialsStream)
-                        .createScoped(List.of(ANDROID_PUBLISHER_SCOPE));
+            GoogleProductPurchaseResponse response =
+                    objectMapper.readValue(rawResponse, GoogleProductPurchaseResponse.class);
+            if (response == null) {
+                throw new IllegalArgumentException("Empty response");
             }
+            return response;
+        } catch (JsonProcessingException | IllegalArgumentException e) {
+            log.warn("Google Play verification response parse failed. rawResponse={}", rawResponse);
+            throw new CustomException(ErrorCode.STORE_API_FAILED);
         }
-        return credentials;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private record GoogleProductPurchaseResponse(
             Integer purchaseState,
+            Integer acknowledgementState,
             String orderId
     ) {
     }
