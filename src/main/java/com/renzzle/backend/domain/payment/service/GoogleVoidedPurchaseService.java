@@ -58,7 +58,6 @@ public class GoogleVoidedPurchaseService {
         }
     }
 
-    // Starts 5 minutes after startup so DataInitializer has widened the status column first.
     // Reads the whole 30 days each time: refunds already applied are skipped
     @Scheduled(initialDelay = 5, fixedDelay = 60, timeUnit = TimeUnit.MINUTES)
     public void reclaimVoidedPurchases() {
