@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
@@ -27,6 +28,8 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
@@ -173,7 +176,7 @@ class AppleAppStoreServerClientTest {
     }
 
     @Test
-    void fetchTransactionInfo_WhenUnauthorizedInBothEnvironments_ThenThrowsCustomException() {
+    void fetchTransactionInfo_WhenUnauthorizedInBothEnvironments_ThenThrowsStoreApiFailedSoTheAppRetries() {
         // given
         RestClient.Builder restClientBuilder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer.bindTo(restClientBuilder).build();
@@ -189,12 +192,67 @@ class AppleAppStoreServerClientTest {
                 () -> client.fetchTransactionInfo(TRANSACTION_ID));
 
         // then
+        assertEquals(ErrorCode.STORE_API_FAILED, exception.getErrorCode());
+        server.verify();
+    }
+
+    @Test
+    void fetchTransactionInfo_WhenAppleRejectsTheTransactionId_ThenThrowsStoreVerificationFailed() {
+        // given
+        RestClient.Builder restClientBuilder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restClientBuilder).build();
+        AppleAppStoreServerClient client = createClient(restClientBuilder);
+
+        server.expect(requestTo(PRODUCTION_URL + TRANSACTION_PATH))
+                .andRespond(withStatus(HttpStatus.BAD_REQUEST)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"errorCode\":4000006,\"errorMessage\":\"Invalid transaction id.\"}"));
+
+        // when
+        CustomException exception = assertThrows(CustomException.class,
+                () -> client.fetchTransactionInfo(TRANSACTION_ID));
+
+        // then
         assertEquals(ErrorCode.STORE_VERIFICATION_FAILED, exception.getErrorCode());
         server.verify();
     }
 
     @Test
-    void fetchTransactionInfo_WhenSignedPayloadMalformed_ThenThrowsCustomException() throws Exception {
+    void fetchTransactionInfo_WhenAppleIsDown_ThenThrowsStoreApiFailedSoTheAppRetries() {
+        // given
+        RestClient.Builder restClientBuilder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restClientBuilder).build();
+        AppleAppStoreServerClient client = createClient(restClientBuilder);
+
+        server.expect(requestTo(PRODUCTION_URL + TRANSACTION_PATH))
+                .andRespond(withStatus(HttpStatus.SERVICE_UNAVAILABLE));
+
+        // when
+        CustomException exception = assertThrows(CustomException.class,
+                () -> client.fetchTransactionInfo(TRANSACTION_ID));
+
+        // then
+        assertEquals(ErrorCode.STORE_API_FAILED, exception.getErrorCode());
+        server.verify();
+    }
+
+    @Test
+    void fetchTransactionInfo_WhenPrivateKeyCannotBeRead_ThenThrowsStoreApiFailed() {
+        // given
+        AppleAppStoreServerClient client = new AppleAppStoreServerClient(RestClient.builder(), objectMapper,
+                "issuer-id", "key-id", "com.renzzle", tempDir.resolve("missing.p8").toString(),
+                PRODUCTION_URL, SANDBOX_URL);
+
+        // when
+        CustomException exception = assertThrows(CustomException.class,
+                () -> client.fetchTransactionInfo(TRANSACTION_ID));
+
+        // then
+        assertEquals(ErrorCode.STORE_API_FAILED, exception.getErrorCode());
+    }
+
+    @Test
+    void fetchTransactionInfo_WhenSignedPayloadMalformed_ThenThrowsStoreApiFailed() throws Exception {
         // given
         RestClient.Builder restClientBuilder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer.bindTo(restClientBuilder).build();
@@ -210,7 +268,76 @@ class AppleAppStoreServerClientTest {
                 () -> client.fetchTransactionInfo(TRANSACTION_ID));
 
         // then
-        assertEquals(ErrorCode.STORE_VERIFICATION_FAILED, exception.getErrorCode());
+        assertEquals(ErrorCode.STORE_API_FAILED, exception.getErrorCode());
+        server.verify();
+    }
+
+    @Test
+    void requestTestNotification_WhenSandbox_ThenAsksTheSandboxAndReturnsToken() {
+        // given
+        RestClient.Builder restClientBuilder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restClientBuilder).build();
+        AppleAppStoreServerClient client = createClient(restClientBuilder);
+
+        server.expect(requestTo(SANDBOX_URL + "/inApps/v1/notifications/test"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withSuccess("{\"testNotificationToken\":\"token-1\"}", MediaType.APPLICATION_JSON));
+
+        // when
+        String token = client.requestTestNotification("Sandbox");
+
+        // then
+        assertThat(token).isEqualTo("token-1");
+        server.verify();
+    }
+
+    @Test
+    void getTestNotificationStatus_ThenReadsEachSendAttempt() {
+        // given
+        RestClient.Builder restClientBuilder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restClientBuilder).build();
+        AppleAppStoreServerClient client = createClient(restClientBuilder);
+
+        server.expect(requestTo(PRODUCTION_URL + "/inApps/v1/notifications/test/token-1"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess(
+                        "{\"sendAttempts\":[{\"attemptDate\":1760000000000,\"sendAttemptResult\":\"SUCCESS\"}]}",
+                        MediaType.APPLICATION_JSON));
+
+        // when
+        AppleTestNotificationStatus status = client.getTestNotificationStatus("Production", "token-1");
+
+        // then
+        assertThat(status.sendAttempts()).containsExactly(
+                new AppleTestNotificationStatus.SendAttempt(1760000000000L, "SUCCESS"));
+        server.verify();
+    }
+
+    @Test
+    void sendConsumptionInformation_ThenPutsTheRequestForTheTransaction() {
+        // given
+        RestClient.Builder restClientBuilder = RestClient.builder();
+        MockRestServiceServer server = MockRestServiceServer.bindTo(restClientBuilder).build();
+        AppleAppStoreServerClient client = createClient(restClientBuilder);
+
+        server.expect(requestTo(PRODUCTION_URL + "/inApps/v2/transactions/consumption/" + TRANSACTION_ID))
+                .andExpect(method(HttpMethod.PUT))
+                .andExpect(content().json("""
+                        {
+                          "customerConsented": true,
+                          "consumptionPercentage": 75000,
+                          "deliveryStatus": "DELIVERED",
+                          "refundPreference": "DECLINE",
+                          "sampleContentProvided": false
+                        }
+                        """, true))
+                .andRespond(withStatus(HttpStatus.ACCEPTED));
+
+        // when
+        client.sendConsumptionInformation("Production", TRANSACTION_ID, new AppleConsumptionRequest(
+                true, 75_000, AppleConsumptionRequest.DELIVERED, AppleConsumptionRequest.DECLINE, false));
+
+        // then
         server.verify();
     }
 

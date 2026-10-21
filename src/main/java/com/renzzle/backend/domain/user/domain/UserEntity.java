@@ -72,6 +72,11 @@ public class UserEntity {
     @Column(name = "rank_reward_date")
     private LocalDate rankRewardDate;
 
+    // Agreed to share consumption data with Apple when asking it for a refund; can be withdrawn at any time
+    @Builder.Default
+    @Column(name = "refund_data_consent", nullable = false)
+    private boolean refundDataConsent = false;
+
     @Column(name = "device_id", nullable = false, length = 1024)
     private String deviceId;
 
@@ -114,8 +119,11 @@ public class UserEntity {
     }
 
     public String getNickname() {
-        return status.equals(Status.getStatus(Status.StatusName.DELETED))
-                ? DELETED_USER : nickname;
+        return isDeleted() ? DELETED_USER : nickname;
+    }
+
+    public boolean isDeleted() {
+        return status.equals(Status.getStatus(Status.StatusName.DELETED));
     }
 
     public void purchase(int price){
@@ -138,8 +146,28 @@ public class UserEntity {
         return granted;
     }
 
+    // Stops at zero: currency the user already spent is written off
+    public int reclaimableCurrency(int amount) {
+        return Math.max(0, Math.min(this.currency, amount));
+    }
+
+    // Returns how much was taken
+    public int reclaimCurrency(int amount) {
+        int reclaimed = reclaimableCurrency(amount);
+        this.currency -= reclaimed;
+        return reclaimed;
+    }
+
     public void removeAds() {
         this.adsRemoved = true;
+    }
+
+    public void restoreAds() {
+        this.adsRemoved = false;
+    }
+
+    public void updateRefundDataConsent(boolean consented) {
+        this.refundDataConsent = consented;
     }
 
     public void updateRatingTo(double newRating) {

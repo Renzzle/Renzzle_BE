@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.user.api;
 
+import com.renzzle.backend.domain.user.api.response.RefundDataConsentResponse;
 import com.renzzle.backend.domain.user.api.response.UserResponse;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.domain.user.service.UserService;
@@ -9,6 +10,7 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
@@ -17,7 +19,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
@@ -45,7 +49,8 @@ class UserControllerTest {
                 "tintintest46@mail.com",
                 "tintin",
                 1300,
-                true
+                true,
+                false
         );
         Mockito.when(userService.getUserResponse(userEntity)).thenReturn(userResponse);
 
@@ -55,7 +60,8 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.response.id").value(1L))
                 .andExpect(jsonPath("$.response.email").value("tintintest46@mail.com"))
                 .andExpect(jsonPath("$.response.nickname").value("tintin"))
-                .andExpect(jsonPath("$.response.adsRemoved").value(true));
+                .andExpect(jsonPath("$.response.adsRemoved").value(true))
+                .andExpect(jsonPath("$.response.refundDataConsent").value(false));
 
         // check if userService.getUser() is called
         Mockito.verify(userService).getUserResponse(userEntity);
@@ -83,6 +89,35 @@ class UserControllerTest {
                 .andExpect(status().isOk());
 
         Mockito.verify(userService).getUserPuzzleList(userEntity, 7L, 10);
+    }
+
+    @Test
+    void updateRefundDataConsent_WhenConsented_ThenReturnsTheNewValue() throws Exception {
+        UserEntity userEntity = authenticate();
+        Mockito.when(userService.updateRefundDataConsent(userEntity, true))
+                .thenReturn(new RefundDataConsentResponse(true));
+
+        mockMvc.perform(patch("/api/user/refund-data-consent")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"consented\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.response.consented").value(true));
+
+        Mockito.verify(userService).updateRefundDataConsent(userEntity, true);
+    }
+
+    @Test
+    void updateRefundDataConsent_WhenValueMissing_ThenRejectsWithoutUpdating() throws Exception {
+        authenticate();
+
+        mockMvc.perform(patch("/api/user/refund-data-consent")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+
+        Mockito.verify(userService, Mockito.never()).updateRefundDataConsent(Mockito.any(), Mockito.anyBoolean());
     }
 
     private UserEntity authenticate() {

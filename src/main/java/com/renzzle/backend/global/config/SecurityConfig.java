@@ -70,7 +70,9 @@ public class SecurityConfig {
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/test-token"),  // only mapped when docs.enabled=true
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/docs"),  // Scalar API reference page
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/v3/api-docs/**"),
-                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/actuator/**")
+                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/actuator/**"),
+                // Called by Apple without a token; the handler trusts nothing in it without asking Apple again
+                AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/webhooks/apple/notifications")
         );
 
         httpSecurity.csrf(AbstractHttpConfigurer::disable)
@@ -90,7 +92,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/admin/community-puzzles").hasAuthority(COMMUNITY_MANAGE.getAuthority())
                         .requestMatchers(HttpMethod.GET, "/admin/puzzle-cache", "/admin/puzzle-cache/training-pack",
                                 "/admin/puzzle-cache/board").hasAuthority(AI_RESPONSE_MANAGE.getAuthority())
-                        .requestMatchers(HttpMethod.GET, "/admin/notices", "/admin/admin-accounts").hasAuthority(OPERATION_MANAGE.getAuthority())
+                        .requestMatchers(HttpMethod.GET, "/admin/notices", "/admin/payments", "/admin/admin-accounts").hasAuthority(OPERATION_MANAGE.getAuthority())
                         // Read APIs the AI response pages share with the pack and community tabs
                         .requestMatchers(HttpMethod.GET, "/admin/training/**")
                                 .hasAnyAuthority(PACK_MANAGE.getAuthority(), AI_RESPONSE_MANAGE.getAuthority())
@@ -104,8 +106,8 @@ public class SecurityConfig {
                         .requestMatchers("/admin/community/puzzle-manage/**").hasAuthority(COMMUNITY_MANAGE.getAuthority())
                         // The app saves AI responses itself, but only admins may delete them
                         .requestMatchers(HttpMethod.DELETE, "/api/puzzle/cache/**").hasAuthority(AI_RESPONSE_MANAGE.getAuthority())
-                        // Operation: notices, admin accounts, and settings that have no page
-                        .requestMatchers("/admin/notice/**", "/admin/admin-account/**").hasAuthority(OPERATION_MANAGE.getAuthority())
+                        // Operation: notices, payments, admin accounts, and settings that have no page
+                        .requestMatchers("/admin/notice/**", "/admin/payment/**", "/admin/admin-account/**").hasAuthority(OPERATION_MANAGE.getAuthority())
                         .requestMatchers(HttpMethod.POST, "/admin/puzzle/rating/recalculate", "/admin/puzzle/board-key/recalculate",
                                 "/admin/puzzle/answer-key/recalculate").hasAuthority(OPERATION_MANAGE.getAuthority())
                         .requestMatchers(HttpMethod.POST, "/api/app-info").hasAuthority(OPERATION_MANAGE.getAuthority())
