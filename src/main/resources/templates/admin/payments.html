@@ -28,7 +28,6 @@
     <div class="admin-page-heading">
       <div>
         <h2 data-i18n="payments.heading">Payments</h2>
-        <p data-i18n="payments.description">Look up purchases to judge refund requests. Google refunds are made in Play Console; Apple decides iOS refunds itself.</p>
       </div>
     </div>
 
@@ -37,7 +36,6 @@
       <div class="section-title-row payment-title-row">
         <div>
           <h2 data-i18n="payments.searchHeading">Purchase Lookup</h2>
-          <p data-i18n="payments.searchDescription">Refundable within the withdrawal period while the balance still covers the currency the purchase granted.</p>
         </div>
         <form class="payment-search" id="purchaseSearchForm">
           <label for="purchaseKeyword">
@@ -73,7 +71,6 @@
       <div class="section-title-row">
         <div>
           <h2 data-i18n="payments.googleHeading">Google Play Refunds (Last 30 Days)</h2>
-          <p data-i18n="payments.googleDescription">Read live from Google. Shows the purchase each refund matches and how much currency it takes back.</p>
         </div>
         <div class="section-controls">
           <button type="button" class="btn btn-secondary" id="loadVoidedBtn" data-i18n="payments.load">Load</button>
@@ -105,7 +102,6 @@
       <div class="section-title-row payment-title-row">
         <div>
           <h2 data-i18n="payments.appleHeading">App Store Notifications</h2>
-          <p data-i18n="payments.appleDescription">Asks Apple to send a test notification to the URL registered in App Store Connect and shows whether it arrived.</p>
         </div>
         <div class="section-controls payment-test-controls">
           <label class="payment-environment" for="appleEnvironment">
@@ -253,7 +249,7 @@
         return;
       }
 
-      setStatus('purchaseStatus', adminT('payments.purchaseCount', { count: purchases.length }));
+      setStatus('purchaseStatus', '');
       tableWrap.hidden = false;
       purchases.forEach((p) => {
         const tr = document.createElement('tr');
@@ -337,11 +333,7 @@
         return;
       }
 
-      const matched = voidedPurchases.filter((v) => v.matched).length;
-      const unacknowledged = voidedPurchases.filter((v) => v.voidedReason === UNACKNOWLEDGED_REASON).length;
-      setStatus('voidedStatus', adminT('payments.voidedSummary', {
-        count: voidedPurchases.length, matched, unacknowledged
-      }));
+      setStatus('voidedStatus', '');
       tableWrap.hidden = false;
       voidedPurchases.forEach((v) => {
         const tr = document.createElement('tr');
