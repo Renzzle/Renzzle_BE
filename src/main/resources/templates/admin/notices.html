@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title data-i18n="title.notices">Renzzle Admin - Notices</title>
-  <link rel="stylesheet" href="/assets/admin/notices.css">
+  <link rel="preload" href="/assets/fonts/pretendard-1.3.9/PretendardVariable.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/assets/admin/common.css">
+  <link rel="stylesheet" href="/assets/admin/notices.css">
   <script src="/assets/admin/i18n.js"></script>
 </head>
 <body>
@@ -103,6 +104,14 @@
               <span data-i18n="notices.expiredAt">Expires At</span>
               <input type="datetime-local" id="announcementExpiredAt">
             </label>
+            <div class="notice-toggle-row">
+              <label class="notice-switch notice-pin-switch" for="announcementPinned">
+                <span class="admin-visually-hidden" data-i18n="notices.pinToTop">Pin to top</span>
+                <input type="checkbox" id="announcementPinned">
+                <span class="notice-switch-track" aria-hidden="true"></span>
+              </label>
+              <span class="notice-toggle-label" data-i18n="notices.pinToTop">Pin to top</span>
+            </div>
           </div>
 
           <div class="inline-translation-grid">
@@ -156,6 +165,14 @@
               <span data-i18n="notices.expiredAt">Expires At</span>
               <input type="datetime-local" id="editAnnouncementExpiredAt">
             </label>
+            <div class="notice-toggle-row">
+              <label class="notice-switch notice-pin-switch" for="editAnnouncementPinned">
+                <span class="admin-visually-hidden" data-i18n="notices.pinToTop">Pin to top</span>
+                <input type="checkbox" id="editAnnouncementPinned">
+                <span class="notice-switch-track" aria-hidden="true"></span>
+              </label>
+              <span class="notice-toggle-label" data-i18n="notices.pinToTop">Pin to top</span>
+            </div>
           </div>
 
           <div class="inline-create-footer">
@@ -196,7 +213,7 @@
 
     <!-- ===== Personal notice ===== -->
     <section class="section">
-      <div class="section-title-row notice-title-row">
+      <div class="section-title-row">
         <div>
           <h2 data-i18n="notices.personalHeading">Personal Notice</h2>
           <p data-i18n="notices.personalDescription">Send a one-time message to a single user. It is shown on the next app launch and then removed.</p>
@@ -242,6 +259,11 @@
       }
       const res = await fetch(url, { ...options, headers, credentials: 'same-origin' });
       if (res.status === 401 || res.status === 403) {
+        const error = await res.clone().json().catch(() => null);
+        if (error?.errorResponse?.code === 'A4031') {
+          alert(adminT('msg.permissionDenied'));
+          return null;
+        }
         alert(adminT('msg.sessionExpired'));
         globalThis.location.href = '/admin/logout';
         return null;
@@ -423,7 +445,7 @@
 
         const statusTd = document.createElement('td');
         const statusPill = document.createElement('span');
-        statusPill.className = 'admin-pill' + (a.isActive ? ' primary' : '');
+        statusPill.className = 'admin-pill status' + (a.isActive ? '' : ' off');
         statusPill.textContent = adminT(a.isActive ? 'notices.active' : 'notices.expired');
         statusTd.appendChild(statusPill);
 
@@ -434,9 +456,18 @@
         langTd.appendChild(langPill);
 
         const titleTd = document.createElement('td');
+        const titleWrap = document.createElement('span');
+        titleWrap.className = 'notice-row-title';
+        if (a.isPinned) {
+          const pinPill = document.createElement('span');
+          pinPill.className = 'admin-pill notice-pin-pill';
+          pinPill.textContent = adminT('notices.pinned');
+          titleWrap.appendChild(pinPill);
+        }
         const title = document.createElement('strong');
         title.textContent = a.title || adminT('common.untitled');
-        titleTd.appendChild(title);
+        titleWrap.appendChild(title);
+        titleTd.appendChild(titleWrap);
 
         const createdTd = document.createElement('td');
         createdTd.className = 'notice-row-date';
@@ -497,6 +528,7 @@
         field.value = '';
       });
       document.getElementById('announcementExpiredAt').value = defaultExpiryInput();
+      document.getElementById('announcementPinned').checked = false;
       setFormMessage('announcementCreateMsg', '', null);
     }
 
@@ -532,6 +564,7 @@
         setFormMessage('announcementCreateMsg', adminT('notices.needExpiredAt'), 'error');
         return;
       }
+      const isPinned = document.getElementById('announcementPinned').checked;
 
       const submitBtn = document.getElementById('submitCreateAnnouncementBtn');
       submitBtn.disabled = true;
@@ -539,7 +572,7 @@
       try {
         const res = await fetchWithAuth(API_BASE + '/admin/notice/announcement', {
           method: 'POST',
-          body: JSON.stringify({ expiredAt, contents })
+          body: JSON.stringify({ expiredAt, isPinned, contents })
         });
         if (!res) return;
         const data = await res.json();
@@ -566,6 +599,7 @@
       document.getElementById('editAnnouncementTitle').value = announcement.title || '';
       document.getElementById('editAnnouncementContext').value = announcement.context || '';
       document.getElementById('editAnnouncementExpiredAt').value = isoToLocalInput(announcement.expiredAt);
+      document.getElementById('editAnnouncementPinned').checked = Boolean(announcement.isPinned);
       setFormMessage('announcementEditMsg', '', null);
       setDialogOpen(document.getElementById('announcementEditDialog'), true);
       requestAnimationFrame(() => document.getElementById('editAnnouncementTitle').focus());
@@ -582,6 +616,7 @@
       const title = document.getElementById('editAnnouncementTitle').value.trim();
       const context = document.getElementById('editAnnouncementContext').value.trim();
       const expiredAt = localInputToIso(document.getElementById('editAnnouncementExpiredAt').value);
+      const isPinned = document.getElementById('editAnnouncementPinned').checked;
       if (!title || !context) {
         setFormMessage('announcementEditMsg', adminT('notices.needTitleAndBody'), 'error');
         return;
@@ -597,7 +632,7 @@
       try {
         const res = await fetchWithAuth(API_BASE + '/admin/notice/announcement/' + encodeURIComponent(editingAnnouncement.id), {
           method: 'PATCH',
-          body: JSON.stringify({ title, context, expiredAt })
+          body: JSON.stringify({ title, context, expiredAt, isPinned })
         });
         if (!res) return;
         const data = await res.json();

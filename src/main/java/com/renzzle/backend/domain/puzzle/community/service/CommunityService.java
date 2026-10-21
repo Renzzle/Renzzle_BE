@@ -3,12 +3,14 @@ package com.renzzle.backend.domain.puzzle.community.service;
 import com.renzzle.backend.domain.appinfo.service.AppInfoService;
 import com.renzzle.backend.domain.puzzle.community.api.request.AddCommunityPuzzleRequest;
 import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzleRequest;
+import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzlesForAdminRequest;
 import com.renzzle.backend.domain.puzzle.community.api.response.AddCommunityPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.cache.api.request.GetCommunityPuzzlesForCacheRequest;
 import com.renzzle.backend.domain.puzzle.cache.api.response.CommunityPuzzleCachePickerResponse;
 import com.renzzle.backend.domain.puzzle.cache.domain.PuzzleType;
 import com.renzzle.backend.domain.puzzle.cache.service.PuzzleCacheService;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleForAdminResponse;
+import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlePageForAdminResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleAnswerResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlesResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetSingleCommunityPuzzleResponse;
@@ -33,6 +35,10 @@ import com.renzzle.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,6 +59,8 @@ import static com.renzzle.backend.global.common.constant.ItemPrice.HINT;
 @Service
 @RequiredArgsConstructor
 public class CommunityService {
+
+    private static final int ADMIN_PAGE_SIZE = 10;
 
     private final Clock clock;
     private final CommunityPuzzleRepository communityPuzzleRepository;
@@ -266,21 +274,65 @@ public class CommunityService {
         return toAdminCommunityPuzzleResponse(puzzle);
     }
 
+    // Newest first; a null verified lists every puzzle
+    @Transactional(readOnly = true)
+    public GetCommunityPuzzlePageForAdminResponse getCommunityPuzzlesForAdmin(GetCommunityPuzzlesForAdminRequest request) {
+        Pageable pageable = PageRequest.of(
+                request.page() != null ? request.page() : 0,
+                request.size() != null ? request.size() : ADMIN_PAGE_SIZE,
+                Sort.by(Sort.Direction.DESC, "id"));
+        Page<CommunityPuzzle> page = request.verified() == null
+                ? communityPuzzleRepository.findAllBy(pageable)
+                : communityPuzzleRepository.findAllByIsVerified(request.verified(), pageable);
+        return new GetCommunityPuzzlePageForAdminResponse(
+                page.map(this::toAdminCommunityPuzzleResponse).getContent(),
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages());
+    }
+
     @Transactional
-    public GetCommunityPuzzleForAdminResponse updateCommunityPuzzleVerificationForAdmin(Long puzzleId, Boolean isVerified) {
+    public GetCommunityPuzzleForAdminResponse updateCommunityPuzzleVerificationForAdmin(
+            Long puzzleId, Boolean isVerified, String answer) {
         if (isVerified == null) {
             throw new CustomException("Verification flag is required", ErrorCode.VALIDATION_ERROR);
+        }
+        // Only verifying takes a new answer, so the cached solution line always comes from a verified one
+        if (answer != null && !isVerified) {
+            throw new CustomException("An answer can only be corrected while verifying", ErrorCode.VALIDATION_ERROR);
         }
         CommunityPuzzle puzzle = communityPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
         boolean wasVerified = Boolean.TRUE.equals(puzzle.getIsVerified());
+        boolean answerChanged = answer != null && !answer.equals(puzzle.getAnswer());
+        if (answerChanged) {
+            correctAnswer(puzzle, answer);
+        }
         puzzle.updateVerification(isVerified);
 
-        if (!wasVerified && isVerified) {
+        // Replies keyed to the old answer's positions would be wrong, so a new answer reseeds instead of merging
+        if (answerChanged) {
+            puzzleCacheService.seedSolutionPath(
+                    PuzzleType.COMMUNITY, puzzle.getId(), puzzle.getBoardStatus(), puzzle.getAnswer());
+        } else if (!wasVerified && isVerified) {
             puzzleCacheService.mergeSolutionPath(
                     PuzzleType.COMMUNITY, puzzle.getId(), puzzle.getBoardStatus(), puzzle.getAnswer());
         }
         return toAdminCommunityPuzzleResponse(puzzle);
+    }
+
+    // Depth counts every answer move, as the admin puzzle editors do
+    private void correctAnswer(CommunityPuzzle puzzle, String answer) {
+        if (answer.isBlank() || !BoardUtils.validBoardString(answer)) {
+            throw new CustomException("Invalid board string format", ErrorCode.VALIDATION_ERROR);
+        }
+        if (!BoardUtils.answerFitsBoard(puzzle.getBoardStatus(), answer)) {
+            throw new CustomException("Answer moves must land on empty points", ErrorCode.VALIDATION_ERROR);
+        }
+        int depth = BoardUtils.countMoves(answer);
+        puzzle.correctAnswer(answer, BoardUtils.makeAnswerKey(puzzle.getBoardStatus(), answer), depth,
+                RatingUtil.puzzleRating(depth, puzzle.getWinColor(), null));
     }
 
     private GetCommunityPuzzleForAdminResponse toAdminCommunityPuzzleResponse(CommunityPuzzle puzzle) {

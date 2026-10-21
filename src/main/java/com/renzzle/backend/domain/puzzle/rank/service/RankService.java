@@ -6,16 +6,16 @@ import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository
 import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.dao.projection.AuthorStatsProjection;
 import com.renzzle.backend.domain.puzzle.community.dao.projection.SolvedCountProjection;
-import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.rank.api.request.RankResultRequest;
 import com.renzzle.backend.domain.puzzle.rank.api.response.*;
 import com.renzzle.backend.domain.puzzle.rank.dao.LatestRankPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.rank.domain.LatestRankPuzzle;
 import com.renzzle.backend.domain.puzzle.rank.domain.RankSessionData;
 import com.renzzle.backend.domain.puzzle.rank.service.dto.NextPuzzleResult;
+import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
+import com.renzzle.backend.domain.puzzle.shared.dto.RankPuzzleCandidate;
 import com.renzzle.backend.domain.puzzle.shared.util.ELOUtils;
 import com.renzzle.backend.domain.puzzle.training.dao.TrainingPuzzleRepository;
-import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.dao.projection.UserNicknameProjection;
 import com.renzzle.backend.domain.user.domain.UserEntity;
@@ -24,6 +24,7 @@ import com.renzzle.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Limit;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
@@ -36,15 +37,20 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.renzzle.backend.domain.puzzle.shared.util.ELOUtils.TARGET_WIN_PROBABILITY;
 import static com.renzzle.backend.domain.puzzle.shared.util.RatingUtil.MAX_RATING;
 import static com.renzzle.backend.domain.puzzle.shared.util.RatingUtil.MIN_RATING;
+import static com.renzzle.backend.global.common.constant.ItemPrice.RANK_DAILY_REWARD_LIMIT;
 import static com.renzzle.backend.global.common.constant.ItemPrice.RANK_REWARD;
 import static com.renzzle.backend.global.common.constant.StringConstant.DELETED_USER;
 
@@ -58,6 +64,7 @@ public class RankService {
     private static final String PUZZLER_RANKING_KEY = "ranking:puzzler";
     private static final String RANKING_TEMP_KEY_SUFFIX = ":tmp";
     private static final int RANKING_SIZE = 100;
+    private static final int CANDIDATES_PER_SOURCE = 5;
 
     private final RedisTemplate<String, RankSessionData> redisTemplate;
     private final TrainingPuzzleRepository trainingPuzzleRepository;
@@ -111,6 +118,8 @@ public class RankService {
         return RankStartResponse.builder()
                 .boardStatus(nextPuzzle.boardStatus())
                 .winColor(nextPuzzle.winColor().getName())
+                .puzzleType(nextPuzzle.puzzleType())
+                .puzzleId(nextPuzzle.puzzleId())
                 .build();
     }
 
@@ -194,6 +203,8 @@ public class RankService {
         return RankResultResponse.builder()
                 .boardStatus(nextPuzzle.boardStatus())
                 .winColor(nextPuzzle.winColor().getName())
+                .puzzleType(nextPuzzle.puzzleType())
+                .puzzleId(nextPuzzle.puzzleId())
                 .build();
     }
 
@@ -210,6 +221,8 @@ public class RankService {
         return RankResultResponse.builder()
                 .boardStatus(current.getBoardStatus())
                 .winColor(current.getWinColor().getName())
+                .puzzleType(current.getPuzzleType())
+                .puzzleId(current.getPuzzleId())
                 .build();
     }
 
@@ -337,12 +350,13 @@ public class RankService {
         int solvedCount = (int) puzzles.stream()
                 .filter(LatestRankPuzzle::getIsSolved)
                 .count();
-        int reward = solvedCount * appInfoService.getPrice(RANK_REWARD);
+        int earned = solvedCount * appInfoService.getPrice(RANK_REWARD);
+        // The daily limit resets at midnight UTC
+        LocalDate today = LocalDate.ofInstant(clock.instant(), ZoneOffset.UTC);
+        int reward = user.grantRankReward(earned, appInfoService.getPrice(RANK_DAILY_REWARD_LIMIT), today);
 
-        user.getReward(reward);
-
-        log.info("Rank game ended. puzzles={}, solved={}, reward={}, rating={}",
-                puzzles.size(), solvedCount, reward, user.getRating());
+        log.info("Rank game ended. puzzles={}, solved={}, earned={}, reward={}, rewardToday={}, rating={}",
+                puzzles.size(), solvedCount, earned, reward, user.getRankRewardToday(), user.getRating());
 
         return RankEndResponse.builder()
                 .rating(user.getRating())
@@ -353,68 +367,69 @@ public class RankService {
     NextPuzzleResult getNextPuzzle(double originalMmr, double targetWinProbability, UserEntity user) {
         // Take the closest candidates from each source, then pick one at random
         double desiredRating = ELOUtils.getProblemRatingForTargetWinProbability(originalMmr, targetWinProbability);
-        int windowSize = 5;
+        Limit limit = Limit.of(CANDIDATES_PER_SOURCE);
 
-        List<TrainingPuzzle> trainingPuzzles =
-                trainingPuzzleRepository.findAvailableTrainingPuzzlesSortedByRating(user);
-        List<CommunityPuzzle> communityPuzzles =
-                communityPuzzleRepository.findAvailableCommunityPuzzlesSortedByRating(user);
+        List<NextPuzzleResult> trainings = closest(PuzzleType.TRAINING, desiredRating,
+                trainingPuzzleRepository.findRankCandidatesFrom(user, desiredRating, limit),
+                trainingPuzzleRepository.findRankCandidatesBelow(user, desiredRating, limit));
+        List<NextPuzzleResult> communities = closest(PuzzleType.COMMUNITY, desiredRating,
+                communityPuzzleRepository.findRankCandidatesFrom(user, desiredRating, limit),
+                communityPuzzleRepository.findRankCandidatesBelow(user, desiredRating, limit));
+        // Every puzzle was handed out this game already, so the game goes round again instead of running dry
+        if (trainings.isEmpty() && communities.isEmpty()) {
+            RepeatCandidates repeat = leastHandedOutPuzzles(user);
+            trainings = closest(PuzzleType.TRAINING, desiredRating, repeat.trainings(), List.of());
+            communities = closest(PuzzleType.COMMUNITY, desiredRating, repeat.communities(), List.of());
+        }
 
-        List<TrainingPuzzle> selectedTrainings = pickNearByWindow(trainingPuzzles, desiredRating, windowSize);
-        List<CommunityPuzzle> selectedCommunities = pickNearByWindow(communityPuzzles, desiredRating, windowSize);
-
-        List<Object> allCandidates = new ArrayList<>();
-        allCandidates.addAll(selectedTrainings);
-        allCandidates.addAll(selectedCommunities);
-
+        List<NextPuzzleResult> allCandidates = new ArrayList<>(trainings);
+        allCandidates.addAll(communities);
         if (allCandidates.isEmpty()) {
             throw new CustomException(ErrorCode.CANNOT_FIND_RANK_PUZZLE);
         }
 
         Collections.shuffle(allCandidates);
-
-        Object selected = allCandidates.get(0);
-
-        if (selected instanceof TrainingPuzzle puzzle) {
-            return new NextPuzzleResult(PuzzleType.TRAINING, puzzle.getId(),
-                    puzzle.getBoardStatus(), puzzle.getAnswer(), puzzle.getWinColor(), puzzle.getRating());
-        }
-
-        if (selected instanceof CommunityPuzzle puzzle) {
-            return new NextPuzzleResult(PuzzleType.COMMUNITY, puzzle.getId(),
-                    puzzle.getBoardStatus(), puzzle.getAnswer(), puzzle.getWinColor(), puzzle.getRating());
-        }
-        throw new CustomException(ErrorCode.INVALID_RANK_PUZZLE_TYPE);
+        return allCandidates.get(0);
     }
 
-    private <T> List<T> pickNearByWindow(List<T> sorted, double targetRating, int windowSize) {
-        // Closest windowSize within 200, falling back to the closest overall
-        if (sorted.isEmpty()) return Collections.emptyList();
-
-        double maxDiff = 200.0;
-
-        List<T> within200 = new ArrayList<>();
-        for (T item : sorted) {
-            double rating = getRating(item);
-            if (Math.abs(rating - targetRating) < maxDiff) {
-                within200.add(item);
-            }
-        }
-        within200.sort(Comparator.comparingDouble(o -> Math.abs(getRating(o) - targetRating)));
-        if (within200.size() >= windowSize) {
-            return within200.subList(0, windowSize);
-        }
-
-        List<T> sortedByClosest = new ArrayList<>(sorted);
-        sortedByClosest.sort(Comparator.comparingDouble(o -> Math.abs(getRating(o) - targetRating)));
-        int limit = Math.min(windowSize, sortedByClosest.size());
-        return sortedByClosest.subList(0, limit);
+    // The nearest on each side of the target, so together they hold the closest overall
+    private List<NextPuzzleResult> closest(PuzzleType type, double targetRating,
+                                           List<RankPuzzleCandidate> above, List<RankPuzzleCandidate> below) {
+        return Stream.concat(above.stream(), below.stream())
+                .sorted(Comparator.comparingDouble(candidate -> Math.abs(candidate.rating() - targetRating)))
+                .limit(CANDIDATES_PER_SOURCE)
+                .map(candidate -> new NextPuzzleResult(type, candidate.id(), candidate.boardStatus(),
+                        candidate.answer(), WinColor.getWinColor(candidate.winColor()), candidate.rating()))
+                .toList();
     }
 
-    private double getRating(Object obj) {
-        if (obj instanceof TrainingPuzzle tp) return tp.getRating();
-        if (obj instanceof CommunityPuzzle cp) return cp.getRating();
-        return 0.0;
+    private record RepeatCandidates(List<RankPuzzleCandidate> trainings, List<RankPuzzleCandidate> communities) {}
+
+    // The puzzles handed out the fewest times this game, leaving out the one just answered unless it is all there is
+    private RepeatCandidates leastHandedOutPuzzles(UserEntity user) {
+        List<String> handedOut = latestRankPuzzleRepository.findBoardStatusesByUser(user);
+        Map<String, Long> handOutCounts = handedOut.stream()
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+        List<RankPuzzleCandidate> trainings = trainingPuzzleRepository.findAllRankCandidates();
+        List<RankPuzzleCandidate> communities = communityPuzzleRepository.findAllRankCandidates();
+
+        long fewest = Stream.concat(trainings.stream(), communities.stream())
+                .mapToLong(candidate -> handOutCounts.getOrDefault(candidate.boardStatus(), 0L))
+                .min()
+                .orElse(0L);
+        String justAnswered = handedOut.isEmpty() ? null : handedOut.get(handedOut.size() - 1);
+
+        Predicate<RankPuzzleCandidate> leastHandedOut =
+                candidate -> handOutCounts.getOrDefault(candidate.boardStatus(), 0L) == fewest;
+        Predicate<RankPuzzleCandidate> notJustAnswered = candidate -> !candidate.boardStatus().equals(justAnswered);
+
+        List<RankPuzzleCandidate> otherTrainings = trainings.stream().filter(leastHandedOut.and(notJustAnswered)).toList();
+        List<RankPuzzleCandidate> otherCommunities = communities.stream().filter(leastHandedOut.and(notJustAnswered)).toList();
+        if (otherTrainings.isEmpty() && otherCommunities.isEmpty()) {
+            return new RepeatCandidates(trainings.stream().filter(leastHandedOut).toList(),
+                    communities.stream().filter(leastHandedOut).toList());
+        }
+        return new RepeatCandidates(otherTrainings, otherCommunities);
     }
 
     @Transactional
@@ -425,7 +440,7 @@ public class RankService {
 
         List<LatestRankPuzzle> puzzles = latestRankPuzzleRepository.findAllByUserOrderByAssignedAtAsc(user);
 
-        // Mid-game the newest puzzle is the one on the board, so its answer waits until the game ends
+        // Mid-game the newest puzzle is the one on the board, so it stays out of the archive until the game ends
         RankSessionData session = redisTemplate.opsForValue().get(String.valueOf(user.getId()));
         if (session != null && session.isStarted()) {
             long currentPuzzleId = puzzles.stream().mapToLong(LatestRankPuzzle::getId).max().orElse(-1);
@@ -435,7 +450,6 @@ public class RankService {
         return puzzles.stream()
                 .map(puzzle -> RankArchive.builder()
                         .boardStatus(puzzle.getBoardStatus())
-                        .answer(puzzle.getAnswer())
                         .isSolved(puzzle.getIsSolved())
                         .winColor(puzzle.getWinColor().getName())
                         .build())

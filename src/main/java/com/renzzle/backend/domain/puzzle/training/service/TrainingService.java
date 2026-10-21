@@ -9,6 +9,7 @@ import com.renzzle.backend.domain.puzzle.shared.dao.projection.AnswerKeyProjecti
 import com.renzzle.backend.domain.puzzle.shared.dto.AnswerKeyRecalculationResult;
 import com.renzzle.backend.domain.puzzle.shared.dto.BoardKeyRecalculationResult;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackDetailForAdminResponse;
+import com.renzzle.backend.domain.puzzle.training.api.response.GetPackForAdminResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackPurchaseResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleAnswerResponse;
@@ -252,7 +253,7 @@ public class TrainingService {
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
         TrainingPuzzle puzzle = trainingPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
-        checkPackOwned(lockedUser.getId(), puzzle.getPack().getId());
+        checkPackAccessible(lockedUser.getId(), puzzle.getPack());
 
         return applySolveTrainingPuzzle(lockedUser, puzzleId, getReward);
     }
@@ -294,7 +295,9 @@ public class TrainingService {
         if(packId == null) {
             throw new CustomException(ErrorCode.VALIDATION_ERROR);
         }
-        checkPackOwned(user.getId(), packId);
+        Pack pack = packRepository.findById(packId)
+                .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
+        checkPackAccessible(user.getId(), pack);
 
         List<TrainingPuzzle> trainingPuzzles = trainingPuzzleRepository.findByPack_IdOrderByTrainingIndex(packId);
 
@@ -319,13 +322,15 @@ public class TrainingService {
 
 
     @Transactional
-    public Pack createPack(CreateTrainingPackRequest request) {
+    public Pack createPack(CreateTrainingPackRequest request, Long creatorId) {
         checkNoDuplicateLanguage(request.info());
 
         Pack pack = Pack.builder()
                 .price(request.price())
                 .difficulty(Difficulty.getDifficulty(request.difficulty()))
                 .puzzleCount(0)
+                .isPublic(Boolean.TRUE.equals(request.isPublic()))
+                .createdBy(creatorId)
                 .build();
 
         Pack savedPack = packRepository.save(pack);
@@ -340,6 +345,10 @@ public class TrainingService {
     @Transactional
     public Pack updatePack(Long packId, UpdateTrainingPackRequest request) {
         checkNoDuplicateLanguage(request.info());
+        // Every new user is granted it on sign-up
+        if (Pack.STARTER_PACK_ID.equals(packId) && Boolean.FALSE.equals(request.isPublic())) {
+            throw new CustomException(ErrorCode.CANNOT_HIDE_STARTER_PACK);
+        }
 
         Pack pack = packRepository.findById(packId)
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
@@ -350,6 +359,7 @@ public class TrainingService {
         Pack updatedPack = pack.toBuilder()
                 .price(request.price())
                 .difficulty(Difficulty.getDifficulty(request.difficulty()))
+                .isPublic(request.isPublic() != null ? request.isPublic() : pack.isPublic())
                 .build();
         packRepository.save(updatedPack);
 
@@ -416,7 +426,7 @@ public class TrainingService {
 
     @Transactional(readOnly = true)
     public List<GetPackResponse> getTrainingPackList(UserEntity user, GetTrainingPackRequest request){
-        List<Pack> packs = packRepository.findByDifficulty(Difficulty.getDifficulty(request.difficulty()));
+        List<Pack> packs = packRepository.findByDifficultyAndIsPublicTrue(Difficulty.getDifficulty(request.difficulty()));
 
         if (packs.isEmpty()) {
             throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACKS);
@@ -442,8 +452,9 @@ public class TrainingService {
                 pack -> requestedMap.getOrDefault(pack.getId(), defaultMap.get(pack.getId())));
     }
 
+    // A null creatorId lists every pack of the difficulty
     @Transactional(readOnly = true)
-    public List<GetPackResponse> getTrainingPackListForAdmin(UserEntity user, String difficulty, String preferredLang) {
+    public List<GetPackForAdminResponse> getTrainingPackListForAdmin(String difficulty, String preferredLang, Long creatorId) {
         // Raw query values, so a bad one is the caller's mistake
         final Difficulty requestedDifficulty;
         final LangCode requestedLangCode;
@@ -454,7 +465,9 @@ public class TrainingService {
             throw new CustomException(e.getMessage(), ErrorCode.VALIDATION_ERROR);
         }
 
-        List<Pack> packs = packRepository.findByDifficulty(requestedDifficulty);
+        List<Pack> packs = creatorId == null
+                ? packRepository.findByDifficulty(requestedDifficulty)
+                : packRepository.findByDifficultyAndCreatedBy(requestedDifficulty, creatorId);
 
         if (packs.isEmpty()) {
             throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACKS);
@@ -465,14 +478,26 @@ public class TrainingService {
 
         Map<Long, List<PackTranslation>> translationsByPack = packTranslationRepository.findAllByPack_IdIn(packIds).stream()
                 .collect(Collectors.groupingBy(t -> t.getPack().getId()));
+        List<Long> creatorIds = packs.stream().map(Pack::getCreatedBy).filter(Objects::nonNull).distinct().toList();
+        Map<Long, String> creatorEmails = userRepository.findAllById(creatorIds).stream()
+                .collect(Collectors.toMap(UserEntity::getId, UserEntity::getEmail));
 
-        Map<Long, UserPack> userPackMap = buildUserPackMap(user.getId(), packIds);
-
-        return buildPackResponses(packs, userPackMap, pack -> selectAdminPackTranslation(
-                translationsByPack.get(pack.getId()),
-                requestedLangCode,
-                defaultLangCode
-        ));
+        return packs.stream()
+                .map(pack -> {
+                    PackTranslation translation = selectAdminPackTranslation(
+                            translationsByPack.get(pack.getId()), requestedLangCode, defaultLangCode);
+                    return new GetPackForAdminResponse(
+                            pack.getId(),
+                            translation != null ? translation.getTitle() : null,
+                            translation != null ? translation.getAuthor() : null,
+                            translation != null ? translation.getDescription() : null,
+                            pack.getPrice(),
+                            pack.getPuzzleCount(),
+                            pack.isPublic(),
+                            creatorEmails.get(pack.getCreatedBy())
+                    );
+                })
+                .toList();
     }
 
     private PackTranslation selectAdminPackTranslation(
@@ -557,6 +582,7 @@ public class TrainingService {
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
 
         Pack pack = packRepository.findById(request.packId())
+                .filter(Pack::isPublic)
                 .orElseThrow(() -> new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK));
 
         // Serialized by the user row lock above
@@ -584,7 +610,7 @@ public class TrainingService {
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_USER));
         TrainingPuzzle puzzle = trainingPuzzleRepository.findById(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_TRAINING_PUZZLE));
-        checkPackOwned(lockedUser.getId(), puzzle.getPack().getId());
+        checkPackAccessible(lockedUser.getId(), puzzle.getPack());
 
         int price = appInfoService.getPrice(HINT);
         lockedUser.purchase(price);
@@ -617,7 +643,8 @@ public class TrainingService {
                 info,
                 pack.getPrice(),
                 pack.getDifficulty().getName(),
-                pack.getPuzzleCount()
+                pack.getPuzzleCount(),
+                pack.isPublic()
         );
     }
 
@@ -666,8 +693,12 @@ public class TrainingService {
                 .build();
     }
 
-    private void checkPackOwned(Long userId, Long packId) {
-        if (!userPackRepository.existsByUserIdAndPackId(userId, packId)) {
+    // A private pack reads as missing, even to users who bought it before it was hidden
+    private void checkPackAccessible(Long userId, Pack pack) {
+        if (!pack.isPublic()) {
+            throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACK);
+        }
+        if (!userPackRepository.existsByUserIdAndPackId(userId, pack.getId())) {
             throw new CustomException(ErrorCode.PACK_NOT_OWNED);
         }
     }

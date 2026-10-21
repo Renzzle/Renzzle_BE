@@ -44,6 +44,9 @@
         difficulty: 'Difficulty',
         price: 'Price',
         puzzles: 'Puzzles',
+        visibility: 'Visibility',
+        public: 'Public',
+        private: 'Private',
         actions: 'Actions',
         order: 'Order',
         title: 'Title',
@@ -77,7 +80,9 @@
         responseBoard: 'Renzzle - AI Response Board',
         communityPuzzles: 'Renzzle Admin - Community Puzzles',
         notices: 'Renzzle Admin - Notices',
-        payments: 'Renzzle Admin - Payments'
+        payments: 'Renzzle Admin - Payments',
+        adminAccounts: 'Renzzle Admin - Admins',
+        forbidden: 'Renzzle Admin - No Permission'
       },
       nav: {
         packs: 'Training Puzzles',
@@ -85,7 +90,8 @@
         responseMoves: 'AI Responses',
         communityPuzzles: 'Community Puzzles',
         notices: 'Notices',
-        payments: 'Payments'
+        payments: 'Payments',
+        adminAccounts: 'Admins'
       },
       login: {
         heading: 'Renzzle Admin',
@@ -97,7 +103,8 @@
         loggingIn: 'Logging in...',
         required: 'Enter both email and password.',
         failed: 'Login failed',
-        error: 'An error occurred during login.'
+        error: 'An error occurred during login.',
+        noPermission: 'This admin account has no permissions yet. Ask an admin with the operations permission.'
       },
       errorPage: {
         heading: 'Access Error',
@@ -127,6 +134,7 @@
         titleSearchPlaceholder: 'Pack title',
         failedLoad: 'Failed to load packs',
         metaAuthor: 'Author: {author}',
+        metaCreator: 'Created by {email}',
         deleteConfirm: 'Delete pack "{title}"? This also removes its puzzles.',
         deleteConfirmNoTitle: 'Delete pack? This also removes its puzzles.',
         deleteFailed: 'Failed to delete pack',
@@ -144,6 +152,8 @@
         addTranslation: 'Add Translation',
         priceLabel: 'Price',
         difficultyLabel: 'Difficulty',
+        visibilityHelp: 'Private packs are hidden in the app. Make the pack public once its puzzles are ready.',
+        cannotHideStarterPack: 'The starter pack is given to every new user, so it must stay public.',
         createPack: 'Create Pack',
         updatePack: 'Update Pack',
         languageNumber: 'Language {index} ({code})',
@@ -292,17 +302,44 @@
       },
       communityPuzzles: {
         heading: 'Community Puzzles',
-        description: 'Search a community puzzle by number and update its verification status.',
+        description: 'Review puzzles waiting for verification and update their status.',
         searchPlaceholder: 'Puzzle number',
-        detailHeading: 'Puzzle Information',
+        open: 'Open',
+        listHeading: 'Puzzle List',
+        listCount: '{count} puzzles',
+        listEmpty: 'No puzzles to show.',
+        listFailed: 'Failed to load puzzles.',
+        filterLabel: 'Verification filter',
+        unverified: 'Unverified',
+        verified: 'Verified',
+        all: 'All',
+        close: 'Close',
+        previousPuzzle: 'Previous',
+        nextPuzzle: 'Next',
+        position: '{current} of {total}',
+        pagination: 'Pages',
+        previousPage: 'Previous page',
+        nextPage: 'Next page',
+        depthValue: 'Depth {depth}',
+        createdAt: 'Created',
+        stats: 'Solved · Likes · Views',
         boardLabel: 'Community puzzle board',
         answerNavigation: 'Answer move navigation',
         previousAnswerMove: 'Previous answer move',
         nextAnswerMove: 'Next answer move',
         answerProgress: '{current} / {total}',
+        copySequence: 'Copy moves',
+        sequenceCopied: 'Copied the moves on the board.',
+        sequenceCopyFailed: 'Could not copy the moves.',
+        answerLabel: 'Answer',
+        answerHint: 'Fix the answer before verifying; the board follows as you type.',
+        answerLockedHint: 'Turn verification off to change the answer.',
+        answerInvalid: 'Enter moves like h8i9, each on an empty point.',
+        markedVerifiedWithAnswer: 'Corrected the answer of #{id} and marked it as verified.',
         noPuzzle: 'No community puzzle found.',
         verification: 'Verification Status',
-        saved: 'Verification status saved.',
+        markedVerified: '#{id} marked as verified.',
+        markedUnverified: '#{id} marked as unverified.',
         saveFailed: 'Failed to save verification status.'
       },
       cacheBoard: {
@@ -335,7 +372,11 @@
         setCurrentBoardFirst: 'Set currentBoard first',
         responseTurnOnly: 'Set the current board after the user move. AI response can only be entered on the opponent turn.',
         lookupFailed: 'Failed to lookup',
-        noResponse: 'No AI response'
+        noResponse: 'No AI response',
+        deleteResponse: 'Delete AI Response',
+        deleteConfirm: 'Delete the AI response ({position}) for this board?',
+        deleteFailed: 'Delete failed',
+        deleted: 'Deleted.'
       },
       notices: {
         heading: 'Notices',
@@ -356,7 +397,7 @@
         announcementsDescription: 'Public announcements shown in the app until they expire.',
         newAnnouncement: 'New Announcement',
         createHeading: 'Create Announcement',
-        createDescription: 'Fill one or more language sections. Each language you fill becomes its own announcement sharing the expiration time below.',
+        createDescription: 'Fill one or more language sections. Each language you fill becomes its own announcement sharing the expiration time and pin below.',
         editHeading: 'Edit Announcement',
         body: 'Body',
         titlePlaceholder: 'Announcement title',
@@ -369,6 +410,8 @@
         translationOptional: 'Optional',
         active: 'Active',
         expired: 'Expired',
+        pinned: 'Pinned',
+        pinToTop: 'Pin to top',
         needContent: 'Enter a title and body for at least one language.',
         needTitleAndBody: 'For each language you use, enter both title and body.',
         needExpiredAt: 'Choose a valid expiration time.',
@@ -476,8 +519,52 @@
         testCheckFailed: 'Failed to read the test notification result.',
         noAttempts: 'Apple has not tried yet. Check again in a moment.'
       },
+      permission: {
+        PACK_MANAGE: 'Training Puzzles',
+        COMMUNITY_MANAGE: 'Community Puzzles',
+        AI_RESPONSE_MANAGE: 'AI Responses',
+        OPERATION_MANAGE: 'Operations'
+      },
+      adminAccounts: {
+        heading: 'Admins',
+        description: 'Make app users admins and choose which menus each admin can use.',
+        addHeading: 'Add Admin',
+        addDescription: 'Enter the email of an account that already signed up in the app.',
+        email: 'Email',
+        emailPlaceholder: 'Account email',
+        permissions: 'Permissions',
+        add: 'Add',
+        adding: 'Adding admin...',
+        added: 'Admin added.',
+        needEmail: 'Enter an email.',
+        needPermission: 'Choose at least one permission.',
+        listHeading: 'Admin List',
+        count: '{count} admins',
+        account: 'Account',
+        actions: 'Actions',
+        me: 'Me',
+        save: 'Save',
+        saved: 'Permissions saved.',
+        remove: 'Remove',
+        removeConfirm: 'Remove admin access for {email}? The app account stays.',
+        removed: 'Admin removed.',
+        ownOperationHint: 'You cannot remove your own operations permission.',
+        userNotFound: 'No app account uses this email.',
+        alreadyAdmin: 'This account is already an admin.',
+        cannotRevokeOwn: 'You cannot remove your own operations permission or admin access.',
+        adminNotFound: 'This admin no longer exists. Refresh the list.',
+        failed: 'Request failed.',
+        loadFailed: 'Failed to load admins.'
+      },
+      forbidden: {
+        heading: 'No permission for this menu',
+        body: 'Ask an admin with the operations permission to grant access.',
+        noPermissions: 'This account has no permissions yet.',
+        home: 'Go to an available menu'
+      },
       msg: {
-        sessionExpired: 'Your session has expired or you do not have permission. Please log in again.'
+        sessionExpired: 'Your session has expired or you do not have permission. Please log in again.',
+        permissionDenied: 'You do not have permission for this menu. Ask an admin with the operations permission.'
       }
     },
     ko: {
@@ -521,6 +608,9 @@
         difficulty: '난이도',
         price: '가격',
         puzzles: '문제',
+        visibility: '공개 상태',
+        public: '공개',
+        private: '비공개',
         actions: '작업',
         order: '순서',
         title: '제목',
@@ -554,7 +644,9 @@
         responseBoard: 'Renzzle - AI 대응 보드',
         communityPuzzles: 'Renzzle 관리자 - 커뮤니티 문제',
         notices: 'Renzzle 관리자 - 공지',
-        payments: 'Renzzle 관리자 - 결제'
+        payments: 'Renzzle 관리자 - 결제',
+        adminAccounts: 'Renzzle 관리자 - 어드민 관리',
+        forbidden: 'Renzzle 관리자 - 권한 없음'
       },
       nav: {
         packs: '트레이닝 문제',
@@ -562,7 +654,8 @@
         responseMoves: 'AI 대응',
         communityPuzzles: '커뮤니티 문제',
         notices: '공지',
-        payments: '결제'
+        payments: '결제',
+        adminAccounts: '어드민 관리'
       },
       login: {
         heading: 'Renzzle Admin',
@@ -574,7 +667,8 @@
         loggingIn: '로그인 중...',
         required: '이메일과 비밀번호를 모두 입력하세요.',
         failed: '로그인에 실패했습니다.',
-        error: '로그인 중 오류가 발생했습니다.'
+        error: '로그인 중 오류가 발생했습니다.',
+        noPermission: '아직 권한이 없는 어드민 계정입니다. 운영 관리 권한이 있는 어드민에게 요청하세요.'
       },
       errorPage: {
         heading: '접근 오류',
@@ -604,6 +698,7 @@
         titleSearchPlaceholder: '문제집 제목',
         failedLoad: '문제집을 불러오지 못했습니다.',
         metaAuthor: '작성자: {author}',
+        metaCreator: '만든 사람: {email}',
         deleteConfirm: '"{title}" 문제집을 삭제할까요? 포함된 문제도 함께 삭제됩니다.',
         deleteConfirmNoTitle: '문제집을 삭제할까요? 포함된 문제도 함께 삭제됩니다.',
         deleteFailed: '문제집 삭제에 실패했습니다.',
@@ -621,6 +716,8 @@
         addTranslation: '번역 추가',
         priceLabel: '가격',
         difficultyLabel: '난이도',
+        visibilityHelp: '비공개 문제집은 앱에 노출되지 않습니다. 문제 출제를 마친 뒤 공개로 전환하세요.',
+        cannotHideStarterPack: '스타터 문제집은 모든 신규 사용자에게 지급되므로 비공개로 전환할 수 없습니다.',
         createPack: '문제집 생성',
         updatePack: '문제집 수정',
         languageNumber: '언어 {index} ({code})',
@@ -769,17 +866,44 @@
       },
       communityPuzzles: {
         heading: '커뮤니티 문제',
-        description: '문제 번호로 커뮤니티 문제를 검색하고 검증 상태를 수정합니다.',
+        description: '검증 대기 중인 문제를 확인하고 검증 상태를 바꿉니다.',
         searchPlaceholder: '문제 번호',
-        detailHeading: '문제 정보',
+        open: '열기',
+        listHeading: '문제 목록',
+        listCount: '문제 {count}개',
+        listEmpty: '표시할 문제가 없습니다.',
+        listFailed: '문제 목록을 불러오지 못했습니다.',
+        filterLabel: '검증 상태 필터',
+        unverified: '미검증',
+        verified: '검증됨',
+        all: '전체',
+        close: '닫기',
+        previousPuzzle: '이전 문제',
+        nextPuzzle: '다음 문제',
+        position: '{total}개 중 {current}번째',
+        pagination: '페이지',
+        previousPage: '이전 페이지',
+        nextPage: '다음 페이지',
+        depthValue: '깊이 {depth}',
+        createdAt: '등록일',
+        stats: '풀이 · 좋아요 · 조회',
         boardLabel: '커뮤니티 문제 보드',
         answerNavigation: '정답 수 이동',
         previousAnswerMove: '이전 정답 수',
         nextAnswerMove: '다음 정답 수',
         answerProgress: '{current} / {total}',
+        copySequence: '수순 복사',
+        sequenceCopied: '보드 수순을 복사했습니다.',
+        sequenceCopyFailed: '수순을 복사하지 못했습니다.',
+        answerLabel: '정답',
+        answerHint: '검증하기 전에 정답을 고칠 수 있습니다.',
+        answerLockedHint: '검증을 해제하면 정답을 고칠 수 있습니다.',
+        answerInvalid: 'h8i9처럼 빈 칸에 두는 수만 입력하세요.',
+        markedVerifiedWithAnswer: '#{id} 문제의 정답을 고치고 검증됨으로 바꿨습니다.',
         noPuzzle: '커뮤니티 문제가 없습니다.',
         verification: '검증 상태',
-        saved: '검증 상태를 저장했습니다.',
+        markedVerified: '#{id} 문제를 검증됨으로 바꿨습니다.',
+        markedUnverified: '#{id} 문제를 미검증으로 바꿨습니다.',
         saveFailed: '검증 상태 저장에 실패했습니다.'
       },
       cacheBoard: {
@@ -812,7 +936,11 @@
         setCurrentBoardFirst: 'currentBoard를 먼저 설정하세요.',
         responseTurnOnly: '사용자 수를 둔 뒤의 보드만 설정할 수 있습니다. AI 대응은 상대 차례에서만 입력합니다.',
         lookupFailed: '조회에 실패했습니다.',
-        noResponse: 'AI 대응이 없습니다.'
+        noResponse: 'AI 대응이 없습니다.',
+        deleteResponse: 'AI 대응 삭제',
+        deleteConfirm: '이 보드의 AI 대응({position})을 삭제할까요?',
+        deleteFailed: '삭제에 실패했습니다.',
+        deleted: '삭제했습니다.'
       },
       notices: {
         heading: '공지',
@@ -833,7 +961,7 @@
         announcementsDescription: '만료 전까지 앱에 표시되는 공개 공지입니다.',
         newAnnouncement: '새 공지',
         createHeading: '공지 작성',
-        createDescription: '언어 섹션을 하나 이상 채우세요. 채운 언어마다 아래 만료 시각을 공유하는 공지가 각각 생성됩니다.',
+        createDescription: '언어 섹션을 하나 이상 채우세요. 채운 언어마다 아래 만료 시각과 고정 여부를 공유하는 공지가 각각 생성됩니다.',
         editHeading: '공지 수정',
         body: '내용',
         titlePlaceholder: '공지 제목',
@@ -846,6 +974,8 @@
         translationOptional: '선택',
         active: '게시 중',
         expired: '만료',
+        pinned: '고정',
+        pinToTop: '상단 고정',
         needContent: '언어를 하나 이상 골라 제목과 내용을 입력하세요.',
         needTitleAndBody: '사용하는 언어마다 제목과 내용을 모두 입력하세요.',
         needExpiredAt: '올바른 만료 시각을 선택하세요.',
@@ -953,8 +1083,52 @@
         testCheckFailed: '테스트 알림 결과를 읽지 못했습니다.',
         noAttempts: 'Apple이 아직 보내지 않았습니다. 잠시 후 다시 확인하세요.'
       },
+      permission: {
+        PACK_MANAGE: '트레이닝 문제',
+        COMMUNITY_MANAGE: '커뮤니티 문제',
+        AI_RESPONSE_MANAGE: 'AI 대응',
+        OPERATION_MANAGE: '운영 관리'
+      },
+      adminAccounts: {
+        heading: '어드민 관리',
+        description: '앱에 가입된 계정을 어드민으로 지정하고, 어드민마다 사용할 수 있는 메뉴를 정합니다.',
+        addHeading: '어드민 추가',
+        addDescription: '앱에 가입된 계정의 이메일을 입력하세요.',
+        email: '이메일',
+        emailPlaceholder: '가입한 계정 이메일',
+        permissions: '권한',
+        add: '추가',
+        adding: '어드민을 추가하는 중...',
+        added: '어드민을 추가했습니다.',
+        needEmail: '이메일을 입력하세요.',
+        needPermission: '권한을 하나 이상 선택하세요.',
+        listHeading: '어드민 목록',
+        count: '어드민 {count}명',
+        account: '계정',
+        actions: '작업',
+        me: '나',
+        save: '저장',
+        saved: '권한을 저장했습니다.',
+        remove: '해제',
+        removeConfirm: '{email} 계정의 어드민 권한을 해제할까요? 앱 계정은 그대로 남습니다.',
+        removed: '어드민을 해제했습니다.',
+        ownOperationHint: '내 운영 관리 권한은 해제할 수 없습니다.',
+        userNotFound: '이 이메일로 가입한 계정이 없습니다.',
+        alreadyAdmin: '이미 어드민인 계정입니다.',
+        cannotRevokeOwn: '내 운영 관리 권한이나 어드민 자격은 해제할 수 없습니다.',
+        adminNotFound: '이미 없는 어드민입니다. 목록을 새로고침하세요.',
+        failed: '요청에 실패했습니다.',
+        loadFailed: '어드민 목록을 불러오지 못했습니다.'
+      },
+      forbidden: {
+        heading: '권한이 없는 메뉴입니다',
+        body: '운영 관리 권한이 있는 어드민에게 권한을 요청하세요.',
+        noPermissions: '이 계정에는 아직 권한이 없습니다.',
+        home: '사용 가능한 메뉴로 이동'
+      },
       msg: {
-        sessionExpired: '세션이 만료되었거나 권한이 없습니다. 다시 로그인하세요.'
+        sessionExpired: '세션이 만료되었거나 권한이 없습니다. 다시 로그인하세요.',
+        permissionDenied: '이 메뉴를 사용할 권한이 없습니다. 운영 관리 권한이 있는 어드민에게 요청하세요.'
       }
     }
   };

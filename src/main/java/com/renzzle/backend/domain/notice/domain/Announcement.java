@@ -3,6 +3,7 @@ package com.renzzle.backend.domain.notice.domain;
 import com.renzzle.backend.global.common.domain.LangCode;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
@@ -39,10 +40,16 @@ public class Announcement {
     @Column(name = "expired_at", nullable = false)
     private Instant expiredAt;
 
-    public void update(String title, String context, Instant expiredAt) {
+    @Builder.Default
+    @ColumnDefault("false")
+    @Column(name = "is_pinned", nullable = false)
+    private boolean isPinned = false;
+
+    public void update(String title, String context, Instant expiredAt, boolean isPinned) {
         this.title = title;
         this.context = context;
         this.expiredAt = expiredAt;
+        this.isPinned = isPinned;
     }
 
 }

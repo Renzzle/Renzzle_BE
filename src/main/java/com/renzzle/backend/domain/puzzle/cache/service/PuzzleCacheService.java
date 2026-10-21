@@ -156,6 +156,35 @@ public class PuzzleCacheService {
         return solutionDag.get(currentZobristHash);
     }
 
+    // Removes only this position's reply; nothing to remove is not an error
+    @Transactional
+    public void deleteAiResponse(PuzzleType puzzleType, Long puzzleId, String currentBoardState) {
+        if (puzzleType == null || puzzleId == null || currentBoardState == null || currentBoardState.isBlank()) {
+            throw new CustomException(ErrorCode.NO_BOARD_STATUS);
+        }
+
+        final long currentZobristHash;
+        try {
+            currentZobristHash = ZobristHashUtils.hashFromBoardStatus(currentBoardState);
+        } catch (IllegalArgumentException e) {
+            throw new CustomException(e.getMessage(), ErrorCode.VALIDATION_ERROR);
+        }
+
+        PuzzleCache puzzle = puzzleCacheRepository.findByPuzzleTypeAndPuzzleId(puzzleType, puzzleId)
+                .orElse(null);
+        if (puzzle == null) {
+            return;
+        }
+
+        Map<Long, Integer> solutionDag = existingDag(puzzle);
+        if (solutionDag.remove(currentZobristHash) == null) {
+            return;
+        }
+
+        PuzzleCache updated = puzzle.toBuilder().solutionDag(solutionSerializer.serialize(solutionDag)).build();
+        puzzleCacheRepository.save(updated);
+    }
+
     // Takes a user-to-move position; maps each cached user move to the AI reply (0-based cells)
     @Transactional(readOnly = true)
     public Map<Integer, Integer> getNextMoveCandidates(PuzzleType puzzleType, Long puzzleId, String currentBoardState) {

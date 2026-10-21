@@ -9,7 +9,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-// Pages are admin-only, but the /api/puzzle/cache REST API is open to any authenticated user
+// Pages are admin-only, but the /api/puzzle/cache REST API, except DELETE, is open to any authenticated user
 @Controller
 public class PuzzleCachePageController {
 

@@ -5,7 +5,12 @@ import com.renzzle.backend.domain.puzzle.community.dao.projection.CommunityBoard
 import com.renzzle.backend.domain.puzzle.community.dao.query.CommunityPuzzleQueryRepository;
 import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.shared.dao.projection.AnswerKeyProjection;
+import com.renzzle.backend.domain.puzzle.shared.dto.RankPuzzleCandidate;
 import com.renzzle.backend.domain.user.domain.UserEntity;
+import org.springframework.data.domain.Limit;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -18,6 +23,12 @@ import java.util.List;
 import java.util.Optional;
 
 public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle, Long>, CommunityPuzzleQueryRepository {
+
+    @EntityGraph(attributePaths = {"user", "winColor"})
+    Page<CommunityPuzzle> findAllByIsVerified(Boolean isVerified, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"user", "winColor"})
+    Page<CommunityPuzzle> findAllBy(Pageable pageable);
 
     @Query(value = "SELECT cp.* FROM community_puzzle cp " +
             "JOIN user_community_puzzle ucp ON ucp.community_id = cp.id " +
@@ -47,12 +58,19 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
             "cp.deletedAt = :deletedAt WHERE cp.id = :puzzleId")
     int softDelete(@Param("puzzleId") Long puzzleId, @Param("deletedAt") Instant deletedAt);
 
-    @Query("SELECT p FROM CommunityPuzzle p " +
-            "WHERE p.boardStatus NOT IN (" +
-            "    SELECT l.boardStatus FROM LatestRankPuzzle l WHERE l.user = :user" +
-            ") AND p.isVerified = true " +
-            "ORDER BY p.rating ASC")
-    List<CommunityPuzzle> findAvailableCommunityPuzzlesSortedByRating(@Param("user") UserEntity user);
+    String RANK_CANDIDATE = "SELECT new com.renzzle.backend.domain.puzzle.shared.dto.RankPuzzleCandidate(" +
+            "p.id, p.boardStatus, p.answer, p.winColor.name, p.rating) FROM CommunityPuzzle p WHERE p.isVerified = true ";
+    String NOT_HANDED_OUT = "AND p.boardStatus NOT IN (SELECT l.boardStatus FROM LatestRankPuzzle l WHERE l.user = :user) ";
+
+    // The nearest puzzles not handed out this game at or above, and below, a rating; each walks the rating index
+    @Query(RANK_CANDIDATE + NOT_HANDED_OUT + "AND p.rating >= :rating ORDER BY p.rating ASC")
+    List<RankPuzzleCandidate> findRankCandidatesFrom(@Param("user") UserEntity user, @Param("rating") double rating, Limit limit);
+
+    @Query(RANK_CANDIDATE + NOT_HANDED_OUT + "AND p.rating < :rating ORDER BY p.rating DESC")
+    List<RankPuzzleCandidate> findRankCandidatesBelow(@Param("user") UserEntity user, @Param("rating") double rating, Limit limit);
+
+    @Query(RANK_CANDIDATE)
+    List<RankPuzzleCandidate> findAllRankCandidates();
 
     List<CommunityPuzzle> findByRankAttemptCount(int rankAttemptCount);
 

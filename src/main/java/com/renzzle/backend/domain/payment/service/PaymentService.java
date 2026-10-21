@@ -119,7 +119,7 @@ public class PaymentService {
         inAppPurchaseRepository.save(InAppPurchase.builder()
                 .user(persistedUser)
                 .platform(platform)
-                .productId(productId)
+                .productId(product.getProductId())
                 .transactionId(transactionId)
                 .purchaseToken(purchaseToken)
                 .status(InAppPurchaseStatus.VERIFIED)

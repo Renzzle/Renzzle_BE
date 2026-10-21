@@ -2,6 +2,7 @@ package com.renzzle.backend.domain.puzzle.training.service;
 
 import com.renzzle.backend.domain.puzzle.training.domain.Difficulty;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
+import com.renzzle.backend.domain.puzzle.shared.dto.RankPuzzleCandidate;
 import com.renzzle.backend.domain.puzzle.training.api.request.CreateTrainingPackRequest;
 import com.renzzle.backend.domain.puzzle.training.api.request.PackTranslationRequest;
 import com.renzzle.backend.domain.puzzle.training.dao.*;
@@ -16,6 +17,7 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Limit;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
@@ -303,7 +305,7 @@ class TrainingServiceRepositoryTest {
                 new PackTranslationRequest("EN", "초보용 1", "재윤", "설명1"),
                 new PackTranslationRequest("EN", "For Beginner 1", "JaeYun", "Description1")
         );
-        CreateTrainingPackRequest request = new CreateTrainingPackRequest(translations, 1000, "LOW");
+        CreateTrainingPackRequest request = new CreateTrainingPackRequest(translations, 1000, "LOW", null);
 
         Pack pack = Pack.builder()
                 .price(1000)
@@ -491,6 +493,92 @@ class TrainingServiceRepositoryTest {
         // Then
         UserEntity updatedUser = userRepository.findById(user.getId()).orElseThrow();
         assertThat(updatedUser.getCurrency()).isEqualTo(500 - ItemPrice.HINT.getDefaultPrice());
+    }
+
+    @Test
+    @Transactional
+    void isPublic_WhenRowInsertedWithoutIt_ThenDefaultsToPublic() {
+        // Stands in for packs saved before the column existed
+        entityManager.createNativeQuery("INSERT INTO pack (puzzle_count, price, difficulty) VALUES (0, 0, 'LOW')")
+                .executeUpdate();
+        Long packId = ((Number) entityManager.createNativeQuery("SELECT LAST_INSERT_ID()").getSingleResult()).longValue();
+        entityManager.clear();
+
+        assertThat(packRepository.findById(packId)).get().extracting(Pack::isPublic).isEqualTo(true);
+    }
+
+    @Test
+    @Transactional
+    void findByDifficultyAndIsPublicTrue_WhenOnePackPrivate_ThenLeavesItOut() {
+        // Given
+        Pack publicPack = packRepository.save(visibilityPack(true));
+        Pack privatePack = packRepository.save(visibilityPack(false));
+
+        // When
+        List<Pack> packs = packRepository.findByDifficultyAndIsPublicTrue(Difficulty.getDifficulty("LOW"));
+
+        // Then
+        assertThat(packs).extracting(Pack::getId)
+                .contains(publicPack.getId())
+                .doesNotContain(privatePack.getId());
+    }
+
+    @Test
+    @Transactional
+    void findRankCandidates_WhenPackPrivate_ThenLeavesItsPuzzlesOut() {
+        // Given
+        UserEntity user = persistTestUser();
+        TrainingPuzzle publicPuzzle = trainingPuzzleRepository.save(
+                visibilityPuzzle(packRepository.save(visibilityPack(true)), "public"));
+        TrainingPuzzle privatePuzzle = trainingPuzzleRepository.save(
+                visibilityPuzzle(packRepository.save(visibilityPack(false)), "private"));
+
+        // When
+        List<RankPuzzleCandidate> nearest = trainingPuzzleRepository.findRankCandidatesFrom(user, 0, Limit.unlimited());
+        List<RankPuzzleCandidate> all = trainingPuzzleRepository.findAllRankCandidates();
+
+        // Then
+        assertThat(nearest).extracting(RankPuzzleCandidate::id)
+                .contains(publicPuzzle.getId())
+                .doesNotContain(privatePuzzle.getId());
+        assertThat(all).extracting(RankPuzzleCandidate::id)
+                .contains(publicPuzzle.getId())
+                .doesNotContain(privatePuzzle.getId());
+    }
+
+    @Test
+    @Transactional
+    void findLatestInPublicPackByUserId_WhenOnlySolvedInPrivatePack_ThenReturnsEmpty() {
+        // Given
+        UserEntity user = persistTestUser();
+        TrainingPuzzle privatePuzzle = trainingPuzzleRepository.save(
+                visibilityPuzzle(packRepository.save(visibilityPack(false)), "private"));
+        solvedTrainingPuzzleRepository.save(SolvedTrainingPuzzle.builder().user(user).puzzle(privatePuzzle).build());
+
+        // When & Then
+        assertThat(solvedTrainingPuzzleRepository.findLatestInPublicPackByUserId(user.getId())).isEmpty();
+    }
+
+    private static Pack visibilityPack(boolean isPublic) {
+        return Pack.builder()
+                .price(0)
+                .difficulty(Difficulty.getDifficulty("LOW"))
+                .puzzleCount(1)
+                .isPublic(isPublic)
+                .build();
+    }
+
+    private static TrainingPuzzle visibilityPuzzle(Pack pack, String key) {
+        return TrainingPuzzle.builder()
+                .pack(pack)
+                .trainingIndex(0)
+                .boardStatus("h8" + key)
+                .boardKey("visibility-" + key)
+                .answer("h9")
+                .depth(3)
+                .rating(600.0)
+                .winColor(WinColor.getWinColor("BLACK"))
+                .build();
     }
 
 }

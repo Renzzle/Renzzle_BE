@@ -29,7 +29,8 @@ import static com.renzzle.backend.global.common.domain.Status.STATUS_IS_NOT_DELE
         indexes = {
                 @Index(columnList = "created_at"),
                 @Index(columnList = "like_count"),
-                @Index(columnList = "answer_key")
+                @Index(columnList = "answer_key"),
+                @Index(columnList = "isVerified, rating")
         }
 )
 @SQLRestriction(value = STATUS_IS_NOT_DELETED)
@@ -120,6 +121,15 @@ public class CommunityPuzzle {
 
     public void updateVerification(boolean isVerified) {
         this.isVerified = isVerified;
+    }
+
+    // A new answer makes it a new puzzle for ranking, as a training puzzle edit does
+    public void correctAnswer(String answer, String answerKey, int depth, double rating) {
+        this.answer = answer;
+        this.answerKey = answerKey;
+        this.depth = depth;
+        this.rating = rating;
+        this.rankAttemptCount = 0;
     }
 
 }

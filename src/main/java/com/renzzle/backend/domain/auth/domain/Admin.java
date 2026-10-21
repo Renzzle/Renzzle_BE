@@ -6,6 +6,9 @@ import lombok.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
+import java.util.EnumSet;
+import java.util.Set;
+
 @Entity
 @Table(name = "admin")
 @Getter
@@ -24,5 +27,16 @@ public class Admin {
     @JoinColumn(name = "user_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private UserEntity user;
+
+    @Builder.Default
+    @Convert(converter = AdminPermissionsConverter.class)
+    @Column(name = "permissions")
+    private Set<AdminPermission> permissions = EnumSet.noneOf(AdminPermission.class);
+
+    public void updatePermissions(Set<AdminPermission> permissions) {
+        this.permissions = permissions.isEmpty()
+                ? EnumSet.noneOf(AdminPermission.class)
+                : EnumSet.copyOf(permissions);
+    }
 
 }

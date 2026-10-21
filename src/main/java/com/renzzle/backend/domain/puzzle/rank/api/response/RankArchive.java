@@ -6,7 +6,6 @@ import lombok.Builder;
 public record RankArchive(
         String boardStatus,
         String winColor,
-        String answer,
         boolean isSolved
 ) {
 }

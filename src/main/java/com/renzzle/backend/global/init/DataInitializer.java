@@ -2,6 +2,8 @@ package com.renzzle.backend.global.init;
 
 import com.renzzle.backend.domain.auth.dao.AdminRepository;
 import com.renzzle.backend.domain.auth.domain.Admin;
+import com.renzzle.backend.domain.auth.domain.AdminPermission;
+import com.renzzle.backend.domain.auth.domain.AdminPermissionsConverter;
 import com.renzzle.backend.domain.puzzle.training.domain.Difficulty;
 import com.renzzle.backend.domain.puzzle.shared.domain.WinColor;
 import com.renzzle.backend.domain.user.dao.UserRepository;
@@ -20,6 +22,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.util.EnumSet;
 import java.util.List;
 
 import static com.renzzle.backend.domain.auth.domain.Admin.ADMIN_PREFIX;
@@ -43,6 +46,7 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) {
         widenInAppPurchaseStatusColumn();
         initializeDefaultValue();
+        grantAllPermissionsToExistingAdmins();
         addAdminAccount();
         initializeSystemInfo();
         initializeItemPrices();
@@ -85,6 +89,12 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
+    // Admins saved before permissions existed have none stored, and keep the full access they had
+    private void grantAllPermissionsToExistingAdmins() {
+        String allPermissions = new AdminPermissionsConverter().convertToDatabaseColumn(EnumSet.allOf(AdminPermission.class));
+        jdbcTemplate.update("UPDATE admin SET permissions = ? WHERE permissions IS NULL", allPermissions);
+    }
+
     private void addAdminAccount() {
         try {
             if(!userRepository.existsByNickname(ADMIN_PREFIX)) {
@@ -97,7 +107,10 @@ public class DataInitializer implements CommandLineRunner {
                         .deviceId(adminDeviceId)
                         .build();
                 UserEntity admin = userRepository.save(user);
-                adminRepository.save(Admin.builder().user(admin).build());
+                adminRepository.save(Admin.builder()
+                        .user(admin)
+                        .permissions(EnumSet.allOf(AdminPermission.class))
+                        .build());
             }
         } catch (DuplicateKeyException e) {
             log.warn("Admin already exists");

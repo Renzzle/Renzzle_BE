@@ -1,9 +1,11 @@
 package com.renzzle.backend.domain.puzzle.training.dao;
 
 import com.renzzle.backend.domain.puzzle.shared.dao.projection.AnswerKeyProjection;
+import com.renzzle.backend.domain.puzzle.shared.dto.RankPuzzleCandidate;
 import com.renzzle.backend.domain.puzzle.training.dao.projection.TrainingBoardKeyProjection;
 import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.user.domain.UserEntity;
+import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -52,12 +54,19 @@ public interface TrainingPuzzleRepository extends JpaRepository<TrainingPuzzle, 
 
     void deleteAllByPack_Id(Long packId);
 
-    @Query("SELECT p FROM TrainingPuzzle p " +
-            "WHERE p.boardStatus NOT IN (" +
-            "    SELECT l.boardStatus FROM LatestRankPuzzle l WHERE l.user = :user" +
-            ") " +
-            "ORDER BY p.rating ASC")
-    List<TrainingPuzzle> findAvailableTrainingPuzzlesSortedByRating(@Param("user") UserEntity user);
+    String RANK_CANDIDATE = "SELECT new com.renzzle.backend.domain.puzzle.shared.dto.RankPuzzleCandidate(" +
+            "p.id, p.boardStatus, p.answer, p.winColor.name, p.rating) FROM TrainingPuzzle p WHERE p.pack.isPublic = true ";
+    String NOT_HANDED_OUT = "AND p.boardStatus NOT IN (SELECT l.boardStatus FROM LatestRankPuzzle l WHERE l.user = :user) ";
+
+    // The nearest puzzles not handed out this game at or above, and below, a rating; each walks the rating index
+    @Query(RANK_CANDIDATE + NOT_HANDED_OUT + "AND p.rating >= :rating ORDER BY p.rating ASC")
+    List<RankPuzzleCandidate> findRankCandidatesFrom(@Param("user") UserEntity user, @Param("rating") double rating, Limit limit);
+
+    @Query(RANK_CANDIDATE + NOT_HANDED_OUT + "AND p.rating < :rating ORDER BY p.rating DESC")
+    List<RankPuzzleCandidate> findRankCandidatesBelow(@Param("user") UserEntity user, @Param("rating") double rating, Limit limit);
+
+    @Query(RANK_CANDIDATE)
+    List<RankPuzzleCandidate> findAllRankCandidates();
 
     @Query("SELECT p.rankAttemptCount FROM TrainingPuzzle p WHERE p.id = :id")
     Optional<Integer> findRankAttemptCountById(@Param("id") Long id);

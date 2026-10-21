@@ -378,6 +378,58 @@ class PuzzleCacheServiceTest {
         verify(puzzleCacheRepository).save(any());
     }
 
+    // ========== deleteAiResponse ==========
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void deleteAiResponse_ShouldRemoveOnlyThatPosition() {
+        byte[] existingDagBytes = new byte[] {1, 2, 3};
+        PuzzleCache existing = PuzzleCache.builder()
+                .puzzleType(TYPE).puzzleId(PUZZLE_ID)
+                .rootBoardState(ROOT_BOARD_STATE)
+                .solutionDag(existingDagBytes)
+                .build();
+
+        when(puzzleCacheRepository.findByPuzzleTypeAndPuzzleId(TYPE, PUZZLE_ID)).thenReturn(Optional.of(existing));
+        when(solutionSerializer.deserialize(existingDagBytes)).thenReturn(Map.of(SEEDED_I9, CELL_I9, SEEDED_J9, CELL_J9));
+        when(solutionSerializer.serialize(anyMap())).thenReturn(new byte[] {9});
+
+        puzzleCacheService.deleteAiResponse(TYPE, PUZZLE_ID, "h8h9i8");
+
+        ArgumentCaptor<Map<Long, Integer>> dagCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(solutionSerializer).serialize(dagCaptor.capture());
+        assertThat(dagCaptor.getValue())
+                .hasSize(1)
+                .containsEntry(SEEDED_J9, CELL_J9);
+        verify(puzzleCacheRepository).save(any());
+    }
+
+    @Test
+    void deleteAiResponse_ShouldNotSave_WhenPositionHasNoReply() {
+        byte[] existingDagBytes = new byte[] {1, 2, 3};
+        PuzzleCache existing = PuzzleCache.builder()
+                .puzzleType(TYPE).puzzleId(PUZZLE_ID)
+                .rootBoardState(ROOT_BOARD_STATE)
+                .solutionDag(existingDagBytes)
+                .build();
+
+        when(puzzleCacheRepository.findByPuzzleTypeAndPuzzleId(TYPE, PUZZLE_ID)).thenReturn(Optional.of(existing));
+        when(solutionSerializer.deserialize(existingDagBytes)).thenReturn(Map.of(SEEDED_J9, CELL_J9));
+
+        puzzleCacheService.deleteAiResponse(TYPE, PUZZLE_ID, "h8h9i8");
+
+        verify(puzzleCacheRepository, never()).save(any());
+    }
+
+    @Test
+    void deleteAiResponse_ShouldNotSave_WhenPuzzleIsNotCached() {
+        when(puzzleCacheRepository.findByPuzzleTypeAndPuzzleId(TYPE, PUZZLE_ID)).thenReturn(Optional.empty());
+
+        puzzleCacheService.deleteAiResponse(TYPE, PUZZLE_ID, "h8h9i8");
+
+        verify(puzzleCacheRepository, never()).save(any());
+    }
+
     // ========== getNextMoveCandidates ==========
 
     private static final String USER_TURN_BOARD_STATE = "h8h9";

@@ -7,5 +7,6 @@ public record GetPublicNoticeResponse(
         String title,
         String context,
         String createdAt,
-        String expiredAt
+        String expiredAt,
+        boolean isPinned
 ) { }

@@ -35,7 +35,7 @@ public class NoticeController {
         return ApiUtils.success(noticeService.getPersonalNotice(request, user.getUser()));
     }
 
-    @Operation(summary = "Get public notice", description = "Get list of public notices that not expired")
+    @Operation(summary = "Get public notice", description = "Get list of public notices that not expired. Pinned notices come first (oldest on top), then the rest (newest on top)")
     @PostMapping("/public")
     public ApiResponse<List<GetPublicNoticeResponse>> getPublicNotice(@Valid @ParameterObject @ModelAttribute GetPublicNoticeRequest request) {
         return ApiUtils.success(noticeService.getPublicNotice(request));

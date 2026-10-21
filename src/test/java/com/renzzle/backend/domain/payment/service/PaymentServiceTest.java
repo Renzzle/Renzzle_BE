@@ -149,11 +149,11 @@ class PaymentServiceTest {
         UserEntity principalUser = TestUserEntityBuilder.builder().withId(1L).build();
         UserEntity persistedUser = TestUserEntityBuilder.builder().withId(1L).withCurrency(0).build();
         VerifyInAppPurchaseRequest request =
-                new VerifyInAppPurchaseRequest("ios", "piece_5000", "2000000123456789", null, null);
+                new VerifyInAppPurchaseRequest("ios", "com.renzzle.piece5000", "2000000123456789", null, null);
 
         when(inAppPurchaseRepository.existsByTransactionId("2000000123456789")).thenReturn(false);
-        when(appleTransactionVerifier.verify("piece_5000", "2000000123456789"))
-                .thenReturn(new StoreVerificationResult("piece_5000", "2000000123456789"));
+        when(appleTransactionVerifier.verify("com.renzzle.piece5000", "2000000123456789"))
+                .thenReturn(new StoreVerificationResult("com.renzzle.piece5000", "2000000123456789"));
         when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(persistedUser));
 
         // when
@@ -172,7 +172,7 @@ class PaymentServiceTest {
         assertThat(persistedUser.getCurrency()).isEqualTo(5000);
 
         assertThat(response.platform()).isEqualTo("IOS");
-        assertThat(response.productId()).isEqualTo("piece_5000");
+        assertThat(response.productId()).isEqualTo("com.renzzle.piece5000");
         assertThat(response.grantedCurrency()).isEqualTo(5000);
         verifyNoInteractions(googlePlayClient);
     }

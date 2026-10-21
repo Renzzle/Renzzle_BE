@@ -72,9 +72,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if(user.isEmpty())
             throw new CustomException(ErrorCode.GLOBAL_NOT_FOUND);
 
+        // Read on every request, so permission changes apply without logging in again
         List<String> authorities = new ArrayList<>();
-        if(adminRepository.existsByUser(user.get()))
+        adminRepository.findByUser(user.get()).ifPresent(admin -> {
             authorities.add(ADMIN_PREFIX);
+            admin.getPermissions().forEach(permission -> authorities.add(permission.getAuthority()));
+        });
 
         return new UserDetailsImpl(user.get(), user.get().getPassword(), authorities, sessionId);
     }

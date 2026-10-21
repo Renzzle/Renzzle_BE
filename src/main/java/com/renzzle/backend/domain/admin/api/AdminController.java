@@ -1,10 +1,16 @@
 package com.renzzle.backend.domain.admin.api;
 
+import com.renzzle.backend.domain.admin.api.request.AddAdminAccountRequest;
+import com.renzzle.backend.domain.admin.api.request.UpdateAdminPermissionRequest;
+import com.renzzle.backend.domain.admin.api.response.GetAdminAccountResponse;
 import com.renzzle.backend.domain.admin.api.response.RecalculateAnswerKeyResponse;
 import com.renzzle.backend.domain.admin.api.response.RecalculateBoardKeyResponse;
 import com.renzzle.backend.domain.admin.api.response.RecalculatePuzzleRatingResponse;
 import com.renzzle.backend.domain.auth.api.request.LoginRequest;
+import com.renzzle.backend.domain.admin.service.AdminAccountService;
 import com.renzzle.backend.domain.auth.dao.AdminRepository;
+import com.renzzle.backend.domain.auth.domain.Admin;
+import com.renzzle.backend.domain.auth.domain.AdminPermission;
 import com.renzzle.backend.domain.auth.service.AccountService;
 import com.renzzle.backend.domain.auth.service.JwtProvider;
 import com.renzzle.backend.domain.notice.api.request.CreateAnnouncementRequest;
@@ -20,15 +26,17 @@ import com.renzzle.backend.domain.payment.api.response.GetAppleTestNotificationS
 import com.renzzle.backend.domain.payment.api.response.GetGoogleVoidedPurchaseForAdminResponse;
 import com.renzzle.backend.domain.payment.api.response.GetPurchaseForAdminResponse;
 import com.renzzle.backend.domain.payment.service.PaymentAdminService;
+import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzlesForAdminRequest;
 import com.renzzle.backend.domain.puzzle.community.api.request.UpdateCommunityPuzzleVerificationRequest;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleForAdminResponse;
+import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlePageForAdminResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetPackDetailForAdminResponse;
-import com.renzzle.backend.domain.puzzle.training.api.response.GetPackResponse;
+import com.renzzle.backend.domain.puzzle.training.api.response.GetPackForAdminResponse;
 import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzleForAdminResponse;
 import com.renzzle.backend.domain.puzzle.community.service.CommunityService;
+import com.renzzle.backend.domain.puzzle.training.service.PackAccessGuard;
 import com.renzzle.backend.domain.puzzle.training.service.TrainingService;
 import com.renzzle.backend.domain.user.dao.UserRepository;
-import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.domain.LangCode;
 import com.renzzle.backend.global.common.response.ApiResponse;
 import com.renzzle.backend.global.exception.CustomException;
@@ -43,6 +51,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
@@ -57,8 +66,11 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+import java.util.Set;
 
 @Controller
 @RequestMapping("/admin")
@@ -69,12 +81,22 @@ public class AdminController {
     private static final String USER_EMAIL = "userEmail";
     private static final String LANG_CODE_NAMES = "langCodeNames";
     private static final String PACK_ID = "packId";
+    private static final String FORBIDDEN_REDIRECT = "redirect:/admin/forbidden";
+    // Iterates in permission order, so the first permitted tab is the landing page
+    private static final Map<AdminPermission, String> HOME_PAGES = new EnumMap<>(Map.of(
+            AdminPermission.PACK_MANAGE, "/admin/pack-list",
+            AdminPermission.COMMUNITY_MANAGE, "/admin/community-puzzles",
+            AdminPermission.AI_RESPONSE_MANAGE, "/admin/puzzle-cache",
+            AdminPermission.OPERATION_MANAGE, "/admin/notices"
+    ));
 
     private final AccountService accountService;
+    private final AdminAccountService adminAccountService;
     private final JwtProvider jwtProvider;
     private final UserRepository userRepository;
     private final AdminRepository adminRepository;
     private final TrainingService trainingService;
+    private final PackAccessGuard packAccessGuard;
     private final CommunityService communityService;
     private final NoticeService noticeService;
     private final PaymentAdminService paymentAdminService;
@@ -102,9 +124,11 @@ public class AdminController {
         var loginResponse = accountService.login(request);
 
         long userId = jwtProvider.parseAccessToken(loginResponse.accessToken()).userId();
-        Optional<UserEntity> user = userRepository.findById(userId);
-        if (user.isEmpty() || !adminRepository.existsByUser(user.get())) {
-            throw new CustomException(ErrorCode.ADMIN_ACCESS_DENIED);
+        Admin admin = userRepository.findById(userId)
+                .flatMap(adminRepository::findByUser)
+                .orElseThrow(() -> new CustomException(ErrorCode.ADMIN_ACCESS_DENIED));
+        if (admin.getPermissions().isEmpty()) {
+            throw new CustomException(ErrorCode.ADMIN_PERMISSION_DENIED);
         }
 
         String adminAccessToken = jwtProvider.createAdminAccessToken(userId);
@@ -133,8 +157,25 @@ public class AdminController {
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/dashboard")
     public String dashboard(
-            ) {
-        return "redirect:/admin/pack-list";
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        Set<AdminPermission> permissions = userDetails.getAdminPermissions();
+        return HOME_PAGES.entrySet().stream()
+                .filter(page -> permissions.contains(page.getKey()))
+                .map(page -> "redirect:" + page.getValue())
+                .findFirst()
+                .orElse(FORBIDDEN_REDIRECT);
+    }
+
+    @Operation(summary = "Admin forbidden page", description = "Shown when an admin opens a menu without its permission")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/forbidden")
+    public String forbidden(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @Parameter(hidden = true) Model model
+    ) {
+        model.addAttribute(USER_EMAIL, userDetails.getUser().getEmail());
+        return "admin/forbidden";
     }
 
     @Operation(summary = "Admin pack list page", description = "Pack list view - first screen after login")
@@ -159,6 +200,9 @@ public class AdminController {
     ) {
         if (packId == null) {
             return "redirect:/admin/pack-list";
+        }
+        if (packAccessGuard.isForeignPack(userDetails, packId)) {
+            return FORBIDDEN_REDIRECT;
         }
         model.addAttribute(USER_EMAIL, userDetails.getUser().getEmail());
         model.addAttribute(LANG_CODE_NAMES, LangCode.LangCodeName.values());
@@ -187,12 +231,15 @@ public class AdminController {
     @SecurityRequirement(name = "Authorization")
     @GetMapping("/training/pack")
     @ResponseBody
-    public ApiResponse<List<GetPackResponse>> getTrainingPackForAdmin(
+    public ApiResponse<List<GetPackForAdminResponse>> getTrainingPackForAdmin(
             @RequestParam(defaultValue = "LOW") String difficulty,
             @RequestParam(defaultValue = "EN") String lang,
+            @Parameter(description = "Only packs the admin may edit (the pack pages); AI response pages read every pack")
+            @RequestParam(defaultValue = "false") boolean manageable,
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        List<GetPackResponse> packs = trainingService.getTrainingPackListForAdmin(userDetails.getUser(), difficulty, lang);
+        List<GetPackForAdminResponse> packs = trainingService.getTrainingPackListForAdmin(
+                difficulty, lang, packAccessGuard.listCreatorFilter(userDetails, manageable));
         return ApiUtils.success(packs);
     }
 
@@ -201,8 +248,10 @@ public class AdminController {
     @GetMapping("/training/pack/{packId}")
     @ResponseBody
     public ApiResponse<GetPackDetailForAdminResponse> getPackDetailForAdmin(
-            @PathVariable Long packId
+            @PathVariable Long packId,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
+        packAccessGuard.checkReadPack(userDetails, packId);
         GetPackDetailForAdminResponse detail = trainingService.getPackDetailForAdmin(packId);
         return ApiUtils.success(detail);
     }
@@ -215,6 +264,9 @@ public class AdminController {
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Parameter(hidden = true) Model model
     ) {
+        if (packAccessGuard.isForeignPack(userDetails, packId)) {
+            return FORBIDDEN_REDIRECT;
+        }
         model.addAttribute(PACK_ID, packId);
         model.addAttribute(USER_EMAIL, userDetails.getUser().getEmail());
         model.addAttribute(LANG_CODE_NAMES, LangCode.LangCodeName.values());
@@ -229,6 +281,9 @@ public class AdminController {
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Parameter(hidden = true) Model model
     ) {
+        if (packAccessGuard.isForeignPack(userDetails, packId)) {
+            return FORBIDDEN_REDIRECT;
+        }
         model.addAttribute(PACK_ID, packId);
         model.addAttribute(USER_EMAIL, userDetails.getUser().getEmail());
         return "admin/puzzle-add";
@@ -243,6 +298,9 @@ public class AdminController {
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Parameter(hidden = true) Model model
     ) {
+        if (packAccessGuard.isForeignPack(userDetails, packId)) {
+            return FORBIDDEN_REDIRECT;
+        }
         model.addAttribute(PACK_ID, packId);
         model.addAttribute("puzzleId", puzzleId);
         model.addAttribute(USER_EMAIL, userDetails.getUser().getEmail());
@@ -265,8 +323,10 @@ public class AdminController {
     @GetMapping("/training/puzzle/{packId}")
     @ResponseBody
     public ApiResponse<List<GetTrainingPuzzleForAdminResponse>> getTrainingPuzzleForAdmin(
-            @PathVariable Long packId
+            @PathVariable Long packId,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
+        packAccessGuard.checkReadPack(userDetails, packId);
         List<GetTrainingPuzzleForAdminResponse> puzzles = trainingService.getTrainingPuzzleListForAdmin(packId);
         return ApiUtils.success(puzzles);
     }
@@ -276,8 +336,10 @@ public class AdminController {
     @GetMapping("/training/puzzle-detail/{puzzleId}")
     @ResponseBody
     public ApiResponse<GetTrainingPuzzleForAdminResponse> getTrainingPuzzleByIdForAdmin(
-            @PathVariable Long puzzleId
+            @PathVariable Long puzzleId,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
+        packAccessGuard.checkReadPuzzle(userDetails, puzzleId);
         GetTrainingPuzzleForAdminResponse puzzle = trainingService.getTrainingPuzzleByIdForAdmin(puzzleId);
         return ApiUtils.success(puzzle);
     }
@@ -291,6 +353,17 @@ public class AdminController {
     ) {
         GetTrainingPuzzleForAdminResponse puzzle = communityService.getCommunityPuzzleForAdminDetail(puzzleId);
         return ApiUtils.success(puzzle);
+    }
+
+    @Operation(summary = "Get community puzzles for admin review",
+            description = "Admin-only, newest first; verified=false lists puzzles waiting for review and no verified lists them all")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/community/puzzle-manage")
+    @ResponseBody
+    public ApiResponse<GetCommunityPuzzlePageForAdminResponse> getCommunityPuzzlesForAdmin(
+            @Valid @ParameterObject @ModelAttribute GetCommunityPuzzlesForAdminRequest request
+    ) {
+        return ApiUtils.success(communityService.getCommunityPuzzlesForAdmin(request));
     }
 
     @Operation(summary = "Get community puzzle for admin management", description = "Admin-only lookup without increasing views")
@@ -314,7 +387,8 @@ public class AdminController {
     ) {
         GetCommunityPuzzleForAdminResponse puzzle = communityService.updateCommunityPuzzleVerificationForAdmin(
                 puzzleId,
-                request.isVerified()
+                request.isVerified(),
+                request.answer()
         );
         return ApiUtils.success(puzzle);
     }
@@ -381,7 +455,7 @@ public class AdminController {
         return ApiUtils.success(noticeService.getAnnouncementsForAdmin(lang));
     }
 
-    @Operation(summary = "Create announcements (Admin only)", description = "Creates one announcement per language content with a shared expiration time")
+    @Operation(summary = "Create announcements (Admin only)", description = "Creates one announcement per language content with a shared expiration time and pin flag")
     @SecurityRequirement(name = "Authorization")
     @PostMapping("/notice/announcement")
     @ResponseBody
@@ -391,7 +465,7 @@ public class AdminController {
         return ApiUtils.success(noticeService.createAnnouncementsForAdmin(request));
     }
 
-    @Operation(summary = "Update announcement (Admin only)", description = "Update title, context, and expiration time of a single announcement")
+    @Operation(summary = "Update announcement (Admin only)", description = "Update title, context, expiration time, and pin flag of a single announcement")
     @SecurityRequirement(name = "Authorization")
     @PatchMapping("/notice/announcement/{announcementId}")
     @ResponseBody
@@ -505,6 +579,65 @@ public class AdminController {
     ) {
         return ApiUtils.success(
                 paymentAdminService.getAppleTestNotificationStatusForAdmin(environment, testNotificationToken));
+    }
+
+    // ===== Admin accounts =====
+
+    @Operation(summary = "Admin account management page", description = "Grant admin access to app users and set their permissions")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/admin-accounts")
+    public String adminAccounts(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @Parameter(hidden = true) Model model
+    ) {
+        model.addAttribute(USER_EMAIL, userDetails.getUser().getEmail());
+        model.addAttribute("permissionNames", Arrays.stream(AdminPermission.values()).map(Enum::name).toList());
+        return "admin/admin-accounts";
+    }
+
+    @Operation(summary = "Get admin accounts (Admin only)", description = "Every admin with their permissions")
+    @SecurityRequirement(name = "Authorization")
+    @GetMapping("/admin-account")
+    @ResponseBody
+    public ApiResponse<List<GetAdminAccountResponse>> getAdminAccounts(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        return ApiUtils.success(adminAccountService.getAdminAccounts(userDetails.getUser()));
+    }
+
+    @Operation(summary = "Add admin account (Admin only)", description = "Makes an existing app user an admin with the given permissions")
+    @SecurityRequirement(name = "Authorization")
+    @PostMapping("/admin-account")
+    @ResponseBody
+    public ApiResponse<GetAdminAccountResponse> addAdminAccount(
+            @Valid @RequestBody AddAdminAccountRequest request,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        return ApiUtils.success(adminAccountService.addAdminAccount(request, userDetails.getUser()));
+    }
+
+    @Operation(summary = "Update admin permissions (Admin only)", description = "Replaces the admin's permissions; your own operation permission cannot be removed")
+    @SecurityRequirement(name = "Authorization")
+    @PatchMapping("/admin-account/{adminId}")
+    @ResponseBody
+    public ApiResponse<GetAdminAccountResponse> updateAdminPermissions(
+            @PathVariable Long adminId,
+            @Valid @RequestBody UpdateAdminPermissionRequest request,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        return ApiUtils.success(adminAccountService.updatePermissions(adminId, request.permissions(), userDetails.getUser()));
+    }
+
+    @Operation(summary = "Remove admin account (Admin only)", description = "Revokes admin access; the app account itself stays")
+    @SecurityRequirement(name = "Authorization")
+    @DeleteMapping("/admin-account/{adminId}")
+    @ResponseBody
+    public ApiResponse<Object> removeAdminAccount(
+            @PathVariable Long adminId,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        adminAccountService.removeAdminAccount(adminId, userDetails.getUser());
+        return ApiUtils.success(null);
     }
 
     public record AdminLoginResponse(
