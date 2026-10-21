@@ -2,6 +2,7 @@ package com.renzzle.backend.domain.payment.domain;
 
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -20,8 +21,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 
@@ -62,9 +61,7 @@ public class InAppPurchase {
     @Column(name = "purchase_token", length = 512)
     private String purchaseToken;
 
-    // VARCHAR rather than the MySQL enum Hibernate picks by default, so adding a status needs no column change
-    @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Convert(converter = InAppPurchaseStatusConverter.class)
     @Column(name = "status", nullable = false, length = 20)
     private InAppPurchaseStatus status;
 

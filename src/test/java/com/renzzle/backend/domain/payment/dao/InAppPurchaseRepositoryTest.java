@@ -33,14 +33,24 @@ class InAppPurchaseRepositoryTest {
 
     @Test
     void statusColumn_IsVarchar_SoAddingAStatusNeedsNoColumnChange() {
+        // given
+        UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
+        InAppPurchase purchase = inAppPurchaseRepository.save(
+                purchase(user, PaymentPlatform.ANDROID, "piece_1000", "GPA.0", "token-0"));
+        entityManager.flush();
+
         // when
         String dataType = jdbcTemplate.queryForObject(
                 "SELECT DATA_TYPE FROM information_schema.COLUMNS "
                         + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'in_app_purchase' AND COLUMN_NAME = 'status'",
                 String.class);
+        // A status the code doesn't have yet, which a MySQL enum or a CHECK constraint would reject
+        int updatedRows = jdbcTemplate.update("UPDATE in_app_purchase SET status = 'NOT_ADDED_YET' WHERE id = ?",
+                purchase.getId());
 
         // then
         assertThat(dataType).isEqualToIgnoringCase("varchar");
+        assertThat(updatedRows).isEqualTo(1);
     }
 
     @Test
