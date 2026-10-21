@@ -163,16 +163,16 @@ jobs:
           if [ -n "${{ secrets.DOCS_ENABLED }}" ]; then
             echo "DOCS_ENABLED=${{ secrets.DOCS_ENABLED }}" >> .env
           fi
-          # Repository variables, so refund reclaiming can be switched on without a code change
-          if [ -n "${{ vars.IAP_GOOGLE_RECLAIM_ENABLED }}" ]; then
-            echo "IAP_GOOGLE_RECLAIM_ENABLED=${{ vars.IAP_GOOGLE_RECLAIM_ENABLED }}" >> .env
+          # Secrets like every other setting here, so refund reclaiming can be switched on without a code change
+          if [ -n "${{ secrets.IAP_GOOGLE_RECLAIM_ENABLED }}" ]; then
+            echo "IAP_GOOGLE_RECLAIM_ENABLED=${{ secrets.IAP_GOOGLE_RECLAIM_ENABLED }}" >> .env
           fi
-          if [ -n "${{ vars.IAP_GOOGLE_UNACKNOWLEDGED_RECLAIM_SINCE }}" ]; then
-            echo "IAP_GOOGLE_UNACKNOWLEDGED_RECLAIM_SINCE=${{ vars.IAP_GOOGLE_UNACKNOWLEDGED_RECLAIM_SINCE }}" >> .env
+          if [ -n "${{ secrets.IAP_GOOGLE_UNACKNOWLEDGED_RECLAIM_SINCE }}" ]; then
+            echo "IAP_GOOGLE_UNACKNOWLEDGED_RECLAIM_SINCE=${{ secrets.IAP_GOOGLE_UNACKNOWLEDGED_RECLAIM_SINCE }}" >> .env
           fi
           # Numeric App Store app ID, required to verify production App Store notification signatures
-          if [ -n "${{ vars.APPLE_IAP_APP_APPLE_ID }}" ]; then
-            echo "APPLE_IAP_APP_APPLE_ID=${{ vars.APPLE_IAP_APP_APPLE_ID }}" >> .env
+          if [ -n "${{ secrets.APPLE_IAP_APP_APPLE_ID }}" ]; then
+            echo "APPLE_IAP_APP_APPLE_ID=${{ secrets.APPLE_IAP_APP_APPLE_ID }}" >> .env
           fi
 
       - name: Create Google Play service account file
