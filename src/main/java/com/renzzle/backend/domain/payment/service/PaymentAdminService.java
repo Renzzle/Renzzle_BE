@@ -113,7 +113,7 @@ public class PaymentAdminService {
     }
 
     private GetPurchaseForAdminResponse toPurchaseResponse(InAppPurchase purchase) {
-        UserEntity user = purchase.getUser();
+        UserEntity user = findBuyer(purchase);
         return GetPurchaseForAdminResponse.builder()
                 .purchaseId(purchase.getId())
                 .userId(user.getId())
@@ -151,7 +151,7 @@ public class PaymentAdminService {
         }
 
         InAppPurchase purchase = found.get();
-        UserEntity user = purchase.getUser();
+        UserEntity user = findBuyer(purchase);
         return builder
                 .matched(true)
                 .purchaseId(purchase.getId())
@@ -163,6 +163,11 @@ public class PaymentAdminService {
                 .currentCurrency(user.getCurrency())
                 .reclaimCurrency(reclaimCurrency(purchase, user, reclaimRewards))
                 .build();
+    }
+
+    // The purchase's lazy user cannot load a withdrawn user, whose purchases still come up in refund requests
+    private UserEntity findBuyer(InAppPurchase purchase) {
+        return userRepository.findByIdIncludingDeleted(purchase.getUser().getId());
     }
 
     private int reclaimCurrency(InAppPurchase purchase, UserEntity user, boolean reclaimRewards) {

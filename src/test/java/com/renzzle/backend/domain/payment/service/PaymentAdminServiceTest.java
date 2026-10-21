@@ -31,6 +31,9 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -66,6 +69,7 @@ class PaymentAdminServiceTest {
         UserEntity user = user(1500);
         InAppPurchase purchase = purchase(10L, user, "GPA.1", NOW.minus(Duration.ofDays(2)));
         when(inAppPurchaseRepository.findByTransactionId("GPA.1")).thenReturn(Optional.of(purchase));
+        when(userRepository.findByIdIncludingDeleted(1L)).thenReturn(user);
 
         // when
         List<GetPurchaseForAdminResponse> result = paymentAdminService.searchPurchasesForAdmin(" GPA.1 ");
@@ -79,7 +83,8 @@ class PaymentAdminServiceTest {
         assertThat(found.withinWithdrawalPeriod()).isTrue();
         assertThat(found.unused()).isTrue();
         assertThat(found.refundable()).isTrue();
-        verifyNoInteractions(userRepository);
+        verify(userRepository, never()).findByEmail(any());
+        verify(userRepository, never()).findByNickname(any());
     }
 
     @Test
@@ -93,6 +98,7 @@ class PaymentAdminServiceTest {
         when(inAppPurchaseRepository.findAllByUserIdOrderByCreatedAtDesc(1L)).thenReturn(List.of(
                 purchase(11L, user, "GPA.2", NOW.minus(Duration.ofDays(1))),
                 purchase(10L, user, "GPA.1", NOW.minus(Duration.ofDays(9)))));
+        when(userRepository.findByIdIncludingDeleted(1L)).thenReturn(user);
 
         // when
         List<GetPurchaseForAdminResponse> result = paymentAdminService.searchPurchasesForAdmin("tintin");
@@ -128,6 +134,7 @@ class PaymentAdminServiceTest {
         when(googleVoidedPurchaseService.findPurchase(newer)).thenReturn(Optional.empty());
         when(googleVoidedPurchaseService.shouldReclaimRewards(older)).thenReturn(true);
         when(googleVoidedPurchaseService.shouldReclaimRewards(newer)).thenReturn(false);
+        when(userRepository.findByIdIncludingDeleted(1L)).thenReturn(user);
 
         // when
         List<GetGoogleVoidedPurchaseForAdminResponse> result = paymentAdminService.getGoogleVoidedPurchasesForAdmin();
