@@ -941,6 +941,7 @@ class RankServiceTest {
         UserEntity user = TestUserEntityBuilder.builder().withId(1L).withRating(1400).build();
         when(latestRankPuzzleRepository.findActiveUsersWithinPeriod(any())).thenReturn(List.of(user));
         when(communityPuzzleRepository.findUsersWhoCreatedPuzzlesSince(any())).thenReturn(List.of(user));
+        when(communityPuzzleRepository.sumAuthorStatsByUserIds(Set.of(1L))).thenReturn(List.of(authorStats(1L, 1, 0, 0)));
         when(redisRankingTemplate.opsForZSet()).thenReturn(zSetOperations);
 
         // When
@@ -976,6 +977,19 @@ class RankServiceTest {
         verify(redisRankingTemplate).delete("ranking:puzzler");
         verify(redisRankingTemplate, never()).rename(anyString(), anyString());
     }
+
+    @Test
+    void updateRankingCache_WhenRebuilt_ThenCountsActivityOfTheLast90Days() {
+        // When: the clock reads 2025-01-01
+        rankService.updateRankingCache();
+
+        // Then
+        Instant since = Instant.parse("2024-10-03T00:00:00Z");
+        verify(latestRankPuzzleRepository).findActiveUsersWithinPeriod(since);
+        verify(communityPuzzleRepository).findUsersWhoCreatedPuzzlesSince(since);
+        verify(userCommunityPuzzleRepository).findUsersWhoSolvedPuzzlesSince(since);
+    }
+
     @Test
     void getPuzzlerRanking_WhenUsersHaveSameScore_ThenAssignsSameRank() {
         // Given
@@ -1022,6 +1036,40 @@ class RankServiceTest {
         // Then
         assertThat(response.myPuzzlerRank().rank()).isEqualTo(2);
         assertThat(response.myPuzzlerRank().score()).isEqualTo(700.0);
+    }
+
+    @Test
+    void getPuzzlerRanking_WhenUserDroppedOutOfTheRanking_ThenStillReturnsTheirScore() {
+        // Given: inactive for too long, so the ranking leaves the user out
+        UserEntity me = rankedUser(2L, "me");
+
+        when(redisRankingTemplate.opsForZSet()).thenReturn(zSetOperations);
+        when(zSetOperations.score("ranking:puzzler", "2")).thenReturn(null);
+        when(userCommunityPuzzleRepository.countSolvedByUserIds(Set.of(2L))).thenReturn(List.of(solvedCount(2L, 3)));
+        when(communityPuzzleRepository.sumAuthorStatsByUserIds(Set.of(2L))).thenReturn(List.of(authorStats(2L, 1, 10, 2)));
+
+        // When
+        GetPuzzlerRankingResponse response = rankService.getPuzzlerRanking(me);
+
+        // Then: floor(100 * ln(4 * 2^2 * 9^3 + 1)), still without a rank
+        assertThat(response.myPuzzlerRank().rank()).isEqualTo(-1);
+        assertThat(response.myPuzzlerRank().score()).isEqualTo(936.0);
+    }
+
+    @Test
+    void getPuzzlerRanking_WhenUnrankedUserHasNotSolvedOrMadeAnything_ThenReturnsZero() {
+        // Given
+        UserEntity me = rankedUser(2L, "me");
+
+        when(redisRankingTemplate.opsForZSet()).thenReturn(zSetOperations);
+        when(zSetOperations.score("ranking:puzzler", "2")).thenReturn(null);
+
+        // When
+        GetPuzzlerRankingResponse response = rankService.getPuzzlerRanking(me);
+
+        // Then: not the 69 the formula alone would give
+        assertThat(response.myPuzzlerRank().rank()).isEqualTo(-1);
+        assertThat(response.myPuzzlerRank().score()).isZero();
     }
 
     @Test
