@@ -5,9 +5,12 @@ import com.renzzle.backend.domain.puzzle.community.api.request.GetCommunityPuzzl
 import com.renzzle.backend.domain.puzzle.community.api.response.AddCommunityPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzleAnswerResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlesResponse;
+import com.renzzle.backend.domain.puzzle.community.api.response.GetSharedPuzzleIdResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetSingleCommunityPuzzleResponse;
+import com.renzzle.backend.domain.puzzle.community.api.response.ShareCommunityPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.community.api.response.SolveCommunityPuzzleResponse;
 import com.renzzle.backend.domain.puzzle.community.service.CommunityService;
+import com.renzzle.backend.domain.puzzle.community.service.CommunityShareService;
 import com.renzzle.backend.global.common.response.ApiResponse;
 import com.renzzle.backend.global.security.UserDetailsImpl;
 import com.renzzle.backend.global.util.ApiUtils;
@@ -27,6 +30,7 @@ import java.util.List;
 public class CommunityController {
 
     private final CommunityService communityService;
+    private final CommunityShareService communityShareService;
 
     @Operation(summary = "Register new community puzzle", description = "Add new community puzzle")
     @PostMapping("/puzzle")
@@ -53,6 +57,18 @@ public class CommunityController {
             @AuthenticationPrincipal UserDetailsImpl user
     ) {
         return ApiUtils.success(communityService.getCommunityPuzzleById(puzzleId, user.getUser()));
+    }
+
+    @Operation(summary = "Share community puzzle", description = "Return the puzzle's share link, issuing it on the first share")
+    @PostMapping("/puzzle/{puzzleId}/share")
+    public ApiResponse<ShareCommunityPuzzleResponse> shareCommunityPuzzle(@PathVariable Long puzzleId) {
+        return ApiUtils.success(communityShareService.shareCommunityPuzzle(puzzleId));
+    }
+
+    @Operation(summary = "Get shared community puzzle ID", description = "Return the puzzle ID behind a share token, for links opened in the app")
+    @GetMapping("/puzzle/share/{token}")
+    public ApiResponse<GetSharedPuzzleIdResponse> getSharedPuzzleId(@PathVariable String token) {
+        return ApiUtils.success(communityShareService.getSharedPuzzleId(token));
     }
 
     @Operation(summary = "Get community puzzle answer", description = "Return community puzzle answer & remaining currency")

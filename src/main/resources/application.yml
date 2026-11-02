@@ -75,6 +75,8 @@ rank:
 community:
   puzzle:
     daily-upload-limit: 50 # in 24 hours
+    # Share links are this plus /puzzle/{token}
+    share-base-url: ${SHARE_BASE_URL:https://renzzle.com}
 
 iap:
   google:

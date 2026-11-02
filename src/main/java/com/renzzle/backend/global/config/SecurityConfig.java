@@ -58,6 +58,8 @@ public class SecurityConfig {
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/admin/login"),  // Admin login API (called without a token)
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/admin/logout"),  // Clears the admin cookie, so it must work with an expired token
                 AntPathRequestMatcher.antMatcher("/assets/**"),
+                // Share page and its read-only API, opened by anyone with the link
+                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/puzzle/**"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/favicon.ico"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/email"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/confirmCode"),

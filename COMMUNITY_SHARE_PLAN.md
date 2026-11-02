@@ -26,7 +26,7 @@
 ## 흐름
 
 ```
-https://renzzle.com/p/{token}
+https://renzzle.com/puzzle/{token}
  ├─ 앱 설치됨 → Universal Link / App Link → 앱 퍼즐 화면
  └─ 웹 → 공유 페이지 (BE Thymeleaf)
       ├─ GET 퍼즐 정보        (공개, 정답 제외)
@@ -70,40 +70,55 @@ PoC 결과(x86, Node/V8, 네이티브 대비):
 
 ### 공개 API
 
-`/api/**` 경로는 앱 키와 인증이 둘 다 필요하다(`SecurityConfig`). 그래서 브라우저용 API는 `/api` 밖 경로에 두고 `permitAllRequestMatchers`에 추가한다. 아래 경로는 예시다.
+`/api/**` 경로는 앱 키와 인증이 둘 다 필요하다(`SecurityConfig`). 그래서 브라우저용 API는 `/api` 밖의 `/puzzle/` 아래에 두고, `GET /puzzle/**`를 `permitAllRequestMatchers`에 추가했다. (✅ 구현됨: `SharedPuzzleController`)
 
-| 경로                                               | 용도                                                         |
-|----------------------------------------------------|--------------------------------------------------------------|
-| `GET /p/{token}`                                   | 공유 페이지 (Thymeleaf, OG 태그)                             |
-| `GET /share-api/puzzles/{token}`                   | 풀이와 화면 표시에 필요한 필드만 반환. 정답과 내부 ID는 제외 |
-| `GET /share-api/puzzles/{token}/next-moves?board=` | 캐시 후보를 난독화해서 반환                                  |
+| 경로                                    | 용도                                                                     |
+|-----------------------------------------|--------------------------------------------------------------------------|
+| `GET /puzzle/{token}`                   | 공유 페이지 (Thymeleaf, OG 태그). 아직 없음                              |
+| `GET /puzzle/{token}/data`              | 보드, 작성자 닉네임, 설명, 수 깊이, 승리 색, 검증 여부. 정답과 ID는 없음 |
+| `GET /puzzle/{token}/next-moves?board=` | 사용자 차례 보드의 캐시 후보를 난독화한 문자열(`response`)로 반환        |
 
-- 토큰을 퍼즐 ID로 바꾸는 건 서버 안에서만 한다. 응답에 `puzzleId`를 넣지 않는다.
-- 삭제된 퍼즐은 제외한다. 엔티티의 `@SQLRestriction`으로 이미 걸러지지만, 앱 목록과 같은 공개 조건인지 확인한다.
-- 조회수를 올리는 `CommunityService`(`increaseView`, 397행)를 재사용하지 않는다.
-- 저장이나 삭제를 하는 공개 API는 만들지 않는다.
+- 토큰을 퍼즐 ID로 바꾸는 건 서버 안에서만 한다. 공개 응답에 ID를 넣지 않는다.
+- 삭제된 퍼즐은 `@SQLRestriction`으로 걸러져 404(`P4040`)가 난다. 앱 상세 조회와 같은 조건이다.
+- 조회수를 올리지 않는다.
+- `/puzzle/**`는 GET만 열려 있다. 다른 메서드는 여전히 로그인이 필요하다.
 
 ### 공유 토큰
 
-- `community_puzzle`에 `share_token` 컬럼(UUID v4, unique)을 추가한다. `ddl-auto: update`라서 컬럼은 자동으로 생긴다.
-- 토큰은 **처음 공유할 때 발급**한다. 그러면 기존 데이터를 채울(backfill) 필요가 없다.
-- 앱용 API가 두 개 필요하다.
-  - 공유 링크 발급: 예) `POST /api/community/puzzle/{id}/share` → URL 반환
-  - 딥링크로 들어온 토큰을 퍼즐로 바꾸는 조회 API
+✅ 구현됨: `CommunityShareService`, `CommunityController`
+
+- `community_puzzle.share_token` 컬럼(UUID v4, unique)이다. `ddl-auto: update`라서 컬럼은 자동으로 생긴다.
+- 토큰은 **처음 공유할 때 발급**하고 이후 바뀌지 않는다. 기존 데이터를 채울(backfill) 필요가 없다.
+  - 퍼즐 행을 잠그고 발급하므로, 동시에 처음 공유해도 토큰은 하나로 정해진다.
+- 앱용 API(앱 키와 로그인 필요)
+  - `POST /api/community/puzzle/{puzzleId}/share` → `{ shareUrl }`
+  - `GET /api/community/puzzle/share/{token}` → `{ puzzleId }`. 딥링크로 들어온 토큰을 퍼즐로 바꾼다.
+- 링크 도메인은 `community.puzzle.share-base-url`(환경 변수 `SHARE_BASE_URL`, 기본값 `https://renzzle.com`)이다. 테스트 서버는 `cd-test.yml`에서 같은 이름의 시크릿으로 바꿀 수 있다.
 
 ### next-moves 난독화
 
+✅ 구현됨: `SharedMovesEncoder`. 웹에서 풀 때는 테스트용 `SharedMovesTestDecoder`를 참고한다.
+
 - 목적은 네트워크 탭에서 바로 읽히지 않게 하는 것이다. 보안 장치가 아니다.
-- XOR 키는 토큰과 보드 상태로 만든다. 좌표 문자열 대신 인덱스로 보내고, base64인 티가 나지 않게 한다.
 - 캐시 조회는 기존 `PuzzleCacheService.getNextMoveCandidates`를 재사용한다.
+- 인코딩 순서(디코딩은 역순):
+  1. 후보마다 2바이트 `[사용자 수 칸, AI 응답 칸]`. 칸 번호는 0부터 시작하는 인덱스다.
+  2. 키스트림과 XOR한다. 첫 블록은 `SHA-256(UTF-8(token + board))`, 다음 블록은 이전 블록의 SHA-256이다.
+  3. base64url(패딩 없음)로 바꾼 뒤, 각 글자를 섞은 알파벳으로 치환한다(`SharedMovesEncoder.SHUFFLED_ALPHABET`).
+- 후보가 없으면 빈 문자열이다.
 
 ### 기타
 
 - **XSS**: 퍼즐 제목과 닉네임은 사용자가 입력한 값이다. `th:text`나 `th:content`만 쓰고 `th:utext`는 금지한다. 인라인 JS가 필요하면 `th:inline="javascript"`를 쓴다.
 - **딥링크 검증 파일**: `/.well-known/apple-app-site-association`과 `/.well-known/assetlinks.json`을 `caddy/Caddyfile`에서 응답한다(`app-ads.txt`와 같은 방식).
-  - 내용에 애플 Team ID와 Play 앱 서명 키의 SHA-256 지문이 필요하다.
-  - Cloudflare 봇 차단이 이 파일 요청을 막지 않는지 확인한다.
-- **속도 제한**: edge 쪽 속도 제한 규칙에 새 공개 경로가 포함되는지 확인한다.
+  - 경로 패턴은 `/puzzle/*`이다. 내용에 애플 Team ID와 Play 앱 서명 키의 SHA-256 지문이 필요하다.
+  - 앱이 도메인을 선언하기 전에는 OS가 이 파일을 쓰지 않으므로 먼저 올려 둬도 영향이 없다.
+- **Cloudflare**: 지금은 `/api`와 `/admin` 하위를 뺀 경로를 막고 있다(규칙 확인 필요). 아래 경로를 열어야 한다.
+  - `/puzzle/*`: 공유 페이지와 공개 API
+  - `/.well-known/*`: 딥링크 검증 파일
+  - `/assets/*`: 어드민이 이미 쓰고 있으니 열려 있을 가능성이 높다. 확인만 한다.
+  - `/.well-known/*`과 `/puzzle/*`은 봇 챌린지에서도 빼야 한다. 애플 CDN과 카카오톡 링크 미리보기 크롤러는 챌린지를 통과하지 못한다.
+  - 새로 연 공개 경로에 edge 속도 제한 규칙을 건다.
 
 ## 3. 웹 공유 페이지
 
@@ -123,9 +138,10 @@ PoC 결과(x86, Node/V8, 네이티브 대비):
   - 보드 문자열은 `h8i9...`처럼 문자와 숫자를 이어 붙인다.
   - 수 인덱스는 `(문자-'a')*15 + (숫자-1)`이고, BE의 `moveIndexToPosition`과 같다.
 - **"앱으로 보기" 버튼**은 같은 도메인 링크로는 앱이 열리지 않는다. iOS에서는 같은 도메인 안의 이동에 유니버설 링크가 발동하지 않기 때문이다. 그래서 커스텀 스킴을 쓴다.
-  - iOS: `renzzle://p/{token}`
-  - Android: `intent://p/{token}#Intent;scheme=renzzle;package=...;end`
+  - iOS: `renzzle://puzzle/{token}`
+  - Android: `intent://puzzle/{token}#Intent;scheme=renzzle;package=...;end`
   - 카카오톡 인앱 브라우저에서도 이 방식이 가장 잘 동작한다.
+  - **앱이 반영될 때까지는 버튼을 숨긴다.** 스킴이 등록되지 않은 상태에서 열면 iOS Safari가 오류 창을 띄운다.
 - Safari 상단 앱 배너(Smart App Banner)를 메타태그 한 줄로 추가한다.
 - **페이지 하단**
   - 저작권 표시 `© 2026 Studio Isoo. All rights reserved.`를 넣는다. 배포하는 JS와 워커 파일 상단에도 같은 문구를 주석으로 넣는다.
@@ -134,16 +150,18 @@ PoC 결과(x86, Node/V8, 네이티브 대비):
 
 ## 4. FE (앱)
 
+서버 쪽 작업을 모두 끝낸 뒤에 반영한다. 그 전까지 공유 링크는 항상 웹으로 열린다.
+
 현재 딥링크 설정이 전혀 없다. 매니페스트에는 앱 실행용(launcher) 설정만 있고, iOS URL 스킴, Associated Domains, RN `linking` 설정도 없다.
 
 - **iOS**
   - Associated Domains에 `applinks:renzzle.com`을 추가한다. 개발자 포털에서 기능을 켜고 프로비저닝 프로파일을 갱신해야 한다.
   - 커스텀 스킴 `renzzle`을 등록한다.
 - **Android**
-  - `https://renzzle.com/p/*`용 intent-filter를 추가한다(`autoVerify="true"`).
+  - `https://renzzle.com/puzzle/*`용 intent-filter를 추가한다(`autoVerify="true"`).
   - 커스텀 스킴 `renzzle`을 등록한다.
 - **RN**
-  - `linking` 설정으로 `/p/:token`을 커뮤니티 퍼즐 화면에 연결한다. 토큰은 조회 API로 퍼즐로 바꾼다.
+  - `linking` 설정으로 `/puzzle/:token`을 커뮤니티 퍼즐 화면에 연결한다. 토큰은 조회 API로 퍼즐로 바꾼다.
   - 로그인이 안 된 상태도 처리한다.
 - **공유 버튼**: 발급 API를 호출한 뒤 RN `Share`로 공유 시트를 띄운다.
 - 앱 업데이트 배포가 필요하다. 새 버전 사용자부터 동작한다.
@@ -190,13 +208,15 @@ PoC 결과(x86, Node/V8, 네이티브 대비):
 
 ## 참고 파일
 
-| 위치 | 파일                                                                                    |
-|------|-----------------------------------------------------------------------------------------|
-| BE   | `global/config/SecurityConfig.java` (공개 경로 목록, 앱 키 필터)                        |
-| BE   | `domain/puzzle/cache/api/PuzzleCacheController.java`, `service/PuzzleCacheService.java` |
-| BE   | `domain/puzzle/community/service/CommunityService.java` (`increaseView`)                |
-| BE   | `resources/static/assets/admin/board.js`, `caddy/Caddyfile`                             |
-| FE   | `src/components/features/Board/index.tsx`, `src/apis/puzzleCache.ts`                    |
-| FE   | `src/screens/PuzzleReview/index.tsx`, `src/hooks/usePuzzleReviewNavigation/index.ts`    |
-| FE   | `android/app/src/main/java/com/renzzle_fe/cpp/jni/RenzzleJNI.cpp` (`checkWin`)          |
-| AI   | `engine/engine.h` (`findNextMove`)                                                      |
+| 위치 | 파일                                                                                                 |
+|------|------------------------------------------------------------------------------------------------------|
+| BE   | `global/config/SecurityConfig.java` (공개 경로 목록, 앱 키 필터)                                     |
+| BE   | `domain/puzzle/community/service/CommunityShareService.java`, `api/SharedPuzzleController.java`      |
+| BE   | `domain/puzzle/community/util/SharedMovesEncoder.java`, 테스트 `support/SharedMovesTestDecoder.java` |
+| BE   | `domain/puzzle/cache/api/PuzzleCacheController.java`, `service/PuzzleCacheService.java`              |
+| BE   | `domain/puzzle/community/service/CommunityService.java` (`increaseView`)                             |
+| BE   | `resources/static/assets/admin/board.js`, `caddy/Caddyfile`                                          |
+| FE   | `src/components/features/Board/index.tsx`, `src/apis/puzzleCache.ts`                                 |
+| FE   | `src/screens/PuzzleReview/index.tsx`, `src/hooks/usePuzzleReviewNavigation/index.ts`                 |
+| FE   | `android/app/src/main/java/com/renzzle_fe/cpp/jni/RenzzleJNI.cpp` (`checkWin`)                       |
+| AI   | `engine/engine.h` (`findNextMove`)                                                                   |
