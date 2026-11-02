@@ -426,7 +426,7 @@ public class TrainingService {
 
     @Transactional(readOnly = true)
     public List<GetPackResponse> getTrainingPackList(UserEntity user, GetTrainingPackRequest request){
-        List<Pack> packs = packRepository.findByDifficultyAndIsPublicTrue(Difficulty.getDifficulty(request.difficulty()));
+        List<Pack> packs = packRepository.findByDifficultyAndIsPublicTrueOrderByIdAsc(Difficulty.getDifficulty(request.difficulty()));
 
         if (packs.isEmpty()) {
             throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACKS);

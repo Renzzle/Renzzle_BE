@@ -1,5 +1,6 @@
 package com.renzzle.backend.domain.puzzle.training.dao;
 
+import com.renzzle.backend.domain.puzzle.training.dao.projection.PackLastSolvedProjection;
 import com.renzzle.backend.domain.puzzle.training.domain.TrainingPuzzle;
 import com.renzzle.backend.domain.puzzle.training.domain.SolvedTrainingPuzzle;
 import com.renzzle.backend.domain.user.domain.UserEntity;
@@ -20,20 +21,18 @@ public interface SolvedTrainingPuzzleRepository extends JpaRepository<SolvedTrai
 
     boolean existsByUserAndPuzzle(UserEntity user, TrainingPuzzle puzzle);
 
-    @Query(value = "SELECT COUNT(*) " +
-            "FROM solved_lesson_puzzle sl " +
-            "JOIN lesson_puzzle l ON sl.lesson_id = l.id " +
-            "WHERE sl.user_id = :userId AND l.chapter = :chapter",
-            nativeQuery = true)
-    int countSolvedLesson(@Param("userId") Long userId,
-                          @Param("chapter") int chapter);
-
     @Query("SELECT s FROM SolvedTrainingPuzzle s " +
             "JOIN FETCH s.puzzle p " +
             "JOIN FETCH p.pack pack " +
             "WHERE s.user.id = :userId AND pack.isPublic = true " +
             "ORDER BY s.solvedAt DESC LIMIT 1")
     Optional<SolvedTrainingPuzzle> findLatestInPublicPackByUserId(@Param("userId") Long userId);
+
+    // When the user last solved a puzzle in each pack
+    @Query("SELECT p.pack.id AS packId, MAX(s.solvedAt) AS lastSolvedAt " +
+            "FROM SolvedTrainingPuzzle s JOIN s.puzzle p " +
+            "WHERE s.user.id = :userId GROUP BY p.pack.id")
+    List<PackLastSolvedProjection> findLastSolvedAtByPack(@Param("userId") Long userId);
 
     List<SolvedTrainingPuzzle> findAllByPuzzleId(Long puzzleId);
 

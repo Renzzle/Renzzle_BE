@@ -22,7 +22,9 @@ import org.springframework.web.bind.annotation.*;
 public class ContentController {
     private final ContentService contentService;
 
-    @Operation(summary = "Get recommend Pack", description = "Get recommend Pack")
+    @Operation(summary = "Get recommend Pack", description = "The pack the user is partway through. Once it is finished: "
+            + "a pack left partway (furthest along first), else one not begun at the same difficulty, then harder, "
+            + "then easier. Locked when the user doesn't own it yet")
     @GetMapping("/recommend")
     public ApiResponse<GetRecommendPackResponse> getRecommendPack(
             @Valid @ParameterObject @ModelAttribute GetRecommendRequest request,

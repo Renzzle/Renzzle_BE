@@ -6,6 +6,7 @@ import com.renzzle.backend.domain.puzzle.shared.dto.RankPuzzleCandidate;
 import com.renzzle.backend.domain.puzzle.training.api.request.CreateTrainingPackRequest;
 import com.renzzle.backend.domain.puzzle.training.api.request.PackTranslationRequest;
 import com.renzzle.backend.domain.puzzle.training.dao.*;
+import com.renzzle.backend.domain.puzzle.training.dao.projection.PackLastSolvedProjection;
 import com.renzzle.backend.domain.puzzle.training.domain.*;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
@@ -20,6 +21,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Limit;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -509,13 +515,13 @@ class TrainingServiceRepositoryTest {
 
     @Test
     @Transactional
-    void findByDifficultyAndIsPublicTrue_WhenOnePackPrivate_ThenLeavesItOut() {
+    void findByDifficultyAndIsPublicTrueOrderByIdAsc_WhenOnePackPrivate_ThenLeavesItOut() {
         // Given
         Pack publicPack = packRepository.save(visibilityPack(true));
         Pack privatePack = packRepository.save(visibilityPack(false));
 
         // When
-        List<Pack> packs = packRepository.findByDifficultyAndIsPublicTrue(Difficulty.getDifficulty("LOW"));
+        List<Pack> packs = packRepository.findByDifficultyAndIsPublicTrueOrderByIdAsc(Difficulty.getDifficulty("LOW"));
 
         // Then
         assertThat(packs).extracting(Pack::getId)
@@ -557,6 +563,58 @@ class TrainingServiceRepositoryTest {
 
         // When & Then
         assertThat(solvedTrainingPuzzleRepository.findLatestInPublicPackByUserId(user.getId())).isEmpty();
+    }
+
+    @Test
+    @Transactional
+    void findLatestInPublicPackByUserId_WhenOlderPackIsSolvedAgain_ThenReturnsIt() {
+        // Given: solved in one pack, then in another
+        UserEntity user = persistTestUser();
+        TrainingPuzzle earlier = trainingPuzzleRepository.save(
+                visibilityPuzzle(packRepository.save(visibilityPack(true)), "earlier"));
+        TrainingPuzzle later = trainingPuzzleRepository.save(
+                visibilityPuzzle(packRepository.save(visibilityPack(true)), "later"));
+        SolvedTrainingPuzzle earlierSolve = solvedTrainingPuzzleRepository.save(
+                SolvedTrainingPuzzle.builder().user(user).puzzle(earlier).build());
+        solvedTrainingPuzzleRepository.save(SolvedTrainingPuzzle.builder().user(user).puzzle(later).build());
+
+        // When: the first is solved again an hour on
+        earlierSolve.updateSolvedAtToNow(Clock.offset(Clock.systemUTC(), Duration.ofHours(1)));
+        entityManager.flush();
+        entityManager.clear();
+
+        // Then
+        assertThat(solvedTrainingPuzzleRepository.findLatestInPublicPackByUserId(user.getId()))
+                .get()
+                .extracting(solved -> solved.getPuzzle().getId())
+                .isEqualTo(earlier.getId());
+    }
+
+    @Test
+    @Transactional
+    void findLastSolvedAtByPack_WhenPackHasSeveralSolves_ThenGivesTheLatest() {
+        // Given: two puzzles solved in one pack, the second again an hour on
+        UserEntity user = persistTestUser();
+        Pack pack = packRepository.save(visibilityPack(true));
+        TrainingPuzzle first = trainingPuzzleRepository.save(visibilityPuzzle(pack, "first"));
+        TrainingPuzzle second = trainingPuzzleRepository.save(
+                visibilityPuzzle(pack, "second").toBuilder().trainingIndex(1).build());
+        solvedTrainingPuzzleRepository.save(SolvedTrainingPuzzle.builder().user(user).puzzle(first).build());
+        SolvedTrainingPuzzle secondSolve = solvedTrainingPuzzleRepository.save(
+                SolvedTrainingPuzzle.builder().user(user).puzzle(second).build());
+        Instant anHourOn = Instant.now().plus(1, ChronoUnit.HOURS).truncatedTo(ChronoUnit.SECONDS);
+        secondSolve.updateSolvedAtToNow(Clock.fixed(anHourOn, ZoneOffset.UTC));
+        entityManager.flush();
+        entityManager.clear();
+
+        // When
+        List<PackLastSolvedProjection> lastSolved = solvedTrainingPuzzleRepository.findLastSolvedAtByPack(user.getId());
+
+        // Then
+        assertThat(lastSolved).singleElement().satisfies(row -> {
+            assertThat(row.getPackId()).isEqualTo(pack.getId());
+            assertThat(row.getLastSolvedAt()).isEqualTo(anHourOn);
+        });
     }
 
     private static Pack visibilityPack(boolean isPublic) {
