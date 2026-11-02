@@ -20,8 +20,9 @@ public class LangCode {
     @Column(length = 15)
     private String name;
 
+    // ZH_HANT is Traditional Chinese, as written in Taiwan and Hong Kong
     public enum LangCodeName {
-        EN, KO
+        EN, KO, JA, ZH_HANT, RU, ET
     }
 
     private LangCode(String code) {
