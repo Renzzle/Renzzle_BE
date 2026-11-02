@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -33,7 +34,11 @@ public class CommunityShareService {
         CommunityPuzzle puzzle = communityPuzzleRepository.findByIdForUpdate(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
         puzzle.issueShareToken();
-        return new ShareCommunityPuzzleResponse(shareBaseUrl + "/puzzle/" + puzzle.getShareToken());
+        return new ShareCommunityPuzzleResponse(shareUrlOf(puzzle.getShareToken()));
+    }
+
+    public String shareUrlOf(String token) {
+        return shareBaseUrl + "/puzzle/" + token;
     }
 
     @Transactional(readOnly = true)
@@ -41,20 +46,28 @@ public class CommunityShareService {
         return new GetSharedPuzzleIdResponse(findPuzzleId(token));
     }
 
-    // Public, so it leaves out the answer and IDs and isn't counted as a view
     @Transactional(readOnly = true)
     public GetSharedPuzzleResponse getSharedPuzzle(String token) {
-        CommunityPuzzle puzzle = communityPuzzleRepository.findByShareToken(token)
+        return loadSharedPuzzle(token)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
+    }
 
-        return GetSharedPuzzleResponse.builder()
-                .boardStatus(puzzle.getBoardStatus())
-                .authorName(puzzle.getUser().getNickname())
-                .description(puzzle.getDescription())
-                .depth(puzzle.getDepth())
-                .winColor(puzzle.getWinColor().getName())
-                .isVerified(puzzle.getIsVerified())
-                .build();
+    @Transactional(readOnly = true)
+    public Optional<GetSharedPuzzleResponse> findSharedPuzzle(String token) {
+        return loadSharedPuzzle(token);
+    }
+
+    // Public, so it leaves out the answer and IDs and isn't counted as a view
+    private Optional<GetSharedPuzzleResponse> loadSharedPuzzle(String token) {
+        return communityPuzzleRepository.findByShareToken(token)
+                .map(puzzle -> GetSharedPuzzleResponse.builder()
+                        .boardStatus(puzzle.getBoardStatus())
+                        .authorName(puzzle.getUser().getNickname())
+                        .description(puzzle.getDescription())
+                        .depth(puzzle.getDepth())
+                        .winColor(puzzle.getWinColor().getName())
+                        .isVerified(puzzle.getIsVerified())
+                        .build());
     }
 
     @Transactional(readOnly = true)

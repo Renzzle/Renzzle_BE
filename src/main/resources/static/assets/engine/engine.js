@@ -72,6 +72,6 @@
     // 0 ongoing, 1 the last move won, 2 black lost on a forbidden move
     checkWin: (board) => call('checkWin', board),
     cancel,
-    isCancelled: (error) => Boolean(error) && error.name === 'EngineCancelled'
+    isCancelled: (error) => error?.name === 'EngineCancelled'
   };
 })();

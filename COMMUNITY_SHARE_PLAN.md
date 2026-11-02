@@ -64,7 +64,7 @@ https://renzzle.com/puzzle/{token}
   - 승패 판정, AI 수(앱 엔진과 같은 수), 10초 탐색, 취소 후 재시작 모두 통과했다.
   - 메모리 최고치는 97MB다.
 - 별도 기기 확인 페이지는 두지 않는다. 엔진을 못 쓰는 기기는 공유 페이지가 알아서 직접 두어보기로 바꾼다(3번 참고).
-- 최소 지원 버전은 Safari 15(iOS 15), Chrome 85, Firefox 114(모듈 워커)다.
+- 최소 지원 버전은 Safari 15.4(iOS 15.4, 공유 페이지의 `Array.prototype.at`), Chrome 92, Firefox 114(모듈 워커)다.
   - gomocalc(웹 Rapfi)는 시작 메모리 64MB에 멀티스레드를 써서 우리보다 무겁다. 그래서 그게 돌아가는 기기면 우리 엔진도 돈다고 본다.
 
 PoC 결과(x86, Node/V8, 네이티브 대비):
@@ -83,9 +83,10 @@ PoC 결과(x86, Node/V8, 네이티브 대비):
 
 | 경로                                    | 용도                                                                     |
 |-----------------------------------------|--------------------------------------------------------------------------|
-| `GET /puzzle/{token}`                   | 공유 페이지 (Thymeleaf, OG 태그). 아직 없음                              |
+| `GET /puzzle/{token}`                   | 공유 페이지 (Thymeleaf, OG 태그). `SharedPuzzlePageController`           |
 | `GET /puzzle/{token}/data`              | 보드, 작성자 닉네임, 설명, 수 깊이, 승리 색, 검증 여부. 정답과 ID는 없음 |
 | `GET /puzzle/{token}/next-moves?board=` | 사용자 차례 보드의 캐시 후보를 난독화한 문자열(`response`)로 반환        |
+| `GET /puzzle/{token}/preview.png`       | 링크 미리보기용 보드 이미지 (1200×600 PNG, 7일 캐시)                     |
 
 - 토큰을 퍼즐 ID로 바꾸는 건 서버 안에서만 한다. 공개 응답에 ID를 넣지 않는다.
 - 삭제된 퍼즐은 `@SQLRestriction`으로 걸러져 404(`P4040`)가 난다. 앱 상세 조회와 같은 조건이다.
@@ -119,7 +120,7 @@ PoC 결과(x86, Node/V8, 네이티브 대비):
 ### 기타
 
 - **XSS**: 퍼즐 제목과 닉네임은 사용자가 입력한 값이다. `th:text`나 `th:content`만 쓰고 `th:utext`는 금지한다. 인라인 JS가 필요하면 `th:inline="javascript"`를 쓴다.
-- **딥링크 검증 파일**: `/.well-known/apple-app-site-association`과 `/.well-known/assetlinks.json`을 `caddy/Caddyfile`에서 응답한다(`app-ads.txt`와 같은 방식).
+- **딥링크 검증 파일 (보류: 딥링크 작업 때 함께 한다)**: `/.well-known/apple-app-site-association`과 `/.well-known/assetlinks.json`을 `caddy/Caddyfile`에서 응답한다(`app-ads.txt`와 같은 방식).
   - 경로 패턴은 `/puzzle/*`이다. 내용에 애플 Team ID와 Play 앱 서명 키의 SHA-256 지문이 필요하다.
   - 앱이 도메인을 선언하기 전에는 OS가 이 파일을 쓰지 않으므로 먼저 올려 둬도 영향이 없다.
 - **Cloudflare**: 지금은 `/api`와 `/admin` 하위를 뺀 경로를 막고 있다(규칙 확인 필요). 아래 경로를 열어야 한다.
@@ -131,6 +132,33 @@ PoC 결과(x86, Node/V8, 네이티브 대비):
 
 ## 3. 웹 공유 페이지
 
+✅ 구현됨: `templates/share/puzzle.html`, `static/assets/share/puzzle.js`, `static/assets/share/share.css`
+
+- 디자인은 FE UI 개선 전까지 쓰는 임시 디자인이다. 색과 폰트는 `share.css`의 CSS 변수(`--share-*`)에 모아 두어, 디자인이 나오면 값만 바꾸면 된다.
+- 보드는 앱과 같은 단색 판이다.
+  - 판 `#FBEFE1`, 선과 화점 `#767D86`, 흑돌 `#111111`, 백돌 `#FFFFFF`
+  - 공유 페이지는 `puzzle.js`의 `BOARD_COLORS`로 이 색을 쓰고, 어드민 보드는 그대로다.
+  - 미리보기 이미지(`SharedPuzzlePreviewRenderer`)도 같은 색이다. 색을 바꿀 때는 두 곳을 같이 바꾼다.
+- 화면 구성(모바일 우선, 한 열)
+  - 상단: 로고
+  - 퍼즐 카드: 출제자, 인증 배지, 흑선승/백선승, 깊이, 설명
+  - 상태 문구, 오목판, 버튼(새로하기, 검토하기, 검토 중 이전/다음)
+  - 앱 스토어 링크, 하단 저작권과 약관 링크
+- 언어는 `Accept-Language`가 한국어가 아니면 영어로 보여 준다. 헤더가 없으면 한국어다. 링크 미리보기 크롤러는 헤더를 안 보내는 경우가 많기 때문이다.
+- 스토어 링크는 앱 설정(`AppInfo`)의 `ios_store_url`과 `android_store_url`을 쓴다. Safari 앱 배너(Smart App Banner)는 iOS 링크의 `id123...`에서 App Store ID를 뽑아 넣는다. 값이 없으면 둘 다 숨긴다.
+- 검색엔진 노출은 막는다(`noindex`). 공유 토큰이 검색 결과에 쌓이면 대량 수집을 막는 의미가 없어지기 때문이다.
+- 없는 토큰이나 삭제된 퍼즐은 404 상태로 "퍼즐을 찾을 수 없어요" 화면을 보여 주고, 엔진은 불러오지 않는다.
+- 착수는 앱처럼 두 번 탭한다. 첫 탭은 선택만 하고, 같은 칸을 한 번 더 누르면 놓는다.
+- 수 제한(깊이)은 앱처럼 표시만 하고 강제하지 않는다. AI가 둘 곳이 없으면(-1) 앱과 같이 실패로 처리한다.
+- **링크 미리보기 이미지**: 1200×600(2:1) PNG를 서버에서 그린다(Java AWT, 약 30KB). 글자와 로고는 넣지 않는다.
+  - 판의 가로 전체를 보여 주고, 세로는 돌이 있는 줄을 중심으로 띠처럼 자른다. 돌이 세로로 넓게 퍼져 있으면 그만큼 축소하고, 가장 넓을 때는 판 전체가 가운데에 온다.
+  - 처음에는 정사각형(1:1)으로 만들었다. 카카오 문서상으로는 1:1도 자르지 않는다고 하지만, 실제 카톡 말풍선에서는 잘려서 카카오 권장 비율인 2:1로 바꿨다.
+  - 토큰의 보드는 바뀌지 않으므로 7일 캐시한다(`Cache-Control: public`). Cloudflare도 `.png`를 캐시한다.
+  - 카카오톡은 미리보기를 URL별로 캐시한다. 그래서 이미지 주소에 `?v=1`을 붙였고, 그림이 바뀌면 `SharedPuzzlePageController.PREVIEW_VERSION`을 올린다.
+  - 운영 Docker 이미지(`eclipse-temurin:17-jre`)에서 headless AWT로 PNG가 만들어지는 것을 확인했다.
+- 로컬 Chromium과 WebKit(Playwright)에서 아래 시나리오가 모두 통과했다.
+  - 캐시 응답, 엔진 응답, 성공, 검토(이전/다음), 금수 패배
+  - wasm을 막았을 때 직접 두어보기로 전환, 없는 토큰 404
 - 보드 그리기는 `static/assets/admin/board.js`를 재사용한다.
 - 대국 흐름은 FE `Board/index.tsx`(`prefetchNextMoves`, `getCachedAiAnswer`)를 옮겨 온다. 캐시 저장 부분만 뺀다.
   1. 사용자 차례가 되면 그 보드의 next-moves를 미리 받아 둔다.
@@ -151,7 +179,7 @@ PoC 결과(x86, Node/V8, 네이티브 대비):
 - 좌표 형식은 기존과 같다.
   - 보드 문자열은 `h8i9...`처럼 문자와 숫자를 이어 붙인다.
   - 수 인덱스는 `(문자-'a')*15 + (숫자-1)`이고, BE의 `moveIndexToPosition`과 같다.
-- **"앱으로 보기" 버튼**은 같은 도메인 링크로는 앱이 열리지 않는다. iOS에서는 같은 도메인 안의 이동에 유니버설 링크가 발동하지 않기 때문이다. 그래서 커스텀 스킴을 쓴다.
+- **"앱으로 보기" 버튼 (보류: 딥링크 작업 때 넣는다)**은 같은 도메인 링크로는 앱이 열리지 않는다. iOS에서는 같은 도메인 안의 이동에 유니버설 링크가 발동하지 않기 때문이다. 그래서 커스텀 스킴을 쓴다.
   - iOS: `renzzle://puzzle/{token}`
   - Android: `intent://puzzle/{token}#Intent;scheme=renzzle;package=...;end`
   - 카카오톡 인앱 브라우저에서도 이 방식이 가장 잘 동작한다.
@@ -164,7 +192,7 @@ PoC 결과(x86, Node/V8, 네이티브 대비):
 
 ## 4. FE (앱)
 
-서버 쪽 작업을 모두 끝낸 뒤에 반영한다. 그 전까지 공유 링크는 항상 웹으로 열린다.
+**딥링크는 나중으로 미뤘다.** 서버 쪽 작업을 모두 끝낸 뒤에 반영한다. 그 전까지 공유 링크는 항상 웹으로 열린다.
 
 현재 딥링크 설정이 전혀 없다. 매니페스트에는 앱 실행용(launcher) 설정만 있고, iOS URL 스킴, Associated Domains, RN `linking` 설정도 없다.
 
@@ -195,13 +223,13 @@ PoC 결과(x86, Node/V8, 네이티브 대비):
 
 ## 6. 작업량
 
-| 작업                                          | 시간  |
-|-----------------------------------------------|-------|
-| WASM 빌드와 래퍼, 워커                        | ~1h   |
-| BE 공개 API, 공유 토큰, 난독화, 페이지 라우트 | ~2h   |
-| 웹 풀이와 검토 화면                           | ~4h   |
-| 딥링크 (FE 스킴과 링크 설정, BE 검증 파일)    | ~1.5h |
-| 실기기와 브라우저 검증                        | ~2–3h |
+| 작업                                          | 시간  | 상태                            |
+|-----------------------------------------------|-------|---------------------------------|
+| WASM 빌드와 래퍼, 워커                        | ~1h   | ✅ 완료                         |
+| BE 공개 API, 공유 토큰, 난독화, 페이지 라우트 | ~2h   | ✅ 완료                         |
+| 웹 풀이와 검토 화면                           | ~4h   | ✅ 완료 (임시 디자인)           |
+| 딥링크 (FE 스킴과 링크 설정, BE 검증 파일)    | ~1.5h | 보류                            |
+| 실기기와 브라우저 검증                        | ~2–3h | 로컬 브라우저 완료, 실기기 남음 |
 
 ## 7. 검증 체크리스트
 
@@ -235,3 +263,6 @@ PoC 결과(x86, Node/V8, 네이티브 대비):
 | FE   | `src/screens/PuzzleReview/index.tsx`, `src/hooks/usePuzzleReviewNavigation/index.ts`                 |
 | FE   | `android/app/src/main/java/com/renzzle_fe/cpp/jni/RenzzleJNI.cpp` (`checkWin`)                       |
 | AI   | `engine/engine.h` (`findNextMove`)                                                                   |
+| BE   | `domain/puzzle/community/web/SharedPuzzlePageController.java`, `templates/share/puzzle.html`         |
+| BE   | `static/assets/share/puzzle.js`, `static/assets/share/share.css`                                     |
+| BE   | `engine-wasm/`, `static/assets/engine/`                                                              |
