@@ -36,27 +36,36 @@ https://renzzle.com/puzzle/{token}
 
 ## 1. AI 엔진 (WASM)
 
-- 소스는 `Renzzle/Renzzle_AI`의 `main` 브랜치다. FE도 여기서 복사해 간다(2026-11-02 기준 FE `develop`과 동일).
-- 빌드는 AI 레포에서 한다. BE는 빌드 결과물(`.mjs`, `.wasm`)만 `src/main/resources/static/assets/engine/`에 복사한다.
-- 엔진 코드는 수정 없이 빌드된다(PoC로 확인). 래퍼에서 노출할 함수는 아래와 같다.
+✅ 구현됨: `engine-wasm/`, `static/assets/engine/`
+
+- 엔진 소스는 `Renzzle/Renzzle_AI`에 있다. FE와 같은 방식으로, 브리지 코드는 BE가 갖고 엔진은 AI 레포의 고정 커밋에서 받아 온다.
+  - FE는 `RenzzleJNI.cpp`를 갖고 있고, BE는 `engine-wasm/renzzle_web.cpp`를 갖는다.
+- 엔진을 바꿀 때는 `engine-wasm/build.sh`의 `AI_COMMIT`를 올리고 스크립트를 실행한 뒤, 결과물 두 개(`renzzle-engine.mjs`, `renzzle-engine.wasm`)를 커밋한다. git과 Docker가 필요하다.
+  - 빌드 도구는 `emscripten/emsdk:6.0.13` 이미지로 고정했다.
+  - AI 레포를 비공개로 돌리면 클론할 때 인증이 필요하다.
+- 엔진 코드는 수정 없이 빌드된다. 래퍼가 노출하는 함수는 아래와 같다.
 
 | 함수                       | 원본                                           | 반환              |
 |----------------------------|------------------------------------------------|-------------------|
 | `renzzle_next_move(board)` | `engine.h`의 `findNextMove`                    | 수 인덱스         |
 | `renzzle_check_win(board)` | FE `RenzzleJNI.cpp`의 `checkWin`을 그대로 이식 | 0/1/2 (의미 동일) |
 
-```bash
-em++ -O3 -std=c++17 -I<Renzzle_AI> web.cpp -o renzzle-engine.mjs \
-  -sMODULARIZE -sEXPORT_ES6 -sENVIRONMENT=web,worker \
-  -sSTACK_SIZE=8MB -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=128MB \
-  -sEXPORTED_FUNCTIONS=_renzzle_next_move,_renzzle_check_win \
-  -sEXPORTED_RUNTIME_METHODS=ccall,cwrap
-```
-
-- **`-sSTACK_SIZE=8MB`는 필수다.** 기본 스택(64KB)에서는 깊은 탐색 중에 `table index is out of bounds` 오류로 크래시가 난다.
-- `-g`나 `--profiling-funcs` 없이 빌드한다. 필요하면 `wasm-opt --strip-debug --strip-producers`를 추가로 돌린다. 소스맵은 배포하지 않는다.
-- 엔진은 Web Worker 1개를 계속 재사용한다. 취소는 워커를 `terminate()`한 뒤 새로 띄우는 방식으로 한다. 탐색 중에는 워커가 메시지를 받지 못하기 때문이다.
-- 빌드 도구는 `emscripten/emsdk` Docker 이미지다. 결과물 크기는 `.wasm` 155KB, gzip 58KB다.
+- 빌드 옵션의 핵심은 아래와 같다.
+  - **`-sSTACK_SIZE=8MB`는 필수다.** 기본 스택(64KB)에서는 깊은 탐색 중에 `table index is out of bounds` 오류로 크래시가 난다.
+  - 메모리는 `-sINITIAL_MEMORY=32MB`로 시작해 최대 `-sMAXIMUM_MEMORY=128MB`까지 늘어난다. 실측 최고치는 97MB다. 상한을 걸면 초기 메모리를 자동으로 정하지 않으므로 직접 지정해야 한다.
+  - `-sENVIRONMENT=worker -sMODULARIZE -sEXPORT_ES6`로 빌드해 모듈 워커(`type: 'module'`)에서 `import`로 불러온다. 모듈 워커는 iOS 15 이상이 필요하다.
+- **`wasm-opt --all-features`를 따로 돌리면 안 된다.** import를 실험적인 형식으로 다시 써서 Chrome과 Safari 모두 로드에 실패한다. emcc가 이미 디버그 정보와 이름 섹션을 지워 주니 따로 돌릴 필요도 없다.
+- 결과물 크기는 `.wasm` 149KB, gzip 56KB다. JS 첫 줄에 저작권 문구가 들어간다.
+- 실행 구조
+  - `engine-worker.js`가 엔진을 불러와 메시지로 함수를 호출한다.
+  - `engine.js`는 전역 `renzzleEngine`을 노출한다: `start`, `nextMove`, `checkWin`, `cancel`, `isCancelled`.
+  - 워커 1개를 계속 재사용한다. 취소하거나 오류가 나면 워커를 버리고, 다음 호출 때 새로 띄운다. 탐색 중에는 워커가 메시지를 받지 못하기 때문이다.
+- 로컬 Chromium과 WebKit(Playwright)에서 확인한 결과는 아래와 같다.
+  - 승패 판정, AI 수(앱 엔진과 같은 수), 10초 탐색, 취소 후 재시작 모두 통과했다.
+  - 메모리 최고치는 97MB다.
+- 별도 기기 확인 페이지는 두지 않는다. 엔진을 못 쓰는 기기는 공유 페이지가 알아서 직접 두어보기로 바꾼다(3번 참고).
+- 최소 지원 버전은 Safari 15(iOS 15), Chrome 85, Firefox 114(모듈 워커)다.
+  - gomocalc(웹 Rapfi)는 시작 메모리 64MB에 멀티스레드를 써서 우리보다 무겁다. 그래서 그게 돌아가는 기기면 우리 엔진도 돈다고 본다.
 
 PoC 결과(x86, Node/V8, 네이티브 대비):
 
@@ -134,6 +143,11 @@ PoC 결과(x86, Node/V8, 네이티브 대비):
   3. 마지막 수부터 보여 주고, 이전/다음 버튼으로 한 수씩 이동한다.
   4. 어느 지점에서든 직접 수를 둬 볼 수 있다. 흑백이 번갈아 놓이고 AI는 응답하지 않는다.
   5. 각 단계는 `check_win`으로 미리 판정해서 오목 완성이나 금수(X 표시)를 바로 보여 준다. 이미 끝난 판이면 더 둘 수 없다.
+- **엔진을 못 쓰는 기기에서는 직접 두어보기로 바꾼다.** 검토 모드처럼 흑백이 번갈아 놓이고, AI는 응답하지 않는다.
+  - 페이지를 열 때 엔진을 미리 띄우고 가벼운 호출(`checkWin`)을 하나 보낸다. 로드 실패, 오류, 일정 시간 무응답이면 처음부터 이 모드로 시작한다.
+  - 첫 AI 수에서 실패하면(메모리 부족 등은 실제 탐색에서야 드러난다) 그 자리에서 안내 문구를 띄우고 이 모드로 바꾼다.
+  - 승패 판정도 엔진 함수라서 금수 표시는 할 수 없다. 오목 완성은 `board.js`의 `findFiveLine`으로 표시한다.
+  - 캐시만으로 AI 응답을 흉내 내지는 않는다. 캐시에 없는 수에서 막히는 경우까지 처리해야 해서, 드문 기기를 위해 하기엔 복잡하다.
 - 좌표 형식은 기존과 같다.
   - 보드 문자열은 `h8i9...`처럼 문자와 숫자를 이어 붙인다.
   - 수 인덱스는 `(문자-'a')*15 + (숫자-1)`이고, BE의 `moveIndexToPosition`과 같다.
@@ -191,7 +205,8 @@ PoC 결과(x86, Node/V8, 네이티브 대비):
 
 ## 7. 검증 체크리스트
 
-- [ ] Chrome, Safari, iOS Safari, Android Chrome, 카카오톡 인앱 브라우저에서 WASM 로드, 메모리(~70MB), 스택 확인
+- [ ] iOS Safari, Android Chrome, 카카오톡 인앱 브라우저에서 공유 페이지의 AI 대응이 동작하는지
+- [ ] 엔진 로드를 일부러 실패시켰을 때(예: wasm 경로를 틀리게) 직접 두어보기로 바뀌는지
 - [ ] 캐시 hit와 miss 양쪽에서 AI 응답 확인
 - [ ] 검토에서 이전/다음 이동, 직접 착수, 오목·금수 표시가 앱과 같게 동작하는지
 - [ ] 앱 설치 상태에서 링크를 누르면 앱이 열리는지(iOS, Android). 애플 CDN이 검증 파일을 캐싱해서 반영이 늦을 수 있다
