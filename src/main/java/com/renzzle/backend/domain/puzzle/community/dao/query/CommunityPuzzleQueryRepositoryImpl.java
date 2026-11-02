@@ -43,7 +43,7 @@ public class CommunityPuzzleQueryRepositoryImpl implements CommunityPuzzleQueryR
                         authEq(request.auth()),
                         depthBetween(request.depthMin(), request.depthMax()),
                         solvedCondition(request.solved(), user.getId()),
-                        queryCondition(request.query())
+                        authorContains(request.query())
                 )
                 .orderBy(orderSpecifier(request.sort(), user.getMmr(), seed))
                 .limit(size(request.size()))
@@ -137,12 +137,11 @@ public class CommunityPuzzleQueryRepositoryImpl implements CommunityPuzzleQueryR
                 : subQuery.notExists();
     }
 
-    private BooleanExpression queryCondition(String query) {
+    // The search term only looks at author nicknames
+    private BooleanExpression authorContains(String query) {
         if (query == null || query.isBlank()) return null;
 
-        BooleanExpression byId = communityPuzzle.id.stringValue().eq(query);
-        BooleanExpression byAuthor = communityPuzzle.user.nickname.containsIgnoreCase(query);
-        return byId.or(byAuthor);
+        return communityPuzzle.user.nickname.containsIgnoreCase(query);
     }
 
     private OrderSpecifier<?>[] orderSpecifier(String sort, double userMmr, long seed) {
