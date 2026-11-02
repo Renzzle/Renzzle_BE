@@ -11,6 +11,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.Locale;
 import java.util.Optional;
@@ -51,9 +52,13 @@ public class SharedPuzzlePageController {
                 .orElse(korean ? "퍼즐을 찾을 수 없어요" : "Puzzle not found"));
         model.addAttribute("pageDescription", puzzle.map(found -> descriptionOf(found, korean))
                 .orElse(korean ? "삭제되었거나 잘못된 링크예요." : "It was removed, or the link is wrong."));
-        model.addAttribute("pageUrl", communityShareService.shareUrlOf(token));
+        // Absolute, as link previews need; the address the visitor or crawler used, already https behind the proxies
+        String pageUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path(communityShareService.sharePathOf(token))
+                .toUriString();
+        model.addAttribute("pageUrl", pageUrl);
         model.addAttribute("previewImageUrl", puzzle.isPresent()
-                ? communityShareService.shareUrlOf(token) + "/preview.png?v=" + PREVIEW_VERSION
+                ? pageUrl + "/preview.png?v=" + PREVIEW_VERSION
                 : null);
         model.addAttribute("iosStoreUrl", iosStoreUrl);
         model.addAttribute("androidStoreUrl", findStoreUrl(ANDROID_STORE_URL_TAG));

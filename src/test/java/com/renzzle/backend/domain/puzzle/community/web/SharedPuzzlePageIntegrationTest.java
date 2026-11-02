@@ -26,6 +26,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
@@ -65,8 +66,8 @@ class SharedPuzzlePageIntegrationTest {
                 .withView(3)
                 .save(communityPuzzleRepository)
                 .getId();
-        String shareUrl = communityShareService.shareCommunityPuzzle(puzzleId).shareUrl();
-        token = shareUrl.substring(shareUrl.lastIndexOf('/') + 1);
+        String sharePath = communityShareService.shareCommunityPuzzle(puzzleId).sharePath();
+        token = sharePath.substring(sharePath.lastIndexOf('/') + 1);
     }
 
     @AfterEach
@@ -85,10 +86,20 @@ class SharedPuzzlePageIntegrationTest {
                 .contains("data-token=\"" + token + "\"")
                 .contains("data-board=\"" + BOARD + "\"")
                 .contains("© 2026 Studio Isoo. All rights reserved.")
+                .contains("property=\"og:url\" content=\"https://renzzle.com/puzzle/" + token + "\"")
                 .contains("property=\"og:image\" content=\"https://renzzle.com/puzzle/" + token + "/preview.png?v=1\"")
                 .doesNotContain(ANSWER)
                 .doesNotContain("apple-itunes-app");
         assertThat(communityPuzzleRepository.findById(puzzleId).orElseThrow().getView()).isEqualTo(3);
+    }
+
+    @Test
+    void page_WhenServedFromAnotherAddress_ThenPreviewLinksFollowIt() throws Exception {
+        String html = page("https://test.renzzle.com:443", token, null, 200);
+
+        assertThat(html)
+                .contains("property=\"og:url\" content=\"https://test.renzzle.com/puzzle/" + token + "\"")
+                .contains("property=\"og:image\" content=\"https://test.renzzle.com/puzzle/" + token + "/preview.png?v=1\"");
     }
 
     @Test
@@ -145,8 +156,13 @@ class SharedPuzzlePageIntegrationTest {
                 .contains("href=\"https://play.google.com/store/apps/details?id=com.renzzle_fe\"");
     }
 
+    // Behind Cloudflare and Caddy, Tomcat turns X-Forwarded-Proto into https on port 443 (server.forward-headers-strategy)
     private String page(String shareToken, String acceptLanguage, int expectedStatus) throws Exception {
-        var request = get("/puzzle/" + shareToken).accept(MediaType.TEXT_HTML);
+        return page("https://renzzle.com:443", shareToken, acceptLanguage, expectedStatus);
+    }
+
+    private String page(String origin, String shareToken, String acceptLanguage, int expectedStatus) throws Exception {
+        var request = get(URI.create(origin + "/puzzle/" + shareToken)).accept(MediaType.TEXT_HTML);
         if (acceptLanguage != null) {
             request.header(HttpHeaders.ACCEPT_LANGUAGE, acceptLanguage);
         }

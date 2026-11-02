@@ -113,10 +113,6 @@ jobs:
           if [ -n "${{ secrets.DOCS_ENABLED }}" ]; then
             echo "DOCS_ENABLED=${{ secrets.DOCS_ENABLED }}" >> .env
           fi
-          # Share links issued on the test server should point back to it
-          if [ -n "${{ secrets.SHARE_BASE_URL }}" ]; then
-            echo "SHARE_BASE_URL=${{ secrets.SHARE_BASE_URL }}" >> .env
-          fi
 
       - name: Create Google Play service account file
         run: |

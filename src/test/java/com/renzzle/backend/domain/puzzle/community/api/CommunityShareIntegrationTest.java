@@ -97,7 +97,7 @@ class CommunityShareIntegrationTest {
         String first = share();
         String second = share();
 
-        assertThat(first).matches("https://renzzle\\.com/puzzle/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}");
+        assertThat(first).matches("/puzzle/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}");
         assertThat(second).isEqualTo(first);
     }
 
@@ -106,7 +106,7 @@ class CommunityShareIntegrationTest {
         ExecutorService executor = Executors.newFixedThreadPool(4);
         try {
             List<Callable<String>> shares = IntStream.range(0, 4)
-                    .<Callable<String>>mapToObj(i -> () -> communityShareService.shareCommunityPuzzle(puzzleId).shareUrl())
+                    .<Callable<String>>mapToObj(i -> () -> communityShareService.shareCommunityPuzzle(puzzleId).sharePath())
                     .toList();
             Set<String> links = executor.invokeAll(shares).stream()
                     .map(this::getUnchecked)
@@ -203,11 +203,11 @@ class CommunityShareIntegrationTest {
         String body = mockMvc.perform(asUser(post("/api/community/puzzle/" + puzzleId + "/share")))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        return JsonPath.read(body, "$.response.shareUrl");
+        return JsonPath.read(body, "$.response.sharePath");
     }
 
-    private String tokenOf(String shareUrl) {
-        return shareUrl.substring(shareUrl.lastIndexOf('/') + 1);
+    private String tokenOf(String sharePath) {
+        return sharePath.substring(sharePath.lastIndexOf('/') + 1);
     }
 
     private void softDeletePuzzle() {

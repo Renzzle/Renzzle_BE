@@ -101,9 +101,11 @@ PoC 결과(x86, Node/V8, 네이티브 대비):
 - 토큰은 **처음 공유할 때 발급**하고 이후 바뀌지 않는다. 기존 데이터를 채울(backfill) 필요가 없다.
   - 퍼즐 행을 잠그고 발급하므로, 동시에 처음 공유해도 토큰은 하나로 정해진다.
 - 앱용 API(앱 키와 로그인 필요)
-  - `POST /api/community/puzzle/{puzzleId}/share` → `{ shareUrl }`
+  - `POST /api/community/puzzle/{puzzleId}/share` → `{ sharePath }` (예: `/puzzle/{token}`). 앱이 이미 쓰는 서버 주소를 앞에 붙여 공유한다.
   - `GET /api/community/puzzle/share/{token}` → `{ puzzleId }`. 딥링크로 들어온 토큰을 퍼즐로 바꾼다.
-- 링크 도메인은 `community.puzzle.share-base-url`(환경 변수 `SHARE_BASE_URL`, 기본값 `https://renzzle.com`)이다. 테스트 서버는 `cd-test.yml`에서 같은 이름의 시크릿으로 바꿀 수 있다.
+- 서버에는 도메인 설정이 없다.
+  - 앱은 받은 경로에 자기가 쓰는 서버 주소를 붙인다. 그래서 테스트 서버를 보는 앱 빌드는 테스트 서버 링크를 만든다.
+  - 공유 페이지의 `og:url`과 `og:image`는 들어온 요청의 주소로 만든다. `server.forward-headers-strategy: native` 덕분에 Cloudflare와 Caddy 뒤에서도 `https://renzzle.com`으로 나온다.
 
 ### next-moves 난독화
 

@@ -11,7 +11,6 @@ import com.renzzle.backend.domain.puzzle.community.util.SharedMovesEncoder;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,20 +24,17 @@ public class CommunityShareService {
     private final CommunityPuzzleRepository communityPuzzleRepository;
     private final PuzzleCacheService puzzleCacheService;
 
-    @Value("${community.puzzle.share-base-url}")
-    private String shareBaseUrl;
-
     // Locked, so two first shares at once settle on one token
     @Transactional
     public ShareCommunityPuzzleResponse shareCommunityPuzzle(Long puzzleId) {
         CommunityPuzzle puzzle = communityPuzzleRepository.findByIdForUpdate(puzzleId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE));
         puzzle.issueShareToken();
-        return new ShareCommunityPuzzleResponse(shareUrlOf(puzzle.getShareToken()));
+        return new ShareCommunityPuzzleResponse(sharePathOf(puzzle.getShareToken()));
     }
 
-    public String shareUrlOf(String token) {
-        return shareBaseUrl + "/puzzle/" + token;
+    public String sharePathOf(String token) {
+        return "/puzzle/" + token;
     }
 
     @Transactional(readOnly = true)
