@@ -54,18 +54,21 @@ public interface TrainingPuzzleRepository extends JpaRepository<TrainingPuzzle, 
 
     void deleteAllByPack_Id(Long packId);
 
-    String RANK_CANDIDATE = "SELECT new com.renzzle.backend.domain.puzzle.shared.dto.RankPuzzleCandidate(" +
-            "p.id, p.boardStatus, p.answer, p.winColor.name, p.rating) FROM TrainingPuzzle p WHERE p.pack.isPublic = true ";
-    String NOT_HANDED_OUT = "AND p.boardStatus NOT IN (SELECT l.boardStatus FROM LatestRankPuzzle l WHERE l.user = :user) ";
-
     // The nearest puzzles not handed out this game at or above, and below, a rating; each walks the rating index
-    @Query(RANK_CANDIDATE + NOT_HANDED_OUT + "AND p.rating >= :rating ORDER BY p.rating ASC")
+    @Query("SELECT new com.renzzle.backend.domain.puzzle.shared.dto.RankPuzzleCandidate(" +
+            "p.id, p.boardStatus, p.answer, p.winColor.name, p.rating) FROM TrainingPuzzle p WHERE p.pack.isPublic = true " +
+            "AND p.boardStatus NOT IN (SELECT l.boardStatus FROM LatestRankPuzzle l WHERE l.user = :user) " +
+            "AND p.rating >= :rating ORDER BY p.rating ASC")
     List<RankPuzzleCandidate> findRankCandidatesFrom(@Param("user") UserEntity user, @Param("rating") double rating, Limit limit);
 
-    @Query(RANK_CANDIDATE + NOT_HANDED_OUT + "AND p.rating < :rating ORDER BY p.rating DESC")
+    @Query("SELECT new com.renzzle.backend.domain.puzzle.shared.dto.RankPuzzleCandidate(" +
+            "p.id, p.boardStatus, p.answer, p.winColor.name, p.rating) FROM TrainingPuzzle p WHERE p.pack.isPublic = true " +
+            "AND p.boardStatus NOT IN (SELECT l.boardStatus FROM LatestRankPuzzle l WHERE l.user = :user) " +
+            "AND p.rating < :rating ORDER BY p.rating DESC")
     List<RankPuzzleCandidate> findRankCandidatesBelow(@Param("user") UserEntity user, @Param("rating") double rating, Limit limit);
 
-    @Query(RANK_CANDIDATE)
+    @Query("SELECT new com.renzzle.backend.domain.puzzle.shared.dto.RankPuzzleCandidate(" +
+            "p.id, p.boardStatus, p.answer, p.winColor.name, p.rating) FROM TrainingPuzzle p WHERE p.pack.isPublic = true")
     List<RankPuzzleCandidate> findAllRankCandidates();
 
     @Query("SELECT p.rankAttemptCount FROM TrainingPuzzle p WHERE p.id = :id")

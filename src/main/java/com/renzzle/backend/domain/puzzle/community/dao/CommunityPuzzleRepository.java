@@ -58,18 +58,21 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
             "cp.deletedAt = :deletedAt WHERE cp.id = :puzzleId")
     int softDelete(@Param("puzzleId") Long puzzleId, @Param("deletedAt") Instant deletedAt);
 
-    String RANK_CANDIDATE = "SELECT new com.renzzle.backend.domain.puzzle.shared.dto.RankPuzzleCandidate(" +
-            "p.id, p.boardStatus, p.answer, p.winColor.name, p.rating) FROM CommunityPuzzle p WHERE p.isVerified = true ";
-    String NOT_HANDED_OUT = "AND p.boardStatus NOT IN (SELECT l.boardStatus FROM LatestRankPuzzle l WHERE l.user = :user) ";
-
     // The nearest puzzles not handed out this game at or above, and below, a rating; each walks the rating index
-    @Query(RANK_CANDIDATE + NOT_HANDED_OUT + "AND p.rating >= :rating ORDER BY p.rating ASC")
+    @Query("SELECT new com.renzzle.backend.domain.puzzle.shared.dto.RankPuzzleCandidate(" +
+            "p.id, p.boardStatus, p.answer, p.winColor.name, p.rating) FROM CommunityPuzzle p WHERE p.isVerified = true " +
+            "AND p.boardStatus NOT IN (SELECT l.boardStatus FROM LatestRankPuzzle l WHERE l.user = :user) " +
+            "AND p.rating >= :rating ORDER BY p.rating ASC")
     List<RankPuzzleCandidate> findRankCandidatesFrom(@Param("user") UserEntity user, @Param("rating") double rating, Limit limit);
 
-    @Query(RANK_CANDIDATE + NOT_HANDED_OUT + "AND p.rating < :rating ORDER BY p.rating DESC")
+    @Query("SELECT new com.renzzle.backend.domain.puzzle.shared.dto.RankPuzzleCandidate(" +
+            "p.id, p.boardStatus, p.answer, p.winColor.name, p.rating) FROM CommunityPuzzle p WHERE p.isVerified = true " +
+            "AND p.boardStatus NOT IN (SELECT l.boardStatus FROM LatestRankPuzzle l WHERE l.user = :user) " +
+            "AND p.rating < :rating ORDER BY p.rating DESC")
     List<RankPuzzleCandidate> findRankCandidatesBelow(@Param("user") UserEntity user, @Param("rating") double rating, Limit limit);
 
-    @Query(RANK_CANDIDATE)
+    @Query("SELECT new com.renzzle.backend.domain.puzzle.shared.dto.RankPuzzleCandidate(" +
+            "p.id, p.boardStatus, p.answer, p.winColor.name, p.rating) FROM CommunityPuzzle p WHERE p.isVerified = true")
     List<RankPuzzleCandidate> findAllRankCandidates();
 
     List<CommunityPuzzle> findByRankAttemptCount(int rankAttemptCount);
@@ -136,24 +139,26 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
     @Query(value = "UPDATE community_puzzle SET answer_key = :answerKey WHERE id = :id", nativeQuery = true)
     void updateAnswerKey(@Param("id") Long id, @Param("answerKey") String answerKey);
 
-    // Trend candidates: verified, not deleted, and not disliked more than liked
-    String TREND_FILTER = "cp.status != 'DELETED' AND cp.is_verified = TRUE AND cp.like_count >= cp.dislike_count ";
-    // Net likes halve every half-life, so a newer puzzle can overtake an older one with more likes
-    String TREND_ORDER = "ORDER BY (cp.like_count - cp.dislike_count) "
-            + "* POW(0.5, TIMESTAMPDIFF(SECOND, cp.created_at, :now) / :halfLifeSeconds) DESC, "
-            + "cp.view DESC, cp.id DESC ";
-
-    @Query(value = "SELECT cp.* FROM community_puzzle cp WHERE " + TREND_FILTER
-            + "AND cp.created_at > :since " + TREND_ORDER + "LIMIT :size", nativeQuery = true)
+    // Trend candidates are verified, not deleted, and not disliked more than liked. Net likes halve every
+    // half-life, so a newer puzzle can overtake an older one with more likes
+    @Query(value = "SELECT cp.* FROM community_puzzle cp " +
+            "WHERE cp.status != 'DELETED' AND cp.is_verified = TRUE AND cp.like_count >= cp.dislike_count " +
+            "AND cp.created_at > :since " +
+            "ORDER BY (cp.like_count - cp.dislike_count) " +
+            "* POW(0.5, TIMESTAMPDIFF(SECOND, cp.created_at, :now) / :halfLifeSeconds) DESC, cp.view DESC, cp.id DESC " +
+            "LIMIT :size", nativeQuery = true)
     List<CommunityPuzzle> findTrendPuzzlesSince(@Param("since") Instant since,
                                                @Param("now") Instant now,
                                                @Param("halfLifeSeconds") long halfLifeSeconds,
                                                @Param("size") int size);
 
     // For a quiet week: the latest 30 older candidates, ranked the same way
-    @Query(value = "SELECT cp.* FROM (SELECT * FROM community_puzzle cp WHERE " + TREND_FILTER
-            + "AND cp.created_at <= :since ORDER BY cp.created_at DESC LIMIT 30) cp "
-            + TREND_ORDER + "LIMIT :size", nativeQuery = true)
+    @Query(value = "SELECT cp.* FROM (SELECT * FROM community_puzzle cp " +
+            "WHERE cp.status != 'DELETED' AND cp.is_verified = TRUE AND cp.like_count >= cp.dislike_count " +
+            "AND cp.created_at <= :since ORDER BY cp.created_at DESC LIMIT 30) cp " +
+            "ORDER BY (cp.like_count - cp.dislike_count) " +
+            "* POW(0.5, TIMESTAMPDIFF(SECOND, cp.created_at, :now) / :halfLifeSeconds) DESC, cp.view DESC, cp.id DESC " +
+            "LIMIT :size", nativeQuery = true)
     List<CommunityPuzzle> findOlderTrendPuzzles(@Param("since") Instant since,
                                                @Param("now") Instant now,
                                                @Param("halfLifeSeconds") long halfLifeSeconds,

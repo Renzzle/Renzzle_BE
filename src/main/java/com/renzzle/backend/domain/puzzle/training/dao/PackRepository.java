@@ -9,7 +9,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface PackRepository extends JpaRepository<Pack, Long> {
 
@@ -33,7 +32,8 @@ public interface PackRepository extends JpaRepository<Pack, Long> {
 
     List<Pack> findByDifficultyAndCreatedBy(Difficulty difficulty, Long createdBy);
 
-    List<Pack> findByDifficultyAndIsPublicTrue(Difficulty difficulty);
+    // In id order, so packs list in the order they were added
+    List<Pack> findByDifficultyAndIsPublicTrueOrderByIdAsc(Difficulty difficulty);
 
-    Optional<Pack> findFirstByOrderByIdAsc();
+    List<Pack> findByIsPublicTrue();
 }
