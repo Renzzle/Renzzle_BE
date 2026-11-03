@@ -135,6 +135,7 @@
         failedLoad: 'Failed to load packs',
         metaAuthor: 'Author: {author}',
         metaCreator: 'Created by {email}',
+        metaPriority: 'Priority {priority}',
         deleteConfirm: 'Delete pack "{title}"? This also removes its puzzles.',
         deleteConfirmNoTitle: 'Delete pack? This also removes its puzzles.',
         deleteFailed: 'Failed to delete pack',
@@ -154,6 +155,8 @@
         difficultyLabel: 'Difficulty',
         visibilityHelp: 'Private packs are hidden in the app. Make the pack public once its puzzles are ready.',
         cannotHideStarterPack: 'The starter pack is given to every new user, so it must stay public.',
+        priorityLabel: 'Priority',
+        priorityHelp: 'Higher numbers list first in the app, ahead of the grouping by creator. 0 keeps the usual order; a negative number moves the pack down.',
         createPack: 'Create Pack',
         updatePack: 'Update Pack',
         languageNumber: 'Language {index} ({code})',
@@ -693,6 +696,7 @@
         failedLoad: '문제집을 불러오지 못했습니다.',
         metaAuthor: '작성자: {author}',
         metaCreator: '만든 사람: {email}',
+        metaPriority: '우선순위 {priority}',
         deleteConfirm: '"{title}" 문제집을 삭제할까요? 포함된 문제도 함께 삭제됩니다.',
         deleteConfirmNoTitle: '문제집을 삭제할까요? 포함된 문제도 함께 삭제됩니다.',
         deleteFailed: '문제집 삭제에 실패했습니다.',
@@ -712,6 +716,8 @@
         difficultyLabel: '난이도',
         visibilityHelp: '비공개 문제집은 앱에 노출되지 않습니다. 문제 출제를 마친 뒤 공개로 전환하세요.',
         cannotHideStarterPack: '스타터 문제집은 모든 신규 사용자에게 지급되므로 비공개로 전환할 수 없습니다.',
+        priorityLabel: '우선순위',
+        priorityHelp: '숫자가 클수록 앱 목록에서 위에 보이며, 출제자별 묶음보다 먼저 적용됩니다. 0이면 기본 순서를 따르고, 음수면 아래로 내려갑니다.',
         createPack: '문제집 생성',
         updatePack: '문제집 수정',
         languageNumber: '언어 {index} ({code})',
@@ -1140,7 +1146,7 @@
   }
 
   function interpolate(template, vars) {
-    return String(template).replace(/\{([^}]+)}/g, function (_, name) {
+    return String(template).replace(/\{([^{}]+)}/g, function (_, name) {
       const value = vars && Object.hasOwn(vars, name) ? vars[name] : '';
       return value == null ? '' : String(value);
     });

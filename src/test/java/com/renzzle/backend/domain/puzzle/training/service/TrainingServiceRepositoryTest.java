@@ -515,13 +515,24 @@ class TrainingServiceRepositoryTest {
 
     @Test
     @Transactional
-    void findByDifficultyAndIsPublicTrueOrderByIdAsc_WhenOnePackPrivate_ThenLeavesItOut() {
+    void priority_WhenRowInsertedWithoutIt_ThenDefaultsToZero() {
+        entityManager.createNativeQuery("INSERT INTO pack (puzzle_count, price, difficulty) VALUES (0, 0, 'LOW')")
+                .executeUpdate();
+        Long packId = ((Number) entityManager.createNativeQuery("SELECT LAST_INSERT_ID()").getSingleResult()).longValue();
+        entityManager.clear();
+
+        assertThat(packRepository.findById(packId)).get().extracting(Pack::getPriority).isEqualTo(0);
+    }
+
+    @Test
+    @Transactional
+    void findByDifficultyAndIsPublicTrue_WhenOnePackPrivate_ThenLeavesItOut() {
         // Given
         Pack publicPack = packRepository.save(visibilityPack(true));
         Pack privatePack = packRepository.save(visibilityPack(false));
 
         // When
-        List<Pack> packs = packRepository.findByDifficultyAndIsPublicTrueOrderByIdAsc(Difficulty.getDifficulty("LOW"));
+        List<Pack> packs = packRepository.findByDifficultyAndIsPublicTrue(Difficulty.getDifficulty("LOW"));
 
         // Then
         assertThat(packs).extracting(Pack::getId)

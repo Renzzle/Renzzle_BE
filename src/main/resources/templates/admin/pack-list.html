@@ -406,6 +406,9 @@
             if (SHOW_CREATOR && p['creatorEmail']) {
               meta.textContent += ' · ' + adminT('packList.metaCreator', { email: p['creatorEmail'] });
             }
+            if (p['priority']) {
+              meta.textContent += ' · ' + adminT('packList.metaPriority', { priority: p['priority'] });
+            }
             titleTd.appendChild(meta);
 
             const visibilityTd = document.createElement('td');

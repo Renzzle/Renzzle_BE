@@ -203,7 +203,10 @@ class AdminTemplateRenderTest {
         assertThat(render("admin/puzzle-cache-training-pack")).contains("<body data-pack-id=\"1\">");
         assertThat(render("admin/puzzle-edit")).contains("<body data-pack-id=\"1\" data-puzzle-id=\"2\">");
         assertThat(render("admin/puzzle-cache-board")).contains("<body data-puzzle-type=\"TRAINING\" data-puzzle-id=\"2\">");
-        assertThat(render("admin/pack-create")).contains("<body data-lang-codes=\"" + langCodes + "\">");
+        assertThat(render("admin/pack-create"))
+                .contains("<body data-lang-codes=\"" + langCodes + "\" data-manages-all-packs=\"true\">");
+        assertThat(render("admin/pack-create", Set.of(AdminPermission.PACK_MANAGE.name())))
+                .contains("<body data-lang-codes=\"" + langCodes + "\" data-manages-all-packs=\"false\">");
         assertThat(render("admin/admin-accounts")).contains("<body data-permissions=\"" + String.join(",", ALL_PERMISSIONS) + "\">");
     }
 
@@ -215,8 +218,7 @@ class AdminTemplateRenderTest {
             assertThat(html).contains("data-lang-code=\"" + lang.name() + "\"");
             assertThat(html).contains("<option value=\"" + lang.name() + "\">" + lang.name() + "</option>");
         }
-        assertThat(html).contains("admin@test.com");
-        assertThat(html).contains("id=\"adminModalDialog\"");
+        assertThat(html).contains("admin@test.com").contains("id=\"adminModalDialog\"");
     }
 
 }

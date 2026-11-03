@@ -21,6 +21,8 @@ public record UpdateTrainingPackRequest(
         @ValidEnum(enumClass = Difficulty.DifficultyName.class, message = "Invalid difficulty format")
         String difficulty,
 
-        Boolean isPublic
+        Boolean isPublic,
+
+        Integer priority
 ) {
 }

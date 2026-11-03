@@ -9,7 +9,8 @@
   <link rel="stylesheet" href="/assets/admin/pack-create.css">
   <script src="/assets/admin/i18n.js"></script>
 </head>
-<body th:data-lang-codes="${#strings.arrayJoin(langCodeNames, ',')}">
+<!--/*@thymesVar id="adminPermissions" type="java.util.Set<java.lang.String>"*/-->
+<body th:data-lang-codes="${#strings.arrayJoin(langCodeNames, ',')}" th:data-manages-all-packs="${adminPermissions?.contains('OPERATION_MANAGE')}">
   <div class="header">
     <div>
       <h1 id="pageTitle">Renzzle Admin</h1>
@@ -78,8 +79,13 @@
           <span class="pack-visibility-state" id="packPublicState" data-i18n="common.private">Private</span>
         </div>
       </div>
+      <div id="packPriorityField" hidden>
+        <label for="packPriority" data-i18n="packCreate.priorityLabel">Priority</label>
+        <input type="number" id="packPriority" step="1" value="0" aria-describedby="packPriorityHelp">
+      </div>
     </div>
     <p class="pack-visibility-help" id="packPublicHelp" data-i18n="packCreate.visibilityHelp">Private packs are hidden in the app. Make the pack public once its puzzles are ready.</p>
+    <p class="pack-visibility-help" id="packPriorityHelp" hidden data-i18n="packCreate.priorityHelp">Higher numbers list first in the app, ahead of the grouping by creator. 0 keeps the usual order; a negative number moves the pack down.</p>
     <button type="button" class="btn btn-primary" id="submitPackBtn" data-i18n="packCreate.createPack">Create Pack</button>
     <div id="createPackMsg" class="msg"></div>
   </section>
@@ -88,17 +94,20 @@
   <script type="module">
     const API_BASE = '';
     const LANG_CODE_NAMES = document.body.dataset.langCodes.split(',');
+    const MANAGES_ALL_PACKS = document.body.dataset.managesAllPacks === 'true';
+    document.getElementById('packPriorityField').hidden = !MANAGES_ALL_PACKS;
+    document.getElementById('packPriorityHelp').hidden = !MANAGES_ALL_PACKS;
 
     let langBlockCount = 0;
 
     // Quotes too, since the result also goes inside value="..." attributes
     function escapeHtml(s) {
       return String(s ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
     }
 
     function getUsedLangCodes() {
@@ -233,6 +242,7 @@
             document.getElementById('packDifficulty').value = pack.difficulty || 'LOW';
             document.getElementById('packPublic').checked = Boolean(pack.isPublic);
             syncPublicState();
+            document.getElementById('packPriority').value = String(pack.priority ?? 0);
 
             const info = pack.info || [];
             if (info.length === 0) {
@@ -278,12 +288,17 @@
       const price = Number.parseInt(document.getElementById('packPrice').value, 10);
       const difficulty = document.getElementById('packDifficulty').value;
       const isPublic = document.getElementById('packPublic').checked;
+      const priority = Number.parseInt(document.getElementById('packPriority').value, 10);
 
       try {
         if (editPackId) {
+          const body = { info, price, difficulty, isPublic };
+          if (MANAGES_ALL_PACKS) {
+            body.priority = Number.isFinite(priority) ? priority : 0;
+          }
           const res = await fetchWithAuth(API_BASE + '/api/training/pack/' + editPackId, {
             method: 'PATCH',
-            body: JSON.stringify({ info, price, difficulty, isPublic })
+            body: JSON.stringify(body)
           });
           if (!res) return;
           const data = await res.json();
