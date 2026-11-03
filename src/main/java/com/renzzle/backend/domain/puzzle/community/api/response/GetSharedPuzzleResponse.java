@@ -9,5 +9,8 @@ public record GetSharedPuzzleResponse(
         String description,
         int depth,
         String winColor,
-        boolean isVerified
+        boolean isVerified,
+        int solvedCount,
+        int views,
+        int likeCount
 ) { }

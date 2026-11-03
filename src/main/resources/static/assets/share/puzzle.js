@@ -2,64 +2,116 @@
 (function () {
   const LINES = 15;
   const LOGICAL_SIZE = 480;
-  const CELL = LOGICAL_SIZE / (LINES - 1 + 1.6);
-  const ORIGIN = CELL * 0.8;
-  const STONE_RADIUS = CELL * adminBoard.STONE_RATIO;
+  // As the app's board: margins of 0.6 cell, stones 94% of a cell
+  const CELL = LOGICAL_SIZE / (LINES - 1 + 1.2);
+  const ORIGIN = CELL * 0.6;
+  const STONE_RADIUS = CELL * 0.47;
+  // One pixel of the app design, which draws a cell 24px wide
+  const PX = CELL / 24;
+  const FONT = '"Pretendard Variable", Pretendard, system-ui, sans-serif';
   const ENGINE_READY_TIMEOUT_MS = 8000;
   const NEXT_MOVES_TIMEOUT_MS = 5000;
   const THINKING_DELAY_MS = 400;
-  const THINKING_DEEP_MS = 3000;
   const BASE64_URL_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
   // Must match SharedMovesEncoder on the server
   const SHUFFLED_ALPHABET = 'WyR9_QfXoZ7S1kBUMiOes4dacthv0rj3gYVJz5GAmNEIwCD-682TbnHqLFuxpKlP';
-  // Flat board as in the app; SharedPuzzlePreviewRenderer on the server draws the link preview in these colors
-  const BOARD_COLORS = {
-    woodFrom: '#FBEFE1',
-    woodTo: '#FBEFE1',
-    line: '#767D86',
-    frame: '#767D86',
-    star: '#767D86',
-    black: '#111111',
-    white: '#FFFFFF',
-    whiteEdge: '#767D86'
+  // The app's board; SharedPuzzlePreviewRenderer on the server draws the link preview in these colors
+  const COLORS = {
+    board: '#E7C99A',
+    label: 'rgba(38, 36, 31, 0.42)',
+    black: '#2C2A25',
+    white: '#FFFEFB',
+    last: '#269573',
+    selected: '#268064',
+    win: '#268064',
+    lose: '#9C412D',
+    cross: '#AF5744'
   };
-  Object.assign(adminBoard.COLORS, BOARD_COLORS);
+  // The wood is painted here with its light, before the lines
+  Object.assign(adminBoard.COLORS, {
+    woodFrom: 'transparent',
+    woodTo: 'transparent',
+    line: 'rgba(38, 36, 31, 0.26)',
+    frame: 'rgba(38, 36, 31, 0.62)',
+    star: 'rgba(38, 36, 31, 0.62)'
+  });
 
+  // Phosphor Icons (MIT)
+  const LEADS = {
+    idle: '<svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M196,84a31.94,31.94,0,0,0-11.22,2A32,32,0,0,0,148,69V44a32,32,0,0,0-64,0v66.83A32,32,0,0,0,32.25,148l4.68,8.24C71.11,216.48,86.72,244,136,244a92.1,92.1,0,0,0,92-92V116A32,32,0,0,0,196,84Zm8,68a68.08,68.08,0,0,1-68,68c-34,0-43.49-14.45-78.2-75.65l-4.69-8.28a.16.16,0,0,1,0-.07,8,8,0,0,1,13.86-8c.06.12.13.23.2.35l18.68,30A12,12,0,0,0,108,152V44a8,8,0,0,1,16,0v68a12,12,0,0,0,24,0V100a8,8,0,0,1,16,0v20a12,12,0,0,0,24,0v-4a8,8,0,0,1,16,0Z"/></svg>',
+    thinking: '<span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>',
+    success: '<svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm45.66,85.66-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32Z"/></svg>',
+    danger: '<svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm37.66,130.34a8,8,0,0,1-11.32,11.32L128,139.31l-26.34,26.35a8,8,0,0,1-11.32-11.32L116.69,128,90.34,101.66a8,8,0,0,1,11.32-11.32L128,116.69l26.34-26.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg>'
+  };
+
+  // Keyed by the page's lang, which the server picks from Accept-Language (SharedPuzzlePageText). Results stay short,
+  // as the line or X on the board already shows what happened
   const MESSAGES = {
     ko: {
       loading: 'AI를 준비하고 있어요',
-      turn: { black: '흑 차례예요. 오목을 완성해 보세요', white: '백 차례예요. 오목을 완성해 보세요' },
-      confirm: '한 번 더 누르면 돌을 놓아요',
+      turn: '두 번 눌러 돌을 둬요',
+      confirm: '한 번 더 누르면 둬요',
       thinking: '다음 수를 생각하고 있어요',
-      thinkingDeep: '신중하게 두는 중이에요',
-      solved: '퍼즐 풀기 성공! 오목을 완성했어요',
-      failed: '퍼즐 풀기 실패',
-      failedFive: '퍼즐 풀기 실패. 상대가 오목을 완성했어요',
-      failedForbidden: '퍼즐 풀기 실패. 금수 자리예요',
-      review: '검토 중이에요. 자유롭게 두어 볼 수 있어요',
-      five: '오목 완성',
-      forbidden: '금수',
-      free: '이 브라우저에서는 AI를 쓸 수 없어서 직접 두어 보기로 열었어요',
-      aiStopped: 'AI가 멈춰서 직접 두어 보기로 바꿨어요'
+      solved: '성공했어요',
+      failed: '실패했어요',
+      free: 'AI를 쓸 수 없어 직접 두어 볼 수 있어요'
     },
     en: {
       loading: 'Getting the AI ready',
-      turn: { black: 'Black to move. Make five in a row', white: 'White to move. Make five in a row' },
-      confirm: 'Tap again to place the stone',
+      turn: 'Tap twice to place a stone',
+      confirm: 'Tap again to place it',
       thinking: 'Thinking of a move',
-      thinkingDeep: 'Taking its time',
-      solved: 'Puzzle solved! Five in a row',
-      failed: 'Puzzle failed',
-      failedFive: 'Puzzle failed. The opponent made five',
-      failedForbidden: 'Puzzle failed. That is a forbidden move',
-      review: 'Reviewing. Place stones freely',
-      five: 'Five in a row',
-      forbidden: 'Forbidden move',
-      free: 'The AI is not available in this browser, so you can place stones freely',
-      aiStopped: 'The AI stopped, so you can now place stones freely'
+      solved: 'Solved',
+      failed: 'Failed',
+      free: 'The AI is unavailable, so place stones freely'
+    },
+    ja: {
+      loading: 'AIを準備しています',
+      turn: '2回タップして石を置きます',
+      confirm: 'もう一度タップすると置きます',
+      thinking: '次の手を考えています',
+      solved: '成功しました',
+      failed: '失敗しました',
+      free: 'AIが使えないため、自由に石を置けます'
+    },
+    'zh-Hans': {
+      loading: '正在准备 AI',
+      turn: '点两下落子',
+      confirm: '再点一下落子',
+      thinking: '正在思考下一步',
+      solved: '解题成功',
+      failed: '解题失败',
+      free: 'AI 无法使用，可以自由落子'
+    },
+    'zh-Hant': {
+      loading: '正在準備 AI',
+      turn: '點兩下落子',
+      confirm: '再點一下落子',
+      thinking: '正在思考下一步',
+      solved: '解題成功',
+      failed: '解題失敗',
+      free: 'AI 無法使用，可以自由落子'
+    },
+    ru: {
+      loading: 'Готовим ИИ',
+      turn: 'Коснитесь дважды, чтобы поставить камень',
+      confirm: 'Коснитесь ещё раз, чтобы поставить',
+      thinking: 'Обдумывает ход',
+      solved: 'Решено',
+      failed: 'Не решено',
+      free: 'ИИ недоступен, камни можно ставить свободно'
+    },
+    et: {
+      loading: 'Tehisintellekt valmistub',
+      turn: 'Kivi asetamiseks puuduta kaks korda',
+      confirm: 'Asetamiseks puuduta veel kord',
+      thinking: 'Mõtleb järgmise käigu üle',
+      solved: 'Lahendatud',
+      failed: 'Ei õnnestunud',
+      free: 'Tehisintellekt ei tööta, kive saab vabalt asetada'
     }
   };
-  const text = document.documentElement.lang === 'ko' ? MESSAGES.ko : MESSAGES.en;
+  const text = MESSAGES[document.documentElement.lang] || MESSAGES.en;
 
   const token = document.body.dataset.token;
   const puzzleBoard = document.body.dataset.board;
@@ -68,20 +120,15 @@
   const canvas = document.getElementById('board');
   const ctx = canvas.getContext('2d');
   const statusLine = document.getElementById('status');
-  const prevButton = document.getElementById('prevButton');
-  const nextButton = document.getElementById('nextButton');
   const retryButton = document.getElementById('retryButton');
-  const reviewButton = document.getElementById('reviewButton');
 
-  // mode: loading, solve, thinking, over, review, free
+  // mode: loading, solve, thinking, over, free
   const state = {
     mode: 'loading',
     sequence: puzzleBoard,
     selected: null,
     mark: null,
     over: false,
-    history: [],
-    historyIndex: 0,
     notice: null,
     turn: 0
   };
@@ -106,10 +153,6 @@
     return { row: index % LINES, col: Math.floor(index / LINES) };
   }
 
-  function nextPlayer(sequence) {
-    return movesOf(sequence).length % 2 === 0 ? 'black' : 'white';
-  }
-
   function toX(col) {
     return ORIGIN + col * CELL;
   }
@@ -119,46 +162,143 @@
   }
 
   function render() {
+    paintWood();
     adminBoard.paintBoard(ctx, { size: LOGICAL_SIZE, origin: ORIGIN, cell: CELL, labels: false });
+    paintLabels();
+
     const moves = movesOf(state.sequence);
-
     const fiveLine = state.mark?.fiveLine;
-    if (fiveLine) {
-      const first = fiveLine[0];
-      const last = fiveLine.at(-1);
-      adminBoard.paintLineBand(ctx, { x: toX(first.col), y: toY(first.row) },
-        { x: toX(last.col), y: toY(last.row) }, STONE_RADIUS);
-    }
-
-    const numbered = state.mode === 'review' || state.mode === 'free';
+    const forbidden = state.mark?.forbidden;
+    const numbered = state.mode === 'free';
     moves.forEach((move, index) => {
       const number = numbered && index >= puzzleMoveCount ? index - puzzleMoveCount + 1 : null;
-      adminBoard.paintStone(ctx, toX(move.col), toY(move.row), STONE_RADIUS, move.player, number);
+      paintStone(toX(move.col), toY(move.row), move.player, number);
+      if (index === moves.length - 1 && number == null && !fiveLine && !forbidden) {
+        paintLastMove(move);
+      }
     });
 
-    const last = moves.at(-1);
-    if (last && state.mark?.forbidden) {
-      paintCross(last);
-    } else if (last && !numbered && moves.length > puzzleMoveCount) {
-      adminBoard.paintRing(ctx, toX(last.col), toY(last.row), STONE_RADIUS, adminBoard.COLORS.mark);
+    if (fiveLine) {
+      paintFiveLine(fiveLine, state.mark.lost ? COLORS.lose : COLORS.win);
     }
-
+    if (forbidden && moves.length > 0) {
+      paintCross(moves.at(-1));
+    }
     if (state.selected) {
-      const { row, col } = state.selected;
-      ctx.save();
-      ctx.globalAlpha = 0.45;
-      adminBoard.paintStone(ctx, toX(col), toY(row), STONE_RADIUS, nextPlayer(state.sequence), null);
-      ctx.restore();
-      adminBoard.paintRing(ctx, toX(col), toY(row), STONE_RADIUS, adminBoard.COLORS.preview);
+      paintSelection(state.selected);
     }
+  }
+
+  // A faint light a little above the middle, so the flat wood doesn't look heavy
+  function paintWood() {
+    ctx.fillStyle = COLORS.board;
+    ctx.fillRect(0, 0, LOGICAL_SIZE, LOGICAL_SIZE);
+    ctx.save();
+    ctx.translate(LOGICAL_SIZE / 2, LOGICAL_SIZE * 0.3);
+    ctx.scale(1.2, 0.9);
+    const light = ctx.createRadialGradient(0, 0, 0, 0, 0, LOGICAL_SIZE);
+    light.addColorStop(0, 'rgba(255, 255, 255, 0.2)');
+    light.addColorStop(0.62, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = light;
+    ctx.fillRect(-LOGICAL_SIZE, -LOGICAL_SIZE, LOGICAL_SIZE * 2, LOGICAL_SIZE * 2);
+    ctx.restore();
+  }
+
+  function paintLabels() {
+    ctx.fillStyle = COLORS.label;
+    ctx.font = '600 ' + 8 * PX + 'px ' + FONT;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (let i = 0; i < LINES; i += 1) {
+      ctx.fillText(String.fromCodePoint(65 + i), toX(i), LOGICAL_SIZE - ORIGIN / 2);
+      ctx.fillText(String(i + 1), ORIGIN / 2, toY(i));
+    }
+  }
+
+  function circle(x, y, r) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+  }
+
+  // Flat, with depth only at the edges as in the app: a 1.5px drop, a 2px darker bottom, a light top on black
+  function paintStone(x, y, player, number) {
+    const black = player === 'black';
+    const r = STONE_RADIUS;
+    ctx.fillStyle = black ? 'rgba(30, 24, 16, 0.32)' : 'rgba(30, 24, 16, 0.24)';
+    circle(x, y + 1.5 * PX, r);
+    ctx.fill();
+    ctx.fillStyle = black ? COLORS.black : COLORS.white;
+    circle(x, y, r);
+    ctx.fill();
+
+    ctx.save();
+    circle(x, y, r);
+    ctx.clip();
+    paintEdge(x, y, r, 2 * PX, black ? 'rgba(0, 0, 0, 0.42)' : 'rgba(38, 36, 31, 0.16)');
+    if (black) {
+      paintEdge(x, y, r, -2 * PX, 'rgba(255, 255, 255, 0.12)');
+    } else {
+      ctx.strokeStyle = 'rgba(38, 36, 31, 0.66)';
+      ctx.lineWidth = 2 * PX;
+      circle(x, y, r);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    if (number != null) {
+      ctx.fillStyle = black ? '#F7F5F0' : '#26241F';
+      ctx.font = '700 ' + 12 * PX + 'px ' + FONT;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(number), x, y);
+    }
+  }
+
+  // The part of the stone that the same circle moved up by shift leaves bare: the bottom edge, or the top for a negative shift
+  function paintEdge(x, y, r, shift, color) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.arc(x, y - shift, r, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill('evenodd');
+  }
+
+  function paintLastMove(move) {
+    ctx.fillStyle = COLORS.last;
+    circle(toX(move.col), toY(move.row), STONE_RADIUS * 0.3);
+    ctx.fill();
+  }
+
+  // The first tap marks the spot with a ring as large as a stone
+  function paintSelection({ row, col }) {
+    ctx.strokeStyle = COLORS.selected;
+    ctx.lineWidth = 1.75 * PX;
+    circle(toX(col), toY(row), STONE_RADIUS - 0.875 * PX);
+    ctx.stroke();
+  }
+
+  // One line over the five stones, reaching a little past both ends
+  function paintFiveLine(line, color) {
+    const from = { x: toX(line[0].col), y: toY(line[0].row) };
+    const to = { x: toX(line.at(-1).col), y: toY(line.at(-1).row) };
+    const length = Math.hypot(to.x - from.x, to.y - from.y);
+    const reachX = ((to.x - from.x) / length) * CELL * 0.35;
+    const reachY = ((to.y - from.y) / length) * CELL * 0.35;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 4 * PX;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(from.x - reachX, from.y - reachY);
+    ctx.lineTo(to.x + reachX, to.y + reachY);
+    ctx.stroke();
   }
 
   function paintCross(move) {
     const x = toX(move.col);
     const y = toY(move.row);
-    const reach = STONE_RADIUS * 0.6;
-    ctx.strokeStyle = adminBoard.COLORS.mark;
-    ctx.lineWidth = STONE_RADIUS * 0.22;
+    const reach = CELL * 0.24;
+    ctx.strokeStyle = COLORS.cross;
+    ctx.lineWidth = 3 * PX;
     ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(x - reach, y - reach);
@@ -168,19 +308,14 @@
     ctx.stroke();
   }
 
-  function setStatus(message, tone, thinking) {
-    statusLine.textContent = message;
-    statusLine.dataset.tone = tone || '';
-    statusLine.dataset.thinking = thinking ? 'true' : 'false';
+  // tone: idle, thinking, success, danger, or muted for a plain line
+  function setStatus(message, tone) {
+    statusLine.dataset.tone = tone;
+    statusLine.innerHTML = LEADS[tone] || '';
+    statusLine.append(message);
   }
 
   function updateControls() {
-    const browsing = state.mode === 'review' || state.mode === 'free';
-    prevButton.hidden = !browsing;
-    nextButton.hidden = !browsing;
-    prevButton.disabled = state.historyIndex <= 0;
-    nextButton.disabled = state.historyIndex >= state.history.length - 1;
-    reviewButton.hidden = state.mode !== 'over';
     retryButton.disabled = state.mode === 'loading';
   }
 
@@ -276,26 +411,18 @@
   }
 
   function showThinkingSoon(turn) {
-    const shortTimer = setTimeout(() => {
+    const timer = setTimeout(() => {
       if (turn === state.turn) {
-        setStatus(text.thinking, 'muted', true);
+        setStatus(text.thinking, 'thinking');
       }
     }, THINKING_DELAY_MS);
-    const deepTimer = setTimeout(() => {
-      if (turn === state.turn) {
-        setStatus(text.thinkingDeep, 'muted', true);
-      }
-    }, THINKING_DEEP_MS);
-    return () => {
-      clearTimeout(shortTimer);
-      clearTimeout(deepTimer);
-    };
+    return () => clearTimeout(timer);
   }
 
   function finish(message, tone, mark) {
     state.mode = 'over';
     state.mark = mark;
-    setStatus(message, tone, false);
+    setStatus(message, tone);
     updateControls();
     render();
   }
@@ -325,7 +452,7 @@
         return;
       }
       if (userResult === 2) {
-        finish(text.failedForbidden, 'danger', { fiveLine: null, forbidden: true });
+        finish(text.failed, 'danger', { fiveLine: null, forbidden: true });
         return;
       }
 
@@ -347,7 +474,7 @@
       }
       state.sequence = afterAi;
       if (aiResult === 1) {
-        finish(text.failedFive, 'danger', { fiveLine: fiveLineOf(afterAi), forbidden: false });
+        finish(text.failed, 'danger', { fiveLine: fiveLineOf(afterAi), forbidden: false, lost: true });
         return;
       }
       if (aiResult === 2) {
@@ -357,22 +484,16 @@
 
       prefetchNextMoves(afterAi);
       state.mode = 'solve';
-      setStatus(text.turn[nextPlayer(afterAi)], '', false);
+      setStatus(text.turn, 'idle');
       updateControls();
       render();
     } catch (error) {
       if (turn === state.turn && !renzzleEngine.isCancelled(error)) {
-        startFree(text.aiStopped, state.sequence);
+        startFree(text.free, state.sequence);
       }
     } finally {
       stopThinking();
     }
-  }
-
-  function placeInHistory(sequence) {
-    state.history = state.history.slice(0, state.historyIndex + 1).concat([sequence]);
-    state.historyIndex = state.history.length - 1;
-    showPosition();
   }
 
   async function judgePosition(sequence) {
@@ -393,16 +514,16 @@
     return fiveLine ? { fiveLine, forbidden: false } : null;
   }
 
-  function showPosition() {
+  function showFree(sequence) {
     state.turn += 1;
-    state.sequence = state.history[state.historyIndex];
+    state.sequence = sequence;
     state.selected = null;
     state.mark = null;
     state.over = false;
-    setStatus(state.mode === 'free' ? state.notice : text.review, 'muted', false);
+    setStatus(state.notice, 'muted');
     updateControls();
     render();
-    void markPosition(state.turn, state.sequence);
+    void markPosition(state.turn, sequence);
   }
 
   // judgePosition never rejects; a result for a position the user already left is dropped
@@ -413,16 +534,7 @@
     }
     state.mark = mark;
     state.over = true;
-    setStatus(mark.forbidden ? text.forbidden : text.five, mark.forbidden ? 'danger' : 'success', false);
     render();
-  }
-
-  function historyFrom(sequence) {
-    const history = [puzzleBoard];
-    movesOf(sequence).slice(puzzleMoveCount).forEach((move) => {
-      history.push(history.at(-1) + moveString(move.row, move.col));
-    });
-    return history;
   }
 
   function startSolve() {
@@ -433,26 +545,16 @@
     state.mark = null;
     state.over = false;
     prefetchNextMoves(puzzleBoard);
-    setStatus(text.turn[nextPlayer(puzzleBoard)], '', false);
+    setStatus(text.turn, 'idle');
     updateControls();
     render();
-  }
-
-  function startReview() {
-    state.mode = 'review';
-    state.history = historyFrom(state.sequence);
-    state.historyIndex = state.history.length - 1;
-    state.history.forEach(prefetchJudge);
-    showPosition();
   }
 
   function startFree(notice, sequence) {
     engineAvailable = false;
     state.mode = 'free';
     state.notice = notice;
-    state.history = historyFrom(sequence);
-    state.historyIndex = state.history.length - 1;
-    showPosition();
+    showFree(sequence);
   }
 
   function cellAt(event) {
@@ -467,7 +569,7 @@
   }
 
   function canPlace() {
-    return state.mode === 'solve' || ((state.mode === 'review' || state.mode === 'free') && !state.over);
+    return state.mode === 'solve' || (state.mode === 'free' && !state.over);
   }
 
   // The first tap only selects, as in the app, so a slip on a small board doesn't place a stone
@@ -485,7 +587,7 @@
       state.selected = cell;
       prefetchJudge(state.sequence + moveString(cell.row, cell.col));
       if (state.mode === 'solve') {
-        setStatus(text.confirm, 'muted', false);
+        setStatus(text.confirm, 'muted');
       }
       render();
       return;
@@ -495,25 +597,9 @@
     if (state.mode === 'solve') {
       void playUserMove(cellIndex(cell.row, cell.col));
     } else {
-      placeInHistory(state.sequence + moveString(cell.row, cell.col));
+      showFree(state.sequence + moveString(cell.row, cell.col));
     }
   });
-
-  prevButton.addEventListener('click', () => {
-    if (state.historyIndex > 0) {
-      state.historyIndex -= 1;
-      showPosition();
-    }
-  });
-
-  nextButton.addEventListener('click', () => {
-    if (state.historyIndex < state.history.length - 1) {
-      state.historyIndex += 1;
-      showPosition();
-    }
-  });
-
-  reviewButton.addEventListener('click', startReview);
 
   retryButton.addEventListener('click', () => {
     if (state.mode === 'thinking') {
@@ -528,7 +614,7 @@
 
   function boot() {
     adminBoard.watch(canvas, LOGICAL_SIZE, render);
-    setStatus(text.loading, 'muted', true);
+    setStatus(text.loading, 'thinking');
     updateControls();
     render();
     void document.fonts?.ready.then(render);

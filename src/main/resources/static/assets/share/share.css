@@ -7,159 +7,235 @@
   src: url("../fonts/pretendard-1.3.9/PretendardVariable.woff2") format("woff2");
 }
 
+/* Values from the app's v3 design (palette A, with the ink main button of palette B) */
 :root {
   --share-font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-  --share-bg: #fafafa;
-  --share-surface: #ffffff;
-  --share-text: #18181b;
-  --share-text-soft: #52525b;
-  --share-muted: #71717a;
-  --share-border: #e4e4e7;
-  --share-primary: #4340db;
-  --share-primary-hover: #3532b8;
-  --share-success: #15803d;
-  --share-danger: #b91c1c;
-  --share-radius: 12px;
-  --share-width: 520px;
+  --ink: #26241F;
+  --ink-2: #57534C;
+  --ink-3: #716C64;
+  --paper: #F7F5F0;
+  --tile: #FFFEFB;
+  --edge: #DFD8CB;
+  --line: #EDE9E0;
+  --point: #2A2824;
+  --point-edge: #0B0A09;
+  --on-point: #F5F2EC;
+  --point-strong: #268064;
+  --point-ink: #1F6B53;
+  --alert-strong: #9C412D;
+  --board-edge: #D1AE78;
+  --page-x: 20px;
+  --share-width: 480px;
+}
+
+/* Pretendard has no kana or Chinese characters, so those come from each script's own system font */
+html:lang(ja) {
+  --share-font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
+}
+
+html:lang(zh-Hans) {
+  --share-font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+}
+
+html:lang(zh-Hant) {
+  --share-font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+}
+
+/* Height kept for what sits around the board on a short screen: the banner, and one line of the description */
+body:has(.app-banner) {
+  --banner-height: 65px;
+}
+
+body:has(.memo) {
+  --memo-line: 28px;
 }
 
 * {
   box-sizing: border-box;
 }
 
+/* One screen with no page scroll, as in the app */
 body {
+  display: flex;
+  flex-direction: column;
+  height: 100svh;
   margin: 0;
-  background: var(--share-bg);
-  color: var(--share-text);
+  background: var(--paper);
+  color: var(--ink);
   font-family: var(--share-font), sans-serif;
-  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
 }
 
-.topbar {
+/* Only on a phone: one link to its store */
+.app-banner {
   display: flex;
   align-items: center;
-  gap: 8px;
-  max-width: var(--share-width);
-  margin: 0 auto;
-  padding: 16px 16px 8px;
+  gap: 12px;
+  padding: 12px 16px 12px var(--page-x);
+  border-bottom: 1px solid var(--edge);
+  background: var(--tile);
+  color: var(--ink);
+  text-decoration: none;
 }
 
-.brand-name {
-  font-size: 18px;
-  font-weight: 750;
-  letter-spacing: -0.01em;
+/* The image is 144px, drawn at 40 for sharp edges on dense screens */
+.app-banner-icon {
+  display: block;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+}
+
+.app-banner-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-banner-text b {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 700;
+}
+
+.app-banner-text span {
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.app-banner-button {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  background: var(--point);
+  box-shadow: 0 2px 0 var(--point-edge);
+  color: var(--on-point);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 700;
+}
+
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.icon-button:active:not(:disabled) {
+  background: var(--line);
+}
+
+.icon-button:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
   max-width: var(--share-width);
   margin: 0 auto;
-  padding: 0 16px;
 }
 
-.puzzle-card {
-  padding: 16px;
-  background: var(--share-surface);
-  border: 1px solid var(--share-border);
-  border-radius: var(--share-radius);
-}
-
-.puzzle-author {
+.stage {
+  flex: 1;
+  min-height: 0;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  padding-top: 24px;
+}
+
+.goal {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding: 0 var(--page-x);
+}
+
+.goal p {
+  margin: 0;
+}
+
+.goal-line {
+  display: flex;
   align-items: center;
-  font-size: 15px;
+  gap: 8px;
 }
 
-.author-name {
-  font-weight: 650;
+.goal-line h1 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
 }
 
-.author-suffix {
-  color: var(--share-text-soft);
+/* Tap area of 44 without making the line taller, the icon lined up with the page edge */
+.goal-line .icon-button {
+  margin: -8px -10px -8px 0;
 }
 
-.badge {
-  margin-left: 8px;
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: #f4f4f5;
-  color: var(--share-muted);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.badge-verified {
-  background: #eef0ff;
-  color: var(--share-primary);
-}
-
-.puzzle-tags {
-  display: flex;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.tag {
-  padding: 2px 10px;
-  border: 1px solid var(--share-border);
-  border-radius: 999px;
-  color: var(--share-text-soft);
-  font-size: 13px;
-}
-
-.puzzle-description {
-  margin: 10px 0 0;
-  color: var(--share-text-soft);
-  font-size: 14px;
-  white-space: pre-line;
-  overflow-wrap: anywhere;
-}
-
-.status {
-  display: block;
-  min-height: 1.5em;
-  margin: 14px 2px 10px;
-  font-size: 15px;
-  font-weight: 600;
-  text-align: center;
-}
-
-.status[data-tone="success"] {
-  color: var(--share-success);
-}
-
-.status[data-tone="danger"] {
-  color: var(--share-danger);
-}
-
-.status[data-tone="muted"] {
-  color: var(--share-muted);
-}
-
-.status[data-thinking="true"]::before {
-  content: "";
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  margin-right: 8px;
-  vertical-align: -1px;
-  border: 2px solid var(--share-border);
-  border-top-color: var(--share-primary);
+.stone {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  animation: share-spin 0.8s linear infinite;
 }
 
-@keyframes share-spin {
-  to {
-    transform: rotate(360deg);
-  }
+.stone-black {
+  background: var(--ink);
 }
 
+.stone-white {
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(38, 36, 31, 0.75);
+}
+
+.goal-meta {
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.author {
+  color: var(--ink-2);
+  font-weight: 700;
+}
+
+/* Border and a 2px bottom edge, as the app's board. Smaller on a short screen, so it all fits */
 .board-frame {
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 1px 2px rgba(24, 24, 27, 0.08), 0 6px 18px rgba(24, 24, 27, 0.08);
+  flex-shrink: 0;
+  /* 184 is the padding, goal, like row and status line */
+  width: min(calc(100% - 16px), calc(100svh - 184px - var(--banner-height, 0px) - var(--memo-line, 0px)));
+  margin: 0 auto;
+  border: 1px solid var(--board-edge);
+  box-shadow: 0 2px 0 var(--board-edge);
 }
 
 #board {
@@ -171,101 +247,140 @@ body {
   cursor: pointer;
 }
 
-.controls {
+/* Only this part scrolls, when a long description doesn't fit */
+.dock {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin: 14px 0 0;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px var(--page-x) 0;
 }
 
-.button {
+.social {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.likes {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 0 18px;
-  border: 1px solid var(--share-border);
-  border-radius: 999px;
-  background: var(--share-surface);
-  color: var(--share-text);
-  font: inherit;
-  font-size: 15px;
+  gap: 4px;
+  height: 40px;
+  color: var(--ink-3);
+  font-size: 14px;
+  line-height: 20px;
   font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
+  font-variant-numeric: tabular-nums;
 }
 
-.button:disabled {
-  opacity: 0.4;
-  cursor: default;
+.counts {
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 
-.button-primary {
-  border-color: var(--share-primary);
-  background: var(--share-primary);
-  color: #ffffff;
+.memo {
+  margin: 0;
+  padding-left: 12px;
+  border-left: 2px solid var(--edge);
+  color: var(--ink-2);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 
-.button-primary:hover:not(:disabled) {
-  background: var(--share-primary-hover);
+.hint {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 16px var(--page-x);
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  text-align: center;
 }
 
-.button-icon {
-  width: 44px;
-  padding: 0;
+.hint svg {
+  flex-shrink: 0;
 }
 
-.button[hidden] {
-  display: none;
+.hint[data-tone="thinking"] {
+  color: var(--point-ink);
+  font-weight: 700;
+}
+
+/* The same size as every other line here; only the darker text and the colored icon set a result apart */
+.hint[data-tone="success"],
+.hint[data-tone="danger"] {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.hint[data-tone="success"] svg {
+  color: var(--point-strong);
+}
+
+.hint[data-tone="danger"] svg {
+  color: var(--alert-strong);
+}
+
+.dots {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.dots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--point-strong);
+  animation: share-dots 1.2s ease-in-out infinite;
+}
+
+.dots i:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.dots i:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes share-dots {
+  50% {
+    opacity: 0.25;
+  }
 }
 
 .not-found {
-  padding: 48px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 96px 24px 40px;
   text-align: center;
 }
 
 .not-found h1 {
-  margin: 0 0 8px;
+  margin: 0;
   font-size: 20px;
+  line-height: 28px;
+  font-weight: 700;
 }
 
 .not-found p {
   margin: 0;
-  color: var(--share-muted);
-}
-
-.app-promo {
-  margin-top: 24px;
-  padding: 16px;
-  border-radius: var(--share-radius);
-  background: #f4f4f5;
-  text-align: center;
-}
-
-.app-promo p {
-  margin: 0 0 12px;
-  font-weight: 600;
-}
-
-.store-links {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-}
-
-.footer {
-  max-width: var(--share-width);
-  margin: 0 auto;
-  padding: 24px 16px 32px;
-  color: var(--share-muted);
-  font-size: 12px;
-  text-align: center;
-}
-
-.footer p {
-  margin: 4px 0;
-}
-
-.footer a {
-  color: inherit;
+  color: var(--ink-3);
+  font-size: 16px;
+  line-height: 24px;
 }

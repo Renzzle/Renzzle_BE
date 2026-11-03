@@ -1,92 +1,86 @@
+<!--© 2026 Studio Isoo. All rights reserved.-->
 <!DOCTYPE html>
-<html th:lang="${korean} ? 'ko' : 'en'" xmlns:th="http://www.thymeleaf.org">
+<html lang="ko" th:lang="${text.lang}" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <title th:text="${pageTitle} + ' - Renzzle'">Renzzle</title>
-  <meta name="description" th:content="${pageDescription}">
+  <title th:text="${text.title} + ' - Renzzle'">Renzzle</title>
+  <meta name="description" th:content="${text.description}">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Renzzle">
-  <meta property="og:title" th:content="${pageTitle}">
-  <meta property="og:description" th:content="${pageDescription}">
+  <meta property="og:title" th:content="${text.title}">
+  <meta property="og:description" th:content="${text.description}">
   <meta property="og:url" th:content="${pageUrl}">
   <meta th:if="${previewImageUrl}" property="og:image" th:content="${previewImageUrl}">
   <meta th:if="${previewImageUrl}" property="og:image:width" content="1200">
   <meta th:if="${previewImageUrl}" property="og:image:height" content="600">
   <meta name="twitter:card" content="summary">
-  <meta th:if="${appStoreId}" name="apple-itunes-app" th:content="'app-id=' + ${appStoreId}">
-  <link rel="icon" href="/assets/image/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="/assets/image/app-icon.png" type="image/png">
   <link rel="preload" href="/assets/fonts/pretendard-1.3.9/PretendardVariable.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/assets/share/share.css">
 </head>
 <body th:attr="data-token=${puzzle != null} ? ${token} : null,
                data-board=${puzzle != null} ? ${puzzle.boardStatus} : null">
-<header class="topbar">
-  <img class="brand-icon" src="/assets/image/icon.svg" alt="" width="28" height="28">
-  <span class="brand-name">Renzzle</span>
-</header>
+<!--/* One link to the store of the visitor's phone; the controller leaves it out on a computer */-->
+<a th:if="${storeUrl}" class="app-banner" th:href="${storeUrl}" rel="noopener">
+  <img class="app-banner-icon" src="/assets/image/app-icon.png" alt="">
+  <span class="app-banner-text">
+    <b>Renzzle</b>
+    <span th:text="${text.bannerText}">앱에서 더 많은 퍼즐을 풀어 보세요</span>
+  </span>
+  <span class="app-banner-button" th:text="${text.bannerButton}">앱으로 보기</span>
+</a>
 
 <main class="page">
-  <section th:if="${puzzle}" class="puzzle-card">
-    <div class="puzzle-author">
-      <span class="author-name" th:text="${puzzle.authorName}">nickname</span>
-      <span class="author-suffix" th:text="${korean} ? '님 출제' : '\'s puzzle'">님 출제</span>
-      <span th:class="${puzzle.isVerified} ? 'badge badge-verified' : 'badge'"
-            th:text="${puzzle.isVerified} ? (${korean} ? '인증' : 'Verified') : (${korean} ? '미인증' : 'Unverified')">인증</span>
+  <section th:if="${puzzle}" class="stage">
+    <div class="goal">
+      <div class="goal-line">
+        <span th:class="${puzzle.winColor == 'BLACK'} ? 'stone stone-black' : 'stone stone-white'"></span>
+        <h1 th:text="${text.goal}">흑으로 오목을 만드세요</h1>
+        <!--/* Phosphor Icons (MIT); the retry arc is the one redrawn for the app design */-->
+        <button type="button" id="retryButton" class="icon-button" disabled
+                th:aria-label="${text.retry}">
+          <svg width="24" height="24" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="16"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M51.60 91.84A84 84 0 1 1 51.60 188.20"/><path d="M111.45 96.02L51.60 91.84L55.78 31.98"/>
+          </svg>
+        </button>
+      </div>
+      <p class="goal-meta">
+        <th:block th:text="${text.authorPrefix}"></th:block><b class="author" th:text="${puzzle.authorName}">오목고수</b><th:block
+            th:text="${text.authorSuffix}">님 출제</th:block><th:block th:text="${text.meta}"> · 깊이 5 · 인증 퍼즐</th:block>
+      </p>
     </div>
-    <div class="puzzle-tags">
-      <span class="tag" th:with="black=${puzzle.winColor == 'BLACK'}"
-            th:text="${korean} ? (${black} ? '흑선승' : '백선승') : (${black} ? 'Black to win' : 'White to win')">흑선승</span>
-      <span class="tag" th:text="(${korean} ? '깊이 ' : 'Depth ') + ${puzzle.depth}">깊이 3</span>
-    </div>
-    <p th:if="${puzzle.description != null and !#strings.isEmpty(puzzle.description)}"
-       class="puzzle-description" th:text="${puzzle.description}">description</p>
-  </section>
-
-  <th:block th:if="${puzzle}">
-    <output id="status" class="status" aria-live="polite"></output>
 
     <div class="board-frame">
-      <canvas id="board" width="480" height="480" th:aria-label="${korean} ? '오목판' : 'Gomoku board'"></canvas>
+      <canvas id="board" width="480" height="480" th:aria-label="${text.board}"></canvas>
     </div>
 
-    <div class="controls">
-      <button type="button" id="prevButton" class="button button-icon" hidden
-              th:aria-label="${korean} ? '이전 수' : 'Previous move'">&#9664;</button>
-      <button type="button" id="retryButton" class="button" th:text="${korean} ? '새로하기' : 'Retry'">새로하기</button>
-      <button type="button" id="reviewButton" class="button button-primary" hidden
-              th:text="${korean} ? '검토하기' : 'Review'">검토하기</button>
-      <button type="button" id="nextButton" class="button button-icon" hidden
-              th:aria-label="${korean} ? '다음 수' : 'Next move'">&#9654;</button>
+    <div class="dock">
+      <div class="social">
+        <!--/* Shows the count only; likes are given in the app */-->
+        <span class="likes" th:aria-label="${text.likes}">
+          <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+            <path d="M237,77.47A28,28,0,0,0,216,68H164V56a44.05,44.05,0,0,0-44-44,12,12,0,0,0-10.73,6.63L72.58,92H32a20,20,0,0,0-20,20v88a20,20,0,0,0,20,20H204a28,28,0,0,0,27.78-24.53l12-96A28,28,0,0,0,237,77.47ZM36,116H68v80H36ZM220,96.5l-12,96a4,4,0,0,1-4,3.5H92V106.83L126.82,37.2A20,20,0,0,1,140,56V80a12,12,0,0,0,12,12h64a4,4,0,0,1,4,4.5Z"/>
+          </svg>
+          <span th:text="${puzzle.likeCount}">0</span>
+        </span>
+        <span class="counts" th:text="${text.counts}">풀이 0 · 조회 0</span>
+      </div>
+      <p th:if="${puzzle.description != null and !#strings.isEmpty(puzzle.description)}"
+         class="memo" th:text="${puzzle.description}">description</p>
     </div>
-  </th:block>
+    <output id="status" class="hint" aria-live="polite"></output>
+  </section>
 
   <section th:unless="${puzzle}" class="not-found">
-    <h1 th:text="${pageTitle}">퍼즐을 찾을 수 없어요</h1>
-    <p th:text="${pageDescription}">삭제되었거나 잘못된 링크예요.</p>
+    <h1 th:text="${text.title}">퍼즐을 찾을 수 없어요</h1>
+    <p th:text="${text.description}">삭제되었거나 잘못된 링크예요.</p>
   </section>
 
-  <section th:if="${iosStoreUrl != null or androidStoreUrl != null}" class="app-promo">
-    <p th:text="${korean} ? 'Renzzle 앱에서 더 많은 퍼즐을 풀어 보세요' : 'Solve more puzzles in the Renzzle app'">
-      Renzzle 앱에서 더 많은 퍼즐을 풀어 보세요</p>
-    <div class="store-links">
-      <a th:if="${iosStoreUrl}" th:href="${iosStoreUrl}" class="button" rel="noopener">App Store</a>
-      <a th:if="${androidStoreUrl}" th:href="${androidStoreUrl}" class="button" rel="noopener">Google Play</a>
-    </div>
-  </section>
 </main>
 
-<footer class="footer">
-  <p>© 2026 Studio Isoo. All rights reserved.</p>
-  <p>
-    <a href="https://renzzle.github.io/Renzzle_Policy/terms-of-use" rel="noopener"
-       th:text="${korean} ? '이용약관' : 'Terms of Use'">이용약관</a>
-    <span aria-hidden="true">·</span>
-    <a href="https://renzzle.github.io/Renzzle_Policy/privacy-policy" rel="noopener"
-       th:text="${korean} ? '개인정보처리방침' : 'Privacy Policy'">개인정보처리방침</a>
-  </p>
-</footer>
 
 <th:block th:if="${puzzle}">
   <script src="/assets/admin/board.js"></script>

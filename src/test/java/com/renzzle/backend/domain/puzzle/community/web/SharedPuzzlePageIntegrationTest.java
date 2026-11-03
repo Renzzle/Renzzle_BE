@@ -64,6 +64,8 @@ class SharedPuzzlePageIntegrationTest {
                 .withBoardStatus(BOARD)
                 .withAnswer(ANSWER)
                 .withView(3)
+                .withSolvedCount(5)
+                .withLikeCount(7)
                 .save(communityPuzzleRepository)
                 .getId();
         String sharePath = communityShareService.shareCommunityPuzzle(puzzleId).sharePath();
@@ -85,9 +87,11 @@ class SharedPuzzlePageIntegrationTest {
                 .contains("property=\"og:title\" content=\"" + user.getNickname() + "님의 오목 퍼즐\"")
                 .contains("data-token=\"" + token + "\"")
                 .contains("data-board=\"" + BOARD + "\"")
-                .contains("© 2026 Studio Isoo. All rights reserved.")
+                .contains("흑으로 오목을 만드세요")
+                .contains("풀이 5 · 조회 3")
+                .contains("aria-label=\"좋아요 7\"")
                 .contains("property=\"og:url\" content=\"https://renzzle.com/puzzle/" + token + "\"")
-                .contains("property=\"og:image\" content=\"https://renzzle.com/puzzle/" + token + "/preview.png?v=1\"")
+                .contains("property=\"og:image\" content=\"https://renzzle.com/puzzle/" + token + "/preview.png?v=2\"")
                 .doesNotContain(ANSWER)
                 .doesNotContain("apple-itunes-app");
         assertThat(communityPuzzleRepository.findById(puzzleId).orElseThrow().getView()).isEqualTo(3);
@@ -99,7 +103,7 @@ class SharedPuzzlePageIntegrationTest {
 
         assertThat(html)
                 .contains("property=\"og:url\" content=\"https://test.renzzle.com/puzzle/" + token + "\"")
-                .contains("property=\"og:image\" content=\"https://test.renzzle.com/puzzle/" + token + "/preview.png?v=1\"");
+                .contains("property=\"og:image\" content=\"https://test.renzzle.com/puzzle/" + token + "/preview.png?v=2\"");
     }
 
     @Test
@@ -108,7 +112,19 @@ class SharedPuzzlePageIntegrationTest {
 
         assertThat(html)
                 .contains("<html lang=\"en\"")
-                .contains("content=\"" + user.getNickname() + "&#39;s Gomoku puzzle\"");
+                .contains("content=\"" + user.getNickname() + "&#39;s Gomoku puzzle\"")
+                .contains("Make five with black")
+                .contains("solved 5 · views 3");
+    }
+
+    @Test
+    void page_WhenBrowserPrefersTraditionalChinese_ThenRendersInIt() throws Exception {
+        String html = page(token, "zh-TW,zh;q=0.9,en;q=0.8", 200);
+
+        assertThat(html)
+                .contains("<html lang=\"zh-Hant\"")
+                .contains("執黑連成五子")
+                .contains(user.getNickname() + "</b> 出題");
     }
 
     @Test
@@ -133,8 +149,8 @@ class SharedPuzzlePageIntegrationTest {
         assertThat(image.getWidth()).isEqualTo(1200);
         assertThat(image.getHeight()).isEqualTo(600);
         // The band centers on rows 8-10, so h8, the first black stone, is one row below the middle
-        assertThat(image.getRGB(600, 377) & 0xFFFFFF).isEqualTo(0x111111);
-        assertThat(image.getRGB(5, 5) & 0xFFFFFF).isEqualTo(0xFBEFE1);
+        assertThat(image.getRGB(600, 377) & 0xFFFFFF).isEqualTo(0x2C2A25);
+        assertThat(image.getRGB(5, 5) & 0xFFFFFF).isEqualTo(0xE7C99A);
     }
 
     @Test
@@ -144,16 +160,24 @@ class SharedPuzzlePageIntegrationTest {
     }
 
     @Test
-    void page_WhenStoreLinksAreSet_ThenShowsThemAndTheSafariBanner() throws Exception {
+    void page_WhenStoreLinksAreSet_ThenLinksToTheStoreOfThePhoneOnly() throws Exception {
         appInfoService.upsertAppInfo(new UpsertAppInfoRequest("ios_store_url", "https://apps.apple.com/app/renzzle/id1234567890"));
         appInfoService.upsertAppInfo(new UpsertAppInfoRequest("android_store_url", "https://play.google.com/store/apps/details?id=com.renzzle_fe"));
 
-        String html = page(token, null, 200);
-
-        assertThat(html)
-                .contains("name=\"apple-itunes-app\" content=\"app-id=1234567890\"")
+        assertThat(pageOn("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15"))
                 .contains("href=\"https://apps.apple.com/app/renzzle/id1234567890\"")
-                .contains("href=\"https://play.google.com/store/apps/details?id=com.renzzle_fe\"");
+                .doesNotContain("play.google.com");
+        assertThat(pageOn("Mozilla/5.0 (Linux; Android 15; SM-S938N) AppleWebKit/537.36 Chrome/131.0 Mobile Safari/537.36"))
+                .contains("href=\"https://play.google.com/store/apps/details?id=com.renzzle_fe\"")
+                .doesNotContain("apps.apple.com");
+        assertThat(pageOn("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/131.0 Safari/537.36"))
+                .doesNotContain("class=\"app-banner\"");
+    }
+
+    private String pageOn(String userAgent) throws Exception {
+        return mockMvc.perform(get("/puzzle/" + token).header(HttpHeaders.USER_AGENT, userAgent))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
     }
 
     // Behind Cloudflare and Caddy, Tomcat turns X-Forwarded-Proto into https on port 443 (server.forward-headers-strategy)

@@ -26,11 +26,14 @@ public final class SharedPuzzlePreviewRenderer {
     private static final double STONE_PADDING = 1.5;
     private static final int[][] STAR_POINTS = {{3, 3}, {3, 11}, {7, 7}, {11, 3}, {11, 11}};
 
-    // Same flat palette as the share page board (BOARD_COLORS in puzzle.js)
-    private static final Color BOARD = new Color(0xFBEFE1);
-    private static final Color LINE = new Color(0x767D86);
-    private static final Color BLACK_STONE = new Color(0x111111);
-    private static final Color WHITE_STONE = new Color(0xFFFFFF);
+    // Same colors as the share page board (COLORS in puzzle.js), the app's board. The page draws lines and the white
+    // stone edge in translucent ink; here they are blended in advance, so crossing lines don't darken
+    private static final Color BOARD = new Color(0xE7C99A);
+    private static final Color LINE = new Color(0xB59E7A);
+    private static final Color FRAME = new Color(0x6F634E);
+    private static final Color BLACK_STONE = new Color(0x2C2A25);
+    private static final Color WHITE_STONE = new Color(0xFFFEFB);
+    private static final Color WHITE_STONE_EDGE = new Color(0x706E6A);
 
     private SharedPuzzlePreviewRenderer() {
     }
@@ -64,17 +67,19 @@ public final class SharedPuzzlePreviewRenderer {
         return png.toByteArray();
     }
 
+    // Inner lines light, the frame and star points darker
     private static void paintGrid(Graphics2D graphics, View view) {
-        float lineWidth = (float) Math.max(2, view.cell() * 0.025);
-        graphics.setColor(LINE);
+        float lineWidth = (float) Math.max(2, view.cell() / 24);
         for (int i = 0; i < LINES; i++) {
             boolean edge = i == 0 || i == LINES - 1;
-            graphics.setStroke(new BasicStroke(edge ? lineWidth * 2 : lineWidth));
+            graphics.setColor(edge ? FRAME : LINE);
+            graphics.setStroke(new BasicStroke(edge ? lineWidth * 1.5f : lineWidth));
             graphics.draw(new Line2D.Double(view.x(i), view.y(0), view.x(i), view.y(LINES - 1)));
             graphics.draw(new Line2D.Double(view.x(0), view.y(i), view.x(LINES - 1), view.y(i)));
         }
 
-        double starRadius = view.cell() * 0.09;
+        graphics.setColor(FRAME);
+        double starRadius = view.cell() * 0.11;
         for (int[] star : STAR_POINTS) {
             double x = view.x(star[1]);
             double y = view.y(star[0]);
@@ -84,16 +89,18 @@ public final class SharedPuzzlePreviewRenderer {
 
     // Cells are column-major (col * 15 + row), with row 0 at the bottom as on the page
     private static void paintStone(Graphics2D graphics, View view, int cell, boolean black) {
-        double radius = view.cell() * 0.46;
+        double radius = view.cell() * 0.47;
         double x = view.x(cell / LINES);
         double y = view.y(cell % LINES);
-        Ellipse2D stone = new Ellipse2D.Double(x - radius, y - radius, radius * 2, radius * 2);
         graphics.setColor(black ? BLACK_STONE : WHITE_STONE);
-        graphics.fill(stone);
+        graphics.fill(new Ellipse2D.Double(x - radius, y - radius, radius * 2, radius * 2));
         if (!black) {
-            graphics.setColor(LINE);
-            graphics.setStroke(new BasicStroke((float) (radius * 0.07)));
-            graphics.draw(stone);
+            // Inside the stone's edge, as the page draws it
+            double edge = Math.max(1.5, view.cell() / 24);
+            double inner = radius - edge / 2;
+            graphics.setColor(WHITE_STONE_EDGE);
+            graphics.setStroke(new BasicStroke((float) edge));
+            graphics.draw(new Ellipse2D.Double(x - inner, y - inner, inner * 2, inner * 2));
         }
     }
 

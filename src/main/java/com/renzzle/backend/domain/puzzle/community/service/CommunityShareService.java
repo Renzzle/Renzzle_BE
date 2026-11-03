@@ -63,6 +63,9 @@ public class CommunityShareService {
                         .depth(puzzle.getDepth())
                         .winColor(puzzle.getWinColor().getName())
                         .isVerified(puzzle.getIsVerified())
+                        .solvedCount(puzzle.getSolvedCount())
+                        .views(puzzle.getView())
+                        .likeCount(puzzle.getLikeCount())
                         .build());
     }
 
