@@ -25,7 +25,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Limit;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -66,7 +66,8 @@ public class RankService {
     private static final int RANKING_SIZE = 100;
     private static final int CANDIDATES_PER_SOURCE = 5;
 
-    private final RedisTemplate<String, RankSessionData> redisTemplate;
+    // Held as the interface, which marks the results that can be null; RedisTemplate drops those marks
+    private final RedisOperations<String, RankSessionData> redisTemplate;
     private final TrainingPuzzleRepository trainingPuzzleRepository;
     private final CommunityPuzzleRepository communityPuzzleRepository;
     private final UserRepository userRepository;
@@ -319,7 +320,7 @@ public class RankService {
     }
 
     private long getRemainingTtlOrThrow(String redisKey) {
-        Long ttl = (redisTemplate).getExpire(redisKey, TimeUnit.SECONDS);
+        Long ttl = redisTemplate.getExpire(redisKey, TimeUnit.SECONDS);
         if (ttl == null || ttl <= 0) {
             throw new CustomException(ErrorCode.INVALID_SESSION_TTL);
         }
@@ -502,11 +503,15 @@ public class RankService {
 
         // Taken from the full ranking, since the user may be outside the top 100
         MyRank myRank = findMyRank(PUZZLER_RANKING_KEY, user);
+        // An inactive user is left out of the ranking but keeps their score, so it is worked out here
+        double myScore = myRank.rank() == -1
+                ? puzzlerScores(Set.of(user.getId())).getOrDefault(String.valueOf(user.getId()), 0.0)
+                : myRank.score();
 
         UserPuzzlerRankInfo myInfo = UserPuzzlerRankInfo.builder()
                 .rank(myRank.rank())
                 .nickname(user.getNickname())
-                .score(myRank.score())
+                .score(myScore)
                 .build();
 
         return GetPuzzlerRankingResponse.builder()
@@ -525,14 +530,14 @@ public class RankService {
     private <R> List<R> extractTopRankedUsers(String key, RankEntryBuilder<R> builder) {
         Set<ZSetOperations.TypedTuple<String>> entries =
                 Optional.ofNullable(redisRankingTemplate.opsForZSet()
-                                .reverseRangeWithScores(key, 0, RANKING_SIZE - 1))
+                                .reverseRangeWithScores(key, 0, RANKING_SIZE - 1L))
                         .orElse(Collections.emptySet());
         if (entries.isEmpty()) {
             return List.of();
         }
 
         List<Long> userIds = entries.stream()
-                .map(entry -> Long.valueOf(entry.getValue()))
+                .map(entry -> Long.valueOf(Objects.requireNonNull(entry.getValue())))
                 .toList();
         Map<String, String> nicknames = userRepository.findNicknamesByIdIn(userIds).stream()
                 .collect(Collectors.toMap(user -> String.valueOf(user.getId()), UserNicknameProjection::getNickname));
@@ -543,7 +548,7 @@ public class RankService {
         int rankCounter = 0;
 
         for (ZSetOperations.TypedTuple<String> entry : entries) {
-            double score = entry.getScore();
+            double score = Objects.requireNonNull(entry.getScore());
             rankCounter++;
 
             if (Double.compare(score, lastScore) != 0) {
@@ -586,16 +591,16 @@ public class RankService {
 
     @Scheduled(fixedDelay = 1000 * 60 * 5) // Runs at startup, then 5 minutes after each run ends
     public void updateRankingCache() {
-        Instant oneMonthAgo = Instant.now(clock).minus(30, ChronoUnit.DAYS);
+        Instant threeMonthsAgo = Instant.now(clock).minus(90, ChronoUnit.DAYS);
 
         Map<String, Double> ratings = new HashMap<>();
-        for (UserEntity user : latestRankPuzzleRepository.findActiveUsersWithinPeriod(oneMonthAgo)) {
+        for (UserEntity user : latestRankPuzzleRepository.findActiveUsersWithinPeriod(threeMonthsAgo)) {
             ratings.put(String.valueOf(user.getId()), user.getRating());
         }
         publishRanking(RATING_RANKING_KEY, ratings);
 
-        List<UserEntity> creators = communityPuzzleRepository.findUsersWhoCreatedPuzzlesSince(oneMonthAgo);
-        List<UserEntity> solvers = userCommunityPuzzleRepository.findUsersWhoSolvedPuzzlesSince(oneMonthAgo);
+        List<UserEntity> creators = communityPuzzleRepository.findUsersWhoCreatedPuzzlesSince(threeMonthsAgo);
+        List<UserEntity> solvers = userCommunityPuzzleRepository.findUsersWhoSolvedPuzzlesSince(threeMonthsAgo);
 
         Set<Long> activePuzzlerIds = new HashSet<>();
         creators.forEach(user -> activePuzzlerIds.add(user.getId()));
@@ -621,6 +626,10 @@ public class RankService {
             long a = solvedCounts.getOrDefault(userId, 0L);
             AuthorStatsProjection stats = authorStats.get(userId);
             long b = stats != null ? stats.getPuzzleCount() : 0;
+            // Nothing solved or made leaves nothing to score, though the formula alone would give 69
+            if (a == 0 && b == 0) {
+                continue;
+            }
             long c = stats != null ? Math.max(0, stats.getLikeSum() - stats.getDislikeSum()) : 0;
 
             double score = Math.log((a + 1.0) * Math.pow(b + 1.0, 2) * Math.pow(c + 1.0, 3) + 1) * 100;

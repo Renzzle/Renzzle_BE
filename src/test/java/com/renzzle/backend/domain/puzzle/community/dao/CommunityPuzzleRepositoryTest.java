@@ -133,6 +133,32 @@ class CommunityPuzzleRepositoryTest {
     }
 
     @Test
+    void searchCommunityPuzzles_WhenQueryIsPuzzleNumber_ThenSearchesAuthorsOnly() {
+        // Given
+        UserEntity user = TestUserEntityBuilder.builder()
+                .withNickname("zqauthor")
+                .save(userRepository);
+        CommunityPuzzle puzzle = TestCommunityPuzzleBuilder.builder(user).save(communityPuzzleRepository);
+
+        // When
+        List<CommunityPuzzle> byNumber = communityPuzzleRepository.searchCommunityPuzzles(
+                new GetCommunityPuzzleRequest(null, null, null, null, null, null, null, null, null,
+                        String.valueOf(puzzle.getId())),
+                user,
+                0
+        );
+        List<CommunityPuzzle> byAuthor = communityPuzzleRepository.searchCommunityPuzzles(
+                new GetCommunityPuzzleRequest(null, null, null, null, null, null, null, null, null, "QAUT"),
+                user,
+                0
+        );
+
+        // Then
+        assertThat(byNumber).extracting(CommunityPuzzle::getId).doesNotContain(puzzle.getId());
+        assertThat(byAuthor).extracting(CommunityPuzzle::getId).containsExactly(puzzle.getId());
+    }
+
+    @Test
     void searchCommunityPuzzles_WhenCursorIdAndSizeProvided_ThenReturnsCorrectSubset() {
         // Given
         UserEntity user = TestUserEntityBuilder.builder().save(userRepository);
@@ -660,7 +686,7 @@ class CommunityPuzzleRepositoryTest {
     private CommunityPuzzle createdAgo(TestCommunityPuzzleBuilder builder, Duration age) {
         CommunityPuzzle puzzle = builder.save(communityPuzzleRepository);
         entityManager.flush();
-        // created_at is set on insert, so move it afterwards
+        // created_at is set on insert, so move it afterward
         entityManager.createNativeQuery("UPDATE community_puzzle SET created_at = :createdAt WHERE id = :id")
                 .setParameter("createdAt", TREND_NOW.minus(age))
                 .setParameter("id", puzzle.getId())

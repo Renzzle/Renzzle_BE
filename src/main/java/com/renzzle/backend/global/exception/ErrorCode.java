@@ -85,7 +85,6 @@ public enum ErrorCode {
 
 
     NO_SUCH_PACK_TRANSLATION(HttpStatus.NOT_FOUND, "P4044", "Pack translation not found"),
-    NO_USER_PROGRESS_FOR_PACK(HttpStatus.NOT_FOUND, "P4045", "No progress for this pack"),
     CANNOT_FIND_RANK_PUZZLE(HttpStatus.NOT_FOUND, "P4046", "Ranked puzzle not found"),
     EMPTY_SESSION_DATA(HttpStatus.NOT_FOUND, "P4047", "Session data not found"),
     LATEST_PUZZLE_NOT_FOUND(HttpStatus.NOT_FOUND, "P4048", "No previous ranked puzzle"),

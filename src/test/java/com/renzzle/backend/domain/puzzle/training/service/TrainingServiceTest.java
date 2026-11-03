@@ -675,6 +675,7 @@ public class TrainingServiceTest {
             verify(trainingPuzzleRepository, times(1)).decreaseIndexesFrom(packId, trainingIndex);
             verify(packRepository, times(1)).decreasePuzzleCount(packId);
             verify(userPackRepository, times(1)).decreaseSolvedCount(userId, packId);
+            verify(puzzleCacheRepository, times(1)).deleteAllByPuzzleTypeAndPuzzleId(PuzzleType.TRAINING, puzzleId);
         }
 
         @Test
@@ -835,7 +836,7 @@ public class TrainingServiceTest {
                     .puzzleCount(10)
                     .build();
             List<Pack> packs = Collections.singletonList(pack);
-            when(packRepository.findByDifficultyAndIsPublicTrue(any(Difficulty.class)))
+            when(packRepository.findByDifficultyAndIsPublicTrueOrderByIdAsc(any(Difficulty.class)))
                     .thenReturn(packs);
 
             // Create PackTranslation (linked pack with ID 1)
@@ -1154,10 +1155,11 @@ public class TrainingServiceTest {
             when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
             when(trainingPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
             when(userPackRepository.existsByUserIdAndPackId(user.getId(), pack.getId())).thenReturn(false);
+            Long puzzleId = puzzle.getId();
 
             // when
             CustomException exception = assertThrows(CustomException.class,
-                    () -> trainingService.solveTrainingPuzzle(user, puzzle.getId(), true));
+                    () -> trainingService.solveTrainingPuzzle(user, puzzleId, true));
 
             // then
             assertEquals(ErrorCode.PACK_NOT_OWNED, exception.getErrorCode());
@@ -1175,10 +1177,11 @@ public class TrainingServiceTest {
             when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
             when(trainingPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
             when(userPackRepository.existsByUserIdAndPackId(user.getId(), pack.getId())).thenReturn(false);
+            Long puzzleId = puzzle.getId();
 
             // when
             CustomException exception = assertThrows(CustomException.class,
-                    () -> trainingService.purchaseTrainingPuzzleAnswer(user, puzzle.getId()));
+                    () -> trainingService.purchaseTrainingPuzzleAnswer(user, puzzleId));
 
             // then
             assertEquals(ErrorCode.PACK_NOT_OWNED, exception.getErrorCode());
@@ -1215,9 +1218,12 @@ public class TrainingServiceTest {
 
         @Test
         void updatePack_WhenHidingStarterPack_ThenThrowsWithoutSaving() {
+            // given
+            UpdateTrainingPackRequest request = new UpdateTrainingPackRequest(Collections.emptyList(), 0, "LOW", false);
+
             // when
-            CustomException exception = assertThrows(CustomException.class, () -> trainingService.updatePack(
-                    Pack.STARTER_PACK_ID, new UpdateTrainingPackRequest(Collections.emptyList(), 0, "LOW", false)));
+            CustomException exception = assertThrows(CustomException.class,
+                    () -> trainingService.updatePack(Pack.STARTER_PACK_ID, request));
 
             // then
             assertEquals(ErrorCode.CANNOT_HIDE_STARTER_PACK, exception.getErrorCode());
@@ -1249,10 +1255,11 @@ public class TrainingServiceTest {
 
             when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
             when(trainingPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
+            Long puzzleId = puzzle.getId();
 
             // when
             CustomException exception = assertThrows(CustomException.class,
-                    () -> trainingService.solveTrainingPuzzle(user, puzzle.getId(), true));
+                    () -> trainingService.solveTrainingPuzzle(user, puzzleId, true));
 
             // then
             assertEquals(ErrorCode.NO_SUCH_TRAINING_PACK, exception.getErrorCode());
@@ -1269,10 +1276,11 @@ public class TrainingServiceTest {
 
             when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
             when(trainingPuzzleRepository.findById(puzzle.getId())).thenReturn(Optional.of(puzzle));
+            Long puzzleId = puzzle.getId();
 
             // when
             CustomException exception = assertThrows(CustomException.class,
-                    () -> trainingService.purchaseTrainingPuzzleAnswer(user, puzzle.getId()));
+                    () -> trainingService.purchaseTrainingPuzzleAnswer(user, puzzleId));
 
             // then
             assertEquals(ErrorCode.NO_SUCH_TRAINING_PACK, exception.getErrorCode());
@@ -1286,10 +1294,11 @@ public class TrainingServiceTest {
             when(userRepository.findByIdForUpdate(user.getId())).thenReturn(Optional.of(user));
             when(packRepository.findById(5L))
                     .thenReturn(Optional.of(Pack.builder().id(5L).price(1000).isPublic(false).build()));
+            PurchaseTrainingPackRequest request = new PurchaseTrainingPackRequest(5L);
 
             // when
             CustomException exception = assertThrows(CustomException.class,
-                    () -> trainingService.purchaseTrainingPack(user, new PurchaseTrainingPackRequest(5L)));
+                    () -> trainingService.purchaseTrainingPack(user, request));
 
             // then
             assertEquals(ErrorCode.NO_SUCH_TRAINING_PACK, exception.getErrorCode());
@@ -1341,7 +1350,7 @@ public class TrainingServiceTest {
                     .build();
             GetTrainingPackRequest request = new GetTrainingPackRequest("LOW", null);
 
-            when(packRepository.findByDifficultyAndIsPublicTrue(any(Difficulty.class)))
+            when(packRepository.findByDifficultyAndIsPublicTrueOrderByIdAsc(any(Difficulty.class)))
                     .thenReturn(Collections.emptyList());
 
             // when & then

@@ -37,8 +37,9 @@ public class SolvedTrainingPuzzle {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private TrainingPuzzle puzzle;
 
+    // Solving it again moves this forward, which is how the home screen finds the pack being played
     @CreationTimestamp
-    @Column(name = "solved_at", updatable = false, nullable = false)
+    @Column(name = "solved_at", nullable = false)
     private Instant solvedAt;
 
     public void updateSolvedAtToNow(Clock clock) {
