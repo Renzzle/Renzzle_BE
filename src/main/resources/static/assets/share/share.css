@@ -247,15 +247,25 @@ body {
   cursor: pointer;
 }
 
-/* Only this part scrolls, when a long description doesn't fit */
+/* Only this part scrolls, when a long description doesn't fit. No scrollbar; a faded edge says there is more */
 .dock {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  scrollbar-width: none;
   display: flex;
   flex-direction: column;
   gap: 4px;
   padding: 4px var(--page-x) 0;
+}
+
+.dock::-webkit-scrollbar {
+  display: none;
+}
+
+.dock[data-more] {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
 }
 
 .social {
@@ -360,6 +370,174 @@ body {
 @keyframes share-dots {
   50% {
     opacity: 0.25;
+  }
+}
+
+/* Comes up from the bottom when the puzzle ends, over the status line */
+.result {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: var(--share-width);
+  padding: 20px var(--page-x) calc(20px + env(safe-area-inset-bottom));
+  border-radius: 16px 16px 0 0;
+  background: var(--tile);
+  box-shadow: 0 -1px 0 var(--edge), 0 -8px 24px rgba(38, 36, 31, 0.08);
+  transform: translateX(-50%);
+  animation: share-rise 0.2s ease-out;
+}
+
+.result[hidden] {
+  display: none;
+}
+
+.result-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 700;
+}
+
+.result-icon svg {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+.result[data-tone="success"] .result-icon {
+  color: var(--point-strong);
+}
+
+.result[data-tone="danger"] .result-icon {
+  color: var(--alert-strong);
+}
+
+.result-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.result-button {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  padding: 0 16px;
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  background: var(--tile);
+  box-shadow: 0 2px 0 var(--edge);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.result-button-main {
+  border-color: var(--point-edge);
+  background: var(--point);
+  box-shadow: 0 2px 0 var(--point-edge);
+  color: var(--on-point);
+}
+
+@keyframes share-rise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 16px);
+  }
+}
+
+/* Tablets held upright: a wider column and a bigger board, the block centered instead of a gap above the status line */
+@media (orientation: portrait) and (min-width: 700px) and (min-height: 900px) {
+  :root {
+    --share-width: 720px;
+  }
+
+  .app-banner {
+    padding-inline: max(var(--page-x), calc((100% - var(--share-width)) / 2 + var(--page-x)));
+  }
+
+  .stage {
+    justify-content: center;
+    padding-bottom: 24px;
+  }
+
+  .goal-line h1 {
+    font-size: 24px;
+    line-height: 32px;
+  }
+
+  .goal-meta,
+  .counts {
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  .likes {
+    font-size: 16px;
+  }
+
+  /* 300 leaves room for the larger text and the margins of the centered block */
+  .board-frame {
+    width: min(calc(100% - 16px), calc(100svh - 300px - var(--banner-height, 0px) - var(--memo-line, 0px)));
+  }
+
+  .dock {
+    flex: 0 1 auto;
+    padding-top: 8px;
+  }
+
+  .hint {
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  .result {
+    bottom: 24px;
+    width: calc(100% - 48px);
+    border-radius: 16px;
+    box-shadow: 0 0 0 1px var(--edge), 0 12px 32px rgba(38, 36, 31, 0.12);
+  }
+}
+
+/* Phones on their side get a note to turn upright instead of a cramped board */
+.rotate {
+  display: none;
+}
+
+@media (orientation: landscape) and (max-height: 500px) and (max-width: 950px) {
+  .rotate {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 24px;
+    background: var(--paper);
+    color: var(--ink-2);
+    text-align: center;
+  }
+
+  .rotate p {
+    margin: 0;
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 600;
   }
 }
 

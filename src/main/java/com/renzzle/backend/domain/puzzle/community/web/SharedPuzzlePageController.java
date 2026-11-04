@@ -71,15 +71,11 @@ public class SharedPuzzlePageController {
         return "share/puzzle";
     }
 
-    // The store of the visitor's phone; none on a computer, where the app can't be installed
+    // The App Store on Apple devices and Macs (iPad Safari asks as a Mac by default), Google Play everywhere else
     private String storeUrlFor(String userAgent) {
-        if (userAgent == null) {
-            return null;
-        }
-        if (userAgent.contains("iPhone") || userAgent.contains("iPad") || userAgent.contains("iPod")) {
-            return findStoreUrl(IOS_STORE_URL_TAG);
-        }
-        return userAgent.contains("Android") ? findStoreUrl(ANDROID_STORE_URL_TAG) : null;
+        boolean apple = userAgent != null && (userAgent.contains("iPhone") || userAgent.contains("iPad")
+                || userAgent.contains("iPod") || userAgent.contains("Macintosh"));
+        return findStoreUrl(apple ? IOS_STORE_URL_TAG : ANDROID_STORE_URL_TAG);
     }
 
     private String findStoreUrl(String tag) {

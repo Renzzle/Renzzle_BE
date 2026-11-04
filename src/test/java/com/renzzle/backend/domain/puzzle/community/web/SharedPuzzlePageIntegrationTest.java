@@ -91,6 +91,8 @@ class SharedPuzzlePageIntegrationTest {
                 .contains("흑으로 오목을 만드세요")
                 .contains("풀이 5 · 조회 3")
                 .contains("aria-label=\"좋아요 7\"")
+                .contains("id=\"result\"")
+                .contains("세로 화면으로 돌려 주세요")
                 .contains("property=\"og:url\" content=\"https://renzzle.com/puzzle/" + token + "\"")
                 .contains("property=\"og:image\" content=\"https://renzzle.com/assets/share/og-image-ko.png?v=1\"")
                 .doesNotContain(ANSWER)
@@ -185,7 +187,7 @@ class SharedPuzzlePageIntegrationTest {
     }
 
     @Test
-    void page_WhenStoreLinksAreSet_ThenLinksToTheStoreOfThePhoneOnly() throws Exception {
+    void page_WhenStoreLinksAreSet_ThenLinksAppleDevicesAndMacsToTheAppStoreAndTheRestToGooglePlay() throws Exception {
         appInfoService.upsertAppInfo(new UpsertAppInfoRequest("ios_store_url", "https://apps.apple.com/app/renzzle/id1234567890"));
         appInfoService.upsertAppInfo(new UpsertAppInfoRequest("android_store_url", "https://play.google.com/store/apps/details?id=com.renzzle_fe"));
 
@@ -195,8 +197,13 @@ class SharedPuzzlePageIntegrationTest {
         assertThat(pageOn("Mozilla/5.0 (Linux; Android 15; SM-S938N) AppleWebKit/537.36 Chrome/131.0 Mobile Safari/537.36"))
                 .contains("href=\"https://play.google.com/store/apps/details?id=com.renzzle_fe\"")
                 .doesNotContain("apps.apple.com");
-        assertThat(pageOn("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/131.0 Safari/537.36"))
-                .doesNotContain("class=\"app-banner\"");
+        // A Mac, or an iPad, whose Safari asks for the desktop site by default
+        assertThat(pageOn("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/18.0 Safari/605.1.15"))
+                .contains("href=\"https://apps.apple.com/app/renzzle/id1234567890\"")
+                .doesNotContain("play.google.com");
+        assertThat(pageOn("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0 Safari/537.36"))
+                .contains("href=\"https://play.google.com/store/apps/details?id=com.renzzle_fe\"")
+                .doesNotContain("apps.apple.com");
     }
 
     private String pageOn(String userAgent) throws Exception {

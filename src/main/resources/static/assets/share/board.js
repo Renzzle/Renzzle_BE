@@ -58,11 +58,13 @@
     const { origin, cell } = layout;
     const end = origin + cell * (LINES - 1);
 
-    // Lines go down in device pixels, snapped so they never smear across two pixels
+    // Lines are one pixel of the app design (a 24th of a cell) and the frame 1.6, so they grow with the board.
+    // Rounded to whole device pixels and snapped, so they never smear across two
     const scale = ctx.getTransform().a;
     const dpr = globalThis.devicePixelRatio || 1;
-    const lineWidth = Math.max(1, Math.floor(dpr));
-    const frameWidth = lineWidth + Math.max(1, Math.round(dpr * 0.5));
+    const designPixel = cell / 24 * scale;
+    const lineWidth = Math.max(1, Math.round(designPixel));
+    const frameWidth = Math.max(lineWidth + 1, Math.round(designPixel * 1.6));
     const snapFor = width => value => Math.round(value * scale) + (width % 2 ? 0.5 : 0);
     const snapLine = snapFor(lineWidth);
     const snapFrame = snapFor(frameWidth);

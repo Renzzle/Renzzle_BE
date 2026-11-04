@@ -112,6 +112,10 @@
   const ctx = canvas.getContext('2d');
   const statusLine = document.getElementById('status');
   const retryButton = document.getElementById('retryButton');
+  const resultSheet = document.getElementById('result');
+  const resultIcon = resultSheet.querySelector('.result-icon');
+  const resultText = document.getElementById('resultText');
+  const dock = document.querySelector('.dock');
 
   // mode: loading, solve, thinking, over, free
   const state = {
@@ -414,8 +418,16 @@
     state.mode = 'over';
     state.mark = mark;
     setStatus(message, tone);
+    showResult(message, tone);
     updateControls();
     render();
+  }
+
+  function showResult(message, tone) {
+    resultSheet.dataset.tone = tone;
+    resultIcon.innerHTML = LEADS[tone];
+    resultText.textContent = message;
+    resultSheet.hidden = false;
   }
 
   function fiveLineOf(sequence) {
@@ -529,6 +541,7 @@
   }
 
   function startSolve() {
+    resultSheet.hidden = true;
     state.turn += 1;
     state.mode = 'solve';
     state.sequence = puzzleBoard;
@@ -542,6 +555,7 @@
   }
 
   function startFree(notice, sequence) {
+    resultSheet.hidden = true;
     engineAvailable = false;
     state.mode = 'free';
     state.notice = notice;
@@ -592,7 +606,7 @@
     }
   });
 
-  retryButton.addEventListener('click', () => {
+  function retry() {
     if (state.mode === 'thinking') {
       renzzleEngine.cancel();
     }
@@ -601,14 +615,30 @@
     } else {
       startFree(state.notice, puzzleBoard);
     }
-  });
+  }
+
+  retryButton.addEventListener('click', retry);
+  document.getElementById('resultRetry').addEventListener('click', retry);
+
+  // The bottom edge fades only while more of the description is below
+  function markDockOverflow() {
+    dock.toggleAttribute('data-more', dock.scrollHeight - dock.scrollTop - dock.clientHeight > 1);
+  }
+
+  dock.addEventListener('scroll', markDockOverflow, { passive: true });
+  if (typeof ResizeObserver === 'function') {
+    new ResizeObserver(markDockOverflow).observe(dock);
+  }
 
   function boot() {
     shareBoard.watch(canvas, LOGICAL_SIZE, render);
     setStatus(text.loading, 'thinking');
     updateControls();
     render();
-    void document.fonts?.ready.then(render);
+    void document.fonts?.ready.then(() => {
+      render();
+      markDockOverflow();
+    });
     prefetchNextMoves(puzzleBoard);
     withTimeout(judge(puzzleBoard), ENGINE_READY_TIMEOUT_MS).then(() => startSolve(), () => {
       renzzleEngine.cancel();

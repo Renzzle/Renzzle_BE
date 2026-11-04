@@ -23,7 +23,9 @@ public record SharedPuzzlePageText(
         String board,
         String retry,
         String bannerText,
-        String bannerButton
+        String bannerButton,
+        String more,
+        String rotate
 ) {
 
     private static final String BUNDLE = "messages/share";
@@ -75,9 +77,10 @@ public record SharedPuzzlePageText(
         String lang = locale.toLanguageTag();
         String bannerText = words.getString("bannerText");
         String bannerButton = words.getString("bannerButton");
+        String rotate = words.getString("rotate");
         if (puzzle == null) {
             return new SharedPuzzlePageText(lang, words.getString("notFoundTitle"), words.getString("notFoundDescription"),
-                    null, null, null, null, null, null, null, null, bannerText, bannerButton);
+                    null, null, null, null, null, null, null, null, bannerText, bannerButton, null, rotate);
         }
 
         boolean black = "BLACK".equals(puzzle.winColor());
@@ -105,7 +108,9 @@ public record SharedPuzzlePageText(
                 words.getString("board"),
                 words.getString("retry"),
                 bannerText,
-                bannerButton
+                bannerButton,
+                words.getString("more"),
+                rotate
         );
     }
 }

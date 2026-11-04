@@ -22,7 +22,16 @@
 </head>
 <body th:attr="data-token=${puzzle != null} ? ${token} : null,
                data-board=${puzzle != null} ? ${puzzle.boardStatus} : null">
-<!--/* One link to the store of the visitor's phone; the controller leaves it out on a computer */-->
+<!--/* Phones on their side are asked to turn upright rather than laid out for */-->
+<div class="rotate">
+  <svg width="40" height="40" viewBox="0 0 256 256" fill="none" stroke="currentColor" stroke-width="12"
+       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <rect x="64" y="24" width="128" height="208" rx="16"/><path d="M64 56H192M64 200H192"/>
+  </svg>
+  <p th:text="${text.rotate}">세로 화면으로 돌려 주세요</p>
+</div>
+
+<!--/* The App Store on Apple devices, Google Play everywhere else */-->
 <a th:if="${storeUrl}" class="app-banner" th:href="${storeUrl}" rel="noopener">
   <img class="app-banner-icon" src="/assets/image/app-icon.png" alt="">
   <span class="app-banner-text">
@@ -72,6 +81,16 @@
          class="memo" th:text="${puzzle.description}">description</p>
     </div>
     <output id="status" class="hint" aria-live="polite"></output>
+
+    <!--/* Comes up from the bottom when the puzzle ends */-->
+    <div id="result" class="result" hidden>
+      <p class="result-title"><span class="result-icon"></span><span id="resultText"></span></p>
+      <div class="result-actions">
+        <button type="button" id="resultRetry" class="result-button" th:text="${text.retry}">다시 하기</button>
+        <a th:if="${storeUrl}" class="result-button result-button-main" th:href="${storeUrl}" rel="noopener"
+           th:text="${text.more}">앱에서 더 풀기</a>
+      </div>
+    </div>
   </section>
 
   <section th:unless="${puzzle}" class="not-found">
