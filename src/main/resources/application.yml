@@ -67,6 +67,13 @@ app:
   admin:
     email: ${ADMIN_EMAIL}
     password: ${ADMIN_PASSWORD}
+  # Links the app opens instead of the browser, once it declares renzzle.com (served under /.well-known)
+  deep-link:
+    path: /puzzle/*
+    apple-app-id: XTFB5FCGMJ.com.renzzle # Team ID.bundle ID
+    android-package: com.renzzle_fe
+    # SHA-256 of the app signing certificate
+    android-cert-sha256: F4:ED:27:A4:08:2E:DA:80:4A:49:77:25:94:80:81:A8:9A:69:62:6B:E7:68:CD:C1:BF:AD:66:6D:00:31:9C:73
 
 rank:
   session:
@@ -75,6 +82,8 @@ rank:
 community:
   puzzle:
     daily-upload-limit: 50 # in 24 hours
+  share:
+    preview-image-path: /assets/share/og-image-%s.png # %s is the page language
 
 iap:
   google:

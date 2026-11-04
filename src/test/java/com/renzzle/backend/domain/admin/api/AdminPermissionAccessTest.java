@@ -6,6 +6,7 @@ import com.renzzle.backend.domain.auth.dao.AdminRepository;
 import com.renzzle.backend.domain.auth.domain.Admin;
 import com.renzzle.backend.domain.auth.domain.AdminPermission;
 import com.renzzle.backend.domain.auth.service.JwtProvider;
+import com.renzzle.backend.global.exception.ErrorCode;
 import com.renzzle.backend.domain.puzzle.rank.support.TestUserFactory;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
@@ -17,7 +18,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
@@ -55,20 +55,25 @@ class AdminPermissionAccessTest {
     }
 
     @Test
-    void packAdmin_WhenOpeningAnotherTab_ThenGetsPermissionErrorInsteadOfLogout() throws Exception {
+    void packAdmin_WhenCallingAnotherPermissionsApi_ThenGetsPermissionError() throws Exception {
         UserEntity user = createAdmin(PACK_MANAGE);
 
         mockMvc.perform(withToken(get("/admin/notice/system"), user))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.errorResponse.code").value("A4031"));
-        mockMvc.perform(withToken(get("/admin/notices"), user).accept(MediaType.TEXT_HTML))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/admin/forbidden"));
         mockMvc.perform(withToken(get("/admin/payment/purchases").param("keyword", "anything"), user))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.errorResponse.code").value("A4031"));
-        mockMvc.perform(withToken(get("/admin/pack-list"), user).accept(MediaType.TEXT_HTML))
-                .andExpect(status().isOk());
+    }
+
+    @Test
+    void adminApi_WhenAppKeyMissing_ThenRejectedLikeAppApis() throws Exception {
+        UserEntity operator = createAdmin(OPERATION_MANAGE);
+
+        mockMvc.perform(get("/admin/notice/system")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtProvider.createAccessToken(operator.getId(), "test-session")))
+                .andExpect(status().is(ErrorCode.INVALID_APP_KEY.getStatus().value()))
+                .andExpect(jsonPath("$.errorResponse.code").value(ErrorCode.INVALID_APP_KEY.getCode()));
     }
 
     @Test
@@ -97,16 +102,6 @@ class AdminPermissionAccessTest {
     }
 
     @Test
-    void dashboard_WhenAdminOpensIt_ThenGoesToTheirFirstPermittedTab() throws Exception {
-        mockMvc.perform(withToken(get("/admin/dashboard"), createAdmin(PACK_MANAGE, OPERATION_MANAGE)))
-                .andExpect(redirectedUrl("/admin/pack-list"));
-        mockMvc.perform(withToken(get("/admin/dashboard"), createAdmin(AI_RESPONSE_MANAGE)))
-                .andExpect(redirectedUrl("/admin/puzzle-cache"));
-        mockMvc.perform(withToken(get("/admin/dashboard"), createAdmin(OPERATION_MANAGE)))
-                .andExpect(redirectedUrl("/admin/notices"));
-    }
-
-    @Test
     void regularUser_WhenCallingAnyAdminPath_ThenDenied() throws Exception {
         UserEntity user = createUser();
 
@@ -116,21 +111,6 @@ class AdminPermissionAccessTest {
         mockMvc.perform(withToken(get("/admin/not-mapped-yet"), user))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.errorResponse.code").value("A403"));
-    }
-
-    @Test
-    void login_WhenAdminHasNoPermission_ThenRejected() throws Exception {
-        UserEntity user = userRepository.save(TestUserFactory.createTestUser(uniqueName(), 1000).toBuilder()
-                .password(new BCryptPasswordEncoder().encode("password1"))
-                .build());
-        createdUsers.add(user);
-        adminRepository.save(Admin.builder().user(user).build());
-
-        mockMvc.perform(post("/admin/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + user.getEmail() + "\",\"password\":\"password1\"}"))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.errorResponse.code").value("A4031"));
     }
 
     @Test

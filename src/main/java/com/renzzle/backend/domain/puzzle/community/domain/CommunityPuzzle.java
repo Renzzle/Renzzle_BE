@@ -10,6 +10,7 @@ import lombok.*;
 import org.hibernate.annotations.*;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import static com.renzzle.backend.global.common.constant.TimeConstant.CONST_FUTURE_INSTANT;
 import static com.renzzle.backend.global.common.domain.Status.STATUS_IS_NOT_DELETED;
@@ -85,6 +86,9 @@ public class CommunityPuzzle {
     @Column(name = "description", length = 127)
     private String description;
 
+    @Column(name = "share_token", length = 36, unique = true)
+    private String shareToken;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)
     private Instant createdAt;
@@ -116,6 +120,13 @@ public class CommunityPuzzle {
         }
         if(deletedAt == null) {
             this.deletedAt = CONST_FUTURE_INSTANT;
+        }
+    }
+
+    // Kept once issued, so links already sent keep working
+    public void issueShareToken() {
+        if (shareToken == null) {
+            shareToken = UUID.randomUUID().toString();
         }
     }
 

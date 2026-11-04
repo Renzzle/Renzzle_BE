@@ -360,6 +360,7 @@ public class TrainingService {
                 .price(request.price())
                 .difficulty(Difficulty.getDifficulty(request.difficulty()))
                 .isPublic(request.isPublic() != null ? request.isPublic() : pack.isPublic())
+                .priority(request.priority() != null ? request.priority() : pack.getPriority())
                 .build();
         packRepository.save(updatedPack);
 
@@ -426,11 +427,12 @@ public class TrainingService {
 
     @Transactional(readOnly = true)
     public List<GetPackResponse> getTrainingPackList(UserEntity user, GetTrainingPackRequest request){
-        List<Pack> packs = packRepository.findByDifficultyAndIsPublicTrueOrderByIdAsc(Difficulty.getDifficulty(request.difficulty()));
+        List<Pack> found = packRepository.findByDifficultyAndIsPublicTrue(Difficulty.getDifficulty(request.difficulty()));
 
-        if (packs.isEmpty()) {
+        if (found.isEmpty()) {
             throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACKS);
         }
+        List<Pack> packs = found.stream().sorted(PackDisplayOrder.of(found)).toList();
 
         List<Long> packIds = packs.stream().map(Pack::getId).toList();
         LangCode requestedLangCode = LangCode.getLangCode(request.lang());
@@ -465,13 +467,14 @@ public class TrainingService {
             throw new CustomException(e.getMessage(), ErrorCode.VALIDATION_ERROR);
         }
 
-        List<Pack> packs = creatorId == null
+        List<Pack> found = creatorId == null
                 ? packRepository.findByDifficulty(requestedDifficulty)
                 : packRepository.findByDifficultyAndCreatedBy(requestedDifficulty, creatorId);
 
-        if (packs.isEmpty()) {
+        if (found.isEmpty()) {
             throw new CustomException(ErrorCode.NO_SUCH_TRAINING_PACKS);
         }
+        List<Pack> packs = found.stream().sorted(PackDisplayOrder.of(found)).toList();
 
         List<Long> packIds = packs.stream().map(Pack::getId).toList();
         LangCode defaultLangCode = LangCode.getLangCode(LangCode.LangCodeName.EN);
@@ -494,7 +497,8 @@ public class TrainingService {
                             pack.getPrice(),
                             pack.getPuzzleCount(),
                             pack.isPublic(),
-                            creatorEmails.get(pack.getCreatedBy())
+                            creatorEmails.get(pack.getCreatedBy()),
+                            pack.getPriority()
                     );
                 })
                 .toList();
@@ -644,7 +648,8 @@ public class TrainingService {
                 pack.getPrice(),
                 pack.getDifficulty().getName(),
                 pack.getPuzzleCount(),
-                pack.isPublic()
+                pack.isPublic(),
+                pack.getPriority()
         );
     }
 

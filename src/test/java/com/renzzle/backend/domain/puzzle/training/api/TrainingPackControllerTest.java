@@ -75,7 +75,7 @@ class TrainingPackControllerTest {
     @Test
     void createPack_WhenTranslationsValid_ThenCreatesPack() throws Exception {
         MvcResult result = mockMvc.perform(asAdmin(post(ENDPOINT))
-                        .content(body(translation("KO", "Beginner KO", "Kang"), translation("EN", "Beginner", "Kang"))))
+                        .content(body(translation("KO", "Beginner KO"), translation("EN", "Beginner"))))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -85,7 +85,7 @@ class TrainingPackControllerTest {
 
     @Test
     void createPack_WhenVisibilityOmitted_ThenStaysPrivateUntilPublished() throws Exception {
-        String translation = translation("EN", "Draft", "Kang");
+        String translation = translation("EN", "Draft");
         MvcResult result = mockMvc.perform(asAdmin(post(ENDPOINT)).content(body(translation)))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -102,14 +102,41 @@ class TrainingPackControllerTest {
     }
 
     @Test
+    void updatePack_WhenPackAdminSetsPriority_ThenRejectsAndKeepsIt() throws Exception {
+        String translation = translation("EN", "Mine");
+        createdPackId = createPack(translation);
+
+        mockMvc.perform(asAdmin(patch(ENDPOINT + "/" + createdPackId)).content(priorityBody(translation)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.errorResponse.code").value("A4031"));
+
+        mockMvc.perform(asAdmin(get("/admin/training/pack/" + createdPackId)))
+                .andExpect(jsonPath("$.response.priority").value(0));
+    }
+
+    @Test
+    void updatePack_WhenOperatorSetsPriority_ThenSavesIt() throws Exception {
+        String translation = translation("EN", "Featured");
+        createdPackId = createPack(translation);
+        admin.updatePermissions(EnumSet.of(AdminPermission.PACK_MANAGE, AdminPermission.OPERATION_MANAGE));
+        adminRepository.save(admin);
+
+        mockMvc.perform(asAdmin(patch(ENDPOINT + "/" + createdPackId)).content(priorityBody(translation)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(asAdmin(get("/admin/training/pack/" + createdPackId)))
+                .andExpect(jsonPath("$.response.priority").value(10));
+    }
+
+    @Test
     void createPack_WhenSameLanguageTwice_ThenRejectsAndSavesNothing() throws Exception {
         // A second row for one language breaks the pack list for everyone reading in that language
-        assertRejectedWithoutSaving(body(translation("KO", "Beginner", "Kang"), translation("ko", "Beginner 2", "Kang")));
+        assertRejectedWithoutSaving(body(translation("KO", "Beginner"), translation("ko", "Beginner 2")));
     }
 
     @Test
     void createPack_WhenTranslationTitleBlank_ThenRejectsAndSavesNothing() throws Exception {
-        assertRejectedWithoutSaving(body(translation("KO", " ", "Kang")));
+        assertRejectedWithoutSaving(body(translation("KO", " ")));
     }
 
     @Test
@@ -126,8 +153,8 @@ class TrainingPackControllerTest {
         assertThat(packRepository.count()).isEqualTo(packCount);
     }
 
-    private static String translation(String langCode, String title, String author) {
-        return "{\"langCode\":\"" + langCode + "\",\"title\":\"" + title + "\",\"author\":\"" + author
+    private static String translation(String langCode, String title) {
+        return "{\"langCode\":\"" + langCode + "\",\"title\":\"" + title + "\",\"author\":\"" + "Kang"
                 + "\",\"description\":\"\"}";
     }
 
@@ -138,6 +165,18 @@ class TrainingPackControllerTest {
     private static String publicBody(String... translations) {
         String body = body(translations);
         return body.substring(0, body.length() - 1) + ",\"isPublic\":true}";
+    }
+
+    private static String priorityBody(String... translations) {
+        String body = body(translations);
+        return body.substring(0, body.length() - 1) + ",\"priority\":" + 10 + "}";
+    }
+
+    private Long createPack(String translation) throws Exception {
+        MvcResult result = mockMvc.perform(asAdmin(post(ENDPOINT)).content(body(translation)))
+                .andExpect(status().isOk())
+                .andReturn();
+        return JsonPath.<Number>read(result.getResponse().getContentAsString(), "$.response").longValue();
     }
 
     private MockHttpServletRequestBuilder asAdmin(MockHttpServletRequestBuilder request) {

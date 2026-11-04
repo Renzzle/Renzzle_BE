@@ -39,4 +39,9 @@ public class Pack {
     // User id of the admin who created the pack; null for packs from before the column, which only operators manage
     @Column(name = "created_by")
     private Long createdBy;
+
+    @Builder.Default
+    @ColumnDefault("0")
+    @Column(name = "priority", nullable = false)
+    private int priority = 0;
 }

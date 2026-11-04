@@ -24,7 +24,6 @@ public class JwtProvider {
     private final Clock clock;
 
     public static final int ACCESS_TOKEN_VALID_MINUTE = 60; // 1 hour
-    public static final int ADMIN_ACCESS_TOKEN_VALID_MINUTE = 60 * 12; // 12 hours
     public static final int REFRESH_TOKEN_VALID_MINUTE = 60 * 24 * 14; // 2 weeks
     public static final int AUTH_VERITY_TOKEN_VALID_MINUTE = 5; // 5 minute
     public static final int TEST_ACCESS_TOKEN_VALID_MINUTE = 60 * 24 * 7; // 7 days
@@ -87,12 +86,6 @@ public class JwtProvider {
                 CLAIM_USER_ID_KEY, userId,
                 CLAIM_TOKEN_TYPE_KEY, ACCESS_TOKEN_TYPE,
                 CLAIM_SESSION_ID_KEY, sessionId), ACCESS_TOKEN_VALID_MINUTE);
-    }
-
-    public String createAdminAccessToken(long userId) {
-        return createToken(Map.of(
-                CLAIM_USER_ID_KEY, userId,
-                CLAIM_TOKEN_TYPE_KEY, ACCESS_TOKEN_TYPE), ADMIN_ACCESS_TOKEN_VALID_MINUTE);
     }
 
     public String createTestAccessToken(long userId) {

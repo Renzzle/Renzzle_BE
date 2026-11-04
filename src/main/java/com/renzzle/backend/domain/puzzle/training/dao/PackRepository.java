@@ -32,8 +32,7 @@ public interface PackRepository extends JpaRepository<Pack, Long> {
 
     List<Pack> findByDifficultyAndCreatedBy(Difficulty difficulty, Long createdBy);
 
-    // In id order, so packs list in the order they were added
-    List<Pack> findByDifficultyAndIsPublicTrueOrderByIdAsc(Difficulty difficulty);
+    List<Pack> findByDifficultyAndIsPublicTrue(Difficulty difficulty);
 
     List<Pack> findByIsPublicTrue();
 }

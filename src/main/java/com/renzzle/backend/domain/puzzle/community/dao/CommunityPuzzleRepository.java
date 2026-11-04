@@ -7,11 +7,13 @@ import com.renzzle.backend.domain.puzzle.community.domain.CommunityPuzzle;
 import com.renzzle.backend.domain.puzzle.shared.dao.projection.AnswerKeyProjection;
 import com.renzzle.backend.domain.puzzle.shared.dto.RankPuzzleCandidate;
 import com.renzzle.backend.domain.user.domain.UserEntity;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Limit;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -79,6 +81,16 @@ public interface CommunityPuzzleRepository extends JpaRepository<CommunityPuzzle
 
     @Query("SELECT p.id FROM CommunityPuzzle p WHERE p.boardKey = :boardKey")
     Optional<Long> findIdByBoardKey(@Param("boardKey") String boardKey);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM CommunityPuzzle p WHERE p.id = :id")
+    Optional<CommunityPuzzle> findByIdForUpdate(@Param("id") Long id);
+
+    @EntityGraph(attributePaths = {"user", "winColor"})
+    Optional<CommunityPuzzle> findByShareToken(String shareToken);
+
+    @Query("SELECT p.id FROM CommunityPuzzle p WHERE p.shareToken = :shareToken")
+    Optional<Long> findIdByShareToken(@Param("shareToken") String shareToken);
 
     List<AnswerKeyProjection> findByAnswerKey(String answerKey);
 

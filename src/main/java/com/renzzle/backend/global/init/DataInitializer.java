@@ -33,7 +33,6 @@ public class DataInitializer implements CommandLineRunner {
     private final AdminRepository adminRepository;
     private final JdbcTemplate jdbcTemplate;
 
-    // Separate from spring.mail.username, which is an OCID on OCI Email Delivery
     @Value("${app.admin.email}")
     private String adminEmail;
     @Value("${app.admin.password}")

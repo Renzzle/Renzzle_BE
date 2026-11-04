@@ -22,6 +22,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.util.StringUtils;
 import java.util.Arrays;
@@ -49,15 +50,18 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, @Value("${app.key}") String appKey) throws Exception {
-        // Every API request must carry an app key, whether or not it needs a token
-        RequestMatcher appKeyRequestMatcher = AntPathRequestMatcher.antMatcher("/api/**");
+        // Every app and admin API request must carry an app key, whether it needs a token
+        RequestMatcher appKeyRequestMatcher = new OrRequestMatcher(
+                AntPathRequestMatcher.antMatcher("/api/**"),
+                AntPathRequestMatcher.antMatcher("/admin/**"));
         Set<String> appKeys = parseAppKeys(appKey);
 
         List<RequestMatcher> permitAllRequestMatchers = Arrays.asList(
-                AntPathRequestMatcher.antMatcher("/admin"),  // Admin login page (excluded from JWT filter)
-                AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/admin/login"),  // Admin login API (called without a token)
-                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/admin/logout"),  // Clears the admin cookie, so it must work with an expired token
                 AntPathRequestMatcher.antMatcher("/assets/**"),
+                // Share page and its read-only API, opened by anyone with the link
+                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/puzzle/**"),
+                // Deep link files the iOS and Android systems fetch for the app
+                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/.well-known/**"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/favicon.ico"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/email"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/confirmCode"),
@@ -85,15 +89,7 @@ public class SecurityConfig {
                         // The container forwards failed requests to /error without their login, so keep their status
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(permitAllRequestMatchers.toArray(new RequestMatcher[0])).permitAll()
-                        // Admin pages, one permission per top tab
-                        .requestMatchers(HttpMethod.GET, "/admin/dashboard", "/admin/forbidden").hasAuthority(ADMIN_PREFIX)
-                        .requestMatchers(HttpMethod.GET, "/admin/pack-list", "/admin/pack-create", "/admin/pack-detail",
-                                "/admin/puzzle-add", "/admin/puzzle-edit").hasAuthority(PACK_MANAGE.getAuthority())
-                        .requestMatchers(HttpMethod.GET, "/admin/community-puzzles").hasAuthority(COMMUNITY_MANAGE.getAuthority())
-                        .requestMatchers(HttpMethod.GET, "/admin/puzzle-cache", "/admin/puzzle-cache/training-pack",
-                                "/admin/puzzle-cache/board").hasAuthority(AI_RESPONSE_MANAGE.getAuthority())
-                        .requestMatchers(HttpMethod.GET, "/admin/notices", "/admin/payments", "/admin/admin-accounts").hasAuthority(OPERATION_MANAGE.getAuthority())
-                        // Read APIs the AI response pages share with the pack and community tabs
+                        // Read APIs the AI response permission shares with the pack and community ones
                         .requestMatchers(HttpMethod.GET, "/admin/training/**")
                                 .hasAnyAuthority(PACK_MANAGE.getAuthority(), AI_RESPONSE_MANAGE.getAuthority())
                         .requestMatchers(HttpMethod.GET, "/admin/community/puzzle-detail/**")
@@ -106,7 +102,7 @@ public class SecurityConfig {
                         .requestMatchers("/admin/community/puzzle-manage/**").hasAuthority(COMMUNITY_MANAGE.getAuthority())
                         // The app saves AI responses itself, but only admins may delete them
                         .requestMatchers(HttpMethod.DELETE, "/api/puzzle/cache/**").hasAuthority(AI_RESPONSE_MANAGE.getAuthority())
-                        // Operation: notices, payments, admin accounts, and settings that have no page
+                        // Operation: notices, payments, admin accounts and settings
                         .requestMatchers("/admin/notice/**", "/admin/payment/**", "/admin/admin-account/**").hasAuthority(OPERATION_MANAGE.getAuthority())
                         .requestMatchers(HttpMethod.POST, "/admin/puzzle/rating/recalculate", "/admin/puzzle/board-key/recalculate",
                                 "/admin/puzzle/answer-key/recalculate").hasAuthority(OPERATION_MANAGE.getAuthority())
@@ -124,7 +120,6 @@ public class SecurityConfig {
                 .addFilterBefore(new JwtAuthenticationFilter(jwtProvider, userRepository, adminRepository, permitAllRequestMatchers), UsernamePasswordAuthenticationFilter.class);
 
         if (!appKeys.isEmpty()) {
-            // After JWT auth so browser admin requests, which have no app key, pass
             httpSecurity.addFilterAfter(new AppKeyAuthenticationFilter(appKeys, appKeyRequestMatcher), JwtAuthenticationFilter.class);
         } else {
             log.warn("APP_KEY is empty, so app key verification is disabled");

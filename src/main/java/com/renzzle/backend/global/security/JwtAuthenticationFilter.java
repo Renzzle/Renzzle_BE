@@ -9,7 +9,6 @@ import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +22,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
-import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -47,7 +46,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(@Nonnull HttpServletRequest request, @Nonnull HttpServletResponse response, @Nonnull FilterChain filterChain) throws IOException {
+    protected void doFilterInternal(@Nonnull HttpServletRequest request, @Nonnull HttpServletResponse response, @Nonnull FilterChain filterChain) {
         try {
             String accessToken = resolveToken(request);
             JwtProvider.TokenClaims claims = jwtProvider.parseAccessToken(accessToken);
@@ -59,8 +58,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } catch(CustomException e) {
             log.warn("Authentication failed: [{}] {}: {}", e.getErrorCode(), e.getClass().getSimpleName(), e.getMessage());
-            // Like the entry point, so an expired admin session lands on the login page
-            SecurityErrorResponder.respond(request, response, e.getErrorCode());
+            SecurityErrorResponder.writeJsonError(response, e.getErrorCode());
         } catch(Exception e) {
             log.error("Unexpected error during authentication", e);
             SecurityErrorResponder.writeJsonError(response, ErrorCode.INTERNAL_SERVER_ERROR);
@@ -87,30 +85,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
             return bearerToken.substring(BEARER_PREFIX.length());
         }
-
-        String accessToken = resolveTokenFromCookie(request, "accessToken");
-        if (accessToken != null) {
-            return accessToken;
-        }
-
-        String adminAccessToken = resolveTokenFromCookie(request, "admin_accessToken");
-        if (adminAccessToken != null) {
-            return adminAccessToken;
-        }
-
         throw new CustomException(ErrorCode.ILLEGAL_TOKEN);
-    }
-
-    private String resolveTokenFromCookie(HttpServletRequest request, String cookieName) {
-        if (request.getCookies() == null) {
-            return null;
-        }
-        for (Cookie cookie : request.getCookies()) {
-            if (cookieName.equals(cookie.getName()) && StringUtils.hasText(cookie.getValue())) {
-                return cookie.getValue();
-            }
-        }
-        return null;
     }
 
 }

@@ -8,6 +8,6 @@ public class FaviconController {
 
     @GetMapping("/favicon.ico")
     public String favicon() {
-        return "forward:/assets/image/icon.svg";
+        return "forward:/assets/image/app-icon.png";
     }
 }

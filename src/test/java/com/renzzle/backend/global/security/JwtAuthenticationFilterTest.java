@@ -6,6 +6,7 @@ import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import org.junit.jupiter.api.Test;
+import jakarta.servlet.http.Cookie;
 import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -47,15 +48,26 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
-    void doFilter_WhenBrowserRequestHasNoToken_ThenRedirectsToLoginPage() throws Exception {
-        // An admin page opened after the admin cookie expired
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/admin/dashboard");
+    void doFilter_WhenBrowserRequestHasNoToken_ThenRespondsWithJsonToo() throws Exception {
+        // There are no admin pages to send a browser to anymore
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/admin/notice/system");
         request.addHeader(HttpHeaders.ACCEPT, "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
 
         jwtAuthenticationFilter.doFilter(request, response, filterChain);
 
-        assertNull(filterChain.getRequest());
-        assertEquals("/admin", response.getRedirectedUrl());
+        assertRejectedWith(ErrorCode.ILLEGAL_TOKEN);
+    }
+
+    @Test
+    void doFilter_WhenTokenIsOnlyInACookie_ThenRejectsAsMissingToken() throws Exception {
+        // Tokens come only in the Authorization header now that the admin pages and their cookie are gone
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/admin/notice/system");
+        request.setCookies(new Cookie("admin_accessToken", "abc.def.ghi"), new Cookie("accessToken", "abc.def.ghi"));
+
+        jwtAuthenticationFilter.doFilter(request, response, filterChain);
+
+        assertRejectedWith(ErrorCode.ILLEGAL_TOKEN);
+        verifyNoInteractions(jwtProvider);
     }
 
     @Test

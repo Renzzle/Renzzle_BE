@@ -52,6 +52,12 @@ public class PackAccessGuard {
         }
     }
 
+    public void checkSetPriority(UserDetailsImpl admin, Integer priority) {
+        if (priority != null && !managesAllPacks(admin)) {
+            throw new CustomException(ErrorCode.ADMIN_PERMISSION_DENIED);
+        }
+    }
+
     public void checkManagePuzzle(UserDetailsImpl admin, Long puzzleId) {
         if (puzzleId == null) {
             return;
