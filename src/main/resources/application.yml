@@ -73,7 +73,7 @@ app:
     apple-app-id: XTFB5FCGMJ.com.renzzle # Team ID.bundle ID
     android-package: com.renzzle_fe
     # SHA-256 of the app signing certificate
-    android-cert-sha256:
+    android-cert-sha256: F4:ED:27:A4:08:2E:DA:80:4A:49:77:25:94:80:81:A8:9A:69:62:6B:E7:68:CD:C1:BF:AD:66:6D:00:31:9C:73
 
 rank:
   session:
