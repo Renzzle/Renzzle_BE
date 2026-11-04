@@ -121,7 +121,8 @@ PoC 결과(x86, Node/V8, 네이티브 대비):
 ### 기타
 
 - **XSS**: 퍼즐 제목과 닉네임은 사용자가 입력한 값이다. `th:text`나 `th:content`만 쓰고 `th:utext`는 금지한다. 인라인 JS가 필요하면 `th:inline="javascript"`를 쓴다.
-- **딥링크 검증 파일 (보류: 딥링크 작업 때 함께 한다)**: `/.well-known/apple-app-site-association`과 `/.well-known/assetlinks.json`을 `caddy/Caddyfile`에서 응답한다(`app-ads.txt`와 같은 방식).
+- **딥링크 검증 파일 (✅ 2026-11-04)**: `/.well-known/apple-app-site-association`과 `/.well-known/assetlinks.json`을 `DeepLinkController`가 응답한다. 로그인과 앱 키 없이 열려 있다.
+  - 값은 `app.deep-link` 설정에 있다. 애플 앱 ID는 `XTFB5FCGMJ.com.renzzle`(Team ID.번들 ID), 안드로이드 패키지는 `com.renzzle_fe`이고, 앱 서명 키의 SHA-256 지문은 `android-cert-sha256`(쉼표로 여러 개)에 넣는다. 모두 공개되는 값이라 설정 파일에 그대로 둔다. 지문이 없으면 `assetlinks.json`은 404다.
   - 경로 패턴은 `/puzzle/*`이다. 내용에 애플 Team ID와 Play 앱 서명 키의 SHA-256 지문이 필요하다.
   - 앱이 도메인을 선언하기 전에는 OS가 이 파일을 쓰지 않으므로 먼저 올려 둬도 영향이 없다.
 - **Cloudflare**: 허용 목록 밖의 경로를 막는 규칙에 `/puzzle/`(공유 페이지와 공개 API)과 `/.well-known/`(딥링크 검증 파일)을 추가한다(2026-11-04). `/assets/`는 이미 열려 있다.
@@ -240,7 +241,7 @@ PoC 결과(x86, Node/V8, 네이티브 대비):
 | WASM 빌드와 래퍼, 워커                        | ~1h   | ✅ 완료                         |
 | BE 공개 API, 공유 토큰, 난독화, 페이지 라우트 | ~2h   | ✅ 완료                         |
 | 웹 풀이 화면                                  | ~4h   | ✅ 완료 (v3 디자인)             |
-| 딥링크 (FE 스킴과 링크 설정, BE 검증 파일)    | ~1.5h | 보류                            |
+| 딥링크 (FE 스킴과 링크 설정, BE 검증 파일)    | ~1.5h | BE 검증 파일 완료, FE 남음      |
 | 실기기와 브라우저 검증                        | ~2–3h | 로컬 브라우저 완료, 실기기 남음 |
 
 ## 7. 검증 체크리스트

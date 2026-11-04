@@ -60,6 +60,8 @@ public class SecurityConfig {
                 AntPathRequestMatcher.antMatcher("/assets/**"),
                 // Share page and its read-only API, opened by anyone with the link
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/puzzle/**"),
+                // Deep link files the iOS and Android systems fetch for the app
+                AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/.well-known/**"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/favicon.ico"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/email"),
                 AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/api/auth/confirmCode"),
