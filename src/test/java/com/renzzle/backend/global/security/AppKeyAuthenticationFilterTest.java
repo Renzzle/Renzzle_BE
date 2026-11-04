@@ -101,7 +101,7 @@ class AppKeyAuthenticationFilterTest {
 
     @Test
     void doFilter_WhenRequestIsNotApi_ThenPassesRequestOnWithoutAppKey() throws Exception {
-        MockHttpServletRequest request = request("GET", "/admin/dashboard");
+        MockHttpServletRequest request = request("GET", "/admin/notice/system");
 
         appKeyAuthenticationFilter.doFilter(request, response, filterChain);
 

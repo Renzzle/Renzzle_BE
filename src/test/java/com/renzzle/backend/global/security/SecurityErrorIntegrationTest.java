@@ -9,7 +9,6 @@ import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.exception.ErrorCode;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
@@ -25,7 +25,6 @@ import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -76,10 +75,10 @@ class SecurityErrorIntegrationTest {
     }
 
     @Test
-    void adminLogout_WhenAdminTokenIsInvalid_ThenRedirectsToLogin() throws Exception {
-        mockMvc.perform(get("/admin/logout").cookie(new Cookie("admin_accessToken", "expired.admin.token")))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/admin"));
+    void adminPath_WhenOpenedInABrowserWithoutToken_ThenRespondsWithJsonInsteadOfALoginPage() throws Exception {
+        mockMvc.perform(get("/admin").accept(MediaType.TEXT_HTML))
+                .andExpect(status().is(ErrorCode.ILLEGAL_TOKEN.getStatus().value()))
+                .andExpect(jsonPath("$.errorResponse.code").value(ErrorCode.ILLEGAL_TOKEN.getCode()));
     }
 
 }

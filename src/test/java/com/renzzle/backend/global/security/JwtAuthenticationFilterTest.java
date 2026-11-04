@@ -47,15 +47,14 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
-    void doFilter_WhenBrowserRequestHasNoToken_ThenRedirectsToLoginPage() throws Exception {
-        // An admin page opened after the admin cookie expired
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/admin/dashboard");
+    void doFilter_WhenBrowserRequestHasNoToken_ThenRespondsWithJsonToo() throws Exception {
+        // There are no admin pages to send a browser to anymore
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/admin/notice/system");
         request.addHeader(HttpHeaders.ACCEPT, "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
 
         jwtAuthenticationFilter.doFilter(request, response, filterChain);
 
-        assertNull(filterChain.getRequest());
-        assertEquals("/admin", response.getRedirectedUrl());
+        assertRejectedWith(ErrorCode.ILLEGAL_TOKEN);
     }
 
     @Test

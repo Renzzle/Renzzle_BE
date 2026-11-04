@@ -42,7 +42,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -96,9 +95,6 @@ class AdminPackOwnershipTest {
                 .andExpect(status().isOk());
         mockMvc.perform(withToken(get("/admin/training/puzzle-detail/" + ownPuzzleId), owner))
                 .andExpect(status().isOk());
-        mockMvc.perform(withToken(get("/admin/pack-detail").param("packId", String.valueOf(ownPackId)), owner)
-                        .accept(MediaType.TEXT_HTML))
-                .andExpect(status().isOk());
     }
 
     @Test
@@ -123,21 +119,6 @@ class AdminPackOwnershipTest {
 
         assertThat(packRepository.findById(ownPackId)).isPresent();
         assertThat(trainingPuzzleRepository.findById(ownPuzzleId)).isPresent();
-    }
-
-    @Test
-    void packAdmin_WhenOpeningAnotherAdminsPackPage_ThenRedirectedToForbidden() throws Exception {
-        String packId = String.valueOf(ownPackId);
-        List<MockHttpServletRequestBuilder> pages = List.of(
-                get("/admin/pack-detail").param("packId", packId),
-                get("/admin/pack-create").param("packId", packId),
-                get("/admin/puzzle-add").param("packId", packId),
-                get("/admin/puzzle-edit").param("packId", packId).param("puzzleId", String.valueOf(ownPuzzleId)));
-        for (MockHttpServletRequestBuilder page : pages) {
-            mockMvc.perform(withToken(page, otherPackAdmin).accept(MediaType.TEXT_HTML))
-                    .andExpect(status().is3xxRedirection())
-                    .andExpect(redirectedUrl("/admin/forbidden"));
-        }
     }
 
     @Test

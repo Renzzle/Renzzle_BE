@@ -55,20 +55,15 @@ class AdminPermissionAccessTest {
     }
 
     @Test
-    void packAdmin_WhenOpeningAnotherTab_ThenGetsPermissionErrorInsteadOfLogout() throws Exception {
+    void packAdmin_WhenCallingAnotherPermissionsApi_ThenGetsPermissionError() throws Exception {
         UserEntity user = createAdmin(PACK_MANAGE);
 
         mockMvc.perform(withToken(get("/admin/notice/system"), user))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.errorResponse.code").value("A4031"));
-        mockMvc.perform(withToken(get("/admin/notices"), user).accept(MediaType.TEXT_HTML))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/admin/forbidden"));
         mockMvc.perform(withToken(get("/admin/payment/purchases").param("keyword", "anything"), user))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.errorResponse.code").value("A4031"));
-        mockMvc.perform(withToken(get("/admin/pack-list"), user).accept(MediaType.TEXT_HTML))
-                .andExpect(status().isOk());
     }
 
     @Test
@@ -94,16 +89,6 @@ class AdminPermissionAccessTest {
                 .andExpect(jsonPath("$.errorResponse.code").value("A4031"));
         mockMvc.perform(withToken(delete(path), createAdmin(AI_RESPONSE_MANAGE)))
                 .andExpect(status().isOk());
-    }
-
-    @Test
-    void dashboard_WhenAdminOpensIt_ThenGoesToTheirFirstPermittedTab() throws Exception {
-        mockMvc.perform(withToken(get("/admin/dashboard"), createAdmin(PACK_MANAGE, OPERATION_MANAGE)))
-                .andExpect(redirectedUrl("/admin/pack-list"));
-        mockMvc.perform(withToken(get("/admin/dashboard"), createAdmin(AI_RESPONSE_MANAGE)))
-                .andExpect(redirectedUrl("/admin/puzzle-cache"));
-        mockMvc.perform(withToken(get("/admin/dashboard"), createAdmin(OPERATION_MANAGE)))
-                .andExpect(redirectedUrl("/admin/notices"));
     }
 
     @Test

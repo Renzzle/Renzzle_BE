@@ -138,7 +138,7 @@ PoC 결과(x86, Node/V8, 네이티브 대비):
 - 디자인은 앱 v3 시안의 커뮤니티 풀이 화면(`Design/redesign-v3/screens/community-solve.html`)을 따른다(2026-11-03). 정답 보기, 뒤로가기, 별로예요는 빼고, 좋아요는 누르는 버튼이 아니라 수만 보여 준다. 색은 `share.css` 맨 위 변수에 모았다.
 - 보드는 앱 v3 판과 같다.
   - 판 `#E7C99A`(가운데 위쪽이 살짝 밝다), 안쪽 선은 먹 26%, 바깥 선과 화점은 먹 62%, 흑돌 `#2C2A25`, 백돌 `#FFFEFB`, 좌표 표시
-  - 공유 페이지는 `puzzle.js`의 `COLORS`로 이 색을 쓰고, 어드민 보드는 그대로다.
+  - 공유 페이지는 `puzzle.js`의 `COLORS`와 `board.js`로 이 색을 쓴다.
 - 화면 구성(모바일 우선, 한 열)
   - 맨 위: 휴대폰이면 앱 배너(앱 아이콘, "Renzzle", 한 줄 소개, "앱으로 보기")
   - 목표: 둘 돌 색과 "흑으로 오목을 만드세요", 같은 줄 오른쪽에 새로 하기 버튼(유일한 버튼), 아래 줄에 출제자, 깊이, 인증 여부
@@ -174,7 +174,7 @@ PoC 결과(x86, Node/V8, 네이티브 대비):
 - 로컬 Chromium과 WebKit(Playwright)에서 아래 시나리오가 모두 통과했다.
   - 캐시 응답, 엔진 응답, 성공, 검토(이전/다음, 지금은 뺐다), 금수 패배
   - wasm을 막았을 때 직접 두어보기로 전환, 없는 토큰 404
-- 보드 그리기는 `static/assets/admin/board.js`를 재사용한다.
+- 판의 선, 기보 읽기, 오목 판정은 `static/assets/share/board.js`에 있다. 어드민 보드에서 가져왔고, 어드민 페이지를 지우며 공유 페이지 쪽으로 옮겼다(2026-11-04).
 - 대국 흐름은 FE `Board/index.tsx`(`prefetchNextMoves`, `getCachedAiAnswer`)를 옮겨 온다. 캐시 저장 부분만 뺀다.
   1. 사용자 차례가 되면 그 보드의 next-moves를 미리 받아 둔다.
   2. 사용자가 두면 `check_win`으로 승패를 확인한다.
@@ -266,7 +266,7 @@ PoC 결과(x86, Node/V8, 네이티브 대비):
 | BE   | `domain/puzzle/community/util/SharedMovesEncoder.java`, 테스트 `support/SharedMovesTestDecoder.java` |
 | BE   | `domain/puzzle/cache/api/PuzzleCacheController.java`, `service/PuzzleCacheService.java`              |
 | BE   | `domain/puzzle/community/service/CommunityService.java` (`increaseView`)                             |
-| BE   | `resources/static/assets/admin/board.js`, `caddy/Caddyfile`                                          |
+| BE   | `resources/static/assets/share/board.js`, `caddy/Caddyfile`                                          |
 | FE   | `src/components/features/Board/index.tsx`, `src/apis/puzzleCache.ts`                                 |
 | FE   | `src/screens/PuzzleReview/index.tsx`, `src/hooks/usePuzzleReviewNavigation/index.ts`                 |
 | FE   | `android/app/src/main/java/com/renzzle_fe/cpp/jni/RenzzleJNI.cpp` (`checkWin`)                       |
