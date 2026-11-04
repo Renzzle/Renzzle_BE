@@ -11,9 +11,10 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import java.util.List;
 import java.util.Set;
-import static com.renzzle.backend.domain.auth.domain.Admin.ADMIN_PREFIX;
+
 import static com.renzzle.backend.global.security.AppKeyAuthenticationFilter.APP_KEY_HEADER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -31,7 +32,8 @@ class AppKeyAuthenticationFilterTest {
 
     @BeforeEach
     void setUp() {
-        appKeyAuthenticationFilter = new AppKeyAuthenticationFilter(Set.of(APP_KEY, PREVIOUS_APP_KEY), AntPathRequestMatcher.antMatcher("/api/**"));
+        appKeyAuthenticationFilter = new AppKeyAuthenticationFilter(Set.of(APP_KEY, PREVIOUS_APP_KEY), new OrRequestMatcher(
+                AntPathRequestMatcher.antMatcher("/api/**"), AntPathRequestMatcher.antMatcher("/admin/**")));
         response = new MockHttpServletResponse();
         filterChain = new MockFilterChain();
     }
@@ -81,8 +83,15 @@ class AppKeyAuthenticationFilterTest {
     }
 
     @Test
-    void doFilter_WhenAuthenticatedUserIsNotAdmin_ThenRejectsRequestWithoutAppKey() throws Exception {
-        authenticateWith("USER");
+    void doFilter_WhenAdminApiHasNoAppKey_ThenRejectsRequest() throws Exception {
+        appKeyAuthenticationFilter.doFilter(request("GET", "/admin/notice/system"), response, filterChain);
+
+        assertRejected();
+    }
+
+    @Test
+    void doFilter_WhenAdminCallsWithoutAppKey_ThenRejectsLikeAnyoneElse() throws Exception {
+        authenticateWith();
 
         appKeyAuthenticationFilter.doFilter(apiRequest(), response, filterChain);
 
@@ -90,18 +99,8 @@ class AppKeyAuthenticationFilterTest {
     }
 
     @Test
-    void doFilter_WhenAuthenticatedUserIsAdmin_ThenPassesRequestOnWithoutAppKey() throws Exception {
-        authenticateWith(ADMIN_PREFIX);
-        MockHttpServletRequest request = apiRequest();
-
-        appKeyAuthenticationFilter.doFilter(request, response, filterChain);
-
-        assertSame(request, filterChain.getRequest());
-    }
-
-    @Test
     void doFilter_WhenRequestIsNotApi_ThenPassesRequestOnWithoutAppKey() throws Exception {
-        MockHttpServletRequest request = request("GET", "/admin/dashboard");
+        MockHttpServletRequest request = request("GET", "/puzzle/some-token");
 
         appKeyAuthenticationFilter.doFilter(request, response, filterChain);
 
@@ -118,9 +117,9 @@ class AppKeyAuthenticationFilterTest {
         return request;
     }
 
-    private void authenticateWith(String authority) {
+    private void authenticateWith() {
         SecurityContextHolder.getContext().setAuthentication(
-                UsernamePasswordAuthenticationToken.authenticated("user", null, List.of(new SimpleGrantedAuthority(authority)))
+                UsernamePasswordAuthenticationToken.authenticated("user", null, List.of(new SimpleGrantedAuthority(com.renzzle.backend.domain.auth.domain.Admin.ADMIN_PREFIX)))
         );
     }
 

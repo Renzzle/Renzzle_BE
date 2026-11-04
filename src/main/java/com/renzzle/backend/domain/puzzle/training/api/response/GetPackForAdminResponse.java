@@ -8,6 +8,7 @@ public record GetPackForAdminResponse(
         int price,
         int totalPuzzleCount,
         boolean isPublic,
-        String creatorEmail
+        String creatorEmail,
+        int priority
 ) {
 }

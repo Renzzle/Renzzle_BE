@@ -144,7 +144,7 @@ public class TrainingServiceTest {
                     new PackTranslationRequest("KO", "초보용 1(수정)", "김", "설명(수정)"),
                     new PackTranslationRequest("EN", "For Beginner 1 (Edited)", "KIM", "Description (Edited)")
             );
-            UpdateTrainingPackRequest request = new UpdateTrainingPackRequest(translationRequests, 1200, "HIGH", null);
+            UpdateTrainingPackRequest request = new UpdateTrainingPackRequest(translationRequests, 1200, "HIGH", null, null);
 
             List<PackTranslation> existingTranslations = Arrays.asList(
                     PackTranslation.builder()
@@ -456,7 +456,7 @@ public class TrainingServiceTest {
             when(trainingPuzzleRepository.findByPack_IdOrderByTrainingIndex(1L)).thenReturn(List.of(unranked, ranked));
 
             // when
-            trainingService.updatePack(1L, new UpdateTrainingPackRequest(Collections.emptyList(), 0, "HIGH", null));
+            trainingService.updatePack(1L, new UpdateTrainingPackRequest(Collections.emptyList(), 0, "HIGH", null, null));
 
             // then
             ArgumentCaptor<List<TrainingPuzzle>> rerated = ArgumentCaptor.captor();
@@ -477,7 +477,7 @@ public class TrainingServiceTest {
             when(packTranslationRepository.findAllByPack_Id(1L)).thenReturn(Collections.emptyList());
 
             // when
-            trainingService.updatePack(1L, new UpdateTrainingPackRequest(Collections.emptyList(), 500, "LOW", null));
+            trainingService.updatePack(1L, new UpdateTrainingPackRequest(Collections.emptyList(), 500, "LOW", null, null));
 
             // then
             verify(trainingPuzzleRepository, never()).findByPack_IdOrderByTrainingIndex(anyLong());
@@ -519,7 +519,7 @@ public class TrainingServiceTest {
             when(packRepository.save(any(Pack.class))).thenAnswer(inv -> inv.getArgument(0));
 
             // when
-            Pack updated = trainingService.updatePack(7L, new UpdateTrainingPackRequest(Collections.emptyList(), 0, "LOW", true));
+            Pack updated = trainingService.updatePack(7L, new UpdateTrainingPackRequest(Collections.emptyList(), 0, "LOW", true, null));
 
             // then
             assertThat(updated.isPublic()).isTrue();
@@ -533,10 +533,58 @@ public class TrainingServiceTest {
             when(packRepository.save(any(Pack.class))).thenAnswer(inv -> inv.getArgument(0));
 
             // when
-            Pack updated = trainingService.updatePack(7L, new UpdateTrainingPackRequest(Collections.emptyList(), 0, "LOW", null));
+            Pack updated = trainingService.updatePack(7L, new UpdateTrainingPackRequest(Collections.emptyList(), 0, "LOW", null, null));
 
             // then
             assertThat(updated.isPublic()).isFalse();
+        }
+
+        @Test
+        void updatePack_WhenPriorityGiven_ThenSavesIt() {
+            // given
+            when(packRepository.findById(7L)).thenReturn(Optional.of(pack(7L, "LOW")));
+            when(packRepository.save(any(Pack.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            // when
+            Pack updated = trainingService.updatePack(7L, new UpdateTrainingPackRequest(Collections.emptyList(), 0, "LOW", null, 10));
+
+            // then
+            assertThat(updated.getPriority()).isEqualTo(10);
+        }
+
+        @Test
+        void updatePack_WhenPriorityOmitted_ThenKeepsIt() {
+            // given
+            Pack raised = pack(7L, "LOW").toBuilder().priority(10).build();
+            when(packRepository.findById(7L)).thenReturn(Optional.of(raised));
+            when(packRepository.save(any(Pack.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            // when
+            Pack updated = trainingService.updatePack(7L, new UpdateTrainingPackRequest(Collections.emptyList(), 0, "LOW", null, null));
+
+            // then
+            assertThat(updated.getPriority()).isEqualTo(10);
+        }
+
+        @Test
+        void getTrainingPackList_WhenPacksComeFromSeveralCreators_ThenListsThemInDisplayOrder() {
+            // given
+            Pack creatorA = pack(2L, "LOW").toBuilder().createdBy(10L).build();
+            Pack creatorB = pack(3L, "LOW").toBuilder().createdBy(20L).build();
+            Pack creatorAgain = pack(4L, "LOW").toBuilder().createdBy(10L).build();
+            Pack operator = pack(5L, "LOW");
+            Pack raised = pack(6L, "LOW").toBuilder().createdBy(20L).priority(1).build();
+            when(packRepository.findByDifficultyAndIsPublicTrue(any(Difficulty.class)))
+                    .thenReturn(List.of(creatorA, creatorB, creatorAgain, operator, raised));
+            when(packTranslationRepository.findAllByPack_IdInAndLangCode(anyList(), any())).thenReturn(List.of());
+            when(userPackRepository.findAllByUserIdAndPackIdIn(eq(100L), anyList())).thenReturn(List.of());
+
+            // when
+            List<GetPackResponse> responses = trainingService.getTrainingPackList(
+                    TestUserEntityBuilder.builder().withId(100L).build(), new GetTrainingPackRequest("LOW", "EN"));
+
+            // then
+            assertThat(responses).extracting(GetPackResponse::id).containsExactly(6L, 5L, 2L, 4L, 3L);
         }
 
         @Test
@@ -834,9 +882,10 @@ public class TrainingServiceTest {
                     .id(1L)
                     .price(1000)
                     .puzzleCount(10)
+                    .difficulty(Difficulty.getDifficulty("LOW"))
                     .build();
             List<Pack> packs = Collections.singletonList(pack);
-            when(packRepository.findByDifficultyAndIsPublicTrueOrderByIdAsc(any(Difficulty.class)))
+            when(packRepository.findByDifficultyAndIsPublicTrue(any(Difficulty.class)))
                     .thenReturn(packs);
 
             // Create PackTranslation (linked pack with ID 1)
@@ -1029,7 +1078,7 @@ public class TrainingServiceTest {
                     new PackTranslationRequest("EN", "Beginner 1", "Kang", "Description"),
                     new PackTranslationRequest("EN", "Beginner 2", "Kang", "Description")
             );
-            UpdateTrainingPackRequest request = new UpdateTrainingPackRequest(translationRequests, 1200, "HIGH", null);
+            UpdateTrainingPackRequest request = new UpdateTrainingPackRequest(translationRequests, 1200, "HIGH", null, null);
 
             // when
             CustomException exception = assertThrows(CustomException.class, () -> trainingService.updatePack(1L, request));
@@ -1048,7 +1097,7 @@ public class TrainingServiceTest {
             List<PackTranslationRequest> translationRequests = Collections.singletonList(
                     new PackTranslationRequest("KO", "초보용 1(수정)", "강상민", "설명(수정)")
             );
-            UpdateTrainingPackRequest request = new UpdateTrainingPackRequest(translationRequests, 1200, "HIGH", null);
+            UpdateTrainingPackRequest request = new UpdateTrainingPackRequest(translationRequests, 1200, "HIGH", null, null);
 
             when(packRepository.findById(packId)).thenReturn(Optional.empty());
 
@@ -1219,7 +1268,7 @@ public class TrainingServiceTest {
         @Test
         void updatePack_WhenHidingStarterPack_ThenThrowsWithoutSaving() {
             // given
-            UpdateTrainingPackRequest request = new UpdateTrainingPackRequest(Collections.emptyList(), 0, "LOW", false);
+            UpdateTrainingPackRequest request = new UpdateTrainingPackRequest(Collections.emptyList(), 0, "LOW", false, null);
 
             // when
             CustomException exception = assertThrows(CustomException.class,
@@ -1350,7 +1399,7 @@ public class TrainingServiceTest {
                     .build();
             GetTrainingPackRequest request = new GetTrainingPackRequest("LOW", null);
 
-            when(packRepository.findByDifficultyAndIsPublicTrueOrderByIdAsc(any(Difficulty.class)))
+            when(packRepository.findByDifficultyAndIsPublicTrue(any(Difficulty.class)))
                     .thenReturn(Collections.emptyList());
 
             // when & then

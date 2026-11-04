@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +33,13 @@ public class AppInfoService {
                 .orElseGet(() -> AppInfo.builder().tag(tag).build());
         appInfo.updateValue(request.value().trim());
         return toResponse(appInfoRepository.save(appInfo));
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<String> findValue(String tag) {
+        return appInfoRepository.findByTag(tag)
+                .map(appInfo -> appInfo.getValue().trim())
+                .filter(value -> !value.isEmpty());
     }
 
     @Transactional(readOnly = true)

@@ -14,6 +14,7 @@ import com.renzzle.backend.domain.puzzle.training.dao.UserPackRepository;
 import com.renzzle.backend.domain.puzzle.training.dao.projection.PackLastSolvedProjection;
 import com.renzzle.backend.domain.puzzle.training.domain.Difficulty;
 import com.renzzle.backend.domain.puzzle.training.domain.Pack;
+import com.renzzle.backend.domain.puzzle.training.domain.PackDisplayOrder;
 import com.renzzle.backend.domain.puzzle.training.domain.PackTranslation;
 import com.renzzle.backend.domain.puzzle.training.domain.UserPack;
 import com.renzzle.backend.domain.user.domain.UserEntity;
@@ -96,7 +97,7 @@ public class ContentService {
                 .min(Comparator.comparingInt((Pack pack) -> difficulties.indexOf(pack.getDifficulty().getName()))
                         // Packs the user already has before ones still to buy
                         .thenComparing(pack -> owned.containsKey(pack.getId()), Comparator.reverseOrder())
-                        .thenComparing(Pack::getId))
+                        .thenComparing(PackDisplayOrder.of(packs)))
                 // Every pack is finished, so the last one played stays
                 .orElse(finished);
     }

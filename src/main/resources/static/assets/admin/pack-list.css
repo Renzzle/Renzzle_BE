@@ -1,5 +1,0 @@
-@layer page {
-  .btn-primary:hover:not(:disabled) {
-    opacity: 0.95;
-  }
-}

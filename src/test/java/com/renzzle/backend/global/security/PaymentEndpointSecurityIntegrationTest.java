@@ -66,6 +66,7 @@ class PaymentEndpointSecurityIntegrationTest {
     void adminPaymentApi_WhenRegularUser_ThenForbidden() throws Exception {
         mockMvc.perform(get("/admin/payment/purchases")
                         .param("keyword", "anything")
+                        .header(AppKeyAuthenticationFilter.APP_KEY_HEADER, "test-app-key")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokens.accessToken()))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.errorResponse.code").value(ErrorCode.ADMIN_ACCESS_DENIED.getCode()));
@@ -74,7 +75,9 @@ class PaymentEndpointSecurityIntegrationTest {
     @Test
     void adminAppleTestNotification_WhenRegularUser_ThenForbidden() throws Exception {
         mockMvc.perform(post("/admin/payment/apple/test-notification")
+                        .header(AppKeyAuthenticationFilter.APP_KEY_HEADER, "test-app-key")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokens.accessToken()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.errorResponse.code").value(ErrorCode.ADMIN_ACCESS_DENIED.getCode()));
     }
 }

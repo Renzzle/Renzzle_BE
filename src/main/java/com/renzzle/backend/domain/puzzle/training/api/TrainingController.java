@@ -109,7 +109,7 @@ public class TrainingController {
         return ApiUtils.success(null);
     }
 
-    @Operation(summary = "Update Pack", description = "Update pack translations, price, difficulty, visibility & Only admins are available")
+    @Operation(summary = "Update Pack", description = "Update pack translations, price, difficulty, visibility, priority (operators only) & Only admins are available")
     @PatchMapping("/pack/{packId}")
     public ApiResponse<Long> updateTrainingPack(
             @PathVariable("packId") Long packId,
@@ -117,6 +117,7 @@ public class TrainingController {
             @AuthenticationPrincipal UserDetailsImpl admin
     ) {
         packAccessGuard.checkManagePack(admin, packId);
+        packAccessGuard.checkSetPriority(admin, request.priority());
         Pack pack = trainingService.updatePack(packId, request);
         return ApiUtils.success(pack.getId());
     }
@@ -132,7 +133,7 @@ public class TrainingController {
         return ApiUtils.success(null);
     }
 
-    @Operation(summary = "Get Training Packs", description = "Get Training Packs")
+    @Operation(summary = "Get Training Packs", description = "Public packs of a difficulty, ordered by priority, then by creator")
     @GetMapping("/pack")
     public ApiResponse<List<GetPackResponse>> getTrainingPack(
             @Valid @ParameterObject @ModelAttribute GetTrainingPackRequest request,

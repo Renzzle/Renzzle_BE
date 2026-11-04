@@ -201,6 +201,24 @@ class ContentServiceTest {
     }
 
     @Test
+    void getRecommendedPack_WhenSeveralOwnedPacksAreUnstarted_ThenReturnsTheFirstInThePackList() {
+        // Given: creator 10 started first, so pack 4 lists before pack 3
+        Pack finished = pack(1L, LOW, 10);
+        Pack creatorAFinished = pack(2L, LOW, 10).toBuilder().createdBy(10L).build();
+        Pack creatorB = pack(3L, LOW, 10).toBuilder().createdBy(20L).build();
+        Pack creatorA = pack(4L, LOW, 10).toBuilder().createdBy(10L).build();
+        givenPacks(List.of(finished, creatorAFinished, creatorB, creatorA),
+                List.of(progress(finished, 10), progress(creatorAFinished, 10), progress(creatorB, 0), progress(creatorA, 0)),
+                finished);
+
+        // When
+        GetRecommendPackResponse response = recommend();
+
+        // Then
+        assertThat(response.id()).isEqualTo(4L);
+    }
+
+    @Test
     void getRecommendedPack_WhenSameDifficultyIsDone_ThenReturnsTheNextHarderPackLocked() {
         // Given: an owned easier pack is left, but a harder one comes first
         Pack finished = pack(1L, MIDDLE, 10);
