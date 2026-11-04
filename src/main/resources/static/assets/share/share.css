@@ -7,7 +7,7 @@
   src: url("../fonts/pretendard-1.3.9/PretendardVariable.woff2") format("woff2");
 }
 
-/* Values from the app's v3 design (palette A, with the ink main button of palette B) */
+/* Values from the app's v3 design, with its flat ink buttons and soft shadows */
 :root {
   --share-font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --ink: #26241F;
@@ -16,14 +16,15 @@
   --paper: #F7F5F0;
   --tile: #FFFEFB;
   --edge: #DFD8CB;
-  --line: #EDE9E0;
-  --point: #2A2824;
-  --point-edge: #0B0A09;
-  --on-point: #F5F2EC;
+  --line: #E0D9CD;
+  --point: #26241F;
+  --on-point: #F7F5F0;
   --point-strong: #268064;
   --point-ink: #1F6B53;
   --alert-strong: #9C412D;
-  --board-edge: #D1AE78;
+  --board-edge: #C9A66F;
+  --shadow-button: 0 1px 2px rgba(38, 36, 31, 0.2), 0 3px 8px rgba(38, 36, 31, 0.14);
+  --shadow-raise: 0 1px 2px rgba(64, 46, 22, 0.07), 0 2px 6px rgba(64, 46, 22, 0.06);
   --page-x: 20px;
   --share-width: 480px;
 }
@@ -65,6 +66,8 @@ body {
   font-family: var(--share-font), sans-serif;
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
+  /* Phones tint a whole tapped element blue; buttons show their own press instead */
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Only on a phone: one link to its store */
@@ -118,11 +121,16 @@ body {
   padding: 0 14px;
   border-radius: 8px;
   background: var(--point);
-  box-shadow: 0 2px 0 var(--point-edge);
+  box-shadow: var(--shadow-button);
   color: var(--on-point);
   font-size: 14px;
   line-height: 20px;
   font-weight: 700;
+}
+
+/* Pressed, the button loses its shadow and sits on the page */
+.app-banner-button:active {
+  box-shadow: none;
 }
 
 .icon-button {
@@ -228,14 +236,23 @@ body {
   font-weight: 700;
 }
 
-/* Border and a 2px bottom edge, as the app's board. Smaller on a short screen, so it all fits */
+/* As the app's board: a 3px bottom edge and a soft drop shadow, no outline. Smaller on a short screen, so it all fits */
 .board-frame {
+  position: relative;
   flex-shrink: 0;
   /* 184 is the padding, goal, like row and status line */
   width: min(calc(100% - 16px), calc(100svh - 184px - var(--banner-height, 0px) - var(--memo-line, 0px)));
   margin: 0 auto;
-  border: 1px solid var(--board-edge);
-  box-shadow: 0 2px 0 var(--board-edge);
+  box-shadow: 0 3px 0 var(--board-edge), 0 6px 14px rgba(58, 47, 32, 0.14);
+}
+
+/* The light along the top edge, over the canvas since the canvas paints the whole board */
+.board-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.4);
+  pointer-events: none;
 }
 
 #board {
@@ -387,7 +404,7 @@ body {
   padding: 20px var(--page-x) calc(20px + env(safe-area-inset-bottom));
   border-radius: 16px 16px 0 0;
   background: var(--tile);
-  box-shadow: 0 -1px 0 var(--edge), 0 -8px 24px rgba(38, 36, 31, 0.08);
+  box-shadow: 0 -8px 30px rgba(64, 46, 22, 0.12);
   transform: translateX(-50%);
   animation: share-rise 0.2s ease-out;
 }
@@ -401,9 +418,10 @@ body {
   align-items: center;
   gap: 8px;
   margin: 0;
-  font-size: 18px;
-  line-height: 26px;
+  font-size: 20px;
+  line-height: 28px;
   font-weight: 700;
+  letter-spacing: -0.015em;
 }
 
 .result-icon svg {
@@ -422,7 +440,7 @@ body {
 
 .result-actions {
   display: flex;
-  gap: 8px;
+  gap: 12px;
 }
 
 .result-button {
@@ -430,12 +448,12 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 48px;
+  height: 44px;
   padding: 0 16px;
-  border: 1px solid var(--edge);
+  border: 0;
   border-radius: 8px;
   background: var(--tile);
-  box-shadow: 0 2px 0 var(--edge);
+  box-shadow: var(--shadow-raise);
   color: var(--ink);
   font: inherit;
   font-size: 16px;
@@ -446,10 +464,13 @@ body {
 }
 
 .result-button-main {
-  border-color: var(--point-edge);
   background: var(--point);
-  box-shadow: 0 2px 0 var(--point-edge);
+  box-shadow: var(--shadow-button);
   color: var(--on-point);
+}
+
+.result-button:active {
+  box-shadow: none;
 }
 
 @keyframes share-rise {
