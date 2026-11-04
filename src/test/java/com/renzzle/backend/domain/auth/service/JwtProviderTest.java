@@ -93,13 +93,6 @@ class JwtProviderTest {
     }
 
     @Test
-    void parseAccessToken_WithAdminToken_ShouldHaveNoSession() {
-        JwtProvider.TokenClaims claims = jwtProvider.parseAccessToken(jwtProvider.createAdminAccessToken(testUserId));
-        assertEquals(testUserId, claims.userId());
-        assertNull(claims.sessionId());
-    }
-
-    @Test
     void parseAccessToken_WithRefreshToken_ShouldBeRejected() {
         CustomException exception = assertThrows(CustomException.class,
                 () -> jwtProvider.parseAccessToken(refreshToken));
@@ -139,18 +132,14 @@ class JwtProviderTest {
     void parseToken_WithMalformedToken_ShouldThrowException() {
         String malformedToken = "this.is.not.a.valid.jwt";
 
-        CustomException exception = assertThrows(CustomException.class, () -> {
-            jwtProvider.parseAccessToken(malformedToken);
-        });
+        CustomException exception = assertThrows(CustomException.class, () -> jwtProvider.parseAccessToken(malformedToken));
 
         assertEquals(ErrorCode.MALFORMED_JWT_TOKEN, exception.getErrorCode());
     }
 
     @Test
     void parseToken_WithEmptyToken_ShouldThrowException() {
-        CustomException exception = assertThrows(CustomException.class, () -> {
-            jwtProvider.parseAccessToken("");
-        });
+        CustomException exception = assertThrows(CustomException.class, () -> jwtProvider.parseAccessToken(""));
 
         assertEquals(ErrorCode.ILLEGAL_TOKEN, exception.getErrorCode());
     }

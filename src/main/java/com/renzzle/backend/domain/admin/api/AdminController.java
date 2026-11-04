@@ -6,12 +6,7 @@ import com.renzzle.backend.domain.admin.api.response.GetAdminAccountResponse;
 import com.renzzle.backend.domain.admin.api.response.RecalculateAnswerKeyResponse;
 import com.renzzle.backend.domain.admin.api.response.RecalculateBoardKeyResponse;
 import com.renzzle.backend.domain.admin.api.response.RecalculatePuzzleRatingResponse;
-import com.renzzle.backend.domain.auth.api.request.LoginRequest;
 import com.renzzle.backend.domain.admin.service.AdminAccountService;
-import com.renzzle.backend.domain.auth.dao.AdminRepository;
-import com.renzzle.backend.domain.auth.domain.Admin;
-import com.renzzle.backend.domain.auth.service.AccountService;
-import com.renzzle.backend.domain.auth.service.JwtProvider;
 import com.renzzle.backend.domain.notice.api.request.CreateAnnouncementRequest;
 import com.renzzle.backend.domain.notice.api.request.SendPersonalNoticeRequest;
 import com.renzzle.backend.domain.notice.api.request.UpdateAnnouncementRequest;
@@ -35,10 +30,7 @@ import com.renzzle.backend.domain.puzzle.training.api.response.GetTrainingPuzzle
 import com.renzzle.backend.domain.puzzle.community.service.CommunityService;
 import com.renzzle.backend.domain.puzzle.training.service.PackAccessGuard;
 import com.renzzle.backend.domain.puzzle.training.service.TrainingService;
-import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.global.common.response.ApiResponse;
-import com.renzzle.backend.global.exception.CustomException;
-import com.renzzle.backend.global.exception.ErrorCode;
 import com.renzzle.backend.global.security.UserDetailsImpl;
 import com.renzzle.backend.global.util.ApiUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -48,76 +40,23 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @RestController
 @RequestMapping("/admin")
 @RequiredArgsConstructor
-@Tag(name = "Admin", description = "Admin login and admin-only APIs")
+@Tag(name = "Admin", description = "Admin-only APIs")
 public class AdminController {
 
-    private final AccountService accountService;
     private final AdminAccountService adminAccountService;
-    private final JwtProvider jwtProvider;
-    private final UserRepository userRepository;
-    private final AdminRepository adminRepository;
     private final TrainingService trainingService;
     private final PackAccessGuard packAccessGuard;
     private final CommunityService communityService;
     private final NoticeService noticeService;
     private final PaymentAdminService paymentAdminService;
-    private final Clock clock;
-
-    @Operation(summary = "Admin login", description = "Admin-specific login that issues 12-hour access token.")
-    @SecurityRequirement(name = "Authorization")
-    @PostMapping("/login")
-    public ApiResponse<AdminLoginResponse> adminLogin(
-            @Valid @RequestBody LoginRequest request,
-            HttpServletRequest servletRequest,
-            HttpServletResponse response
-    ) {
-        var loginResponse = accountService.login(request);
-
-        long userId = jwtProvider.parseAccessToken(loginResponse.accessToken()).userId();
-        Admin admin = userRepository.findById(userId)
-                .flatMap(adminRepository::findByUser)
-                .orElseThrow(() -> new CustomException(ErrorCode.ADMIN_ACCESS_DENIED));
-        if (admin.getPermissions().isEmpty()) {
-            throw new CustomException(ErrorCode.ADMIN_PERMISSION_DENIED);
-        }
-
-        String adminAccessToken = jwtProvider.createAdminAccessToken(userId);
-        Instant expiredAt = clock.instant().plus(12, ChronoUnit.HOURS);
-        ResponseCookie cookie = ResponseCookie.from("admin_accessToken", adminAccessToken)
-                .httpOnly(true)
-                .secure(isSecureRequest(servletRequest))
-                .sameSite("Strict")
-                .path("/")
-                .maxAge(Duration.ofHours(12))
-                .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-
-        return ApiUtils.success(new AdminLoginResponse(
-                "Bearer",
-                adminAccessToken,
-                expiredAt
-        ));
-    }
-
-    private boolean isSecureRequest(HttpServletRequest request) {
-        return request.isSecure() || "https".equalsIgnoreCase(request.getHeader("X-Forwarded-Proto"));
-    }
 
     @Operation(summary = "Get training pack list (Admin only)", description = "Admin-only pack list for dashboard")
     @SecurityRequirement(name = "Authorization")
@@ -407,10 +346,4 @@ public class AdminController {
         adminAccountService.removeAdminAccount(adminId, userDetails.getUser());
         return ApiUtils.success(null);
     }
-
-    public record AdminLoginResponse(
-            String grantType,
-            String accessToken,
-            Instant accessTokenExpiredAt
-    ) {}
 }

@@ -6,6 +6,7 @@ import com.renzzle.backend.domain.auth.dao.AdminRepository;
 import com.renzzle.backend.domain.auth.domain.Admin;
 import com.renzzle.backend.domain.auth.domain.AdminPermission;
 import com.renzzle.backend.domain.auth.service.JwtProvider;
+import com.renzzle.backend.global.exception.ErrorCode;
 import com.renzzle.backend.domain.puzzle.rank.support.TestUserFactory;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
@@ -17,7 +18,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
@@ -67,6 +67,16 @@ class AdminPermissionAccessTest {
     }
 
     @Test
+    void adminApi_WhenAppKeyMissing_ThenRejectedLikeAppApis() throws Exception {
+        UserEntity operator = createAdmin(OPERATION_MANAGE);
+
+        mockMvc.perform(get("/admin/notice/system")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtProvider.createAccessToken(operator.getId(), "test-session")))
+                .andExpect(status().is(ErrorCode.INVALID_APP_KEY.getStatus().value()))
+                .andExpect(jsonPath("$.errorResponse.code").value(ErrorCode.INVALID_APP_KEY.getCode()));
+    }
+
+    @Test
     void aiResponseAdmin_WhenReadingPacks_ThenAllowedButCannotChangeThem() throws Exception {
         UserEntity user = createAdmin(AI_RESPONSE_MANAGE);
 
@@ -101,21 +111,6 @@ class AdminPermissionAccessTest {
         mockMvc.perform(withToken(get("/admin/not-mapped-yet"), user))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.errorResponse.code").value("A403"));
-    }
-
-    @Test
-    void login_WhenAdminHasNoPermission_ThenRejected() throws Exception {
-        UserEntity user = userRepository.save(TestUserFactory.createTestUser(uniqueName(), 1000).toBuilder()
-                .password(new BCryptPasswordEncoder().encode("password1"))
-                .build());
-        createdUsers.add(user);
-        adminRepository.save(Admin.builder().user(user).build());
-
-        mockMvc.perform(post("/admin/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"" + user.getEmail() + "\",\"password\":\"password1\"}"))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.errorResponse.code").value("A4031"));
     }
 
     @Test

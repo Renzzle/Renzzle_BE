@@ -9,7 +9,6 @@ import com.renzzle.backend.global.exception.CustomException;
 import com.renzzle.backend.global.exception.ErrorCode;
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -86,30 +85,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
             return bearerToken.substring(BEARER_PREFIX.length());
         }
-
-        String accessToken = resolveTokenFromCookie(request, "accessToken");
-        if (accessToken != null) {
-            return accessToken;
-        }
-
-        String adminAccessToken = resolveTokenFromCookie(request, "admin_accessToken");
-        if (adminAccessToken != null) {
-            return adminAccessToken;
-        }
-
         throw new CustomException(ErrorCode.ILLEGAL_TOKEN);
-    }
-
-    private String resolveTokenFromCookie(HttpServletRequest request, String cookieName) {
-        if (request.getCookies() == null) {
-            return null;
-        }
-        for (Cookie cookie : request.getCookies()) {
-            if (cookieName.equals(cookie.getName()) && StringUtils.hasText(cookie.getValue())) {
-                return cookie.getValue();
-            }
-        }
-        return null;
     }
 
 }

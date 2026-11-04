@@ -124,12 +124,11 @@ PoC 결과(x86, Node/V8, 네이티브 대비):
 - **딥링크 검증 파일 (보류: 딥링크 작업 때 함께 한다)**: `/.well-known/apple-app-site-association`과 `/.well-known/assetlinks.json`을 `caddy/Caddyfile`에서 응답한다(`app-ads.txt`와 같은 방식).
   - 경로 패턴은 `/puzzle/*`이다. 내용에 애플 Team ID와 Play 앱 서명 키의 SHA-256 지문이 필요하다.
   - 앱이 도메인을 선언하기 전에는 OS가 이 파일을 쓰지 않으므로 먼저 올려 둬도 영향이 없다.
-- **Cloudflare**: 지금은 `/api`와 `/admin` 하위를 뺀 경로를 막고 있다(규칙 확인 필요). 아래 경로를 열어야 한다.
-  - `/puzzle/*`: 공유 페이지와 공개 API
-  - `/.well-known/*`: 딥링크 검증 파일
-  - `/assets/*`: 어드민이 이미 쓰고 있으니 열려 있을 가능성이 높다. 확인만 한다.
-  - `/.well-known/*`과 `/puzzle/*`은 봇 챌린지에서도 빼야 한다. 애플 CDN과 카카오톡 링크 미리보기 크롤러는 챌린지를 통과하지 못한다.
-  - 새로 연 공개 경로에 edge 속도 제한 규칙을 건다.
+- **Cloudflare**: 허용 목록 밖의 경로를 막는 규칙에 `/puzzle/`(공유 페이지와 공개 API)과 `/.well-known/`(딥링크 검증 파일)을 추가한다(2026-11-04). `/assets/`는 이미 열려 있다.
+  - 어드민 화면은 지웠지만 어드민 API가 `/admin/...`이라 `/admin`은 계속 연다.
+  - Bot Fight Mode는 꺼져 있다. 켜면 무료 플랜에서는 경로별 예외가 안 돼서 카카오톡 미리보기 크롤러가 막힐 수 있다. 다른 챌린지 규칙을 만들면 `/puzzle/`과 `/.well-known/`은 뺀다.
+  - 속도 제한은 `/api/auth/*`(IP당 10초 30번)만 둔다. 무료 플랜은 규칙이 하나라, `/puzzle/`을 넣으면 로그인 경로와 카운터를 같이 쓰게 된다. 토큰은 추측할 수 없는 UUID이고 공유 API는 가벼운 읽기라 얻는 게 적다. 대량 트래픽은 Cloudflare HTTP DDoS 방어가 막는다.
+  - 배포 후 카카오 공유 디버거(developers.kakao.com/tool/debugger/sharing)로 미리보기를 확인한다. 미리보기 캐시도 여기서 지운다.
 
 ## 3. 웹 공유 페이지
 

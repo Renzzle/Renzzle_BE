@@ -22,6 +22,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.util.StringUtils;
 import java.util.Arrays;
@@ -49,12 +50,13 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity, @Value("${app.key}") String appKey) throws Exception {
-        // Every API request must carry an app key, whether it needs a token
-        RequestMatcher appKeyRequestMatcher = AntPathRequestMatcher.antMatcher("/api/**");
+        // Every app and admin API request must carry an app key, whether it needs a token
+        RequestMatcher appKeyRequestMatcher = new OrRequestMatcher(
+                AntPathRequestMatcher.antMatcher("/api/**"),
+                AntPathRequestMatcher.antMatcher("/admin/**"));
         Set<String> appKeys = parseAppKeys(appKey);
 
         List<RequestMatcher> permitAllRequestMatchers = Arrays.asList(
-                AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/admin/login"),  // Admin login API (called without a token)
                 AntPathRequestMatcher.antMatcher("/assets/**"),
                 // Share page and its read-only API, opened by anyone with the link
                 AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/puzzle/**"),
@@ -116,7 +118,6 @@ public class SecurityConfig {
                 .addFilterBefore(new JwtAuthenticationFilter(jwtProvider, userRepository, adminRepository, permitAllRequestMatchers), UsernamePasswordAuthenticationFilter.class);
 
         if (!appKeys.isEmpty()) {
-            // After JWT auth so browser admin requests, which have no app key, pass
             httpSecurity.addFilterAfter(new AppKeyAuthenticationFilter(appKeys, appKeyRequestMatcher), JwtAuthenticationFilter.class);
         } else {
             log.warn("APP_KEY is empty, so app key verification is disabled");
