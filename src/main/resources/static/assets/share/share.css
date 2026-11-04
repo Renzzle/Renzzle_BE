@@ -22,7 +22,7 @@
   --point-strong: #268064;
   --point-ink: #1F6B53;
   --alert-strong: #9C412D;
-  --board-edge: #D1AE78;
+  --board-edge: #C9A66F;
   --shadow-button: 0 1px 2px rgba(38, 36, 31, 0.2), 0 3px 8px rgba(38, 36, 31, 0.14);
   --shadow-raise: 0 1px 2px rgba(64, 46, 22, 0.07), 0 2px 6px rgba(64, 46, 22, 0.06);
   --page-x: 20px;
@@ -236,14 +236,23 @@ body {
   font-weight: 700;
 }
 
-/* Border and a 2px bottom edge, as the app's board. Smaller on a short screen, so it all fits */
+/* As the app's board: a 3px bottom edge and a soft drop shadow, no outline. Smaller on a short screen, so it all fits */
 .board-frame {
+  position: relative;
   flex-shrink: 0;
   /* 184 is the padding, goal, like row and status line */
   width: min(calc(100% - 16px), calc(100svh - 184px - var(--banner-height, 0px) - var(--memo-line, 0px)));
   margin: 0 auto;
-  border: 1px solid var(--board-edge);
-  box-shadow: 0 2px 0 var(--board-edge);
+  box-shadow: 0 3px 0 var(--board-edge), 0 6px 14px rgba(58, 47, 32, 0.14);
+}
+
+/* The light along the top edge, over the canvas since the canvas paints the whole board */
+.board-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.4);
+  pointer-events: none;
 }
 
 #board {
@@ -395,7 +404,7 @@ body {
   padding: 20px var(--page-x) calc(20px + env(safe-area-inset-bottom));
   border-radius: 16px 16px 0 0;
   background: var(--tile);
-  box-shadow: 0 -1px 0 var(--edge), 0 -8px 24px rgba(38, 36, 31, 0.08);
+  box-shadow: 0 -8px 30px rgba(64, 46, 22, 0.12);
   transform: translateX(-50%);
   animation: share-rise 0.2s ease-out;
 }
@@ -409,9 +418,10 @@ body {
   align-items: center;
   gap: 8px;
   margin: 0;
-  font-size: 18px;
-  line-height: 26px;
+  font-size: 20px;
+  line-height: 28px;
   font-weight: 700;
+  letter-spacing: -0.015em;
 }
 
 .result-icon svg {
