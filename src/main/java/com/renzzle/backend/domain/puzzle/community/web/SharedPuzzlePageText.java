@@ -33,10 +33,15 @@ public record SharedPuzzlePageText(
     // Chinese in Taiwan, Hong Kong and Macau is written in Traditional characters
     private static final Set<String> TRADITIONAL_CHINESE = Set.of("hant", "tw", "hk", "mo");
 
-    // The visitor's first language the page has. Korean without the header, as link previews often send none
+    // The language the share link names with ?lang=, or null if it names none the page has
+    public static LangCodeName languageOfParam(String lang) {
+        return lang == null ? null : languageOfTag(lang);
+    }
+
+    // The visitor's first language the page has, otherwise English. Link previews often send no header and get English
     public static LangCodeName languageOf(String acceptLanguage) {
         if (acceptLanguage == null || acceptLanguage.isBlank()) {
-            return LangCodeName.KO;
+            return LangCodeName.EN;
         }
         try {
             for (Locale.LanguageRange range : Locale.LanguageRange.parse(acceptLanguage)) {

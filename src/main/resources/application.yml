@@ -75,6 +75,8 @@ rank:
 community:
   puzzle:
     daily-upload-limit: 50 # in 24 hours
+  share:
+    preview-image-path: /assets/share/og-image-%s.png # %s is the page language
 
 iap:
   google:

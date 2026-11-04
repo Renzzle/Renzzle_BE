@@ -44,6 +44,7 @@ class SharedPuzzlePageIntegrationTest {
     private static final String BOARD = "h8i8h9i9h10i10";
     private static final String ANSWER = "h11h12h7";
     private static final List<String> STORE_TAGS = List.of("ios_store_url", "android_store_url");
+    private static final List<String> PAGE_LANGS = List.of("ko", "en", "ja", "zh-Hans", "zh-Hant", "ru", "et");
 
     @Autowired private MockMvc mockMvc;
     @Autowired private UserRepository userRepository;
@@ -80,7 +81,7 @@ class SharedPuzzlePageIntegrationTest {
 
     @Test
     void page_WithoutLogin_ThenRendersTheBoardAndPreviewTagsInKorean() throws Exception {
-        String html = page(token, null, 200);
+        String html = page(token, "ko-KR,ko;q=0.9", 200);
 
         assertThat(html)
                 .contains("<html lang=\"ko\"")
@@ -91,7 +92,7 @@ class SharedPuzzlePageIntegrationTest {
                 .contains("풀이 5 · 조회 3")
                 .contains("aria-label=\"좋아요 7\"")
                 .contains("property=\"og:url\" content=\"https://renzzle.com/puzzle/" + token + "\"")
-                .contains("property=\"og:image\" content=\"https://renzzle.com/puzzle/" + token + "/preview.png?v=2\"")
+                .contains("property=\"og:image\" content=\"https://renzzle.com/assets/share/og-image-ko.png?v=1\"")
                 .doesNotContain(ANSWER)
                 .doesNotContain("apple-itunes-app");
         assertThat(communityPuzzleRepository.findById(puzzleId).orElseThrow().getView()).isEqualTo(3);
@@ -103,7 +104,7 @@ class SharedPuzzlePageIntegrationTest {
 
         assertThat(html)
                 .contains("property=\"og:url\" content=\"https://test.renzzle.com/puzzle/" + token + "\"")
-                .contains("property=\"og:image\" content=\"https://test.renzzle.com/puzzle/" + token + "/preview.png?v=2\"");
+                .contains("property=\"og:image\" content=\"https://test.renzzle.com/assets/share/og-image-en.png?v=1\"");
     }
 
     @Test
@@ -112,9 +113,40 @@ class SharedPuzzlePageIntegrationTest {
 
         assertThat(html)
                 .contains("<html lang=\"en\"")
-                .contains("content=\"" + user.getNickname() + "&#39;s Gomoku puzzle\"")
+                .contains("content=\"" + user.getNickname() + "&#39;s Renju puzzle\"")
                 .contains("Make five with black")
-                .contains("solved 5 · views 3");
+                .contains("solved 5 · views 3")
+                .contains("property=\"og:image\" content=\"https://renzzle.com/assets/share/og-image-en.png?v=1\"");
+    }
+
+    // Link preview crawlers often send no Accept-Language
+    @Test
+    void page_WithoutLanguageHeader_ThenRendersInEnglish() throws Exception {
+        String html = page(token, null, 200);
+
+        assertThat(html)
+                .contains("<html lang=\"en\"")
+                .contains("content=\"" + user.getNickname() + "&#39;s Renju puzzle\"")
+                .contains("property=\"og:image\" content=\"https://renzzle.com/assets/share/og-image-en.png?v=1\"");
+    }
+
+    @Test
+    void page_WhenTheLinkNamesALanguage_ThenRendersInItOverTheBrowserAndKeepsItInOgUrl() throws Exception {
+        String html = page(token + "?lang=ja", "ko-KR,ko;q=0.9", 200);
+
+        assertThat(html)
+                .contains("<html lang=\"ja\"")
+                .contains("property=\"og:url\" content=\"https://renzzle.com/puzzle/" + token + "?lang=ja\"")
+                .contains("property=\"og:image\" content=\"https://renzzle.com/assets/share/og-image-ja.png?v=1\"");
+    }
+
+    @Test
+    void page_WhenTheLinkNamesALanguageThePageLacks_ThenFollowsTheBrowser() throws Exception {
+        String html = page(token + "?lang=fr", "ko-KR,ko;q=0.9", 200);
+
+        assertThat(html)
+                .contains("<html lang=\"ko\"")
+                .contains("property=\"og:url\" content=\"https://renzzle.com/puzzle/" + token + "\"");
     }
 
     @Test
@@ -124,7 +156,8 @@ class SharedPuzzlePageIntegrationTest {
         assertThat(html)
                 .contains("<html lang=\"zh-Hant\"")
                 .contains("執黑連成五子")
-                .contains(user.getNickname() + "</b> 出題");
+                .contains(user.getNickname() + "</b> 出題")
+                .contains("property=\"og:image\" content=\"https://renzzle.com/assets/share/og-image-zh-Hant.png?v=1\"");
     }
 
     @Test
@@ -132,31 +165,23 @@ class SharedPuzzlePageIntegrationTest {
         String html = page(UUID.randomUUID().toString(), null, 404);
 
         assertThat(html)
-                .contains("퍼즐을 찾을 수 없어요")
+                .contains("Puzzle not found")
                 .doesNotContain("/assets/engine/engine.js")
-                .doesNotContain("og:image");
+                .contains("property=\"og:image\" content=\"https://renzzle.com/assets/share/og-image-en.png?v=1\"");
     }
 
     @Test
-    void preview_WithoutLogin_ThenIsAWideCacheableBoardImage() throws Exception {
-        MvcResult result = mockMvc.perform(get("/puzzle/" + token + "/preview.png"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.IMAGE_PNG))
-                .andReturn();
+    void previewImages_WithoutLogin_ThenAreServedAsWidePngsInEveryPageLanguage() throws Exception {
+        for (String lang : PAGE_LANGS) {
+            MvcResult result = mockMvc.perform(get("/assets/share/og-image-" + lang + ".png"))
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentType(MediaType.IMAGE_PNG))
+                    .andReturn();
 
-        assertThat(result.getResponse().getHeader(HttpHeaders.CACHE_CONTROL)).contains("max-age=604800", "public");
-        BufferedImage image = ImageIO.read(new ByteArrayInputStream(result.getResponse().getContentAsByteArray()));
-        assertThat(image.getWidth()).isEqualTo(1200);
-        assertThat(image.getHeight()).isEqualTo(600);
-        // The band centers on rows 8-10, so h8, the first black stone, is one row below the middle
-        assertThat(image.getRGB(600, 377) & 0xFFFFFF).isEqualTo(0x2C2A25);
-        assertThat(image.getRGB(5, 5) & 0xFFFFFF).isEqualTo(0xE7C99A);
-    }
-
-    @Test
-    void preview_WhenTokenUnknown_ThenNotFound() throws Exception {
-        mockMvc.perform(get("/puzzle/" + UUID.randomUUID() + "/preview.png"))
-                .andExpect(status().isNotFound());
+            BufferedImage image = ImageIO.read(new ByteArrayInputStream(result.getResponse().getContentAsByteArray()));
+            assertThat(image.getWidth()).as(lang).isEqualTo(1200);
+            assertThat(image.getHeight()).as(lang).isEqualTo(600);
+        }
     }
 
     @Test

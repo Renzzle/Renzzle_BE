@@ -7,6 +7,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.stream.Stream;
 
@@ -22,8 +23,8 @@ class SharedPuzzlePageTextTest {
 
     @ParameterizedTest
     @NullAndEmptySource
-    void languageOf_WithoutHeader_ThenKorean(String acceptLanguage) {
-        assertThat(SharedPuzzlePageText.languageOf(acceptLanguage)).isEqualTo(LangCodeName.KO);
+    void languageOf_WithoutHeader_ThenEnglish(String acceptLanguage) {
+        assertThat(SharedPuzzlePageText.languageOf(acceptLanguage)).isEqualTo(LangCodeName.EN);
     }
 
     @ParameterizedTest
@@ -44,6 +45,28 @@ class SharedPuzzlePageTextTest {
     })
     void languageOf_PicksTheFirstLanguageThePageHas(String acceptLanguage, LangCodeName expected) {
         assertThat(SharedPuzzlePageText.languageOf(acceptLanguage)).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+            "ko      | KO",
+            "EN      | EN",
+            "ja-JP   | JA",
+            "zh-Hans | ZH_HANS",
+            "zh-Hant | ZH_HANT",
+            "zh-TW   | ZH_HANT",
+            "ru      | RU",
+            "et      | ET"
+    })
+    void languageOfParam_WhenTheLinkNamesALanguageThePageHas_ThenIt(String lang, LangCodeName expected) {
+        assertThat(SharedPuzzlePageText.languageOfParam(lang)).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {"fr", "x<script>"})
+    void languageOfParam_WhenTheLinkNamesNone_ThenNull(String lang) {
+        assertThat(SharedPuzzlePageText.languageOfParam(lang)).isNull();
     }
 
     // A key missing from one language's file would fail the page there

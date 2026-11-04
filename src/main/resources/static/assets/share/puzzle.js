@@ -15,7 +15,7 @@
   const BASE64_URL_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
   // Must match SharedMovesEncoder on the server
   const SHUFFLED_ALPHABET = 'WyR9_QfXoZ7S1kBUMiOes4dacthv0rj3gYVJz5GAmNEIwCD-682TbnHqLFuxpKlP';
-  // The app's board; SharedPuzzlePreviewRenderer on the server draws the link preview in these colors
+  // The app's board
   const COLORS = {
     board: '#E7C99A',
     label: 'rgba(38, 36, 31, 0.42)',
