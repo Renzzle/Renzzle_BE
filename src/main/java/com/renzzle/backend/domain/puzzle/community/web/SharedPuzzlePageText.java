@@ -40,10 +40,10 @@ public record SharedPuzzlePageText(
         return lang == null ? null : languageOfTag(lang);
     }
 
-    // The visitor's first language the page has, otherwise English. Link previews often send no header and get English
+    // The visitor's first language the page has, or null if none. Link previews often send no header
     public static LangCodeName languageOf(String acceptLanguage) {
         if (acceptLanguage == null || acceptLanguage.isBlank()) {
-            return LangCodeName.EN;
+            return null;
         }
         try {
             for (Locale.LanguageRange range : Locale.LanguageRange.parse(acceptLanguage)) {
@@ -55,7 +55,7 @@ public record SharedPuzzlePageText(
         } catch (IllegalArgumentException e) {
             // A malformed header is read as none of the page's languages
         }
-        return LangCodeName.EN;
+        return null;
     }
 
     private static LangCodeName languageOfTag(String tag) {
@@ -71,10 +71,15 @@ public record SharedPuzzlePageText(
         };
     }
 
+    // The page's lang tag for a language, like zh-Hant
+    public static String tagOf(LangCodeName language) {
+        return Locale.forLanguageTag(language.name().replace('_', '-')).toLanguageTag();
+    }
+
     public static SharedPuzzlePageText of(LangCodeName language, GetSharedPuzzleResponse puzzle) {
-        Locale locale = Locale.forLanguageTag(language.name().replace('_', '-'));
-        ResourceBundle words = ResourceBundle.getBundle(BUNDLE, locale, SharedPuzzlePageText.class.getClassLoader(), NO_FALLBACK);
-        String lang = locale.toLanguageTag();
+        String lang = tagOf(language);
+        ResourceBundle words = ResourceBundle.getBundle(BUNDLE, Locale.forLanguageTag(lang),
+                SharedPuzzlePageText.class.getClassLoader(), NO_FALLBACK);
         String bannerText = words.getString("bannerText");
         String bannerButton = words.getString("bannerButton");
         String rotate = words.getString("rotate");
