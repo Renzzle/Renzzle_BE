@@ -133,8 +133,19 @@ class SharedPuzzlePageIntegrationTest {
     }
 
     @Test
-    void page_WhenTheLinkNamesALanguage_ThenRendersInItOverTheBrowserAndKeepsItInOgUrl() throws Exception {
+    void page_WhenTheBrowserAndTheLinkNameLanguages_ThenRendersInTheBrowsersAndKeepsTheLinksInOgUrl() throws Exception {
         String html = page(token + "?lang=ja", "ko-KR,ko;q=0.9", 200);
+
+        assertThat(html)
+                .contains("<html lang=\"ko\"")
+                .contains("property=\"og:url\" content=\"https://renzzle.com/puzzle/" + token + "?lang=ja\"")
+                .contains("property=\"og:image\" content=\"https://renzzle.com/assets/share/og-image-ko.png?v=1\"");
+    }
+
+    // Link preview crawlers often send no Accept-Language
+    @Test
+    void page_WhenTheLinkNamesALanguageAndTheBrowserNone_ThenRendersInIt() throws Exception {
+        String html = page(token + "?lang=ja", null, 200);
 
         assertThat(html)
                 .contains("<html lang=\"ja\"")
