@@ -1,6 +1,7 @@
 package com.renzzle.backend.domain.user.service;
 
 import com.renzzle.backend.domain.appinfo.service.AppInfoService;
+import com.renzzle.backend.domain.auth.dao.AdminRepository;
 import com.renzzle.backend.domain.auth.service.AuthService;
 import com.renzzle.backend.domain.puzzle.community.api.response.GetCommunityPuzzlesResponse;
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
@@ -37,6 +38,7 @@ public class UserService {
     private final AppInfoService appInfoService;
     private final AuthService authService;
     private final RankService rankService;
+    private final AdminRepository adminRepository;
 
     public UserResponse getUserResponse(UserEntity user) {
         return UserResponse.builder()
@@ -46,6 +48,9 @@ public class UserService {
                 .currency(user.getCurrency())
                 .adsRemoved(user.isAdsRemoved())
                 .refundDataConsent(user.isRefundDataConsent())
+                .adminPermissions(adminRepository.findByUser(user)
+                        .map(admin -> admin.getPermissions().stream().sorted().toList())
+                        .orElse(List.of()))
                 .build();
     }
 

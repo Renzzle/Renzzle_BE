@@ -50,7 +50,8 @@ class UserControllerTest {
                 "tintin",
                 1300,
                 true,
-                false
+                false,
+                List.of()
         );
         Mockito.when(userService.getUserResponse(userEntity)).thenReturn(userResponse);
 
