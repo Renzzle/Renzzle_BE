@@ -1,12 +1,16 @@
 package com.renzzle.backend.domain.user.service;
 
 import com.renzzle.backend.domain.appinfo.service.AppInfoService;
+import com.renzzle.backend.domain.auth.dao.AdminRepository;
+import com.renzzle.backend.domain.auth.domain.Admin;
+import com.renzzle.backend.domain.auth.domain.AdminPermission;
 import com.renzzle.backend.domain.auth.service.AuthService;
 import com.renzzle.backend.domain.puzzle.community.dao.CommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.community.dao.UserCommunityPuzzleRepository;
 import com.renzzle.backend.domain.puzzle.rank.service.RankService;
 import com.renzzle.backend.domain.user.api.response.ChangeNicknameResponse;
 import com.renzzle.backend.domain.user.api.response.RefundDataConsentResponse;
+import com.renzzle.backend.domain.user.api.response.UserResponse;
 import com.renzzle.backend.domain.user.dao.UserRepository;
 import com.renzzle.backend.domain.user.domain.UserEntity;
 import com.renzzle.backend.global.common.constant.ItemPrice;
@@ -23,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.Clock;
+import java.util.EnumSet;
 import java.util.Optional;
 
 import static com.renzzle.backend.global.common.constant.ItemPrice.CHANGE_NICKNAME;
@@ -47,6 +52,8 @@ class UserServiceTest {
     private AuthService authService;
     @Mock
     private RankService rankService;
+    @Mock
+    private AdminRepository adminRepository;
 
     @InjectMocks
     private UserService userService;
@@ -54,6 +61,33 @@ class UserServiceTest {
     @BeforeEach
     void setup() {
         lenient().when(appInfoService.getPrice(any())).thenAnswer(invocation -> invocation.<ItemPrice>getArgument(0).getDefaultPrice());
+    }
+
+    @Test
+    void getUserResponse_WhenUserIsAdmin_ThenListsTheirPermissionsInOrder() {
+        UserEntity user = TestUserEntityBuilder.builder()
+                .withStatus(Status.getDefaultStatus())
+                .build();
+        Admin admin = Admin.builder()
+                .user(user)
+                .permissions(EnumSet.of(AdminPermission.OPERATION_MANAGE, AdminPermission.PACK_MANAGE))
+                .build();
+        when(adminRepository.findByUser(user)).thenReturn(Optional.of(admin));
+
+        UserResponse response = userService.getUserResponse(user);
+
+        assertThat(response.adminPermissions())
+                .containsExactly(AdminPermission.PACK_MANAGE, AdminPermission.OPERATION_MANAGE);
+    }
+
+    @Test
+    void getUserResponse_WhenUserIsNotAdmin_ThenHasNoPermissions() {
+        UserEntity user = TestUserEntityBuilder.builder()
+                .withStatus(Status.getDefaultStatus())
+                .build();
+        when(adminRepository.findByUser(user)).thenReturn(Optional.empty());
+
+        assertThat(userService.getUserResponse(user).adminPermissions()).isEmpty();
     }
 
     @Test
