@@ -22,12 +22,6 @@ class SharedPuzzlePageTextTest {
             .build();
 
     @ParameterizedTest
-    @NullAndEmptySource
-    void languageOf_WithoutHeader_ThenEnglish(String acceptLanguage) {
-        assertThat(SharedPuzzlePageText.languageOf(acceptLanguage)).isEqualTo(LangCodeName.EN);
-    }
-
-    @ParameterizedTest
     @CsvSource(delimiter = '|', value = {
             "ko-KR,ko;q=0.9,en;q=0.8 | KO",
             "en-US,en;q=0.9,ko;q=0.8 | EN",
@@ -38,13 +32,17 @@ class SharedPuzzlePageTextTest {
             "zh-Hant-HK              | ZH_HANT",
             "ru-RU,ru;q=0.9          | RU",
             "et-EE,et;q=0.9          | ET",
-            "fr-FR,fr;q=0.9,ja;q=0.5 | JA",
-            "fr-FR,fr;q=0.9          | EN",
-            "de,ko;q=0               | EN",
-            "@@@                     | EN"
+            "fr-FR,fr;q=0.9,ja;q=0.5 | JA"
     })
     void languageOf_PicksTheFirstLanguageThePageHas(String acceptLanguage, LangCodeName expected) {
         assertThat(SharedPuzzlePageText.languageOf(acceptLanguage)).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {"fr-FR,fr;q=0.9", "de,ko;q=0", "@@@"})
+    void languageOf_WhenTheHeaderNamesNone_ThenNull(String acceptLanguage) {
+        assertThat(SharedPuzzlePageText.languageOf(acceptLanguage)).isNull();
     }
 
     @ParameterizedTest

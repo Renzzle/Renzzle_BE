@@ -48,19 +48,22 @@ public class SharedPuzzlePageController {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
         }
 
-        // ?lang= set by the app comes first, as link previews often send no Accept-Language
+        // The visitor's own language comes first, then ?lang= set by the app, as link previews often send no
+        // Accept-Language, and English if neither names one the page has
+        LangCodeName visitorLanguage = SharedPuzzlePageText.languageOf(acceptLanguage);
         LangCodeName linkLanguage = SharedPuzzlePageText.languageOfParam(lang);
-        LangCodeName language = linkLanguage != null ? linkLanguage : SharedPuzzlePageText.languageOf(acceptLanguage);
+        LangCodeName language = visitorLanguage != null ? visitorLanguage
+                : linkLanguage != null ? linkLanguage : LangCodeName.EN;
         SharedPuzzlePageText text = SharedPuzzlePageText.of(language, puzzle.orElse(null));
         model.addAttribute("text", text);
         model.addAttribute("token", token);
         model.addAttribute("puzzle", puzzle.orElse(null));
         // Absolute, as link previews need; the address the visitor or crawler used, already https behind the proxies.
-        // Keeps the language, as some crawlers fetch og:url again
+        // Keeps the link's language, as some crawlers fetch og:url again
         UriComponentsBuilder pageUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
                 .path(communityShareService.sharePathOf(token));
         if (linkLanguage != null) {
-            pageUrl.queryParam("lang", text.lang());
+            pageUrl.queryParam("lang", SharedPuzzlePageText.tagOf(linkLanguage));
         }
         model.addAttribute("pageUrl", pageUrl.toUriString());
         model.addAttribute("previewImageUrl", ServletUriComponentsBuilder.fromCurrentContextPath()
