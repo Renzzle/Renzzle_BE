@@ -59,7 +59,7 @@
     ja: {
       loading: 'AIを準備しています',
       turn: '2回タップして石を置きます',
-      confirm: 'もう一度タップすると置きます',
+      confirm: 'もう一度タップで置けます',
       thinking: '次の手を考えています',
       solved: '成功しました',
       failed: '失敗しました',
@@ -93,13 +93,13 @@
       free: 'ИИ недоступен, камни можно ставить свободно'
     },
     et: {
-      loading: 'Tehisintellekt valmistub',
-      turn: 'Kivi asetamiseks puuduta kaks korda',
+      loading: 'AI valmistub',
+      turn: 'Nupu asetamiseks puuduta kaks korda',
       confirm: 'Asetamiseks puuduta veel kord',
       thinking: 'Mõtleb järgmise käigu üle',
       solved: 'Lahendatud',
       failed: 'Ei õnnestunud',
-      free: 'Tehisintellekt ei tööta, kive saab vabalt asetada'
+      free: 'AI ei tööta, nuppe saab vabalt asetada'
     }
   };
   const text = MESSAGES[document.documentElement.lang] || MESSAGES.en;
