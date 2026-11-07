@@ -322,6 +322,16 @@ public class CommunityService {
         return toAdminCommunityPuzzleResponse(puzzle);
     }
 
+    // Removes a puzzle the way its author's own delete does, for puzzles that should not stay up
+    @Transactional
+    public Long deleteCommunityPuzzleForAdmin(Long puzzleId) {
+        int updatedRows = communityPuzzleRepository.softDelete(puzzleId, clock.instant());
+        if (updatedRows == 0) {
+            throw new CustomException(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE);
+        }
+        return puzzleId;
+    }
+
     // Depth counts every answer move, as the admin puzzle editors do
     private void correctAnswer(CommunityPuzzle puzzle, String answer) {
         if (answer.isBlank() || !BoardUtils.validBoardString(answer)) {
@@ -375,20 +385,16 @@ public class CommunityService {
                 request.id(),
                 size
         );
-        List<CommunityPuzzleCachePickerResponse> response = new ArrayList<>();
-        for (CommunityPuzzle puzzle : puzzleList) {
-            response.add(
-                    CommunityPuzzleCachePickerResponse.builder()
-                            .id(puzzle.getId())
-                            .boardStatus(puzzle.getBoardStatus())
-                            .depth(puzzle.getDepth())
-                            .winColor(puzzle.getWinColor().getName())
-                            .description(puzzle.getDescription())
-                            .authorNickname(puzzle.getUser().getNickname())
-                            .build()
-            );
-        }
-        return response;
+        return puzzleList.stream()
+                .map(puzzle -> CommunityPuzzleCachePickerResponse.builder()
+                        .id(puzzle.getId())
+                        .boardStatus(puzzle.getBoardStatus())
+                        .depth(puzzle.getDepth())
+                        .winColor(puzzle.getWinColor().getName())
+                        .description(puzzle.getDescription())
+                        .authorNickname(puzzle.getUser().getNickname())
+                        .build())
+                .toList();
     }
 
     @Transactional

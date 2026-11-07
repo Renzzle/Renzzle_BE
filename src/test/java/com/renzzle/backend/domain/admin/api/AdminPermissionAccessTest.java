@@ -138,6 +138,8 @@ class AdminPermissionAccessTest {
                 .andExpect(status().isOk());
         mockMvc.perform(withToken(get("/admin/community/puzzle-manage/1"), appUser))
                 .andExpect(jsonPath("$.errorResponse.code").value("A403"));
+        mockMvc.perform(withToken(delete("/admin/community/puzzle-manage/1"), appUser))
+                .andExpect(jsonPath("$.errorResponse.code").value("A403"));
         assertThat(userRepository.findById(appUser.getId())).isPresent();
     }
 

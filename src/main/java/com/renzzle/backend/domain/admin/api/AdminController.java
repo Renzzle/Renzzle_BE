@@ -154,6 +154,14 @@ public class AdminController {
         return ApiUtils.success(puzzle);
     }
 
+    @Operation(summary = "Delete community puzzle (Admin only)",
+            description = "Removes the puzzle the way its author's delete does; it disappears from every list")
+    @SecurityRequirement(name = "Authorization")
+    @DeleteMapping("/community/puzzle-manage/{puzzleId}")
+    public ApiResponse<Long> deleteCommunityPuzzleForAdmin(@PathVariable Long puzzleId) {
+        return ApiUtils.success(communityService.deleteCommunityPuzzleForAdmin(puzzleId));
+    }
+
     @Operation(summary = "Recalculate puzzle ratings",
             description = "Admin-only; re-rates puzzles that have no rank results yet with the current formula")
     @SecurityRequirement(name = "Authorization")

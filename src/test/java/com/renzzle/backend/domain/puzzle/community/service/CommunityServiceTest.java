@@ -227,6 +227,26 @@ class CommunityServiceTest {
     }
 
     @Test
+    void deleteCommunityPuzzleForAdmin_WhenThePuzzleIsUp_ThenSoftDeletesItForAnyAuthor() {
+        when(communityPuzzleRepository.softDelete(1L, FIXED_INSTANT)).thenReturn(1);
+
+        Long deleted = communityService.deleteCommunityPuzzleForAdmin(1L);
+
+        assertThat(deleted).isEqualTo(1L);
+        verify(communityPuzzleRepository).softDelete(1L, FIXED_INSTANT);
+    }
+
+    @Test
+    void deleteCommunityPuzzleForAdmin_WhenThePuzzleIsGone_ThenNotFound() {
+        when(communityPuzzleRepository.softDelete(1L, FIXED_INSTANT)).thenReturn(0);
+
+        CustomException exception = assertThrows(CustomException.class,
+                () -> communityService.deleteCommunityPuzzleForAdmin(1L));
+
+        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.CANNOT_FIND_COMMUNITY_PUZZLE);
+    }
+
+    @Test
     void updateCommunityPuzzleVerificationForAdmin_WhenAnswerSentWhileUnverifying_ThenRejectsIt() {
         CustomException exception = assertThrows(CustomException.class,
                 () -> communityService.updateCommunityPuzzleVerificationForAdmin(1L, false, "e5e6"));
