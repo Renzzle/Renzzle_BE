@@ -1,60 +1,64 @@
-# Renzzle
-<img alt="Renzzle" src=".github/assets/banner.png" width="100%"/>
+# Renzzle Backend
 
-## 🎯 Project Overview
+Renzzle 앱의 API 서버와 공유 링크 웹 페이지.
 
-Renzzle은 오목 초보자부터 전문가까지 누구나 즐기며 실력을 향상시킬 수 있는 AI 기반 오목 퍼즐 학습 플랫폼입니다.
+Java 17 · Spring Boot 3.3.2 · MySQL 8.0 · Redis 7.0 · Gradle 8.8
 
-- 트레이닝 퍼즐: 정교한 AI를 상대로 단계별 퍼즐을 풀며 체계적인 학습이 가능합니다.
-- 커뮤니티 퍼즐: 사용자가 직접 퍼즐을 만들고 공유하며, 다른 유저의 퍼즐에 도전할 수 있습니다.
-- AI 문제 검증: 유저가 만든 모든 퍼즐은 AI가 풀이 가능성을 검증하여 콘텐츠의 질을 보장합니다.
-- 랭킹 시스템: 랭킹전을 통해 다른 사용자들과 실력을 겨루며 학습 동기를 부여합니다.
-
-## 💻 Tech Stack
-
-<h4>Backend</h4>
-
-![Backend](https://go-skill-icons.vercel.app/api/icons?i=java,spring,hibernate,jwt&perline=4)
-
-<h4>Database & Cache</h4>
-
-![Database & Cache](https://go-skill-icons.vercel.app/api/icons?i=mysql,redis&perline=2)
-
-<h4>DevOps & Infra</h4>
-
-![DevOps & Infra](https://go-skill-icons.vercel.app/api/icons?i=aws,cloudflare,docker,gradle,githubactions&perline=5)
-
-<h4>Monitoring</h4>
-
-![Monitoring](https://go-skill-icons.vercel.app/api/icons?i=prometheus,grafana&perline=2)
-
-<h4>Testing</h4>
-
-![Testing](https://go-skill-icons.vercel.app/api/icons?i=junit&perline=1)
-
-<details>
-<summary><strong>🛠️ Key Version Details</strong></summary>
-
-|    Category    |          Tech          |      Version      |
-|:--------------:|:----------------------:|:-----------------:|
-|  **Language**  |          Java          |       `17`        |
-| **Framework**  |      Spring Boot       |      `3.3.2`      |
-|  **Database**  |     MySQL / Redis      | `8.0` / `7.0.12`  |
-|  **Testing**   | JUnit / Testcontainers | `5.10` / `1.21.4` |
-| **Build Tool** |         Gradle         |       `8.8`       |
-
-</details>
-
-## 🗺️ Architecture
+## Architecture
 
 ```mermaid
 flowchart LR
-    App[Renzzle 앱] --> CF[Cloudflare]
-    Web["브라우저 (공유 링크)"] --> CF
+    App[App] --> CF[Cloudflare]
+    Web["Browser (share link)"] --> CF
     CF --> Caddy --> API[Spring Boot]
     API --> MySQL
     API --> Redis
     API --> Store[Google Play / App Store]
-    API -. 로그 .-> Promtail --> Loki --> Grafana
-    API -. 메트릭 .-> Prometheus --> Grafana
+    API -. logs .-> Promtail --> Loki
+    API -. metrics .-> Prometheus
+```
+
+## Routes
+
+- `/api/**`: 앱 API. `x-app-key` 헤더 필요 (`APP_KEY`가 비어 있으면 검사 안 함)
+- `/admin/**`: 운영 API. 관리자 계정의 앱 토큰으로 호출
+- `/puzzle/{token}`: 공유 링크 페이지. 로그인 불필요
+- `/.well-known/**`: iOS Universal Links, Android App Links 파일
+- `/webhooks/apple/notifications`: App Store 서버 알림
+- `/docs`: API 문서 (Scalar). `DOCS_ENABLED`로 on/off
+- `/actuator/prometheus`: 메트릭. `ACTUATOR_TOKEN` 없는 요청은 Caddy에서 차단
+
+## Run Locally
+
+`.env.example`을 `.env`로 복사해 값 입력 후 실행. 개발용 구성은 MySQL·Redis를 메모리에 두고 Caddy·Promtail은 제외.
+
+```bash
+cp .env.example .env
+./gradlew bootJar
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
+
+서버 `http://localhost:9001`, API 문서 `http://localhost:9001/docs`
+
+## Test
+
+Testcontainers로 MySQL·Redis를 띄우므로 Docker 필요. `.env` 값을 환경 변수로 넣고 실행.
+
+```bash
+set -a && source .env && set +a
+./gradlew test
+```
+
+## Deploy
+
+- `main`, `develop` 대상 PR: CI에서 빌드·테스트
+- PR 댓글 `/test deploy`: 테스트 서버 배포
+- PR 댓글 `/renzzle deploy`: 운영 서버(EC2) 배포
+
+## AI Engine (WASM)
+
+공유 링크 페이지의 엔진은 [Renzzle_AI](https://github.com/Renzzle/Renzzle_AI)의 WebAssembly 빌드. 엔진 변경 시 `engine-wasm/build.sh`의 `AI_COMMIT`을 올려 실행하고, `src/main/resources/static/assets/engine`의 `renzzle-engine.mjs`, `renzzle-engine.wasm`을 커밋. git·Docker 필요.
+
+```bash
+./engine-wasm/build.sh
 ```
